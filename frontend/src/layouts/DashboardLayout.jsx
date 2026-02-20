@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
@@ -264,6 +265,30 @@ const Logo = ({ className = '' }) => (
     className={`h-8 w-auto object-contain object-left sm:h-9 ${className}`}
   />
 )
+
+// Language switcher (FR | EN)
+const LanguageSwitcher = ({ className = '' }) => {
+  const { i18n } = useTranslation()
+  const lang = i18n.language || 'fr'
+  return (
+    <div className={`flex items-center gap-0.5 rounded-lg overflow-hidden border ${className}`} style={{ borderColor: 'var(--border-color)' }}>
+      <button
+        type="button"
+        onClick={() => { i18n.changeLanguage('fr'); if (typeof localStorage !== 'undefined') localStorage.setItem('locale', 'fr') }}
+        className={`px-2 py-1 text-xs font-medium ${lang === 'fr' ? 'bg-violet-500/20 text-violet-400' : 'opacity-70 hover:opacity-100'}`}
+      >
+        FR
+      </button>
+      <button
+        type="button"
+        onClick={() => { i18n.changeLanguage('en'); if (typeof localStorage !== 'undefined') localStorage.setItem('locale', 'en') }}
+        className={`px-2 py-1 text-xs font-medium ${lang === 'en' ? 'bg-violet-500/20 text-violet-400' : 'opacity-70 hover:opacity-100'}`}
+      >
+        EN
+      </button>
+    </div>
+  )
+}
 
 // Theme Toggle Component
 const ThemeToggle = ({ className = '', size = 'md' }) => {
@@ -961,6 +986,7 @@ export default function DashboardLayout() {
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <LanguageSwitcher className="hidden sm:flex" />
             <ThemeToggle size="sm" />
             <UserMenu user={user} onLogout={handleLogout} />
           </div>
@@ -997,8 +1023,9 @@ export default function DashboardLayout() {
             </span>
           </div>
 
-          {/* Right - Credits, theme, notifications, user */}
+          {/* Right - Lang, credits, theme, notifications, user */}
           <div className="flex items-center gap-1">
+            <LanguageSwitcher />
             <Link
               to="/dashboard/settings"
               className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${

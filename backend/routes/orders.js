@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { validate, orderPaymentLinkSchema } from '../middleware/security.js';
 import { orderService, ORDER_STATUSES } from '../services/orders.js';
 import { createPaymentLink } from './payments.js';
 
@@ -48,6 +49,35 @@ router.get('/pending-count', authenticateToken, async (req, res) => {
         res.json({ count });
     } catch (error) {
         res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Export orders as CSV
+router.get('/export', authenticateToken, async (req, res) => {
+    try {
+        const status = req.query.status || null;
+        const limit = parseInt(req.query.limit) || 5000;
+        const orders = await orderService.getOrders(req.user.id, { status, limit });
+        const headers = ['id', 'date', 'client', 'téléphone', 'statut', 'montant', 'devise', 'payé_le'];
+        const escape = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
+        const row = (o) => [
+            escape(o.id),
+            escape(o.created_at),
+            escape(o.customer_name),
+            escape(o.customer_phone),
+            escape(o.status),
+            escape(o.total_amount),
+            escape(o.currency),
+            escape(o.paid_at)
+        ].map((c) => `"${c}"`).join(',');
+        const csv = [headers.join(','), ...orders.map(row)].join('\n');
+        const bom = '\uFEFF';
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="commandes_${new Date().toISOString().slice(0, 10)}.csv"`);
+        res.send(bom + csv);
+    } catch (error) {
+        console.error('Export orders error:', error);
+        res.status(500).json({ error: 'Erreur export' });
     }
 });
 
@@ -129,7 +159,7 @@ router.post('/:id/reject', authenticateToken, async (req, res) => {
 });
 
 // Create payment link from order (for sending to client - e.g. WhatsApp)
-router.post('/:id/payment-link', authenticateToken, async (req, res) => {
+router.post('/:id/payment-link', authenticateToken, validate(orderPaymentLinkSchema), async (req, res) => {
     try {
         const order = await orderService.getOrderById(req.params.id, req.user.id);
         if (!order) {
@@ -146,7 +176,7 @@ router.post('/:id/payment-link', authenticateToken, async (req, res) => {
             ? `Commande: ${itemsList}`
             : `Commande #${(order.id || '').slice(0, 8)}`;
 
-        const provider = req.body.provider || 'manual';
+        const provider = req.body.provider;
         const payment = await createPaymentLink(req.user.id, {
             amount: order.total_amount,
             currency: order.currency || 'XOF',

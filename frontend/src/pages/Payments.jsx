@@ -18,7 +18,8 @@ import {
   CheckCircle,
   XCircle,
   Share2,
-  Send
+  Send,
+  Download
 } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -147,6 +148,24 @@ export default function Payments() {
     return matchesSearch && matchesStatus
   })
 
+  const handleExportCsv = async () => {
+    try {
+      const statusParam = statusFilter !== 'all' ? `?status=${statusFilter}` : ''
+      const res = await api.get(`/payments/export${statusParam}`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.setAttribute('download', `paiements_${new Date().toISOString().slice(0, 10)}.csv`)
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success('Export téléchargé')
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erreur export')
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -168,13 +187,22 @@ export default function Payments() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nouveau lien
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportCsv}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+          >
+            <Download className="w-4 h-4" />
+            Exporter CSV
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Nouveau lien
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -231,7 +259,7 @@ export default function Payments() {
       </div>
 
       {/* Payments List */}
-      <div className="space-y-4">
+      <div className="space-y-4 overflow-x-auto min-w-0">
         {filteredLinks.length === 0 ? (
           <div className={`text-center py-12 rounded-xl border ${
             isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'

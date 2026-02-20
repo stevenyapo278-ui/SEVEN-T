@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { validate, createPaymentLinkSchema } from '../middleware/security.js';
 import paymetrust from '../services/paymetrust.js';
 
 const router = Router();
@@ -38,6 +39,77 @@ router.get('/', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Get payments error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Export payment links as CSV
+router.get('/export', authenticateToken, async (req, res) => {
+    try {
+        const { status } = req.query;
+        let query = 'SELECT * FROM payment_links WHERE user_id = ?';
+        const params = [req.user.id];
+        if (status) {
+            query += ' AND status = ?';
+            params.push(status);
+        }
+        query += ' ORDER BY created_at DESC LIMIT 5000';
+        const payments = await db.all(query, ...params);
+        const headers = ['id', 'short_id', 'date', 'statut', 'montant', 'devise', 'description', 'payé_le'];
+        const escape = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
+        const row = (p) => [
+            escape(p.id),
+            escape(p.id ? p.id.split('-')[0].toUpperCase() : ''),
+            escape(p.created_at),
+            escape(p.status),
+            escape(p.amount),
+            escape(p.currency),
+            escape(p.description),
+            escape(p.paid_at)
+        ].map((c) => `"${c}"`).join(',');
+        const csv = [headers.join(','), ...payments.map(row)].join('\n');
+        const bom = '\uFEFF';
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="paiements_${new Date().toISOString().slice(0, 10)}.csv"`);
+        res.send(bom + csv);
+    } catch (error) {
+        console.error('Export payments error:', error);
+        res.status(500).json({ error: 'Erreur export' });
+    }
+});
+
+// PaymeTrust webhook: receive callback when payment status changes (no auth; body is raw)
+router.post('/webhook/paymetrust', async (req, res) => {
+    let body;
+    try {
+        const raw = req.body;
+        body = typeof raw === 'string' ? JSON.parse(raw) : (Buffer.isBuffer(raw) ? JSON.parse(raw.toString('utf8')) : raw);
+    } catch (e) {
+        console.error('[PaymeTrust webhook] Invalid JSON:', e.message);
+        return res.status(400).send('Invalid JSON');
+    }
+    const invoiceId = body?.data?.id ?? body?.data?.attributes?.id ?? body?.id ?? body?.invoice_id;
+    const status = (body?.data?.attributes?.status ?? body?.data?.status ?? body?.status ?? '').toLowerCase();
+    if (!invoiceId) {
+        console.error('[PaymeTrust webhook] Missing invoice id in payload:', JSON.stringify(body).slice(0, 200));
+        return res.status(400).send('Missing invoice id');
+    }
+    const successStatuses = ['paid', 'completed', 'success', 'settled'];
+    if (!successStatuses.some(s => status.includes(s))) {
+        return res.status(200).send('OK');
+    }
+    try {
+        const payment = await db.get('SELECT * FROM payment_links WHERE external_id = ? AND status != ?', invoiceId, 'paid');
+        if (!payment) {
+            return res.status(200).send('OK');
+        }
+        await db.run("UPDATE payment_links SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
+        if (payment.order_id) {
+            await db.run("UPDATE orders SET status = 'completed', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.order_id);
+        }
+        return res.status(200).send('OK');
+    } catch (err) {
+        console.error('[PaymeTrust webhook] Error updating payment:', err);
+        return res.status(500).send('Error');
     }
 });
 
@@ -98,12 +170,9 @@ export async function createPaymentLink(userId, opts = {}) {
 }
 
 // Create payment link
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validate(createPaymentLinkSchema), async (req, res) => {
     try {
-        const { amount, currency = 'XOF', description, provider = 'manual', order_id, conversation_id, expires_in_hours = 24 } = req.body;
-        if (!amount || amount <= 0) {
-            return res.status(400).json({ error: 'Montant invalide' });
-        }
+        const { amount, currency, description, provider, order_id, conversation_id, expires_in_hours } = req.body;
         const payment = await createPaymentLink(req.user.id, {
             amount, currency, description, provider, order_id, conversation_id, expires_in_hours
         });

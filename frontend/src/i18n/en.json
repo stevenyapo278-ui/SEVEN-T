@@ -1,0 +1,53 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "close": "Close",
+    "back": "Back",
+    "search": "Search",
+    "export": "Export CSV"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "company": "Company",
+    "logout": "Log out",
+    "forgotPassword": "Forgot password?"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "agents": "Agents",
+    "conversations": "Conversations",
+    "orders": "Orders",
+    "payments": "Payments",
+    "tools": "Tools",
+    "settings": "Settings"
+  },
+  "landing": {
+    "title": "SEVEN T",
+    "subtitle": "WhatsApp automation platform with AI",
+    "cta": "Get started",
+    "ctaFree": "Start for free"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome"
+  },
+  "orders": {
+    "title": "Orders",
+    "subtitle": "Validate orders detected by AI",
+    "exportCsv": "Export CSV"
+  },
+  "payments": {
+    "title": "Payment links",
+    "subtitle": "Create and manage your payment requests",
+    "newLink": "New link",
+    "exportCsv": "Export CSV"
+  }
+}

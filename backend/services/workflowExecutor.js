@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { normalizeJid } from '../utils/whatsappUtils.js';
 import { aiLogger } from '../utils/logger.js';
+import { notificationService } from './notifications.js';
 
 /**
  * Service d'exécution des workflows automatisés
@@ -424,11 +425,13 @@ class WorkflowExecutor {
             throw new Error('No user ID');
         }
 
-        // Create notification (you can enhance this to send email/SMS/push)
-        console.log(`[WorkflowExecutor] Notification for user ${userId}: ${title} - ${message}`);
-
-        // TODO: Integrate with your notification service
-        // For now, just log it
+        await notificationService.create(userId, {
+            type: 'info',
+            title,
+            message,
+            link: '/notifications',
+            metadata: { workflowId: workflow.id, workflowName: workflow.name }
+        });
 
         return { notified: true, userId };
     }

@@ -219,6 +219,22 @@ export const blacklistSchema = z.object({
     reason: z.string().max(500).optional().nullable(),
 });
 
+// Payment link creation (POST /payments)
+export const createPaymentLinkSchema = z.object({
+    amount: z.number().positive('Montant invalide').or(z.coerce.number().positive('Montant invalide')),
+    currency: z.string().max(10, 'Devise trop longue').optional().default('XOF'),
+    description: z.string().max(500, 'Description trop longue').optional().nullable(),
+    provider: z.enum(['manual', 'paymetrust']).optional().default('manual'),
+    order_id: z.string().max(64).optional().nullable(),
+    conversation_id: z.string().max(64).optional().nullable(),
+    expires_in_hours: z.number().min(1).max(720).optional().default(24),
+});
+
+// Order payment link (POST /orders/:id/payment-link)
+export const orderPaymentLinkSchema = z.object({
+    provider: z.enum(['manual', 'paymetrust']).optional().default('manual'),
+});
+
 // ==================== VALIDATION MIDDLEWARE ====================
 
 /**
@@ -313,4 +329,6 @@ export default {
     toggleTakeoverSchema,
     deleteMessagesSchema,
     createToolSchema,
+    createPaymentLinkSchema,
+    orderPaymentLinkSchema,
 };

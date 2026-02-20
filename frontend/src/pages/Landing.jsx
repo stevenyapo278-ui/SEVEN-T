@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { 
   MessageSquare, 
   Clock, 
@@ -179,6 +180,7 @@ const PlanCard = ({ plan, isPopular = false }) => {
 }
 
 export default function Landing() {
+  const { t } = useTranslation()
   const [plans, setPlans] = useState(defaultPlans)
   const [loadingPlans, setLoadingPlans] = useState(true)
 
@@ -243,7 +245,7 @@ export default function Landing() {
                 to="/register"
                 className="btn-primary text-sm px-4 py-2"
               >
-                Commencer
+                {t('landing.cta')}
               </Link>
             </div>
           </div>
@@ -288,7 +290,7 @@ export default function Landing() {
               to="/register"
               className="btn-primary inline-flex items-center justify-center gap-2 text-lg px-8 py-4 shadow-xl shadow-gold-400/20 hover:shadow-glow-gold transition-shadow duration-300"
             >
-              Commencer gratuitement
+              {t('landing.ctaFree')}
               <ArrowRight className="w-5 h-5" />
             </Link>
             <a

@@ -24,19 +24,26 @@ Plateforme d'automatisation WhatsApp avec IA (inspirée de Wazzap.ai)
 wazzap-clone/
 ├── backend/
 │   ├── database/
-│   │   └── init.js          # Initialisation SQLite
+│   │   └── init.js          # Schéma et migrations PostgreSQL
 │   ├── middleware/
-│   │   └── auth.js          # Middleware JWT
+│   │   ├── auth.js          # Middleware JWT
+│   │   └── security.js      # Rate limit, validation Zod, Helmet
 │   ├── routes/
-│   │   ├── auth.js          # Routes authentification
-│   │   ├── agents.js        # Routes agents
-│   │   ├── whatsapp.js      # Routes WhatsApp
-│   │   ├── conversations.js # Routes conversations
-│   │   ├── knowledge.js     # Routes base de connaissances
-│   │   └── stats.js         # Routes statistiques
+│   │   ├── auth.js          # Authentification
+│   │   ├── agents.js        # Agents
+│   │   ├── whatsapp.js      # WhatsApp
+│   │   ├── conversations.js # Conversations
+│   │   ├── knowledge.js     # Base de connaissances
+│   │   ├── payments.js      # Liens de paiement, webhook PaymeTrust
+│   │   ├── orders.js        # Commandes
+│   │   ├── subscription.js  # Abonnements Stripe
+│   │   └── stats.js         # Statistiques
 │   ├── services/
-│   │   ├── whatsapp.js      # Service WhatsApp/Baileys
-│   │   └── ai.js            # Service OpenAI
+│   │   ├── whatsapp.js      # WhatsApp/Baileys
+│   │   ├── ai.js            # IA (Gemini, OpenAI)
+│   │   ├── paymetrust.js    # API PaymeTrust
+│   │   ├── notifications.js # Notifications in-app
+│   │   └── workflowExecutor.js # Workflows automatisés
 │   └── server.js            # Point d'entrée backend
 ├── frontend/
 │   ├── src/
@@ -60,7 +67,6 @@ wazzap-clone/
 │   │   └── main.jsx
 │   ├── package.json
 │   └── vite.config.js
-├── data/                    # Base de données SQLite
 ├── sessions/                # Sessions WhatsApp
 ├── .env.example
 ├── package.json
@@ -91,24 +97,16 @@ cd frontend && npm install && cd ..
 
 Au minimum en production :
 - `JWT_SECRET`
-- `DATABASE_PATH`
+- `DATABASE_URL` (ex. `postgres://user:password@localhost:5432/seven_t`)
 
 Pour les fonctionnalités complètes :
 - `GEMINI_API_KEY` (IA)
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (paiements)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (abonnements / paiements Stripe)
+- `PAYMETRUST_ACCOUNT_ID`, `PAYMETRUST_API_KEY` (paiement en ligne PaymeTrust, optionnel)
 - `SMTP_*` (emails)
 - `FRONTEND_URL`, `ALLOWED_ORIGINS`
 
-Voir `.env.example` pour la liste complète.
-
-### Sauvegarde / restauration SQLite
-
-La base est un fichier SQLite (ex. `data/database.sqlite`). Pour sauvegarder :
-1. Arrêter l’application
-2. Copier le fichier (ou le volume Docker `app_data`)
-3. Redémarrer l’application
-
-Pour restaurer : remplacer le fichier par la sauvegarde et redémarrer.
+Voir `.env.example` pour la liste complète. La base de données utilisée est **PostgreSQL** ; la sauvegarde et la restauration sont documentées dans la section Production ci-dessous.
 
 ### 2. Configuration
 
@@ -123,6 +121,8 @@ nano .env
 Variables importantes :
 ```env
 JWT_SECRET=votre-clé-secrète-jwt
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/seven_t
+GEMINI_API_KEY=votre-clé-gemini
 OPENAI_API_KEY=sk-votre-clé-openai
 ```
 
@@ -225,6 +225,22 @@ Les utilisateurs choisissent simplement le modèle dans les paramètres de leur 
 - `POST /api/knowledge/agent/:agentId` - Ajouter un élément
 - `DELETE /api/knowledge/:id` - Supprimer un élément
 
+## Production
+
+### Sauvegarde et restauration PostgreSQL
+
+- **Sauvegarde** : `pg_dump -U postgres -d seven_t -F c -f backup_$(date +%Y%m%d).dump` (ou `-F p` pour un fichier SQL texte).
+- **Restauration** : `pg_restore -U postgres -d seven_t -c backup_YYYYMMDD.dump` (ou `psql -U postgres -d seven_t -f backup.sql` pour un dump SQL).
+- **Cron** (ex. tous les jours à 2h) : `0 2 * * * pg_dump -U postgres seven_t -F c -f /backups/seven_t_$(date +\%Y\%m\%d).dump`
+
+### Sentry (erreurs)
+
+En production, définir `SENTRY_DSN` dans `.env` (voir `.env.example`). Configurer le SDK Sentry côté backend (et optionnellement frontend) pour envoyer les erreurs à Sentry. Sans DSN, le suivi des erreurs est désactivé.
+
+### Session et déconnexion après inactivité
+
+Côté frontend, la variable `VITE_SESSION_IDLE_MINUTES` (dans le `.env` du frontend ou à la racine) permet de déconnecter l’utilisateur après X minutes sans activité (0 = désactivé). En production, une valeur comme `30` est recommandée.
+
 ## ⚠️ Avertissements
 
 - Ce projet est éducatif et n'est pas affilié à WhatsApp
@@ -238,7 +254,7 @@ Les utilisateurs choisissent simplement le modèle dans les paramètres de leur 
 - Node.js + Express
 - Baileys (WhatsApp Web API)
 - Google Gemini AI + OpenAI API
-- SQLite (better-sqlite3)
+- PostgreSQL (pg)
 - JWT pour l'authentification
 
 **Frontend:**

@@ -34,7 +34,8 @@ import {
   BarChart,
   Link2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Download
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
@@ -89,10 +90,23 @@ export default function Orders() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsPeriod, setAnalyticsPeriod] = useState('30d')
   const [paymentLinkModal, setPaymentLinkModal] = useState({ open: false, order: null, message: '', url: '', loading: false })
+  const [paymetrustConfigured, setPaymetrustConfigured] = useState(false)
 
   useEffect(() => {
     loadOrders()
     loadStats()
+  }, [])
+
+  useEffect(() => {
+    const loadPaymentProviders = async () => {
+      try {
+        const res = await api.get('/payments/providers')
+        setPaymetrustConfigured(!!res.data?.paymetrustConfigured)
+      } catch {
+        // ignore
+      }
+    }
+    loadPaymentProviders()
   }, [])
 
   // Close cleanup menu when clicking outside
@@ -147,7 +161,8 @@ export default function Orders() {
   const handleCreatePaymentLink = async (order) => {
     setPaymentLinkModal(prev => ({ ...prev, open: true, order, message: '', url: '', loading: true }))
     try {
-      const response = await api.post(`/orders/${order.id}/payment-link`, { provider: 'manual' })
+      const provider = paymetrustConfigured ? 'paymetrust' : 'manual'
+      const response = await api.post(`/orders/${order.id}/payment-link`, { provider })
       setPaymentLinkModal(prev => ({
         ...prev,
         message: response.data.message || '',
@@ -309,10 +324,28 @@ export default function Orders() {
 
   const getStatusInfo = (status) => ORDER_STATUSES[status] || ORDER_STATUSES.pending
 
+  const handleExportCsv = async () => {
+    try {
+      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : ''
+      const res = await api.get(`/orders/export?limit=5000${statusParam}`, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.setAttribute('download', `commandes_${new Date().toISOString().slice(0, 10)}.csv`)
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+      toast.success('Export téléchargé')
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erreur export')
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-950 border border-space-700 p-8">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-950 border border-space-700 p-4 sm:p-8">
         <div className="relative z-10">
           <div className="flex items-center justify-between">
             <div>
@@ -327,6 +360,13 @@ export default function Orders() {
               </p>
             </div>
             <div className="flex gap-2">
+              <button
+                onClick={handleExportCsv}
+                className="px-4 py-2 rounded-xl flex items-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors"
+              >
+                <Download className="w-5 h-5" />
+                Exporter CSV
+              </button>
               <button
                 onClick={() => { setActiveTab('logs'); loadLogs(); }}
                 className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-colors ${
@@ -788,7 +828,7 @@ export default function Orders() {
 
       {/* Orders tab: Filters + List */}
       {activeTab === 'orders' && (
-        <div className="space-y-6">
+        <div className="space-y-6 overflow-x-auto min-w-0">
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
         <div className="input-with-icon flex-1 min-w-[200px]">

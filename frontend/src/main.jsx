@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import { ThemeProvider } from './contexts/ThemeContext.jsx'
 import { ConfirmProvider } from './contexts/ConfirmContext.jsx'
 import { CurrencyProvider } from './contexts/CurrencyContext.jsx'
+import './i18n/i18n.js'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(

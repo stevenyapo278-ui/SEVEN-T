@@ -1,0 +1,53 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "back": "Retour",
+    "search": "Rechercher",
+    "export": "Exporter CSV"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "name": "Nom",
+    "company": "Entreprise",
+    "logout": "Déconnexion",
+    "forgotPassword": "Mot de passe oublié ?"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "agents": "Agents",
+    "conversations": "Conversations",
+    "orders": "Commandes",
+    "payments": "Paiements",
+    "tools": "Outils",
+    "settings": "Paramètres"
+  },
+  "landing": {
+    "title": "SEVEN T",
+    "subtitle": "Plateforme d'automatisation WhatsApp avec IA",
+    "cta": "Commencer",
+    "ctaFree": "Commencer gratuitement"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue"
+  },
+  "orders": {
+    "title": "Commandes",
+    "subtitle": "Validez les commandes détectées par l'IA",
+    "exportCsv": "Exporter CSV"
+  },
+  "payments": {
+    "title": "Liens de paiement",
+    "subtitle": "Créez et gérez vos demandes de paiement",
+    "newLink": "Nouveau lien",
+    "exportCsv": "Exporter CSV"
+  }
+}
