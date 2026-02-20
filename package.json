@@ -1,0 +1,52 @@
+{
+  "name": "seven-t",
+  "version": "1.0.0",
+  "description": "Plateforme d'automatisation WhatsApp avec IA",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "node --watch backend/server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "node backend/server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "db:clear": "node backend/scripts/clear-db.js",
+    "db:create-admin": "node backend/scripts/create-admin.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "baileys": "^6.7.9",
+    "bcryptjs": "^2.4.3",
+    "cheerio": "^1.2.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "mysql2": "^3.16.2",
+    "nodemailer": "^7.0.13",
+    "openai": "^4.73.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.18.0",
+    "qrcode": "^1.5.4",
+    "stripe": "^20.3.0",
+    "tiktoken": "^1.0.22",
+    "uuid": "^11.0.3",
+    "youtube-transcript": "^1.2.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "jest": "^25.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

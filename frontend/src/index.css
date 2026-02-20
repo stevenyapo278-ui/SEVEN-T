@@ -1,0 +1,775 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS Variables for SEVEN T Theme - Dark Mode (Default) */
+:root, .dark {
+  --space-950: #0a0a0f;
+  --space-900: #12121a;
+  --space-800: #1a1a24;
+  --space-700: #2a2a38;
+  --space-600: #3a3a4a;
+  --gold-300: #fcd34d;
+  --gold-400: #fbbf24;
+  --gold-500: #f59e0b;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  
+  /* Semantic colors */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a24;
+  --bg-elevated: #1a1a24;
+  --border-color: #2a2a38;
+  --border-light: #3a3a4a;
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Light Mode - Harmonie améliorée */
+.light {
+  --space-950: #ffffff;
+  --space-900: #fafbfc;
+  --space-800: #f4f6f8;
+  --space-700: #e8ecf0;
+  --space-600: #dce2e8;
+  --gold-300: #fbbf24;
+  --gold-400: #f59e0b;
+  --gold-500: #d97706;
+  --violet-400: #8b5cf6;
+  --violet-500: #7c3aed;
+  --violet-600: #6d28d9;
+  
+  /* Semantic colors - Plus doux et harmonieux */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafbfc;
+  --bg-tertiary: #f4f6f8;
+  --bg-elevated: #ffffff;
+  --border-color: #e2e8f0;
+  --border-light: #cbd5e1;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --shadow-color: rgba(100, 116, 139, 0.1);
+  
+  /* Couleurs d'accent pour le mode clair */
+  --accent-primary: #7c3aed;
+  --accent-secondary: #d97706;
+  --accent-success: #059669;
+  --accent-warning: #d97706;
+  --accent-error: #dc2626;
+  --accent-info: #0284c7;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light mode text color overrides - Couleurs plus douces et lisibles */
+.light .text-gray-100 { color: #1e293b; }
+.light .text-gray-200 { color: #334155; }
+.light .text-gray-300 { color: #475569; }
+.light .text-gray-400 { color: #64748b; }
+.light .text-gray-500 { color: #94a3b8; }
+.light .text-gray-600 { color: #cbd5e1; }
+
+/* Light mode background overrides - Tons plus chauds */
+.light .bg-space-950 { background-color: #ffffff; }
+.light .bg-space-900 { background-color: #fafbfc; }
+.light .bg-space-800 { background-color: #f1f5f9; }
+.light .bg-space-700 { background-color: #e2e8f0; }
+
+/* Light mode border overrides - Bordures plus subtiles */
+.light .border-space-700 { border-color: #e2e8f0; }
+.light .border-space-600 { border-color: #cbd5e1; }
+
+/* Light mode hover states - Transitions plus douces */
+.light .hover\:bg-space-800:hover { background-color: #e2e8f0; }
+.light .hover\:bg-space-700:hover { background-color: #cbd5e1; }
+
+/* Light mode gradient fixes */
+.light .from-space-800 { --tw-gradient-from: #f1f5f9; }
+.light .to-space-800 { --tw-gradient-to: #f1f5f9; }
+.light .via-space-900 { --tw-gradient-via: #fafbfc; }
+
+/* Light mode specific component styles */
+.light .divide-space-700 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0;
+}
+
+/* Light mode shadows - Ombres plus douces et naturelles */
+.light .shadow-lg {
+  box-shadow: 0 4px 6px -1px rgba(100, 116, 139, 0.1), 0 2px 4px -1px rgba(100, 116, 139, 0.06);
+}
+
+.light .shadow-xl {
+  box-shadow: 0 10px 15px -3px rgba(100, 116, 139, 0.1), 0 4px 6px -2px rgba(100, 116, 139, 0.05);
+}
+
+/* Light mode ring colors */
+.light .ring-space-700\/50 {
+  --tw-ring-color: rgba(226, 232, 240, 0.5);
+}
+
+/* Light mode backdrop - Plus opaque pour meilleure lisibilité */
+.light .bg-space-900\/80 {
+  background-color: rgba(250, 251, 252, 0.95);
+}
+
+.light .bg-space-950\/90 {
+  background-color: rgba(255, 255, 255, 0.98);
+}
+
+/* Light mode opacity backgrounds - Couleurs d'accent plus saturées */
+.light .bg-space-800\/50 {
+  background-color: rgba(241, 245, 249, 0.8);
+}
+
+.light .bg-violet-500\/20 {
+  background-color: rgba(124, 58, 237, 0.1);
+}
+
+.light .bg-violet-500\/10 {
+  background-color: rgba(124, 58, 237, 0.06);
+}
+
+.light .bg-gold-400\/20 {
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+.light .bg-gold-400\/10 {
+  background-color: rgba(217, 119, 6, 0.06);
+}
+
+.light .bg-emerald-500\/20 {
+  background-color: rgba(5, 150, 105, 0.1);
+}
+
+.light .bg-emerald-500\/10 {
+  background-color: rgba(5, 150, 105, 0.06);
+}
+
+.light .bg-blue-500\/20 {
+  background-color: rgba(2, 132, 199, 0.1);
+}
+
+.light .bg-amber-500\/20 {
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+.light .bg-red-500\/20 {
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+.light .bg-red-500\/10 {
+  background-color: rgba(220, 38, 38, 0.06);
+}
+
+.light .bg-yellow-500\/20 {
+  background-color: rgba(234, 179, 8, 0.1);
+}
+
+/* Light mode text colors for accent elements */
+.light .text-violet-400 { color: #7c3aed; }
+.light .text-gold-400 { color: #d97706; }
+.light .text-emerald-400 { color: #059669; }
+.light .text-amber-400 { color: #d97706; }
+.light .text-red-400 { color: #dc2626; }
+.light .text-blue-400 { color: #0284c7; }
+
+/* Light mode navigation active states - Plus visibles */
+.light .border-violet-500\/30 {
+  border-color: rgba(124, 58, 237, 0.35);
+}
+
+.light .border-gold-400\/30 {
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+/* Light mode text gradient - Contraste amélioré */
+.light .text-gradient {
+  background: linear-gradient(135deg, #d97706 0%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Light mode button adjustments - Boutons plus définis */
+.light .btn-secondary {
+  border-color: #cbd5e1;
+  color: #475569;
+  background-color: #ffffff;
+}
+
+.light .btn-secondary:hover {
+  border-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.06);
+  color: #7c3aed;
+}
+
+/* Light mode primary button - Plus de contraste */
+.light .btn-primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
+}
+
+.light .btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+}
+
+/* Light mode focus ring */
+.light .focus\:ring-gold-400\/20:focus {
+  --tw-ring-color: rgba(217, 119, 6, 0.2);
+}
+
+/* Light mode status badges - Couleurs plus vives */
+.light .bg-emerald-500\/20.text-emerald-400 {
+  background-color: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+.light .bg-amber-500\/20.text-amber-400 {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.light .bg-red-500\/20.text-red-400 {
+  background-color: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+/* Smooth theme transition for all elements */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* Disable transition for animations */
+.animate-spin, .animate-pulse, .animate-bounce, .animate-fadeIn, .animate-slideIn {
+  transition-property: none !important;
+}
+
+/* Typography utilities */
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #fbbf24 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #0a0a0f;
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.35);
+}
+
+.btn-secondary {
+  @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200 border;
+  background: transparent;
+  border-color: var(--space-700);
+  color: #f3f4f6;
+}
+
+.btn-secondary:hover {
+  border-color: var(--violet-500);
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.btn-ghost {
+  @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200;
+  background: rgba(139, 92, 246, 0.1);
+  color: #a78bfa;
+}
+
+.btn-ghost:hover {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+/* Card styles */
+.card {
+  @apply rounded-2xl border;
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 24px var(--shadow-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.light .card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(100, 116, 139, 0.08), 0 1px 2px rgba(100, 116, 139, 0.04);
+}
+
+.light .card:hover {
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.12);
+}
+
+/* Glow effects */
+.glow-violet {
+  box-shadow: 0 0 60px rgba(139, 92, 246, 0.3);
+}
+
+.glow-gold {
+  box-shadow: 0 0 60px rgba(251, 191, 36, 0.3);
+}
+
+/* Input styles - fixed height + line-height for vertical alignment of text with icons */
+.input,
+.input-dark {
+  @apply w-full rounded-xl border px-4 py-3 transition-all duration-200 box-border;
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+/* Single-line inputs only: align text with left icons */
+input.input,
+input.input-dark {
+  height: 2.75rem;
+  line-height: 1.25;
+}
+
+.input:focus,
+.input-dark:focus {
+  outline: none;
+  border-color: var(--violet-500);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.input::placeholder,
+.input-dark::placeholder {
+  color: var(--text-muted);
+}
+
+/* Select styling */
+.input option,
+select.input option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.light .input,
+.light .input-dark {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+
+.light .input:hover,
+.light .input-dark:hover {
+  border-color: #cbd5e1;
+}
+
+.light .input:focus,
+.light .input-dark:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.light .input::placeholder,
+.light .input-dark::placeholder {
+  color: #94a3b8;
+}
+
+.light .input option,
+.light select.input option {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+/* Light mode select dropdown */
+.light select.input-dark {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25rem;
+}
+
+/* Input with left icon - flex layout so icon and text align vertically */
+.input-with-icon {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-with-icon:focus-within {
+  outline: none;
+  border-color: var(--violet-500);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+.input-with-icon input {
+  flex: 1;
+  min-width: 0;
+  height: 2.75rem;
+  padding: 0 1rem 0 0.5rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+}
+.input-with-icon input::placeholder {
+  color: var(--text-muted);
+}
+.input-with-icon input:focus {
+  outline: none;
+}
+.light .input-with-icon {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #1e293b;
+}
+.light .input-with-icon:hover {
+  border-color: #cbd5e1;
+}
+.light .input-with-icon:focus-within {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+.light .input-with-icon input::placeholder {
+  color: #94a3b8;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--violet-500);
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* Hide scrollbar (e.g. horizontal filter pills on mobile) */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Light mode table styles */
+.light table th {
+  background: #f8fafc;
+  color: #475569;
+  border-bottom-color: #e2e8f0;
+}
+
+.light table td {
+  border-bottom-color: #f1f5f9;
+}
+
+.light table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Light mode modal backdrop */
+.light .bg-black\/50 {
+  background-color: rgba(15, 23, 42, 0.4);
+}
+
+.light .bg-black\/70 {
+  background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* Light mode navigation sidebar */
+.light .bg-space-900.border-r {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+
+/* Light mode header */
+.light .bg-space-900\/80.backdrop-blur-md {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Light mode hover states for interactive elements */
+.light .hover\:text-gray-100:hover { color: #1e293b; }
+.light .hover\:text-gray-300:hover { color: #475569; }
+
+/* Light mode disabled states */
+.light .bg-gray-700 { background-color: #e2e8f0; }
+.light .text-gray-500.cursor-not-allowed { color: #94a3b8; }
+
+/* Light mode tooltip/popover */
+.light [data-tooltip] {
+  background: #1e293b;
+  color: #f8fafc;
+}
+
+/* Light mode progress bars */
+.light .bg-white\/20 {
+  background-color: rgba(100, 116, 139, 0.15);
+}
+
+/* Light mode skeleton loading */
+.light .animate-pulse.bg-space-800 {
+  background-color: #e2e8f0;
+}
+
+/* WhatsApp chat bubble styles */
+.chat-bubble-user {
+  @apply bg-[#dcf8c6] rounded-lg rounded-tr-none text-gray-900;
+}
+
+.chat-bubble-bot {
+  @apply rounded-lg rounded-tl-none;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.light .chat-bubble-bot {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+}
+
+/* Light mode chat user bubble adjustment */
+.light .chat-bubble-user {
+  background: #dcf8c6;
+  color: #1e293b;
+}
+
+/* Animation utilities */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* QR Code scan animation */
+@keyframes scan {
+  0% { 
+    top: 10%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% { 
+    top: 90%;
+    opacity: 0;
+  }
+}
+
+.animate-scan {
+  animation: scan 1.5s ease-in-out infinite;
+}
+
+/* QR Code glow effect */
+@keyframes qr-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.4);
+  }
+}
+
+.qr-container {
+  animation: qr-glow 2s ease-in-out infinite;
+}
+
+/* Countdown ring animation */
+@keyframes countdown-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.countdown-ring {
+  animation: countdown-pulse 1s ease-in-out infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+.animate-slideIn {
+  animation: slideInRight 0.4s ease-out forwards;
+}
+
+/* Subtle bounce */
+@keyframes subtleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.hover-bounce:hover {
+  animation: subtleBounce 0.5s ease-in-out;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(26, 26, 36, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.light .glass {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+/* Light mode accent color enhancements */
+.light .from-gold-400 { --tw-gradient-from: #f59e0b; }
+.light .to-gold-400 { --tw-gradient-to: #f59e0b; }
+.light .from-violet-500 { --tw-gradient-from: #7c3aed; }
+.light .to-violet-500 { --tw-gradient-to: #7c3aed; }
+.light .from-violet-400 { --tw-gradient-from: #8b5cf6; }
+.light .to-amber-500 { --tw-gradient-to: #f59e0b; }
+
+/* Light mode gradient backgrounds */
+.light .bg-gradient-to-r.from-gold-400.to-amber-500 {
+  background: linear-gradient(to right, #f59e0b, #d97706);
+}
+
+.light .bg-gradient-to-br.from-gold-400.to-violet-500 {
+  background: linear-gradient(to bottom right, #f59e0b, #7c3aed);
+}
+
+.light .bg-gradient-to-br.from-violet-500.to-gold-400 {
+  background: linear-gradient(to bottom right, #7c3aed, #f59e0b);
+}
+
+/* Light mode notification badges */
+.light .bg-gold-400 {
+  background-color: #f59e0b;
+}
+
+/* Light mode tags and badges */
+.light .px-2.py-0\.5.text-xs.bg-violet-500\/20 {
+  background-color: rgba(124, 58, 237, 0.12);
+  color: #6d28d9;
+}
+
+.light .px-2.py-0\.5.text-xs.bg-emerald-500\/20 {
+  background-color: rgba(5, 150, 105, 0.12);
+  color: #047857;
+}
+
+.light .px-2.py-0\.5.text-xs.bg-amber-500\/20,
+.light .px-2.py-0\.5.text-xs.bg-yellow-500\/20 {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.light .px-2.py-0\.5.text-xs.bg-red-500\/20 {
+  background-color: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.light .px-2.py-0\.5.text-xs.bg-blue-500\/20 {
+  background-color: rgba(2, 132, 199, 0.12);
+  color: #0369a1;
+}
+
+.light .px-2.py-0\.5.text-xs.bg-gray-500\/20 {
+  background-color: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+/* Light mode links */
+.light a.text-violet-400:hover {
+  color: #6d28d9;
+}
+
+.light a.text-gold-400:hover {
+  color: #b45309;
+}
+
+/* Light mode icons in buttons */
+.light .text-space-950 {
+  color: #1e293b;
+}
+
+.light .text-space-900 {
+  color: #0f172a;
+}

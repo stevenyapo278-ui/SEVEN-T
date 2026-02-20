@@ -1,0 +1,482 @@
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
+import api from '../services/api'
+import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard } from 'lucide-react'
+import toast from 'react-hot-toast'
+
+export default function Settings() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { user, updateUser, refreshUser } = useAuth()
+  const { currency, setCurrency } = useCurrency()
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    company: user?.company || '',
+    media_model: user?.media_model || ''
+  })
+  const [saving, setSaving] = useState(false)
+  const [exportingData, setExportingData] = useState(false)
+
+  // Sync form when user is loaded/updated
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name ?? prev.name,
+        company: user.company ?? prev.company,
+        media_model: user.media_model ?? prev.media_model ?? ''
+      }))
+    }
+  }, [user?.id, user?.name, user?.company, user?.media_model])
+  const [plans, setPlans] = useState([])
+  const [loadingPlans, setLoadingPlans] = useState(true)
+  const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState(null)
+  const [portalLoading, setPortalLoading] = useState(false)
+
+  // Handle redirect after Stripe Checkout (success or cancel)
+  useEffect(() => {
+    const sub = searchParams.get('subscription')
+    if (sub === 'success') {
+      toast.success('Abonnement activé')
+      refreshUser()
+      setSearchParams({}, { replace: true })
+    } else if (sub === 'cancelled') {
+      toast('Paiement annulé', { icon: 'ℹ️' })
+      setSearchParams({}, { replace: true })
+    }
+  }, [searchParams, setSearchParams, refreshUser])
+
+  // Refresh user (plan, credits) when entering Settings and when tab gets focus
+  useEffect(() => {
+    refreshUser()
+    const handleFocus = () => refreshUser()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [refreshUser])
+
+  // Load plans from API
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const response = await api.get('/plans')
+        setPlans(response.data.plans || [])
+      } catch (error) {
+        console.error('Error loading plans:', error)
+        setPlans([])
+      } finally {
+        setLoadingPlans(false)
+      }
+    }
+    loadPlans()
+  }, [])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const response = await api.put('/auth/me', formData)
+      updateUser(response.data.user)
+      toast.success('Profil mis à jour')
+    } catch (error) {
+      toast.error('Erreur lors de la mise à jour')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleExportData = async () => {
+    if (exportingData) return
+    setExportingData(true)
+    try {
+      const response = await api.get('/users/me/export', { responseType: 'blob' })
+      const blob = new Blob([response.data], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const date = new Date().toISOString().slice(0, 10)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `seven-t-data-export-${date}.json`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      toast.success('Export des données prêt')
+    } catch (error) {
+      toast.error('Erreur lors de l’export des données')
+    } finally {
+      setExportingData(false)
+    }
+  }
+
+  // Helper functions to format plan data
+  const formatPrice = (plan) => {
+    if (plan.price === -1) return 'Sur devis'
+    if (plan.price === 0) return 'Gratuit'
+    return `${plan.price.toLocaleString()} ${plan.priceCurrency || 'FCFA'}`
+  }
+
+  const formatLimit = (value) => {
+    if (value === -1) return 'Illimité'
+    return value.toLocaleString()
+  }
+
+  const getPlanFeatures = (plan) => {
+    const features = []
+    if (plan.limits) {
+      features.push(`${formatLimit(plan.limits.agents)} agent(s) IA`)
+      features.push(`${formatLimit(plan.limits.whatsapp_accounts)} compte(s) WhatsApp`)
+      features.push(`${formatLimit(plan.limits.credits_per_month)} messages IA / mois`)
+    }
+    if (plan.features) {
+      if (plan.features.analytics) features.push('Analytics')
+      if (plan.features.priority_support) features.push('Support prioritaire')
+      if (plan.features.api_access) features.push('Accès API')
+      if (plan.features.human_transfer) features.push('Transfert humain')
+    }
+    return features
+  }
+
+  const currentPlan = plans.find(p => p.id === user?.plan) || plans[0] || {
+    name: 'Gratuit',
+    limits: { credits_per_month: 100 }
+  }
+
+  const handleChoosePlan = async (plan) => {
+    if (plan.id === 'free' || plan.price === 0) return
+    if (!plan.stripePriceId) {
+      toast('Contactez-nous pour ce plan', { icon: '📧' })
+      return
+    }
+    setCheckoutLoadingPlanId(plan.id)
+    try {
+      const { data } = await api.post('/subscription/create-checkout-session', { planId: plan.id })
+      if (data?.url) window.location.href = data.url
+      else toast.error('Lien de paiement indisponible')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors du paiement')
+    } finally {
+      setCheckoutLoadingPlanId(null)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    try {
+      const { data } = await api.post('/subscription/create-portal-session')
+      if (data?.url) window.location.href = data.url
+      else toast.error('Portail indisponible')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
+  return (
+    <div className="max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-display font-bold text-gray-100">Paramètres</h1>
+        <p className="text-gray-400">Gérez votre compte et votre abonnement</p>
+      </div>
+
+      {/* Profile */}
+      <form onSubmit={handleSubmit} className="card p-6 mb-6">
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Profil</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Email
+            </label>
+            <div className="px-3 py-2 bg-space-800 border border-space-700 rounded-xl text-gray-500">
+              {user?.email}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Nom complet
+              </label>
+              <div className="input-with-icon">
+                <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
+                  <User className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Entreprise
+              </label>
+              <div className="input-with-icon">
+                <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
+                  <Building className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Modèle IA pour images et notes vocales
+            </label>
+            <select
+              value={['models/gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(formData.media_model) ? formData.media_model : 'gemini-1.5-flash'}
+              onChange={(e) => setFormData({ ...formData, media_model: e.target.value })}
+              className="input-dark w-full max-w-md"
+            >
+              <option value="models/gemini-2.5-flash">Gemini 2.5 Flash - Dernier modèle ⭐</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro - Plus précis</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <Image className="w-3.5 h-3.5" /><Mic className="w-3.5 h-3.5" />
+              Valeur par défaut pour l&apos;analyse des photos et des notes vocales. Chaque agent peut avoir le sien.
+            </p>
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+          </button>
+        </div>
+      </form>
+
+      {/* Abonnement et usage */}
+      <div className="card p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2">
+            <Crown className="w-5 h-5 text-gold-400" />
+            Abonnement et usage
+          </h2>
+          <button
+            type="button"
+            onClick={() => refreshUser()}
+            className="text-sm text-gray-400 hover:text-gray-200 inline-flex items-center gap-1.5 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Actualiser
+          </button>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <p className="text-sm text-gray-500">Plan actuel</p>
+            <p className="text-xl font-display font-semibold text-gray-100">{currentPlan.name}</p>
+          </div>
+          <div className="flex flex-col sm:items-end gap-2">
+            {user?.stripe_customer_id && (
+              <button
+                type="button"
+                onClick={handleManageSubscription}
+                disabled={portalLoading}
+                className="text-sm text-violet-400 hover:text-violet-300 inline-flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <CreditCard className="w-4 h-4" />
+                {portalLoading ? 'Chargement...' : 'Gérer mon abonnement'}
+              </button>
+            )}
+            <div className="text-left sm:text-right">
+              <p className="text-sm text-gray-500">Messages IA restants</p>
+              <p className="text-2xl font-display font-bold text-violet-400 flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                {user?.credits ?? 0}
+              </p>
+            </div>
+          </div>
+        </div>
+        {currentPlan.limits?.credits_per_month > 0 && (
+          <div className="mb-3">
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-400">Utilisation ce mois</span>
+              <span className="text-gray-300">
+                {Math.max(0, (currentPlan.limits?.credits_per_month || 0) - (user?.credits ?? 0))} / {currentPlan.limits?.credits_per_month || 0} messages IA
+              </span>
+            </div>
+            <div className="w-full bg-space-700 rounded-full h-2">
+              <div
+                className="bg-violet-500 h-2 rounded-full transition-all"
+                style={{ width: `${Math.min(100, (((currentPlan.limits?.credits_per_month || 0) - (user?.credits ?? 0)) / (currentPlan.limits?.credits_per_month || 1)) * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+        <p className="text-xs text-gray-500">
+          1 crédit = 1 réponse IA. Les limites de votre plan peuvent être mises à jour par l&apos;administrateur.
+        </p>
+      </div>
+
+      {/* Préférences */}
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+          <Coins className="w-5 h-5 text-gold-400" />
+          Préférences
+        </h2>
+        <div className="space-y-6">
+          <div>
+            <p className="text-sm font-medium text-gray-300 mb-2">Devise</p>
+            <p className="text-gray-400 text-sm mb-3">
+              Choisissez la devise pour l&apos;affichage des prix de vos produits
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {Object.values(CURRENCIES).map((curr) => (
+                <button
+                  key={curr.code}
+                  type="button"
+                  onClick={() => setCurrency(curr.code)}
+                  className={`p-4 rounded-xl border-2 transition-all ${
+                    currency === curr.code
+                      ? 'border-violet-500 bg-violet-500/10'
+                      : 'border-space-700 bg-space-800/50 hover:border-space-600'
+                  }`}
+                >
+                  <div className="text-2xl font-bold text-gold-400 mb-1">{curr.symbol}</div>
+                  <div className="text-sm font-medium text-gray-100">{curr.code}</div>
+                  <div className="text-xs text-gray-500 truncate">{curr.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Intelligence artificielle */}
+      <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <Sparkles className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-medium text-gray-100">Intelligence artificielle incluse</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Votre abonnement inclut l&apos;accès à <strong className="text-violet-400">Google Gemini</strong> et <strong className="text-gold-400">OpenAI GPT-4</strong>.
+              Aucune configuration requise.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Données et confidentialité */}
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+          <Download className="w-5 h-5 text-blue-400" />
+          Données et confidentialité
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Téléchargez une copie complète de vos données (agents, conversations, messages, produits, commandes, etc.).
+        </p>
+        <button
+          type="button"
+          onClick={handleExportData}
+          disabled={exportingData}
+          className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
+        >
+          <Download className="w-4 h-4" />
+          {exportingData ? 'Export en cours...' : 'Exporter mes données'}
+        </button>
+      </div>
+
+      {/* Changer de plan */}
+      <div className="mb-6">
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2">Changer de plan</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Choisissez un plan payant pour débloquer plus d&apos;agents, de crédits et de fonctionnalités. Paiement sécurisé par Stripe.
+        </p>
+        {loadingPlans ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+            <span className="ml-2 text-gray-400">Chargement des plans...</span>
+          </div>
+        ) : plans.length === 0 ? (
+          <p className="text-gray-500 text-center py-10">Aucun plan disponible</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {plans.map((plan, index) => {
+              const isCurrentPlan = plan.id === user?.plan || (plan.id === 'free' && !user?.plan)
+              const isPopular = index === 1 // Second plan is usually popular
+              const planFeatures = getPlanFeatures(plan)
+              
+              return (
+                <div 
+                  key={plan.id}
+                  className={`card p-5 relative ${
+                    isCurrentPlan
+                      ? 'border-gold-400' 
+                      : isPopular 
+                        ? 'border-violet-500' 
+                        : ''
+                  }`}
+                >
+                  {isPopular && !isCurrentPlan && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-500 text-white text-xs px-3 py-1 rounded-full">
+                      Populaire
+                    </span>
+                  )}
+                  {isCurrentPlan && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold-400 text-space-950 text-xs px-3 py-1 rounded-full font-medium">
+                      Actuel
+                    </span>
+                  )}
+                  <h3 className="font-display font-semibold text-lg text-gray-100">{plan.name}</h3>
+                  {plan.description && (
+                    <p className="text-xs text-gray-500 mt-1">{plan.description}</p>
+                  )}
+                  <div className="mt-2 mb-4">
+                    <span className="text-2xl font-display font-bold text-gradient">{formatPrice(plan)}</span>
+                    <span className="text-gray-500 text-sm">/mois</span>
+                  </div>
+                  <ul className="space-y-2 mb-4">
+                    {planFeatures.slice(0, 6).map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-2 text-sm">
+                        <div className="w-4 h-4 rounded-full bg-gold-400/20 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-2.5 h-2.5 text-gold-400" />
+                        </div>
+                        <span className="text-gray-400">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    disabled={isCurrentPlan || (plan.id === 'free' || plan.price === 0)}
+                    onClick={() => handleChoosePlan(plan)}
+                    className={`w-full py-2 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 ${
+                      isCurrentPlan
+                        ? 'bg-space-800 text-gray-500 cursor-not-allowed'
+                        : plan.id === 'free' || plan.price === 0
+                          ? 'bg-space-800 text-gray-500 cursor-not-allowed'
+                          : checkoutLoadingPlanId === plan.id
+                            ? 'bg-space-700 text-gray-400'
+                            : isPopular
+                              ? 'bg-violet-500 text-white hover:bg-violet-600'
+                              : 'bg-space-800 text-gray-300 hover:bg-space-700'
+                    }`}
+                  >
+                    {checkoutLoadingPlanId === plan.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Redirection...
+                      </>
+                    ) : isCurrentPlan ? (
+                      'Plan actuel'
+                    ) : plan.id === 'free' || plan.price === 0 ? (
+                      'Gratuit'
+                    ) : (
+                      'Choisir'
+                    )}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

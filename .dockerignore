@@ -1,0 +1,60 @@
+# ==========================================
+# SEVEN T - Docker Ignore
+# Files to exclude from Docker build context
+# ==========================================
+
+# Dependencies
+node_modules
+frontend/node_modules
+*/node_modules
+
+# Build outputs
+dist
+build
+*.log
+
+# Development files
+.git
+.gitignore
+.github
+.vscode
+.idea
+*.md
+!README.md
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Data directories (mounted as volumes)
+data/
+sessions/
+*.sqlite
+*.db
+
+# Tests
+coverage/
+*.test.js
+*.spec.js
+__tests__
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Docker files (avoid recursion)
+Dockerfile
+docker-compose*.yml
+.dockerignore

@@ -1,0 +1,299 @@
+import express from 'express';
+import { authenticateToken } from '../middleware/auth.js';
+import { orderService, ORDER_STATUSES } from '../services/orders.js';
+import { createPaymentLink } from './payments.js';
+
+const router = express.Router();
+
+// Get all orders
+router.get('/', authenticateToken, async (req, res) => {
+    try {
+        const status = req.query.status || null;
+        const limit = parseInt(req.query.limit) || 50;
+        
+        const orders = await orderService.getOrders(req.user.id, { status, limit });
+        res.json({ orders });
+    } catch (error) {
+        console.error('Get orders error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Get order stats
+router.get('/stats', authenticateToken, async (req, res) => {
+    try {
+        const stats = await orderService.getStats(req.user.id);
+        res.json(stats);
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Get detailed analytics
+router.get('/analytics', authenticateToken, async (req, res) => {
+    try {
+        const { period = '30d' } = req.query; // 7d, 30d, 90d, all
+        const analytics = await orderService.getAnalytics(req.user.id, period);
+        res.json(analytics);
+    } catch (error) {
+        console.error('Get analytics error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Get pending orders count
+router.get('/pending-count', authenticateToken, async (req, res) => {
+    try {
+        const count = await orderService.getPendingCount(req.user.id);
+        res.json({ count });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Get order by ID
+router.get('/:id', authenticateToken, async (req, res) => {
+    try {
+        const order = await orderService.getOrderById(req.params.id, req.user.id);
+        if (!order) {
+            return res.status(404).json({ error: 'Commande non trouvée' });
+        }
+        res.json({ order });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Create order manually
+router.post('/', authenticateToken, async (req, res) => {
+    try {
+        const { customerName, customerPhone, items, notes, currency } = req.body;
+        
+        if (!customerName || !items || items.length === 0) {
+            return res.status(400).json({ error: 'Nom du client et articles requis' });
+        }
+
+        const order = await orderService.createOrder(req.user.id, {
+            customerName,
+            customerPhone,
+            items,
+            notes,
+            currency
+        });
+
+        if (!order) {
+            return res.status(500).json({ error: 'Erreur lors de la création' });
+        }
+
+        res.status(201).json({ order });
+    } catch (error) {
+        console.error('Create order error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Validate order
+router.post('/:id/validate', authenticateToken, async (req, res) => {
+    try {
+        const result = await orderService.validateOrder(req.params.id, req.user.id, req.user.name);
+        
+        if (!result.success) {
+            return res.status(400).json({ 
+                error: result.error,
+                stockIssues: result.stockIssues 
+            });
+        }
+
+        res.json({ success: true, order: result.order });
+    } catch (error) {
+        console.error('Validate order error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Reject order
+router.post('/:id/reject', authenticateToken, async (req, res) => {
+    try {
+        const { reason } = req.body;
+        const result = await orderService.rejectOrder(req.params.id, req.user.id, reason);
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Reject order error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Create payment link from order (for sending to client - e.g. WhatsApp)
+router.post('/:id/payment-link', authenticateToken, async (req, res) => {
+    try {
+        const order = await orderService.getOrderById(req.params.id, req.user.id);
+        if (!order) {
+            return res.status(404).json({ error: 'Commande non trouvée' });
+        }
+        if (order.status === 'rejected' || order.status === 'cancelled') {
+            return res.status(400).json({ error: 'Impossible de créer un lien pour cette commande' });
+        }
+
+        const itemsList = (order.items || [])
+            .map(i => `${i.product_name || 'Article'} x${i.quantity || 1}`)
+            .join(', ');
+        const description = itemsList
+            ? `Commande: ${itemsList}`
+            : `Commande #${(order.id || '').slice(0, 8)}`;
+
+        const provider = req.body.provider || 'manual';
+        const payment = await createPaymentLink(req.user.id, {
+            amount: order.total_amount,
+            currency: order.currency || 'XOF',
+            description,
+            order_id: order.id,
+            conversation_id: order.conversation_id || null,
+            provider,
+            expires_in_hours: 24
+        });
+
+        if (!payment) {
+            return res.status(500).json({ error: 'Erreur lors de la création du lien de paiement' });
+        }
+
+        const customerName = order.customer_name || 'Client';
+        const message = `Bonjour ${customerName},
+
+Voici votre lien de paiement pour la commande :
+
+📝 ${description}
+💵 Montant total : *${Number(order.total_amount).toLocaleString()} ${order.currency || 'XOF'}*
+
+🔗 Payer en ligne (lien sécurisé) :
+${payment.payment_url}
+
+⏰ Ce lien est valable 24h.`;
+
+        res.status(201).json({
+            payment: {
+                id: payment.id,
+                short_id: payment.short_id,
+                payment_url: payment.payment_url,
+                amount: payment.amount,
+                currency: payment.currency,
+                description: payment.description
+            },
+            message,
+            url: payment.payment_url
+        });
+    } catch (error) {
+        console.error('Create order payment link error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Get product logs
+router.get('/products/:productId/logs', authenticateToken, async (req, res) => {
+    try {
+        const logs = await orderService.getProductLogs(req.params.productId, req.user.id);
+        res.json({ logs });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Get all product logs
+router.get('/logs/all', authenticateToken, async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 100;
+        const logs = await orderService.getAllProductLogs(req.user.id, limit);
+        res.json({ logs });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Delete a single order
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const result = await orderService.deleteOrder(req.params.id, req.user.id);
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ success: true, message: 'Commande supprimée' });
+    } catch (error) {
+        console.error('Delete order error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression' });
+    }
+});
+
+// Bulk delete orders by status
+router.delete('/bulk/:status', authenticateToken, async (req, res) => {
+    try {
+        const { status } = req.params;
+        const validStatuses = ['pending', 'validated', 'rejected', 'cancelled', 'completed'];
+        
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Statut invalide' });
+        }
+
+        const result = await orderService.deleteOrdersByStatus(req.user.id, status);
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ success: true, deleted: result.deleted, message: `${result.deleted} commande(s) supprimée(s)` });
+    } catch (error) {
+        console.error('Bulk delete orders error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression' });
+    }
+});
+
+// Cleanup old orders
+router.post('/cleanup', authenticateToken, async (req, res) => {
+    try {
+        const { daysOld = 30, statuses = ['rejected', 'cancelled'] } = req.body;
+        
+        const result = await orderService.cleanupOldOrders(req.user.id, daysOld, statuses);
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ 
+            success: true, 
+            deleted: result.deleted,
+            message: `${result.deleted} ancienne(s) commande(s) nettoyée(s)`
+        });
+    } catch (error) {
+        console.error('Cleanup orders error:', error);
+        res.status(500).json({ error: 'Erreur lors du nettoyage' });
+    }
+});
+
+// Clear product logs
+router.delete('/logs/clear', authenticateToken, async (req, res) => {
+    try {
+        const { daysOld } = req.query;
+        
+        const result = await orderService.clearProductLogs(req.user.id, daysOld ? parseInt(daysOld) : null);
+        
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ 
+            success: true, 
+            deleted: result.deleted,
+            message: `${result.deleted} log(s) supprimé(s)`
+        });
+    } catch (error) {
+        console.error('Clear logs error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression des logs' });
+    }
+});
+
+export default router;
