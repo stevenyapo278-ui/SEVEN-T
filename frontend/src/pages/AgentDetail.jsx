@@ -216,6 +216,9 @@ export default function AgentDetail() {
     }
   }
 
+  const pageTitle = agent?.name ? `${agent.name} – Agents` : 'Agent'
+  usePageTitle(pageTitle)
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -223,8 +226,6 @@ export default function AgentDetail() {
       </div>
     )
   }
-
-  usePageTitle(agent?.name ? `${agent.name} – Agents` : 'Agent')
 
   return (
     <div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { 
   BookOpen, 
   Plus, 
@@ -39,6 +40,8 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5" }) => {
 
 export default function KnowledgeBase() {
   const { showConfirm } = useConfirm()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -110,18 +113,27 @@ export default function KnowledgeBase() {
     totalChars: items.reduce((sum, i) => sum + (i.content?.length || 0), 0)
   }
 
+  const patternDark = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
+  const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
+
   return (
     <div className="space-y-6">
-      {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-950 border border-space-700 p-8">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5"></div>
+      {/* Header Hero - theme-aware */}
+      <div className={`relative overflow-hidden rounded-3xl border p-4 sm:p-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-950 border-space-700' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? patternDark : patternLight})` }}
+          aria-hidden
+        />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2">
+              <h1 className={`text-3xl font-display font-bold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 Base de Connaissances
               </h1>
-              <p className="text-gray-400">
+              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                 Centralisez les informations partagées par tous vos agents
               </p>
             </div>
@@ -134,71 +146,71 @@ export default function KnowledgeBase() {
             </button>
           </div>
 
-          {/* Stats */}
+          {/* Stats - theme-aware */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-violet-500/20 rounded-xl">
                   <Database className="w-5 h-5 text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.total}</p>
-                  <p className="text-xs text-gray-500">Total</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Total</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-violet-500/20 rounded-xl">
                   <FileText className="w-5 h-5 text-violet-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.text}</p>
-                  <p className="text-xs text-gray-500">Texte</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.text}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Texte</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-red-500/20 rounded-xl">
                   <FileText className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.pdf}</p>
-                  <p className="text-xs text-gray-500">PDF</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.pdf}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>PDF</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-red-500/20 rounded-xl">
                   <Video className="w-5 h-5 text-red-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.youtube}</p>
-                  <p className="text-xs text-gray-500">YouTube</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.youtube}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>YouTube</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/20 rounded-xl">
                   <Globe className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.website}</p>
-                  <p className="text-xs text-gray-500">Sites web</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.website}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Sites web</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gold-400/20 rounded-xl">
                   <BookOpen className="w-5 h-5 text-gold-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-100">{(stats.totalChars / 1000).toFixed(0)}k</p>
-                  <p className="text-xs text-gray-500">Caractères</p>
+                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{(stats.totalChars / 1000).toFixed(0)}k</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Caractères</p>
                 </div>
               </div>
             </div>
@@ -206,22 +218,26 @@ export default function KnowledgeBase() {
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - theme-aware */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
           <input
             type="text"
             placeholder="Rechercher dans la base de connaissances..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-dark w-full pl-12"
+            className={`w-full pl-12 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500/50 ${
+              isDark ? 'input-dark bg-space-800 border-space-700' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+            }`}
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="input-dark min-w-[150px]"
+          className={`min-w-[150px] py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500/20 ${
+            isDark ? 'input-dark bg-space-800 border-space-700' : 'bg-white border-gray-300 text-gray-900'
+          }`}
         >
           <option value="all">Tous types</option>
           <option value="text">Texte</option>
@@ -253,13 +269,13 @@ export default function KnowledgeBase() {
         </div>
       ) : !loadError && filteredItems.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-20 h-20 bg-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="w-10 h-10 text-gray-600" />
+          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
+            <BookOpen className={`w-10 h-10 ${isDark ? 'text-gray-600' : 'text-gray-500'}`} />
           </div>
-          <h3 className="text-xl font-semibold text-gray-300 mb-2">
+          <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             {items.length === 0 ? 'Base de connaissances vide' : 'Aucun résultat'}
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className={`mb-6 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
             {items.length === 0 
               ? 'Ajoutez du contenu pour enrichir vos agents IA'
               : 'Essayez de modifier vos filtres de recherche'}
@@ -281,21 +297,23 @@ export default function KnowledgeBase() {
             return (
               <div 
                 key={item.id} 
-                className="card p-4 hover:border-space-600 transition-colors"
+                className={`p-4 rounded-2xl border transition-colors ${
+                  isDark ? 'card hover:border-space-600 bg-space-800/30 border-space-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className="p-2 bg-space-800 rounded-xl flex-shrink-0">
+                  <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
                     <KnowledgeTypeIcon type={item.type} className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <div>
-                        <h3 className="font-medium text-gray-100">{item.title}</h3>
+                        <h3 className={`font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{item.title}</h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs px-2 py-0.5 bg-space-800 text-gray-400 rounded-full">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${isDark ? 'bg-space-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
                             {getTypeLabel(item.type)}
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                             {item.content?.length?.toLocaleString()} caractères
                           </span>
                           {metadata?.sourceUrl && (
@@ -315,7 +333,7 @@ export default function KnowledgeBase() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
-                          className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+                          className={`p-1.5 transition-colors ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
                         >
                           {expandedItem === item.id ? (
                             <ChevronUp className="w-4 h-4" />
@@ -334,15 +352,15 @@ export default function KnowledgeBase() {
                     
                     {/* Preview */}
                     {expandedItem !== item.id && (
-                      <p className="text-sm text-gray-500 line-clamp-2 mt-2">
+                      <p className={`text-sm line-clamp-2 mt-2 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                         {item.content}
                       </p>
                     )}
                     
                     {/* Full content */}
                     {expandedItem === item.id && (
-                      <div className="mt-3 p-4 bg-space-800 rounded-xl max-h-80 overflow-y-auto">
-                        <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans">
+                      <div className={`mt-3 p-4 rounded-xl max-h-80 overflow-y-auto ${isDark ? 'bg-space-800' : 'bg-gray-50'}`}>
+                        <pre className={`text-sm whitespace-pre-wrap font-sans ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                           {item.content}
                         </pre>
                       </div>
