@@ -19,20 +19,7 @@ import {
   WifiOff,
   CheckCircle2
 } from 'lucide-react'
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts'
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -41,7 +28,6 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [agents, setAgents] = useState([])
   const [quotas, setQuotas] = useState(null)
-  const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(true)
   const [showWelcome, setShowWelcome] = useState(false)
 
@@ -96,16 +82,14 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
+      const [statsRes, agentsRes, quotasRes] = await Promise.all([
         api.get('/stats/dashboard'),
         api.get('/agents'),
-        api.get('/agents/quotas').catch(() => ({ data: null })),
-        api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } }))
+        api.get('/agents/quotas').catch(() => ({ data: null }))
       ])
       setStats(statsRes.data.stats)
       setAgents(agentsRes.data.agents)
       setQuotas(quotasRes.data)
-      setChartData(weeklyRes.data.data || [])
     } catch (error) {
       console.error('Error loading dashboard:', error)
     } finally {
@@ -313,68 +297,40 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts Row */}
+      <div className="flex justify-end">
+        <Link
+          to="/dashboard/analytics"
+          className="text-sm text-gray-400 hover:text-gold-400 transition-colors flex items-center gap-1"
+        >
+          Évolution et détails
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      {/* Charts Row: Analytics CTA + Agent Status */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Messages Chart */}
-        <div className="lg:col-span-2 card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-lg font-display font-semibold text-gray-100">Activité de la semaine</h2>
-              <p className="text-sm text-gray-500">Messages et conversations</p>
+        {/* Analytics détaillés - évite doublon avec page Analytics */}
+        <div className="lg:col-span-2">
+          <Link
+            to="/dashboard/analytics"
+            className="card p-6 block h-full border border-space-700 hover:border-gold-400/40 bg-gradient-to-br from-space-800/80 to-space-800/40 transition-colors"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gold-400/20 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-6 h-6 text-gold-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg font-display font-semibold text-gray-100 mb-1">Analytics détaillés</h2>
+                <p className="text-sm text-gray-400 mb-4">
+                  Messages dans le temps, performances par agent, heures de pointe, tunnel de conversion et top produits.
+                </p>
+                <span className="inline-flex items-center gap-2 text-sm font-medium text-gold-400">
+                  Voir les analytics
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
             </div>
-          </div>
-          
-          {chartData.length > 0 ? (
-            <div className="w-full min-h-[250px]" style={{ height: 250, minWidth: 0 }}>
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorConversations" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2d2d44" />
-                <XAxis dataKey="name" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1a1a2e', 
-                    border: '1px solid #2d2d44',
-                    borderRadius: '8px',
-                    color: '#e5e5e5'
-                  }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="messages" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorMessages)" 
-                  name="Messages"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="conversations" 
-                  stroke="#22c55e" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorConversations)" 
-                  name="Conversations"
-                />
-              </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-[250px] flex items-center justify-center text-gray-500">
-              Pas encore de données
-            </div>
-          )}
+          </Link>
         </div>
 
         {/* Agent Status Pie */}
