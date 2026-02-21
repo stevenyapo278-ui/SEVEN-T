@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { AgentCreationWizard } from '../components/Onboarding'
 import { 
   Bot, 
@@ -55,6 +56,8 @@ const AVAILABLE_TAGS = [
 
 export default function Agents() {
   const { showConfirm } = useConfirm()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [searchParams, setSearchParams] = useSearchParams()
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -270,9 +273,15 @@ export default function Agents() {
 
   return (
     <div className="max-w-7xl mx-auto w-full min-w-0">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-800 border border-space-700/50 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+      {/* Hero Header - theme-aware */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
         
         <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -280,11 +289,11 @@ export default function Agents() {
               <div className="p-2 sm:p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
                 <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-white truncate">Mes Agents</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Mes Agents</h1>
               {quotas && (
                 <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ${
                   quotas.plan.name === 'free' 
-                    ? 'bg-gray-500/20 text-gray-400' 
+                    ? isDark ? 'bg-gray-500/20 text-gray-400' : 'bg-gray-200 text-gray-600'
                     : 'bg-gold-400/20 text-gold-400'
                 }`}>
                   <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1" />
@@ -292,13 +301,15 @@ export default function Agents() {
                 </span>
               )}
             </div>
-            <p className="text-gray-400 text-sm sm:text-lg">Gérez vos assistants IA WhatsApp intelligents</p>
+            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Gérez vos assistants IA WhatsApp intelligents</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={() => loadAgents()}
-              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white rounded-xl transition-all duration-200 min-h-[44px]"
+              className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-200 min-h-[44px] ${
+                isDark ? 'bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700 hover:text-gray-900'
+              }`}
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -317,49 +328,49 @@ export default function Agents() {
           </div>
         </div>
 
-        {/* Stats Row */}
+        {/* Stats Row - theme-aware */}
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6 lg:mt-8">
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-space-700/50 min-w-0">
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-violet-500/10 rounded-lg flex-shrink-0">
                 <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-lg sm:text-2xl font-bold text-white truncate">{agents.length}</p>
-                <p className="text-xs sm:text-sm text-gray-500 truncate">Agents ({activeAgents} actifs)</p>
+                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents ({activeAgents} actifs)</p>
               </div>
             </div>
           </div>
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-space-700/50 min-w-0">
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
                 <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-lg sm:text-2xl font-bold text-white truncate">{connectedAgents}</p>
-                <p className="text-xs sm:text-sm text-gray-500 truncate">Connectés</p>
+                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{connectedAgents}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Connectés</p>
               </div>
             </div>
           </div>
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-space-700/50 min-w-0">
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
                 <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-lg sm:text-2xl font-bold text-white truncate">{totalMessages.toLocaleString()}</p>
-                <p className="text-xs sm:text-sm text-gray-500 truncate">Messages</p>
+                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalMessages.toLocaleString()}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
               </div>
             </div>
           </div>
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-space-700/50 min-w-0">
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 sm:p-2 bg-gold-400/10 rounded-lg flex-shrink-0">
                 <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-gold-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-lg sm:text-2xl font-bold text-white truncate">{quotas?.credits || 0}</p>
-                <p className="text-xs sm:text-sm text-gray-500 truncate">Crédits</p>
+                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{quotas?.credits || 0}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Crédits</p>
               </div>
             </div>
           </div>
@@ -462,19 +473,21 @@ export default function Agents() {
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4 sm:mb-6">
         {/* Search - full width on mobile */}
         <div className="relative w-full sm:flex-1 sm:min-w-[180px] sm:max-w-md">
-          <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-500 pointer-events-none" />
+          <Search className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
           <input
             type="text"
             placeholder="Rechercher un agent..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all text-sm sm:text-base min-h-[44px]"
+            className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 border rounded-xl focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all text-sm sm:text-base min-h-[44px] ${
+              isDark ? 'bg-space-800 border-space-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+            }`}
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 p-1 min-w-[32px] min-h-[32px] flex items-center justify-center"
+              className={`absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-1 min-w-[32px] min-h-[32px] flex items-center justify-center ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
               aria-label="Effacer"
             >
               <X className="w-4 h-4" />
@@ -482,8 +495,8 @@ export default function Agents() {
           )}
         </div>
 
-        {/* Filter Pills - scroll horizontal on small screens */}
-        <div className="flex items-center gap-1 bg-space-800 rounded-xl p-1 overflow-x-auto overflow-y-hidden scrollbar-none w-full sm:w-auto min-w-0 -mx-1 px-1 sm:mx-0 sm:px-0">
+        {/* Filter Pills - theme-aware: always visible text in light mode */}
+        <div className={`flex items-center gap-1 rounded-xl p-1 overflow-x-auto overflow-y-hidden scrollbar-none w-full sm:w-auto min-w-0 -mx-1 px-1 sm:mx-0 sm:px-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
           {[
             { id: 'all', label: 'Tous', icon: null },
             { id: 'favorites', label: 'Favoris', icon: Star },
@@ -496,8 +509,10 @@ export default function Agents() {
               onClick={() => setFilter(f.id)}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 min-h-[40px] ${
                 filter === f.id 
-                  ? 'bg-violet-500/20 text-violet-400' 
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? (isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-500/15 text-violet-700')
+                  : isDark 
+                    ? 'text-gray-400 hover:text-gray-200' 
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-200'
               }`}
             >
               {f.icon && <f.icon className="w-3.5 h-3.5 flex-shrink-0" />}
@@ -511,7 +526,9 @@ export default function Agents() {
           <div className="relative">
             <button
               onClick={() => setShowSortMenu(!showSortMenu)}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-space-800 border border-space-700 rounded-xl text-gray-400 hover:text-white transition-colors min-h-[44px] text-sm"
+              className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 border rounded-xl transition-colors min-h-[44px] text-sm ${
+                isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-300 text-gray-700 hover:text-gray-900'
+              }`}
             >
               <ArrowUpDown className="w-4 h-4 flex-shrink-0" />
               <span>Trier</span>
@@ -550,7 +567,7 @@ export default function Agents() {
             className={`p-2.5 rounded-xl border transition-all min-h-[44px] min-w-[44px] flex items-center justify-center ${
               bulkMode 
                 ? 'bg-violet-500/20 border-violet-500/30 text-violet-400' 
-                : 'bg-space-800 border-space-700 text-gray-500 hover:text-white'
+                : isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-300 text-gray-600 hover:text-gray-900'
             }`}
             title="Mode sélection multiple"
             aria-label="Mode sélection multiple"
@@ -559,11 +576,11 @@ export default function Agents() {
           </button>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-space-800 rounded-xl p-1 border border-space-700">
+          <div className={`flex items-center rounded-xl p-1 border ${isDark ? 'bg-space-800 border-space-700' : 'bg-gray-100 border-gray-300'}`}>
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
-                viewMode === 'grid' ? 'bg-space-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                viewMode === 'grid' ? (isDark ? 'bg-space-700 text-white' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900')
               }`}
               aria-label="Vue grille"
             >
@@ -572,7 +589,7 @@ export default function Agents() {
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
-                viewMode === 'list' ? 'bg-space-700 text-white' : 'text-gray-500 hover:text-gray-300'
+                viewMode === 'list' ? (isDark ? 'bg-space-700 text-white' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900')
               }`}
               aria-label="Vue liste"
             >
@@ -637,11 +654,12 @@ export default function Agents() {
               onToggleSelect={() => toggleSelectAgent(agent.id)}
               bulkMode={bulkMode}
               index={index}
+              isDark={isDark}
             />
           ))}
         </div>
       ) : (
-        <div className="bg-space-800/50 border border-space-700/50 rounded-xl sm:rounded-2xl overflow-hidden min-w-0">
+        <div className={`rounded-xl sm:rounded-2xl overflow-hidden min-w-0 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
           {filteredAgents.map((agent, index) => (
             <AgentListItem 
               key={agent.id} 
@@ -653,6 +671,7 @@ export default function Agents() {
               onToggleSelect={() => toggleSelectAgent(agent.id)}
               bulkMode={bulkMode}
               isLast={index === filteredAgents.length - 1}
+              isDark={isDark}
             />
           ))}
         </div>
@@ -694,7 +713,7 @@ export default function Agents() {
   )
 }
 
-function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, index }) {
+function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, index, isDark = true }) {
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
   const [showMenu, setShowMenu] = useState(false)
@@ -899,25 +918,25 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
           </div>
         </div>
 
-        <p className="text-gray-500 text-sm mb-4 line-clamp-2 min-h-[40px]">
+        <p className={`text-sm mb-4 line-clamp-2 min-h-[40px] ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
           {agent.description || 'Aucune description'}
         </p>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - theme-aware labels */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-space-700/30 rounded-xl p-3">
-            <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+          <div className={isDark ? 'bg-space-700/30 rounded-xl p-3' : 'bg-gray-100 rounded-xl p-3'}>
+            <div className={`flex items-center gap-2 text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
               <MessageSquare className="w-3.5 h-3.5" />
               Conversations
             </div>
-            <p className="text-gray-100 font-bold text-lg">{agent.total_conversations || 0}</p>
+            <p className={`font-bold text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.total_conversations || 0}</p>
           </div>
-          <div className="bg-space-700/30 rounded-xl p-3">
-            <div className="flex items-center gap-2 text-gray-500 text-xs mb-1">
+          <div className={isDark ? 'bg-space-700/30 rounded-xl p-3' : 'bg-gray-100 rounded-xl p-3'}>
+            <div className={`flex items-center gap-2 text-xs mb-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
               <TrendingUp className="w-3.5 h-3.5" />
               Messages
             </div>
-            <p className="text-gray-100 font-bold text-lg">{agent.total_messages || 0}</p>
+            <p className={`font-bold text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.total_messages || 0}</p>
           </div>
         </div>
 
@@ -967,7 +986,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
   )
 }
 
-function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, isLast }) {
+function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, isLast, isDark = true }) {
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
   const [toggling, setToggling] = useState(false)
@@ -1077,13 +1096,13 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
         <p className="text-sm text-gray-500 truncate">{agent.description || 'Aucune description'}</p>
       </div>
 
-      <div className="hidden md:flex items-center gap-8 text-sm text-gray-400">
+      <div className={`hidden md:flex items-center gap-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
         <div className="text-center min-w-[80px]">
-          <p className="font-semibold text-gray-100">{agent.total_conversations || 0}</p>
+          <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.total_conversations || 0}</p>
           <p className="text-xs">Conversations</p>
         </div>
         <div className="text-center min-w-[80px]">
-          <p className="font-semibold text-gray-100">{agent.total_messages || 0}</p>
+          <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.total_messages || 0}</p>
           <p className="text-xs">Messages</p>
         </div>
       </div>

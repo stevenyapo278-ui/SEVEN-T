@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTheme } from '../contexts/ThemeContext'
 import api from '../services/api'
 import { MessageSquare, Mail, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -13,6 +14,8 @@ const POLL_INTERVAL_MS = 2000
 const POLL_TIMEOUT_MS = 5 * 60 * 1000 // 5 min max
 
 export default function Tools() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [searchParams, setSearchParams] = useSearchParams()
   const [tools, setTools] = useState([])
   const [usage, setUsage] = useState({})
@@ -246,16 +249,22 @@ export default function Tools() {
 
   return (
     <div className="max-w-7xl mx-auto w-full min-w-0 px-0 sm:px-2 lg:px-4">
-      {/* Hero Header - aligned with Agents page */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-800 border border-space-700/50 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+      {/* Hero Header - theme-aware, motif adapté au thème */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
         <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
               <div className="p-2 sm:p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
                 <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-white">Outils</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Outils</h1>
               {quotas?.plan && (
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${quotas.plan.name === 'free' ? 'bg-gray-500/20 text-gray-400' : 'bg-gold-400/20 text-gold-400'}`}>
                   <Crown className="w-3.5 h-3.5 inline mr-1" />
@@ -263,7 +272,7 @@ export default function Tools() {
                 </span>
               )}
             </div>
-            <p className="text-gray-400 text-sm sm:text-lg">Connectez vos canaux (WhatsApp, Outlook) et assignez-les à vos agents</p>
+            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Connectez vos canaux (WhatsApp, Outlook) et assignez-les à vos agents</p>
           </div>
           <button
             onClick={loadTools}

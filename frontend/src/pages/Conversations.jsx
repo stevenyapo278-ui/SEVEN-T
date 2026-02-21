@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
 import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -158,6 +159,8 @@ const getTimeAgo = (dateString) => {
 
 export default function Conversations() {
   const { showConfirm } = useConfirm()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
@@ -352,11 +355,21 @@ export default function Conversations() {
     )
   }
 
+  // Motif décoratif : points blancs en dark, points gris en light (pour ne pas rester "toujours pareil")
+  const patternDark = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
+  const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
+
   return (
     <div className="max-w-6xl mx-auto">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-800 border border-space-700/50 p-4 sm:p-8 mb-8">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50"></div>
+      {/* Hero Header - theme-aware */}
+      <div className={`relative overflow-hidden rounded-3xl border p-4 sm:p-8 mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? patternDark : patternLight})` }}
+          aria-hidden
+        />
         
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
@@ -364,9 +377,9 @@ export default function Conversations() {
               <div className="p-2 bg-gold-400/10 rounded-xl">
                 <MessageSquare className="w-6 h-6 text-gold-400" />
               </div>
-              <h1 className="text-3xl font-display font-bold text-white">Conversations</h1>
+              <h1 className={`text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Conversations</h1>
             </div>
-            <p className="text-gray-400 text-lg">Gérez toutes les conversations de vos agents WhatsApp</p>
+            <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -381,7 +394,9 @@ export default function Conversations() {
             )}
             <button
               onClick={loadConversations}
-              className="flex items-center gap-2 px-4 py-2.5 bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white rounded-xl transition-all duration-200"
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                isDark ? 'bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700 hover:text-gray-900'
+              }`}
             >
               <RefreshCw className="w-4 h-4" />
               <span className="hidden sm:inline">Actualiser</span>
@@ -444,38 +459,38 @@ export default function Conversations() {
           </div>
         )}
 
-        {/* Stats Row */}
+        {/* Stats Row - theme-aware */}
         <div className="relative grid grid-cols-3 gap-4 mt-8">
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700/50">
+          <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-emerald-500/10 rounded-lg">
                 <MessageCircle className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{conversations.length}</p>
-                <p className="text-sm text-gray-500">Conversations</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{conversations.length}</p>
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Conversations</p>
               </div>
             </div>
           </div>
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700/50">
+          <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Sparkles className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{totalMessages.toLocaleString()}</p>
-                <p className="text-sm text-gray-500">Messages</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalMessages.toLocaleString()}</p>
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
               </div>
             </div>
           </div>
-          <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700/50">
+          <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-500/10 rounded-lg">
                 <Bot className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{agents.length}</p>
-                <p className="text-sm text-gray-500">Agents actifs</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents actifs</p>
               </div>
             </div>
           </div>
