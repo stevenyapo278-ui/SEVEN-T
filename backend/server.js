@@ -152,6 +152,16 @@ app.get('/api/health', (req, res) => {
 });
 
 // Public route to get active subscription plans (for pricing page, settings, etc.)
+function safeJsonParse(str, fallback = {}) {
+    if (str == null || str === '') return fallback;
+    try {
+        const v = JSON.parse(str);
+        return typeof v === 'object' && v !== null ? v : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
 app.get('/api/plans', async (req, res) => {
     try {
         const plans = await db.all(`
@@ -161,47 +171,46 @@ app.get('/api/plans', async (req, res) => {
             ORDER BY sort_order ASC
         `);
 
-        const parsedPlans = plans.map(plan => ({
+        const parsedPlans = (plans || []).map(plan => ({
             id: plan.name,
             name: plan.display_name,
             description: plan.description,
             price: plan.price,
             priceCurrency: plan.price_currency || 'FCFA',
-            limits: JSON.parse(plan.limits || '{}'),
-            features: JSON.parse(plan.features || '{}'),
+            limits: safeJsonParse(plan.limits, {}),
+            features: safeJsonParse(plan.features, {}),
             stripePriceId: plan.stripe_price_id || null
         }));
 
-        res.json({ plans: parsedPlans });
+        return res.json({ plans: parsedPlans });
     } catch (error) {
-        console.error('Get public plans error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        console.error('Get public plans error:', error?.message || error);
+        if (!res.headersSent) {
+            return res.status(200).json({ plans: [] });
+        }
     }
 });
 
-// User routes (alias for /auth/me) - Optional auth for currency context
+// User routes (alias for /auth/me) - Optional auth for currency context (never return 500)
 app.get('/api/users/me', async (req, res) => {
-    // Parse token manually (optional auth)
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) {
-        // No token = not logged in, return null user (not an error)
-        return res.json({ user: null });
-    }
-    
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
-        
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at FROM users WHERE id = ?', decoded.id);
-        
-        if (!user) {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        if (!token) {
             return res.json({ user: null });
         }
-        res.json({ user });
-    } catch (error) {
-        // Invalid token = return null user (graceful handling)
-        res.json({ user: null });
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+        const userId = decoded?.id;
+        if (!userId) {
+            return res.json({ user: null });
+        }
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at FROM users WHERE id = ?', userId);
+        return res.json({ user: user || null });
+    } catch (err) {
+        console.error('GET /api/users/me error:', err?.message || err);
+        if (!res.headersSent) {
+            return res.status(200).json({ user: null });
+        }
     }
 });
 

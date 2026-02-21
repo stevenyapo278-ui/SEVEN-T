@@ -666,7 +666,7 @@ export default function Orders() {
                 <h3 className="text-lg font-semibold text-gray-100 mb-4">
                   Évolution des ventes (30 derniers jours)
                 </h3>
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={300} minWidth={0} minHeight={200}>
                   <LineChart data={analytics.chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis 

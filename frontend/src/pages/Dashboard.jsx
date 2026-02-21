@@ -325,8 +325,8 @@ export default function Dashboard() {
           </div>
           
           {chartData.length > 0 ? (
-            <div className="w-full min-h-[250px]" style={{ height: 250 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full min-h-[250px]" style={{ height: 250, minWidth: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorMessages" x1="0" y1="0" x2="0" y2="1">
@@ -383,8 +383,8 @@ export default function Dashboard() {
           
           {agentStatusData.length > 0 ? (
             <div className="flex flex-col items-center">
-              <div className="w-full min-h-[180px]" style={{ height: 180 }}>
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="w-full min-h-[180px]" style={{ height: 180, minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={160}>
                 <PieChart>
                   <Pie
                     data={agentStatusData}
