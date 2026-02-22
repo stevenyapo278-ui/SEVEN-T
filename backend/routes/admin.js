@@ -265,12 +265,12 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
                 credits = COALESCE(?, credits),
                 is_admin = COALESCE(?, is_admin),
                 is_active = COALESCE(?, is_active),
-                voice_responses_enabled = CASE WHEN ? IS NOT NULL THEN ? ELSE voice_responses_enabled END,
-                payment_module_enabled = CASE WHEN ? IS NOT NULL THEN ? ELSE payment_module_enabled END,
-                parent_user_id = ?,
+                voice_responses_enabled = CASE WHEN ?::integer IS NOT NULL THEN ?::integer ELSE voice_responses_enabled END,
+                payment_module_enabled = CASE WHEN ?::integer IS NOT NULL THEN ?::integer ELSE payment_module_enabled END,
+                parent_user_id = ?::text,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, name, email, company, plan, credits, is_admin, is_active, voiceValue, voiceValue, paymentModuleValue, paymentModuleValue, parentId, req.params.id);
+        `, name, email, company, plan, credits, is_admin, is_active, voiceValue, voiceValue, paymentModuleValue, paymentModuleValue, parentId ?? null, req.params.id);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;

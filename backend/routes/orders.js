@@ -173,6 +173,11 @@ router.post('/:id/mark-delivered', authenticateToken, async (req, res) => {
 // Send payment link in WhatsApp conversation (checkout 100% in-app)
 router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (req, res) => {
     try {
+        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        if (!paymentModuleEnabled) {
+            return res.status(403).json({ error: 'Module paiement désactivé par l\'administrateur' });
+        }
         const order = await orderService.getOrderById(req.params.id, req.user.id);
         if (!order) return res.status(404).json({ error: 'Commande non trouvée' });
         if (order.status === 'rejected' || order.status === 'cancelled') {
@@ -183,20 +188,21 @@ router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (
         }
 
         const conversation = await db.get(`
-            SELECT c.id, c.agent_id FROM conversations c
+            SELECT c.id, c.agent_id, a.tool_id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
         `, order.conversation_id, req.user.id);
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
         }
+        if (!conversation.tool_id) {
+            return res.status(400).json({ error: 'L\'agent n\'a pas de connexion WhatsApp configurée' });
+        }
 
         const itemsList = (order.items || [])
             .map(i => `${i.product_name || 'Article'} x${i.quantity || 1}`)
             .join(', ');
         const description = itemsList ? `Commande: ${itemsList}` : `Commande #${(order.id || '').slice(0, 8)}`;
-        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
-        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
         const usePaymetrust = paymentModuleEnabled && await paymentProviders.isProviderConfiguredForUser(req.user.id, 'paymetrust');
         const provider = usePaymetrust ? 'paymetrust' : 'manual';
         const payment = await createPaymentLink(req.user.id, {
@@ -225,7 +231,7 @@ ${payment.payment_url}
 
 ⏰ Ce lien est valable 24h.`;
 
-        await whatsappManager.sendMessage(conversation.agent_id, order.conversation_id, messageText, req.user.id);
+        await whatsappManager.sendMessageAndSave(conversation.tool_id, order.conversation_id, messageText);
 
         res.json({
             success: true,
@@ -234,7 +240,14 @@ ${payment.payment_url}
         });
     } catch (error) {
         console.error('Send payment link in conversation error:', error);
-        res.status(500).json({ error: error.message || 'Erreur serveur' });
+        const msg = error.message || 'Erreur serveur';
+        if (msg === 'WhatsApp non connecté' || msg.includes('non connecté')) {
+            return res.status(400).json({ error: 'Connectez l\'agent WhatsApp (scan du QR code) pour envoyer le lien dans la conversation.' });
+        }
+        if (msg === 'Contact JID invalide' || msg === 'Conversation non trouvée') {
+            return res.status(400).json({ error: msg });
+        }
+        res.status(500).json({ error: msg });
     }
 });
 
@@ -258,6 +271,11 @@ router.post('/:id/reject', authenticateToken, async (req, res) => {
 // Create payment link from order (for sending to client - e.g. WhatsApp)
 router.post('/:id/payment-link', authenticateToken, validate(orderPaymentLinkSchema), async (req, res) => {
     try {
+        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        if (!paymentModuleEnabled) {
+            return res.status(403).json({ error: 'Module paiement désactivé par l\'administrateur' });
+        }
         const order = await orderService.getOrderById(req.params.id, req.user.id);
         if (!order) {
             return res.status(404).json({ error: 'Commande non trouvée' });

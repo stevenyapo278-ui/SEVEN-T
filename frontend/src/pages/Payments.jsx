@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import toast from 'react-hot-toast'
@@ -49,8 +51,10 @@ const PROVIDER_LABELS = {
 
 export default function Payments() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { isDark } = useTheme()
   const { showConfirm } = useConfirm()
+  const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const [links, setLinks] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -60,8 +64,12 @@ export default function Payments() {
   const [paymetrustConfigured, setPaymetrustConfigured] = useState(false)
 
   useEffect(() => {
+    if (!paymentModuleEnabled) {
+      setLoading(false)
+      return
+    }
     loadData()
-  }, [])
+  }, [paymentModuleEnabled])
 
   const loadData = async () => {
     try {
@@ -173,6 +181,28 @@ export default function Payments() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+      </div>
+    )
+  }
+
+  if (!paymentModuleEnabled) {
+    return (
+      <div className="space-y-6">
+        <div className={`p-8 rounded-2xl border text-center ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          <CreditCard className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+          <h2 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+            Module paiement désactivé
+          </h2>
+          <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            L&apos;administrateur n&apos;a pas activé la fonctionnalité de paiement pour votre compte. Contactez-le pour y accéder.
+          </p>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white transition-colors"
+          >
+            Retour au tableau de bord
+          </Link>
+        </div>
       </div>
     )
   }

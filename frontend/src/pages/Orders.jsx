@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { 
   ShoppingCart, 
@@ -36,7 +37,8 @@ import {
   Link2,
   Copy,
   ExternalLink,
-  Download
+  Download,
+  Plus
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
@@ -73,7 +75,9 @@ const ORDERS_TABS = [
 
 export default function Orders() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { showConfirm } = useConfirm()
+  const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
   const activeTab = ORDERS_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'overview'
@@ -100,6 +104,17 @@ export default function Orders() {
   const [paymentLinkModal, setPaymentLinkModal] = useState({ open: false, order: null, message: '', url: '', loading: false })
   const [paymetrustConfigured, setPaymetrustConfigured] = useState(false)
   const [sendingInConversation, setSendingInConversation] = useState(null)
+  const [showNewOrderModal, setShowNewOrderModal] = useState(false)
+  const [products, setProducts] = useState([])
+  const [newOrderLoading, setNewOrderLoading] = useState(false)
+  const [newOrderForm, setNewOrderForm] = useState({
+    customerName: '',
+    customerPhone: '',
+    items: [{ productId: null, productName: '', productSku: null, quantity: 1, unitPrice: 0 }],
+    notes: '',
+    currency: 'XOF',
+    paymentMethod: 'on_delivery'
+  })
 
   useEffect(() => {
     loadOrders()
@@ -107,6 +122,7 @@ export default function Orders() {
   }, [])
 
   useEffect(() => {
+    if (!paymentModuleEnabled) return
     const loadPaymentProviders = async () => {
       try {
         const res = await api.get('/payments/providers')
@@ -116,7 +132,7 @@ export default function Orders() {
       }
     }
     loadPaymentProviders()
-  }, [])
+  }, [paymentModuleEnabled])
 
   // Close cleanup menu when clicking outside
   useEffect(() => {
@@ -410,6 +426,99 @@ export default function Orders() {
     }
   }
 
+  const openNewOrderModal = async () => {
+    setShowNewOrderModal(true)
+    setNewOrderForm({
+      customerName: '',
+      customerPhone: '',
+      items: [{ productId: null, productName: '', productSku: null, quantity: 1, unitPrice: 0 }],
+      notes: '',
+      currency: 'XOF',
+      paymentMethod: 'on_delivery'
+    })
+    try {
+      const res = await api.get('/products')
+      setProducts(res.data?.products || res.data || [])
+    } catch {
+      setProducts([])
+    }
+  }
+
+  const addNewOrderLine = () => {
+    setNewOrderForm(prev => ({
+      ...prev,
+      items: [...prev.items, { productId: null, productName: '', productSku: null, quantity: 1, unitPrice: 0 }]
+    }))
+  }
+
+  const updateNewOrderLine = (index, field, value) => {
+    setNewOrderForm(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) => i === index ? { ...item, [field]: value } : item)
+    }))
+  }
+
+  const selectProductForLine = (index, product) => {
+    if (!product) {
+      updateNewOrderLine(index, 'productId', null)
+      updateNewOrderLine(index, 'productName', '')
+      updateNewOrderLine(index, 'productSku', null)
+      updateNewOrderLine(index, 'unitPrice', 0)
+      return
+    }
+    updateNewOrderLine(index, 'productId', product.id)
+    updateNewOrderLine(index, 'productName', product.name || '')
+    updateNewOrderLine(index, 'productSku', product.sku || null)
+    updateNewOrderLine(index, 'unitPrice', Number(product.price) || 0)
+  }
+
+  const removeNewOrderLine = (index) => {
+    setNewOrderForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index).length ? prev.items.filter((_, i) => i !== index) : [{ productId: null, productName: '', productSku: null, quantity: 1, unitPrice: 0 }]
+    }))
+  }
+
+  const handleCreateOrderSubmit = async (e) => {
+    e.preventDefault()
+    if (!newOrderForm.customerName?.trim()) {
+      toast.error('Nom du client requis')
+      return
+    }
+    const items = newOrderForm.items
+      .map(it => ({
+        productId: it.productId || undefined,
+        productName: (it.productName || '').trim(),
+        productSku: it.productSku || undefined,
+        quantity: Math.max(1, Number(it.quantity) || 1),
+        unitPrice: Math.max(0, Number(it.unitPrice) || 0)
+      }))
+      .filter(it => it.productName)
+    if (items.length === 0) {
+      toast.error('Ajoutez au moins un article (nom + quantité + prix)')
+      return
+    }
+    setNewOrderLoading(true)
+    try {
+      await api.post('/orders', {
+        customerName: newOrderForm.customerName.trim(),
+        customerPhone: (newOrderForm.customerPhone || '').trim() || undefined,
+        items,
+        notes: (newOrderForm.notes || '').trim() || undefined,
+        currency: newOrderForm.currency,
+        paymentMethod: newOrderForm.paymentMethod
+      })
+      toast.success('Commande créée')
+      setShowNewOrderModal(false)
+      loadOrders()
+      loadStats()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la création')
+    } finally {
+      setNewOrderLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Hero */}
@@ -428,6 +537,13 @@ export default function Orders() {
               </p>
             </div>
             <div className="flex gap-2">
+              <button
+                onClick={openNewOrderModal}
+                className="px-4 py-2 rounded-xl flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Nouvelle commande
+              </button>
               <button
                 onClick={handleExportCsv}
                 className="px-4 py-2 rounded-xl flex items-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors"
@@ -1047,28 +1163,30 @@ export default function Orders() {
                       </div>
                     )}
 
-                    {/* Payment method: always show and editable for pending/validated */}
-                    <div className="mb-4">
-                      <p className="text-xs text-gray-500 mb-1">Mode de paiement</p>
-                      {(order.status === 'pending' || order.status === 'validated') ? (
-                        <select
-                          value={order.payment_method || 'on_delivery'}
-                          onChange={(e) => { e.stopPropagation(); handlePaymentMethodChange(order.id, e.target.value); }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="input-dark w-full max-w-xs"
-                        >
-                          <option value="on_delivery">{t(PAYMENT_METHODS.on_delivery.nameKey)}</option>
-                          <option value="online">{t(PAYMENT_METHODS.online.nameKey)}</option>
-                        </select>
-                      ) : (
-                        <p className="text-sm text-gray-300">
-                          {t(PAYMENT_METHODS[order.payment_method]?.nameKey || PAYMENT_METHODS.on_delivery.nameKey)}
-                        </p>
-                      )}
-                    </div>
+                    {/* Payment method: only when admin has enabled payment module */}
+                    {paymentModuleEnabled && (
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-1">Mode de paiement</p>
+                        {(order.status === 'pending' || order.status === 'validated') ? (
+                          <select
+                            value={order.payment_method || 'on_delivery'}
+                            onChange={(e) => { e.stopPropagation(); handlePaymentMethodChange(order.id, e.target.value); }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="input-dark w-full max-w-xs"
+                          >
+                            <option value="on_delivery">{t(PAYMENT_METHODS.on_delivery.nameKey)}</option>
+                            <option value="online">{t(PAYMENT_METHODS.online.nameKey)}</option>
+                          </select>
+                        ) : (
+                          <p className="text-sm text-gray-300">
+                            {t(PAYMENT_METHODS[order.payment_method]?.nameKey || PAYMENT_METHODS.on_delivery.nameKey)}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
-                    {/* Actions: send payment link - always available (e.g. client sans liquidité à la livraison) */}
-                    {['pending', 'validated', 'delivered'].includes(order.status) && (
+                    {/* Actions: send payment link - only when payment module enabled */}
+                    {paymentModuleEnabled && ['pending', 'validated', 'delivered'].includes(order.status) && (
                       <div className="flex flex-wrap items-center gap-2 mb-4">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCreatePaymentLink(order); }}
@@ -1168,7 +1286,7 @@ export default function Orders() {
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors"
                           >
                             <Package className="w-4 h-4" />
-                            Marquer comme livré (paiement reçu)
+                            Marquer comme livré
                           </button>
                         </div>
                         {showDeleteConfirm === order.id ? (
@@ -1314,6 +1432,160 @@ export default function Orders() {
                 </>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nouvelle commande manuelle */}
+      {showNewOrderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => !newOrderLoading && setShowNewOrderModal(false)}>
+          <div className="bg-space-800 border border-space-700 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-space-700">
+              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+                <Plus className="w-5 h-5 text-violet-400" />
+                Nouvelle commande (manuelle)
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">Créez une commande en attente de validation.</p>
+            </div>
+            <form onSubmit={handleCreateOrderSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Nom du client *</label>
+                <input
+                  type="text"
+                  value={newOrderForm.customerName}
+                  onChange={e => setNewOrderForm(prev => ({ ...prev, customerName: e.target.value }))}
+                  className="input-dark w-full"
+                  placeholder="Ex. Jean Dupont"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Téléphone</label>
+                <input
+                  type="text"
+                  value={newOrderForm.customerPhone}
+                  onChange={e => setNewOrderForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                  className="input-dark w-full"
+                  placeholder="Ex. +225 07 00 00 00 00"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-300">Articles *</label>
+                  <button type="button" onClick={addNewOrderLine} className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                    <Plus className="w-4 h-4" />
+                    Ajouter une ligne
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {newOrderForm.items.map((item, index) => (
+                    <div key={index} className="flex flex-wrap items-center gap-2 p-3 bg-space-900 rounded-xl border border-space-700">
+                      <select
+                        value={item.productId || ''}
+                        onChange={e => {
+                          const p = products.find(pr => pr.id === e.target.value)
+                          selectProductForLine(index, p || null)
+                        }}
+                        className="input-dark flex-1 min-w-[140px]"
+                      >
+                        <option value="">— Saisie manuelle —</option>
+                        {products.filter(p => p.is_active !== 0).map(p => (
+                          <option key={p.id} value={p.id}>{p.name} – {Number(p.price || 0).toLocaleString()} FCFA</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={item.productName}
+                        onChange={e => updateNewOrderLine(index, 'productName', e.target.value)}
+                        className="input-dark w-36"
+                        placeholder="Nom produit"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        value={item.quantity}
+                        onChange={e => updateNewOrderLine(index, 'quantity', e.target.value)}
+                        className="input-dark w-20"
+                        placeholder="Qté"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={item.unitPrice || ''}
+                        onChange={e => updateNewOrderLine(index, 'unitPrice', e.target.value)}
+                        className="input-dark w-28"
+                        placeholder="Prix unit."
+                      />
+                      <span className="text-gray-500 text-sm w-16">
+                        {((item.quantity || 1) * (Number(item.unitPrice) || 0)).toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeNewOrderLine(index)}
+                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                        title="Supprimer la ligne"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                <textarea
+                  value={newOrderForm.notes}
+                  onChange={e => setNewOrderForm(prev => ({ ...prev, notes: e.target.value }))}
+                  className="input-dark w-full min-h-[80px]"
+                  placeholder="Optionnel"
+                />
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Devise</label>
+                  <select
+                    value={newOrderForm.currency}
+                    onChange={e => setNewOrderForm(prev => ({ ...prev, currency: e.target.value }))}
+                    className="input-dark"
+                  >
+                    <option value="XOF">XOF (FCFA)</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+                {paymentModuleEnabled && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Paiement</label>
+                    <select
+                      value={newOrderForm.paymentMethod}
+                      onChange={e => setNewOrderForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                      className="input-dark"
+                    >
+                      <option value="on_delivery">À la livraison</option>
+                      <option value="online">En ligne</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3 pt-4 border-t border-space-700">
+                <button
+                  type="button"
+                  onClick={() => !newOrderLoading && setShowNewOrderModal(false)}
+                  className="flex-1 px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
+                  disabled={newOrderLoading}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={newOrderLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {newOrderLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                  Créer la commande
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
