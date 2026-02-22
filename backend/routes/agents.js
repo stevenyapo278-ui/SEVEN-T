@@ -705,7 +705,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         if (isEcommerce && products.length > 0) {
             const productIds = products.map(p => p.id);
             const placeholders = productIds.map(() => '?').join(',');
-            const extraImages = await db.all(`SELECT product_id, url FROM product_images WHERE product_id IN (${placeholders}) ORDER BY product_id, position ASC`, productIds);
+            const extraImages = await db.all(`SELECT product_id, url FROM product_images WHERE product_id IN (${placeholders}) ORDER BY product_id, position ASC`, ...productIds);
             for (const row of extraImages) {
                 if (!imagesByProductId[row.product_id]) imagesByProductId[row.product_id] = [];
                 imagesByProductId[row.product_id].push(row.url);

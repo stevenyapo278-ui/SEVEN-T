@@ -194,14 +194,14 @@ class AIService {
             // Deduct credits only for real AI responses (not fallback)
             if (userId && provider !== 'fallback') {
                 const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                const deduction = deductCredits(userId, 'ai_message', 1, {
+                const deduction = await deductCredits(userId, 'ai_message', 1, {
                     agent_id: agent.id,
                     tokens: tokensUsed
                 });
                 response.credits_deducted = deduction.cost;
                 response.credits_remaining = deduction.credits_remaining;
                 if (!deduction.success) {
-                    console.warn(`[AI] Credit deduction failed: ${deduction.error}`);
+                    console.warn(`[AI] Credit deduction failed: ${deduction.error ?? 'unknown'}`);
                 }
             }
 
@@ -226,7 +226,7 @@ class AIService {
                     });
                     if (userId) {
                         const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                        const deduction = deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
+                        const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
                         response.credits_deducted = deduction.cost;
                         response.credits_remaining = deduction.credits_remaining;
                     }
@@ -242,7 +242,7 @@ class AIService {
                     });
                     if (userId) {
                         const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                        const deduction = deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
+                        const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
                         response.credits_deducted = deduction.cost;
                         response.credits_remaining = deduction.credits_remaining;
                     }
@@ -260,7 +260,7 @@ class AIService {
                         });
                         if (userId) {
                             const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                            const deduction = deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
+                            const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
                             response.credits_deducted = deduction.cost;
                             response.credits_remaining = deduction.credits_remaining;
                         }
@@ -277,7 +277,7 @@ class AIService {
                         });
                         if (userId) {
                             const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                            const deduction = deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
+                            const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
                             response.credits_deducted = deduction.cost;
                             response.credits_remaining = deduction.credits_remaining;
                         }
@@ -917,7 +917,10 @@ class AIService {
             const tokensUsed = countTokensSync(instruction) + countTokensSync(response || '') + 512;
 
             if (userId) {
-                const deduction = deductCredits(userId, 'ai_message', 1, { agent_id: agent?.id, tokens: tokensUsed });
+                const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent?.id, tokens: tokensUsed });
+                if (!deduction.success) {
+                    console.warn(`[AI] Credit deduction failed: ${deduction.error ?? 'unknown'}`);
+                }
                 return {
                     text: response,
                     tokens: tokensUsed,
@@ -1001,7 +1004,10 @@ class AIService {
             const tokensUsed = countTokensSync(textPart) + countTokensSync(response || '') + 258; // ~258 tokens for image
 
             if (userId) {
-                const deduction = deductCredits(userId, 'ai_message', 1, { agent_id: agent?.id, tokens: tokensUsed });
+                const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent?.id, tokens: tokensUsed });
+                if (!deduction.success) {
+                    console.warn(`[AI] Credit deduction failed: ${deduction.error ?? 'unknown'}`);
+                }
                 return {
                     content: response,
                     tokens: tokensUsed,

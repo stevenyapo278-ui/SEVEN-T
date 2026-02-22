@@ -78,30 +78,46 @@ class WorkflowExecutor {
                 return { executed: 0, results: [] };
             }
 
+            // is_active is INTEGER (0/1) in PostgreSQL — do not compare to boolean
             let workflows;
             if (agentId) {
                 workflows = await db.all(`
                     SELECT * FROM workflows 
                     WHERE trigger_type = ? 
-                    AND is_active = 1 
-                    AND (agent_id = ? OR agent_id IS NULL)
+                    AND is_active = 1
+                    AND (agent_id = ? OR agent_id IS NULL OR agent_id = '')
                     AND user_id = ?
                 `, triggerType, agentId, userId);
             } else {
                 workflows = await db.all(`
                     SELECT * FROM workflows 
                     WHERE trigger_type = ? 
-                    AND is_active = 1 
+                    AND is_active = 1
                     AND user_id = ?
                 `, triggerType, userId);
             }
 
             const list = Array.isArray(workflows) ? workflows : [];
             if (list.length === 0) {
+                // Diagnostic: count workflows for this user+trigger without is_active/agent filter
+                const diag = await db.get(`
+                    SELECT COUNT(*) as total FROM workflows 
+                    WHERE trigger_type = ? AND user_id = ?
+                `, triggerType, userId);
+                const totalForTrigger = Number(diag?.total ?? 0);
+                if (totalForTrigger > 0) {
+                    const sample = await db.all(`
+                        SELECT id, name, is_active, agent_id FROM workflows 
+                        WHERE trigger_type = ? AND user_id = ? LIMIT 3
+                    `, triggerType, userId);
+                    console.log(`[WorkflowExecutor] No workflows matched for trigger: ${triggerType} (user: ${userId}, agent: ${agentId ?? 'any'}). ${totalForTrigger} workflow(s) exist for this trigger but none active or agent mismatch. Sample:`, sample?.map(w => ({ id: w.id, is_active: w.is_active, agent_id: w.agent_id })));
+                } else {
+                    console.log(`[WorkflowExecutor] No workflows found for trigger: ${triggerType} (user: ${userId}, agent: ${agentId ?? 'any'})`);
+                }
                 return { executed: 0, results: [] };
             }
 
-            console.log(`[WorkflowExecutor] Found ${list.length} workflows for trigger: ${triggerType}`);
+            console.log(`[WorkflowExecutor] Found ${list.length} workflow(s) for trigger: ${triggerType}`);
 
             const results = [];
             for (const workflow of list) {

@@ -70,6 +70,45 @@ class OrderService {
         }
     }
 
+    /**
+     * Add items to an existing pending order (e.g. "commande combinée" when client confirms a second product).
+     * Only adds items not already in the order (by product_id or product_name).
+     */
+    async addItemsToOrder(orderId, userId, items) {
+        const order = await this.getOrderById(orderId, userId);
+        if (!order || order.status !== 'pending') {
+            return null;
+        }
+        const existingNames = new Set((order.items || []).map(i => (i.product_name || '').trim().toLowerCase()));
+        const existingIds = new Set((order.items || []).map(i => i.product_id).filter(Boolean));
+        const toAdd = items.filter(item => {
+            const name = (item.productName || item.product_name || '').trim().toLowerCase();
+            const id = item.productId ?? item.product_id ?? null;
+            if (id && existingIds.has(id)) return false;
+            if (name && existingNames.has(name)) return false;
+            return true;
+        });
+        if (toAdd.length === 0) {
+            return order;
+        }
+        let addedTotal = 0;
+        for (const item of toAdd) {
+            const itemId = uuidv4();
+            const qty = item.quantity || 1;
+            const unitPrice = item.unitPrice ?? item.unit_price ?? 0;
+            const itemTotal = qty * unitPrice;
+            addedTotal += itemTotal;
+            await db.run(`
+                INSERT INTO order_items (id, order_id, product_id, product_name, product_sku, quantity, unit_price, total_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, itemId, orderId, item.productId ?? item.product_id ?? null, item.productName || item.product_name, item.productSku || item.product_sku || null, qty, unitPrice, itemTotal);
+        }
+        const newTotal = (Number(order.total_amount) || 0) + addedTotal;
+        await db.run(`UPDATE orders SET total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, newTotal, orderId);
+        console.log(`[Orders] Added ${toAdd.length} item(s) to order ${orderId}, new total: ${newTotal}`);
+        return await this.getOrderById(orderId, userId);
+    }
+
     async getOrderById(orderId, userId) {
         const order = await db.get(`
             SELECT * FROM orders WHERE id = ? AND user_id = ?
@@ -250,12 +289,15 @@ class OrderService {
                         orderItems: orderItemsFormatted,
                         orderItemsRaw: updatedOrder.items || []
                     };
-                    workflowExecutor.executeMatchingWorkflowsSafe('order_validated', triggerData, conv.agent_id, userId).then((result) => {
-                        if (!result?.executed) {
-                            return workflowExecutor.executeMatchingWorkflowsSafe('order_created', triggerData, conv.agent_id, userId);
-                        }
-                        return null;
-                    });
+                    let result = await workflowExecutor.executeMatchingWorkflowsSafe('order_validated', triggerData, conv.agent_id, userId);
+                    if (!result?.executed) {
+                        result = await workflowExecutor.executeMatchingWorkflowsSafe('order_created', triggerData, conv.agent_id, userId);
+                    }
+                    if (!result?.executed) {
+                        console.log(`[Orders] No workflow executed for order_validated/order_created (order ${updatedOrder.id}, agent ${conv.agent_id || 'any'}, user ${userId})`);
+                    } else {
+                        console.log(`[Orders] Executed ${result.executed} workflow(s) for order_validated/order_created`);
+                    }
                 }
             }
 

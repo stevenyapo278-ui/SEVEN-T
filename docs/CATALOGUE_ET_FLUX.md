@@ -71,8 +71,9 @@ Pour que l’analyse des messages (détection de produits, stock) reflète les c
 ### 4.2 Détection et gestion des commandes
 
 1. **Analyse** : `messageAnalyzer.analyze` (ou `analyzePayload` / `analyzeMessage`) détecte l’intention (order, inquiry, etc.), les produits mentionnés et les quantités (en utilisant le cache produits).
-2. **Création commande** : si une commande est validée (workflow, décision métier), création en base (table `orders` / commandes).
+2. **Création commande** : si une commande est validée (workflow, décision métier), création en base (table `orders` / commandes). Une commande **pending** existante peut être enrichie (commande combinée) via `orderService.addItemsToOrder` quand le client confirme un autre produit dans la même conversation.
 3. **Interface** : la page « Commandes » liste les commandes ; l’utilisateur peut valider, rejeter, créer un lien de paiement, etc.
+4. **Statuts** : `pending` → `validated` (après validation manuelle) → `delivered` (optionnel). Le bouton **Marqué comme livré** sert à indiquer que la commande a été livrée au client et, en cas de paiement à la livraison, que le paiement a été reçu ; il fait passer la commande en `delivered` et enregistre `delivered_at`. Utile pour le suivi, les stats (revenus livrés) et l’historique.
 
 ### 4.3 Liens de paiement
 

@@ -34,7 +34,9 @@ const EXPLICIT_CONFIRMATION_KEYWORDS = [
     'je confirme', 'je valide', 'ok pour la commande', 'c\'est bon', 'd\'accord',
     'je passe commande', 'passer commande', 'je commande', 'je veux commander',
     'j\'achète', 'je prends', 'je le prends', 'je la prends', 'je les prends',
-    'livrez-moi', 'me livrer', 'livraison', 'envoyez-moi', 'envoie-moi'
+    'livrez-moi', 'me livrer', 'livraison', 'envoyez-moi', 'envoie-moi',
+    // Short confirmations after AI proposal (e.g. "Confirmez-vous ?" → "Oui oui" / "Okay")
+    'oui oui', 'oui c\'est bon', 'okay', 'parfait', 'c\'est parti'
 ];
 
 // Keywords that indicate REFUSAL (should block order detection)
@@ -411,8 +413,15 @@ class OrderDetector {
                     console.log(`[OrderDetector] Updated pending order ${existingOrder.id} with delivery info: ${livraisonBlock}`);
                 }
             }
-            console.log(`[OrderDetector] Pending order already exists for conversation ${conversation.id}`);
-            return null; // Don't create duplicate
+            // Add new items to existing pending order (commande combinée) instead of creating a duplicate
+            const existingItemCount = (await db.all('SELECT id FROM order_items WHERE order_id = ?', existingOrder.id)).length;
+            const updated = await orderService.addItemsToOrder(existingOrder.id, userId, detectedItems);
+            if (updated && updated.items && updated.items.length > existingItemCount) {
+                console.log(`[OrderDetector] Added items to pending order ${existingOrder.id} (combined order)`);
+            } else {
+                console.log(`[OrderDetector] Pending order already exists for conversation ${conversation.id}`);
+            }
+            return updated || null;
         }
 
         // Get customer info from conversation
