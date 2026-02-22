@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { WelcomeModal, OnboardingChecklist, useOnboardingTour } from '../components/Onboarding'
@@ -22,6 +23,7 @@ import {
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const location = useLocation()
   const { startTour, completedTours } = useOnboardingTour()
@@ -173,14 +175,14 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-display font-bold text-gray-100">
-            Bonjour, {user?.name?.split(' ')[0]} 👋
+            {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
           </h1>
-          <p className="text-gray-400">Voici un aperçu de votre activité</p>
+          <p className="text-gray-400">{t('dashboard.welcomeSubtitle')}</p>
         </div>
         <button 
           onClick={loadData}
           className="p-2 text-gray-400 hover:text-gray-100 hover:bg-space-800 rounded-lg transition-colors"
-          title="Actualiser"
+          title={t('dashboard.refresh')}
         >
           <RefreshCw className="w-5 h-5" />
         </button>

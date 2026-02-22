@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -29,11 +30,12 @@ const STATUS_COLORS = {
   expired: 'bg-gray-500/20 text-gray-400'
 }
 
-const STATUS_LABELS = {
-  pending: 'En attente',
-  paid: 'Payé',
-  cancelled: 'Annulé',
-  expired: 'Expiré'
+const STATUS_KEYS = {
+  all: 'payments.statusAll',
+  pending: 'payments.statusPending',
+  paid: 'payments.statusPaid',
+  cancelled: 'payments.statusCancelled',
+  expired: 'payments.statusExpired'
 }
 
 const PROVIDER_LABELS = {
@@ -46,6 +48,7 @@ const PROVIDER_LABELS = {
 }
 
 export default function Payments() {
+  const { t } = useTranslation()
   const { isDark } = useTheme()
   const { showConfirm } = useConfirm()
   const [links, setLinks] = useState([])
@@ -180,10 +183,10 @@ export default function Payments() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className={`text-2xl font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-            💳 Liens de paiement
+            💳 {t('payments.title')}
           </h1>
           <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-            Créez et gérez vos demandes de paiement
+            {t('payments.subtitle')}
           </p>
         </div>
 
@@ -193,14 +196,14 @@ export default function Payments() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
           >
             <Download className="w-4 h-4" />
-            Exporter CSV
+            {t('payments.exportCsv')}
           </button>
           <button
             onClick={() => setShowModal(true)}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Nouveau lien
+            {t('payments.newLink')}
           </button>
         </div>
       </div>
@@ -214,11 +217,11 @@ export default function Payments() {
           </div>
           <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
             <p className="text-2xl font-bold text-amber-500">{stats.pending}</p>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>En attente</p>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('payments.statusPending')}</p>
           </div>
           <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
             <p className="text-2xl font-bold text-emerald-500">{stats.paid}</p>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Payés</p>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('payments.statusPaid')}</p>
           </div>
           <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
             <p className="text-2xl font-bold text-emerald-500">{(stats.totalAmount || 0).toLocaleString()} FCFA</p>
@@ -252,7 +255,7 @@ export default function Payments() {
                   : isDark ? 'bg-space-800 text-gray-400 hover:bg-space-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              {status === 'all' ? 'Tous' : STATUS_LABELS[status]}
+              {status === 'all' ? t(STATUS_KEYS.all) : t(STATUS_KEYS[status])}
             </button>
           ))}
         </div>
@@ -295,7 +298,7 @@ export default function Payments() {
                         {link.amount.toLocaleString()} {link.currency}
                       </span>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[link.status]}`}>
-                        {STATUS_LABELS[link.status]}
+                        {t(STATUS_KEYS[link.status])}
                       </span>
                     </div>
                     {link.description && (

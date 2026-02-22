@@ -696,17 +696,32 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         // Get global knowledge base (user-level, shared across all agents)
         const globalKnowledge = await db.all('SELECT title, content FROM global_knowledge WHERE user_id = ?', req.user.id);
         
-        // E-commerce only: inject products catalog and order rules
+        // E-commerce only: inject products catalog and order rules (same as WhatsApp: id, product_images)
         const isEcommerce = agent.template === 'ecommerce';
         const products = isEcommerce
-            ? await db.all('SELECT name, sku, price, stock, category, description FROM products WHERE user_id = ? AND is_active = 1', req.user.id)
+            ? await db.all('SELECT id, name, sku, price, stock, category, description, image_url FROM products WHERE user_id = ? AND is_active = 1', req.user.id)
             : [];
+        let imagesByProductId = {};
+        if (isEcommerce && products.length > 0) {
+            const productIds = products.map(p => p.id);
+            const placeholders = productIds.map(() => '?').join(',');
+            const extraImages = await db.all(`SELECT product_id, url FROM product_images WHERE product_id IN (${placeholders}) ORDER BY product_id, position ASC`, productIds);
+            for (const row of extraImages) {
+                if (!imagesByProductId[row.product_id]) imagesByProductId[row.product_id] = [];
+                imagesByProductId[row.product_id].push(row.url);
+            }
+        }
         const productKnowledge = isEcommerce && products.length > 0
             ? [{
                 title: '📦 CATALOGUE PRODUITS',
-                content: products.map(p =>
-                    `- ${p.name}${p.sku ? ` (${p.sku})` : ''}: ${p.price} FCFA${p.stock === 0 ? ' ⛔ RUPTURE DE STOCK' : p.stock <= 5 ? ` ⚠️ STOCK LIMITÉ (${p.stock} unités)` : ` ✅ En stock (${p.stock})`}${p.category ? ` | ${p.category}` : ''}${p.description ? `\n  ${p.description}` : ''}`
-                ).join('\n')
+                content: products.map(p => {
+                    const allUrls = [...(p.image_url ? [p.image_url] : []), ...(imagesByProductId[p.id] || [])];
+                    const uniqueUrls = [...new Set(allUrls)];
+                    const imageLine = uniqueUrls.length > 0
+                        ? (uniqueUrls.length === 1 ? `\n  Image: ${uniqueUrls[0]}` : `\n  Images: ${uniqueUrls.join(', ')}`)
+                        : '';
+                    return `- ${p.name}${p.sku ? ` (${p.sku})` : ''}: ${p.price} FCFA${p.stock === 0 ? ' ⛔ RUPTURE DE STOCK' : p.stock <= 5 ? ` ⚠️ STOCK LIMITÉ (${p.stock} unités)` : ` ✅ En stock (${p.stock})`}${p.category ? ` | ${p.category}` : ''}${p.description ? `\n  ${p.description}` : ''}${imageLine}`;
+                }).join('\n')
             }, {
                 title: '⚠️ RÈGLES DE GESTION DES COMMANDES',
                 content: `IMPORTANT - Règles à suivre STRICTEMENT:

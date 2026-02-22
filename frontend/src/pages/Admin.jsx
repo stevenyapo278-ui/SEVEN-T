@@ -2447,7 +2447,7 @@ function PlansContent({
 
   const formatLimit = (value) => {
     if (value === -1) return '∞'
-    if (value === undefined || value === null) return '–'
+    if (value === undefined || value === null || value === 0) return '–'
     return value.toLocaleString()
   }
 

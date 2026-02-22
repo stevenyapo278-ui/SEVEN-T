@@ -9,6 +9,8 @@ i18n.use(initReactI18next).init({
   resources,
   lng: (typeof localStorage !== 'undefined' && localStorage.getItem('locale')) || 'fr',
   fallbackLng: 'fr',
+  supportedLngs: ['fr', 'en'],
+  load: 'currentOnly',
   interpolation: { escapeValue: false },
 })
 

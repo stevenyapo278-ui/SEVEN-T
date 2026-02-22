@@ -27,7 +27,23 @@
     "orders": "Orders",
     "payments": "Payments",
     "tools": "Tools",
-    "settings": "Settings"
+    "settings": "Settings",
+    "analytics": "Analytics",
+    "notifications": "Notifications",
+    "knowledge": "Knowledge base",
+    "products": "Products",
+    "leads": "Leads",
+    "campaigns": "Campaigns",
+    "templates": "Templates",
+    "workflows": "Workflows",
+    "flowBuilder": "Flow Builder",
+    "reports": "Reports",
+    "admin": "Administration",
+    "main": "Main",
+    "agentsAndMessages": "Agents & Messages",
+    "sales": "Sales & Catalog",
+    "marketing": "Marketing",
+    "automation": "Automation"
   },
   "landing": {
     "title": "SEVEN T",
@@ -37,17 +53,58 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "welcomeGreeting": "Hello, {{name}} 👋",
+    "welcomeSubtitle": "Here's an overview of your activity",
+    "refresh": "Refresh"
   },
   "orders": {
     "title": "Orders",
     "subtitle": "Validate orders detected by AI",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "tabOverview": "Overview",
+    "tabAnalytics": "Statistics",
+    "tabOrders": "Orders",
+    "tabLogs": "History",
+    "statusPending": "Pending",
+    "statusValidated": "Validated",
+    "statusDelivered": "Delivered / Paid",
+    "statusRejected": "Rejected",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "paymentOnDelivery": "Payment on delivery",
+    "paymentOnline": "Online payment"
   },
   "payments": {
     "title": "Payment links",
     "subtitle": "Create and manage your payment requests",
     "newLink": "New link",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "statusAll": "All",
+    "statusPending": "Pending",
+    "statusPaid": "Paid",
+    "statusCancelled": "Cancelled",
+    "statusExpired": "Expired"
+  },
+  "products": {
+    "title": "Product Catalog",
+    "subtitle": "Manage your product catalog for your AI agents"
+  },
+  "messages": {
+    "errorGeneric": "Error",
+    "errorLoad": "Error while loading",
+    "errorSave": "Error while saving",
+    "errorDelete": "Error while deleting",
+    "errorNotFound": "Resource not found",
+    "errorImport": "Error while importing",
+    "successSaved": "Saved successfully",
+    "successDeleted": "Deleted successfully",
+    "successCreated": "Created successfully",
+    "productNameRequired": "Name is required",
+    "productDeleted": "Product deleted",
+    "productUpdated": "Product updated",
+    "productAdded": "Product added",
+    "productsImported": "{{count}} products imported",
+    "historyLoadError": "Error loading history"
   }
 }

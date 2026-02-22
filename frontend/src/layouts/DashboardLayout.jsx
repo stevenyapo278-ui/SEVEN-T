@@ -41,65 +41,66 @@ import {
   Clock
 } from 'lucide-react'
 
-// Navigation avec sous-menus
+// Navigation avec sous-menus (nameKey = clé i18n pour la traduction)
 const navigationGroups = [
   {
-    name: 'Principal',
+    nameKey: 'nav.main',
     items: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
-      { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
-      { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
+      { nameKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+      { nameKey: 'nav.analytics', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
+      { nameKey: 'nav.notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
     ]
   },
   {
-    name: 'Agents & Messages',
+    nameKey: 'nav.agentsAndMessages',
     icon: Bot,
     items: [
-      { name: 'Agents', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
-      { name: 'Conversations', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
-      { name: 'Base de connaissances', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
-      { name: 'Outils', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
+      { nameKey: 'nav.agents', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
+      { nameKey: 'nav.conversations', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
+      { nameKey: 'nav.knowledge', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
+      { nameKey: 'nav.tools', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
     ]
   },
   {
-    name: 'Vente & Catalogue',
+    nameKey: 'nav.sales',
     icon: Store,
     items: [
-      { name: 'Produits', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
-      { name: 'Commandes', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
-      { name: 'Paiements', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
-      { name: 'Leads', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
+      { nameKey: 'nav.products', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.orders', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
+      { nameKey: 'nav.payments', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
+      { nameKey: 'nav.leads', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
     ]
   },
   {
-    name: 'Marketing',
+    nameKey: 'nav.marketing',
     icon: Send,
     items: [
-      { name: 'Campagnes', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
-      { name: 'Templates', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
+      { nameKey: 'nav.campaigns', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
+      { nameKey: 'nav.templates', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
     ]
   },
   {
-    name: 'Automatisation',
+    nameKey: 'nav.automation',
     icon: Wrench,
     items: [
-      { name: 'Workflows', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
-      { name: 'Flow Builder', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
-      { name: 'Rapports', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
+      { nameKey: 'nav.workflows', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
+      { nameKey: 'nav.flowBuilder', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
+      { nameKey: 'nav.reports', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
     ]
   },
 ]
 
 const bottomNavigation = [
-  { name: 'Paramètres', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
+  { nameKey: 'nav.settings', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
 ]
 
 const adminNavigation = [
-  { name: 'Administration', href: '/dashboard/admin', icon: Shield },
+  { nameKey: 'nav.admin', href: '/dashboard/admin', icon: Shield },
 ]
 
 // Composant pour un groupe de navigation avec sous-menu (ouverture au survol)
 const NavGroup = ({ group, onItemClick, isMobile = false }) => {
+  const { t } = useTranslation()
   const { isDark } = useTheme()
   const location = useLocation()
   const [isHovered, setIsHovered] = useState(false)
@@ -110,7 +111,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
   const isGroupActive = group.items.some(item => location.pathname === item.href)
   
   // Premier groupe (Principal) toujours ouvert
-  const isFirstGroup = group.name === 'Principal'
+  const isFirstGroup = group.nameKey === 'nav.main'
   
   // En mobile: clic pour ouvrir. En desktop: survol
   const shouldBeOpen = isFirstGroup || isGroupActive || (isMobile ? isExpanded : isHovered)
@@ -150,7 +151,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
       <div className="space-y-1">
         {group.items.map((item) => (
           <NavLink
-            key={item.name}
+            key={item.href}
             to={item.href}
             end={item.href === '/dashboard'}
             onClick={onItemClick}
@@ -166,7 +167,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
             }
           >
             <item.icon className="w-5 h-5" />
-            {item.name}
+            {t(item.nameKey)}
           </NavLink>
         ))}
       </div>
@@ -195,7 +196,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
         >
           <div className="flex items-center gap-3">
             {group.icon && <group.icon className="w-5 h-5" />}
-            <span className="text-sm font-medium">{group.name}</span>
+            <span className="text-sm font-medium">{t(group.nameKey)}</span>
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -214,7 +215,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
         >
           <div className="flex items-center gap-3">
             {group.icon && <group.icon className="w-5 h-5" />}
-            <span className="text-sm font-medium">{group.name}</span>
+            <span className="text-sm font-medium">{t(group.nameKey)}</span>
           </div>
           <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
         </NavLink>
@@ -231,7 +232,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
         }`}>
           {group.items.map((item) => (
             <NavLink
-              key={item.name}
+              key={item.href}
               to={item.href}
               onClick={onItemClick}
               data-tour={item.tourId}
@@ -248,7 +249,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
               }
             >
               <item.icon className="w-4 h-4" />
-              {item.name}
+              {t(item.nameKey)}
             </NavLink>
           ))}
         </div>
@@ -269,19 +270,23 @@ const Logo = ({ className = '' }) => (
 // Language switcher (FR | EN)
 const LanguageSwitcher = ({ className = '' }) => {
   const { i18n } = useTranslation()
-  const lang = i18n.language || 'fr'
+  const lang = (i18n.resolvedLanguage || i18n.language || 'fr').split('-')[0]
+  const setLang = (lng) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem('locale', lng)
+    i18n.changeLanguage(lng)
+  }
   return (
     <div className={`flex items-center gap-0.5 rounded-lg overflow-hidden border ${className}`} style={{ borderColor: 'var(--border-color)' }}>
       <button
         type="button"
-        onClick={() => { i18n.changeLanguage('fr'); if (typeof localStorage !== 'undefined') localStorage.setItem('locale', 'fr') }}
+        onClick={() => setLang('fr')}
         className={`px-2 py-1 text-xs font-medium ${lang === 'fr' ? 'bg-violet-500/20 text-violet-400' : 'opacity-70 hover:opacity-100'}`}
       >
         FR
       </button>
       <button
         type="button"
-        onClick={() => { i18n.changeLanguage('en'); if (typeof localStorage !== 'undefined') localStorage.setItem('locale', 'en') }}
+        onClick={() => setLang('en')}
         className={`px-2 py-1 text-xs font-medium ${lang === 'en' ? 'bg-violet-500/20 text-violet-400' : 'opacity-70 hover:opacity-100'}`}
       >
         EN
@@ -768,6 +773,7 @@ const pathToTitle = (pathname) => {
 }
 
 export default function DashboardLayout() {
+  const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(() => new Date())
   const { user, logout } = useAuth()
@@ -811,7 +817,7 @@ export default function DashboardLayout() {
           <nav className="p-4 space-y-1 overflow-y-auto flex-1">
             {navGroups.map((group) => (
               <NavGroup
-                key={group.name}
+                key={group.nameKey}
                 group={group}
                 onItemClick={() => setSidebarOpen(false)}
                 isMobile={true}
@@ -822,7 +828,7 @@ export default function DashboardLayout() {
             <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
               {bottomNavigation.map((item) => (
                 <NavLink
-                  key={item.name}
+                  key={item.href}
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) =>
@@ -836,7 +842,7 @@ export default function DashboardLayout() {
                   }
                 >
                   <item.icon className="w-5 h-5" />
-                  {item.name}
+                  {t(item.nameKey)}
                 </NavLink>
               ))}
             </div>
@@ -849,7 +855,7 @@ export default function DashboardLayout() {
                 </div>
                 {adminNavigation.map((item) => (
                   <NavLink
-                    key={item.name}
+                    key={item.href}
                     to={item.href}
                     onClick={() => setSidebarOpen(false)}
                     className={({ isActive }) =>
@@ -861,7 +867,7 @@ export default function DashboardLayout() {
                     }
                   >
                     <item.icon className="w-5 h-5" />
-                    {item.name}
+                    {t(item.nameKey)}
                   </NavLink>
                 ))}
               </>
@@ -880,7 +886,7 @@ export default function DashboardLayout() {
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             {navGroups.map((group) => (
               <NavGroup
-                key={group.name}
+                key={group.nameKey}
                 group={group}
                 onItemClick={() => {}}
                 isMobile={false}
@@ -891,7 +897,7 @@ export default function DashboardLayout() {
             <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
               {bottomNavigation.map((item) => (
                 <NavLink
-                  key={item.name}
+                  key={item.href}
                   to={item.href}
                   data-tour={item.tourId}
                   className={({ isActive }) =>
@@ -905,7 +911,7 @@ export default function DashboardLayout() {
                   }
                 >
                   <item.icon className="w-5 h-5" />
-                  {item.name}
+                  {t(item.nameKey)}
                 </NavLink>
               ))}
             </div>
@@ -918,7 +924,7 @@ export default function DashboardLayout() {
                 </div>
                 {adminNavigation.map((item) => (
                   <NavLink
-                    key={item.name}
+                    key={item.href}
                     to={item.href}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
@@ -929,7 +935,7 @@ export default function DashboardLayout() {
                     }
                   >
                     <item.icon className="w-5 h-5" />
-                    {item.name}
+                    {t(item.nameKey)}
                   </NavLink>
                 ))}
               </>

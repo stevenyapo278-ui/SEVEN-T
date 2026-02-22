@@ -27,7 +27,23 @@
     "orders": "Commandes",
     "payments": "Paiements",
     "tools": "Outils",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "analytics": "Analytics",
+    "notifications": "Notifications",
+    "knowledge": "Base de connaissances",
+    "products": "Produits",
+    "leads": "Leads",
+    "campaigns": "Campagnes",
+    "templates": "Templates",
+    "workflows": "Workflows",
+    "flowBuilder": "Flow Builder",
+    "reports": "Rapports",
+    "admin": "Administration",
+    "main": "Principal",
+    "agentsAndMessages": "Agents & Messages",
+    "sales": "Vente & Catalogue",
+    "marketing": "Marketing",
+    "automation": "Automatisation"
   },
   "landing": {
     "title": "SEVEN T",
@@ -37,17 +53,58 @@
   },
   "dashboard": {
     "title": "Tableau de bord",
-    "welcome": "Bienvenue"
+    "welcome": "Bienvenue",
+    "welcomeGreeting": "Bonjour, {{name}} 👋",
+    "welcomeSubtitle": "Voici un aperçu de votre activité",
+    "refresh": "Actualiser"
   },
   "orders": {
     "title": "Commandes",
     "subtitle": "Validez les commandes détectées par l'IA",
-    "exportCsv": "Exporter CSV"
+    "exportCsv": "Exporter CSV",
+    "tabOverview": "Aperçu",
+    "tabAnalytics": "Statistiques",
+    "tabOrders": "Commandes",
+    "tabLogs": "Historique",
+    "statusPending": "En attente",
+    "statusValidated": "Validée",
+    "statusDelivered": "Livrée / Payée",
+    "statusRejected": "Rejetée",
+    "statusCompleted": "Terminée",
+    "statusCancelled": "Annulée",
+    "paymentOnDelivery": "Paiement à la livraison",
+    "paymentOnline": "Paiement en ligne"
   },
   "payments": {
     "title": "Liens de paiement",
     "subtitle": "Créez et gérez vos demandes de paiement",
     "newLink": "Nouveau lien",
-    "exportCsv": "Exporter CSV"
+    "exportCsv": "Exporter CSV",
+    "statusAll": "Tous",
+    "statusPending": "En attente",
+    "statusPaid": "Payé",
+    "statusCancelled": "Annulé",
+    "statusExpired": "Expiré"
+  },
+  "products": {
+    "title": "Catalogue Produits",
+    "subtitle": "Gérez votre catalogue de produits pour vos agents IA"
+  },
+  "messages": {
+    "errorGeneric": "Erreur",
+    "errorLoad": "Erreur lors du chargement",
+    "errorSave": "Erreur lors de l'enregistrement",
+    "errorDelete": "Erreur lors de la suppression",
+    "errorNotFound": "Ressource non trouvée",
+    "errorImport": "Erreur lors de l'import",
+    "successSaved": "Enregistrement réussi",
+    "successDeleted": "Suppression effectuée",
+    "successCreated": "Création effectuée",
+    "productNameRequired": "Le nom est requis",
+    "productDeleted": "Produit supprimé",
+    "productUpdated": "Produit mis à jour",
+    "productAdded": "Produit ajouté",
+    "productsImported": "{{count}} produits importés",
+    "historyLoadError": "Erreur lors du chargement de l'historique"
   }
 }

@@ -381,6 +381,7 @@ class AIService {
         if (!hasCustomPrompt) systemGlobal += this.getDefaultInstructions();
         systemGlobal += '\n\n⚠️ RÈGLE FINALE — PRÉSENTATION: Ne dis JAMAIS "Je suis [nom]", "Je m\'appelle...", "votre assistant [type]..." ou toute phrase qui te présente. Réponds directement au message du client.';
         systemGlobal += '\n\n⚠️ RÈGLE — CONTEXTE: Utilise la CONVERSATION RÉCENTE fournie. Si le client a déjà été salué (échange précédent avec "Bonjour" ou salut), NE REDIS PAS "Bonjour" ni "Bonjour !" au début de ta réponse. Réponds directement à sa question ou demande (ex: produit, commande). Tu ne salues qu\'une seule fois au tout premier message du client.';
+        systemGlobal += '\n\n⚠️ RÈGLE — FORMULATION: Quand tu transmets des informations du catalogue ou de la base de connaissances, utilise des formulations professionnelles comme "Voici les informations disponibles", "D\'après notre catalogue, ...", "Voici ce qui est indiqué : ...". Ne dis JAMAIS "C\'est tout ce que j\'ai comme information", "Je n\'ai que ça", ou des formulations qui sous-entendent un manque. Reste factuel et rassurant.';
 
         // [BUSINESS TENANT] — agent/catalogue et contexte temps réel
         let businessTenant = '';

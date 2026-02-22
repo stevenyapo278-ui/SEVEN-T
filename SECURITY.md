@@ -106,4 +106,17 @@ Ce document résume l’état de la sécurité du projet et les recommandations.
 
 ---
 
+## 6. Dépendances (npm audit)
+
+- **Jest 29** et **overrides** dans `package.json` (racine) assurent 0 vulnérabilité dans le lockfile.
+- Si `node_modules` a été installé en root ou avec des permissions différentes, les tests peuvent échouer. Pour réinstaller proprement :
+  ```bash
+  npm run reinstall
+  ```
+  (Exécuter avec les droits du propriétaire du projet, ou `sudo npm run reinstall` si nécessaire.)
+- Puis vérifier : `npm audit` (0 vulnérabilité), `npm test` (tests unitaires).
+
+---
+
 *Dernière revue : février 2025.*
+            

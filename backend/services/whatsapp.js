@@ -30,6 +30,7 @@ import { staticResponses } from '../config/staticResponses.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
 import * as ttsService from './tts.js';
+import { conversationMessageQueue } from './conversationMessageQueue.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
@@ -116,6 +117,7 @@ class WhatsAppManager {
         this.lidToPhoneMap = new Map(); // toolId -> Map<lid, phoneJid> - track LID to phone mappings
         this.lastQrLogTime = new Map(); // toolId -> timestamp du dernier log QR (éviter le spam)
         this.pendingReconnects = new Map(); // toolId -> timeoutId (pour annuler la reconnexion si l'outil est supprimé)
+        this._queueDrainHandlerSet = false;
     }
 
     /**
@@ -499,7 +501,11 @@ class WhatsAppManager {
             // Save credentials
             sock.ev.on('creds.update', saveCreds);
 
-            // Handle incoming messages
+            // Handle incoming messages (queue: debounce + mutex per conversation)
+            if (!this._queueDrainHandlerSet) {
+                conversationMessageQueue.setDrainHandler((tId, cId, batch) => this.handleBatchDrain(tId, cId, batch));
+                this._queueDrainHandlerSet = true;
+            }
             sock.ev.on('messages.upsert', async ({ messages, type }) => {
                 console.log(`[WhatsApp] messages.upsert event - type: ${type}, count: ${messages.length}`);
                 
@@ -519,68 +525,33 @@ class WhatsAppManager {
         }
     }
 
-    async handleIncomingMessage(toolId, sock, message, type) {
+    /**
+     * Reception only: resolve sender, conversation, agent, extract text/media, duplicate check.
+     * Does NOT save to DB. Returns { payload, context, audioTranscriptionFailed } or null.
+     */
+    async processReceptionOnly(toolId, sock, message, type) {
         try {
-            // Handle new WhatsApp LID format - use senderPn if available, otherwise remoteJid
             const rawSender = message.key?.remoteJid;
-            const senderPn = message.key?.senderPn; // New format: actual phone number
+            const senderPn = message.key?.senderPn;
             const fromMe = message.key?.fromMe;
-            
-            // Determine the actual sender JID to use
-            // LID format (ends with @lid) is used for contacts, senderPn has the real number
             let sender = rawSender;
             if (rawSender?.endsWith('@lid') && senderPn) {
-                sender = senderPn; // Use the actual phone number
-                
-                // Store the LID -> phone mapping for later use in outgoing messages
-                if (!this.lidToPhoneMap.has(toolId)) {
-                    this.lidToPhoneMap.set(toolId, new Map());
-                }
+                sender = senderPn;
+                if (!this.lidToPhoneMap.has(toolId)) this.lidToPhoneMap.set(toolId, new Map());
                 this.lidToPhoneMap.get(toolId).set(rawSender, senderPn);
             }
-            
-            console.log(`[WhatsApp] Processing message - raw: ${rawSender}, senderPn: ${senderPn}, resolved: ${sender}, fromMe: ${fromMe}`);
-            
-            // Skip empty messages
-            if (!message.message) {
-                console.log(`[WhatsApp] Skipping empty message`);
-                return;
-            }
-            
-            // Handle outgoing messages (sent from WhatsApp directly by human)
+            if (!message.message) return null;
             if (fromMe) {
                 await this.handleOutgoingMessage(toolId, message, sender);
-                return;
+                return null;
             }
-
-            // Get agent (fetch regardless of is_active to still receive messages)
             const agent = await this.getAgentByToolId(toolId);
-            if (!agent) {
-                console.log(`[WhatsApp] No agent assigned to tool: ${toolId}`);
-                return;
-            }
+            if (!agent) return null;
             const agentId = agent.id;
-            
-            // Skip non-personal messages (groups, broadcasts, statuses)
-            if (!sender) {
-                console.log(`[WhatsApp] Skipping message without sender`);
-                return;
-            }
-            const isGroup = sender.endsWith('@g.us');
-            const isStatus = sender === 'status@broadcast' || sender.includes('broadcast');
-            
-            if (isGroup || isStatus) {
-                console.log(`[WhatsApp] Skipping non-personal message: group=${isGroup}, status=${isStatus}`);
-                return;
-            }
-
-            // Extract message text
+            if (!sender) return null;
+            if (sender.endsWith('@g.us') || sender === 'status@broadcast' || sender.includes('broadcast')) return null;
             let messageText = this.extractMessageText(message);
-            if (!messageText) {
-                console.log(`[WhatsApp] Could not extract text from message, keys: ${Object.keys(message.message || {}).join(', ')}`);
-                return;
-            }
-
+            if (!messageText) return null;
             const contactNumber = sender.split('@')[0];
             
             // Resolve contact name with priority (like whatsapp.js.old.2):
@@ -634,7 +605,7 @@ class WhatsAppManager {
             const isBlacklisted = await db.get('SELECT id FROM blacklist WHERE agent_id = ? AND contact_jid = ?', agentId, sender);
             if (isBlacklisted) {
                 console.log(`[WhatsApp] Contact ${contactName} is blacklisted, ignoring message`);
-                return;
+                return null;
             }
 
             // Extract additional contact info from message
@@ -731,7 +702,7 @@ class WhatsAppManager {
             const existingIncoming = await db.get('SELECT id FROM messages WHERE whatsapp_id = ?', incomingWhatsappId);
             if (existingIncoming) {
                 console.log(`[WhatsApp] Skipping duplicate incoming message with whatsapp_id: ${incomingWhatsappId}`);
-                return;
+                return null;
             }
 
             // If image message: download and save to uploads for display in conversation
@@ -789,35 +760,78 @@ class WhatsAppManager {
                 }
             }
 
-            // Save incoming message (with media_url and real timestamp for correct order)
-            await db.run(`
-                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
-                VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
-            `, inMsgId, conversation.id, messageText, incomingWhatsappId, messageType, mediaUrl, createdAt);
-            console.log(`[WhatsApp] Message saved: ${contactName} -> ${messageText.substring(0, 30)}...`);
+            return {
+                payload: { content: messageText, messageType, whatsapp_id: incomingWhatsappId, createdAt, mediaUrl, replyToJidForSend, inMsgId },
+                context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend },
+                audioTranscriptionFailed
+            };
+        } catch (e) {
+            return null;
+        }
+    }
 
-            if (audioTranscriptionFailed) {
-                humanInterventionService.flagConversation(conversation.id, agent.user_id, 'audio_transcription_failed');
-                console.log(`[WhatsApp] Audio transcription failed for conversation ${conversation.id}, flagged for human`);
+    async handleIncomingMessage(toolId, sock, message, type) {
+        try {
+            const result = await this.processReceptionOnly(toolId, sock, message, type);
+            if (!result) return;
+            if (result.audioTranscriptionFailed) {
+                const { payload, context } = result;
+                await db.run(`
+                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
+                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
+                `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
+                humanInterventionService.flagConversation(context.conversation.id, context.agent.user_id, 'audio_transcription_failed');
+                console.log(`[WhatsApp] Audio transcription failed for conversation ${context.conversation.id}, flagged for human`);
                 return;
             }
-            
-            // Trigger workflow: new_message
-            void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
-                conversationId: conversation.id,
-                messageId: inMsgId,
-                agentId,
-                userId: agent.user_id,
-                contactJid: sender,
-                contactName,
-                contactNumber: contactNumberForConv,
-                message: messageText,
-                messageType
-            }, agentId, agent.user_id);
+            const { payload, context } = result;
+            if (payload.messageType !== 'text') {
+                await conversationMessageQueue.flush(toolId, context.conversation.id);
+                await db.run(`
+                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
+                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
+                `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
+                console.log(`[WhatsApp] Message saved: ${context.contactName} -> ${payload.content.substring(0, 30)}...`);
+                void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
+                    conversationId: context.conversation.id,
+                    messageId: payload.inMsgId,
+                    agentId: context.agent.id,
+                    userId: context.agent.user_id,
+                    contactJid: context.sender,
+                    contactName: context.contactName,
+                    contactNumber: context.contactNumberForConv,
+                    message: payload.content,
+                    messageType: payload.messageType
+                }, context.agent.id, context.agent.user_id);
+                this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
+                const normalizedPayload = { tenant_id: context.agent.user_id, conversation_id: context.conversation.id, from: context.sender, message: payload.content, timestamp: Date.now() };
+                await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: payload.messageType, rawMessage: message });
+                return;
+            }
+            conversationMessageQueue.enqueue(toolId, context.conversation.id, { ...payload, ...context });
+        } catch (error) {
+            console.error('[WhatsApp] Error handling message:', error);
+        }
+    }
 
-            // Cache profile picture while connection is active (non-blocking)
-            this.getProfilePicture(agentId, sender).catch(() => {});
+    /**
+     * Run the AI pipeline and send response. Used for single message (after INSERT) and for batch (after batch INSERT).
+     * context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend }
+     * opts: { messageType, rawMessage } (rawMessage for image/audio single message)
+     */
+    async runPipelineAndSend(toolId, sock, context, normalizedPayload, opts = {}) {
+        const { conversation, agent, sender, contactName, replyToJidForSend } = context;
+        const messageText = normalizedPayload.message;
+        const messageType = opts.messageType || 'text';
+        const rawMessage = opts.rawMessage || null;
+        const userId = agent.user_id;
+        const agentId = agent.id;
+        const contactNumberForConv = context.contactNumberForConv;
 
+        // Cache profile picture while connection is active (non-blocking)
+        this.getProfilePicture(agentId, sender).catch(() => {});
+
+        try {
             // ==================== CHECK MAX MESSAGES PER DAY ====================
             if (agent.max_messages_per_day > 0) {
                 const todayStart = new Date();
@@ -928,14 +942,12 @@ class WhatsAppManager {
             `, conversation.id);
             const history = Array.isArray(historyRows) ? historyRows : [];
 
-            // Get user ID for credit deduction (use same agent row already loaded)
-            const userId = agent.user_id;
             // E-commerce pipeline: catalogue + order rules + order detection only for template === 'ecommerce'
             const isEcommerce = agent.template === 'ecommerce';
 
-            // Normalized payload for downstream pipeline (Listener output contract)
-            const normalizedPayload = {
-                tenant_id: userId,
+            // Payload for downstream pipeline (same shape as param; uses DB conversation.id)
+            const pipelinePayload = {
+                tenant_id: agent.user_id,
                 conversation_id: conversation.id,
                 from: sender,
                 message: messageText,
@@ -964,15 +976,31 @@ class WhatsAppManager {
 
             // E-commerce only: inject catalogue + order rules. Other agents are generic (support, FAQ, RDV, etc.)
             const products = isEcommerce && userId
-                ? await db.all('SELECT name, sku, price, stock, category, description, image_url FROM products WHERE user_id = ? AND is_active = 1', userId)
+                ? await db.all('SELECT id, name, sku, price, stock, category, description, image_url FROM products WHERE user_id = ? AND is_active = 1', userId)
                 : [];
+            // Load all product_images for these products (so the AI can offer every image)
+            let imagesByProductId = {};
+            if (products.length > 0) {
+                const productIds = products.map(p => p.id);
+                const placeholders = productIds.map(() => '?').join(',');
+                const extraImages = await db.all(`SELECT product_id, url FROM product_images WHERE product_id IN (${placeholders}) ORDER BY product_id, position ASC`, productIds);
+                for (const row of extraImages) {
+                    if (!imagesByProductId[row.product_id]) imagesByProductId[row.product_id] = [];
+                    imagesByProductId[row.product_id].push(row.url);
+                }
+            }
             const productKnowledge = isEcommerce
                 ? (products.length > 0
                     ? [{
                         title: '📦 CATALOGUE PRODUITS',
-                        content: products.map(p =>
-                            `- ${p.name}${p.sku ? ` (${p.sku})` : ''}: ${p.price} FCFA${p.stock === 0 ? ' ⛔ RUPTURE DE STOCK' : p.stock <= 5 ? ` ⚠️ STOCK LIMITÉ (${p.stock} unités)` : ` ✅ En stock (${p.stock})`}${p.category ? ` | ${p.category}` : ''}${p.description ? `\n  ${p.description}` : ''}${p.image_url ? `\n  Image: ${p.image_url}` : ''}`
-                        ).join('\n')
+                        content: products.map(p => {
+                            const allUrls = [...(p.image_url ? [p.image_url] : []), ...(imagesByProductId[p.id] || [])];
+                            const uniqueUrls = [...new Set(allUrls)];
+                            const imageLine = uniqueUrls.length > 0
+                                ? (uniqueUrls.length === 1 ? `\n  Image: ${uniqueUrls[0]}` : `\n  Images: ${uniqueUrls.join(', ')}`)
+                                : '';
+                            return `- ${p.name}${p.sku ? ` (${p.sku})` : ''}: ${p.price} FCFA${p.stock === 0 ? ' ⛔ RUPTURE DE STOCK' : p.stock <= 5 ? ` ⚠️ STOCK LIMITÉ (${p.stock} unités)` : ` ✅ En stock (${p.stock})`}${p.category ? ` | ${p.category}` : ''}${p.description ? `\n  ${p.description}` : ''}${imageLine}`;
+                        }).join('\n')
                     }, {
                         title: '⚠️ RÈGLES DE GESTION DES COMMANDES',
                         content: `IMPORTANT - Règles à suivre STRICTEMENT:
@@ -1012,16 +1040,16 @@ class WhatsAppManager {
             // PRE-ANALYSIS: Analyze message BEFORE AI response
             // This provides enriched context for better responses
             // ============================================
-            const baseAnalysis = messageAnalyzer.analyzeBase(normalizedPayload, conversation);
+            const baseAnalysis = messageAnalyzer.analyzeBase(pipelinePayload, conversation);
             let templateAnalysis = {};
             if (isEcommerce) {
-                templateAnalysis = await messageAnalyzer.analyzeEcommerce(normalizedPayload, conversation);
+                templateAnalysis = await messageAnalyzer.analyzeEcommerce(pipelinePayload, conversation);
             } else if (agent.template === 'support') {
-                templateAnalysis = supportAnalyzer.analyze(normalizedPayload);
+                templateAnalysis = supportAnalyzer.analyze(pipelinePayload);
             } else if (agent.template === 'faq') {
-                templateAnalysis = faqAnalyzer.analyze(normalizedPayload);
+                templateAnalysis = faqAnalyzer.analyze(pipelinePayload);
             } else if (agent.template === 'appointment') {
-                templateAnalysis = appointmentAnalyzer.analyze(normalizedPayload);
+                templateAnalysis = appointmentAnalyzer.analyze(pipelinePayload);
             }
 
             const messageAnalysis = { ...baseAnalysis, ...templateAnalysis };
@@ -1134,7 +1162,7 @@ class WhatsAppManager {
                     conversation_id: conversation.id,
                     tenant_id: userId,
                     direction: 'in',
-                    payload: normalizedPayload,
+                    payload: pipelinePayload,
                     prompt_version: null,
                     llm_output_summary: `Static response for ${intentHint}`,
                     auto_qa_result: null,
@@ -1162,12 +1190,12 @@ class WhatsAppManager {
 
             let aiResponse = null;
             if (!skipLlm) {
-                const hasImage = message.message?.imageMessage;
-                if (hasImage) {
+                const hasImage = rawMessage?.message?.imageMessage;
+                if (hasImage && rawMessage) {
                     try {
-                        const buffer = await downloadMediaMessage(message, 'buffer', {});
+                        const buffer = await downloadMediaMessage(rawMessage, 'buffer', {});
                         const imageBase64 = buffer.toString('base64');
-                        const mimeType = message.message.imageMessage?.mimetype || 'image/jpeg';
+                        const mimeType = rawMessage.message?.imageMessage?.mimetype || 'image/jpeg';
                         const caption = messageText === '[Image]' ? null : messageText;
                         const userMediaModel = userId ? (await db.get('SELECT media_model FROM users WHERE id = ?', userId))?.media_model : null;
                         const platformDefault = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'default_media_model'))?.value;
@@ -1176,10 +1204,10 @@ class WhatsAppManager {
                         aiResponse = await aiService.generateResponseFromImage(effectiveAgent, history, imageBase64, mimeType, caption, knowledge, userId);
                     } catch (imgErr) {
                         console.warn('[WhatsApp] Téléchargement/vision image échoué, fallback texte:', imgErr.message);
-                        aiResponse = await aiService.generateResponse(agent, history, normalizedPayload, knowledge, messageAnalysis);
+                        aiResponse = await aiService.generateResponse(agent, history, pipelinePayload, knowledge, messageAnalysis);
                     }
                 } else {
-                    aiResponse = await aiService.generateResponse(agent, history, normalizedPayload, knowledge, messageAnalysis);
+                    aiResponse = await aiService.generateResponse(agent, history, pipelinePayload, knowledge, messageAnalysis);
                 }
                 if (aiResponse?.credit_warning) {
                     console.log(`[WhatsApp] Credit warning for user ${userId}: ${aiResponse.credit_warning}`);
@@ -1221,7 +1249,7 @@ class WhatsAppManager {
                 conversation_id: conversation.id,
                 tenant_id: userId,
                 direction: 'in',
-                payload: normalizedPayload,
+                payload: pipelinePayload,
                 prompt_version: aiResponse?.prompt_version ?? null,
                 llm_output_summary: aiResponse?.content ?? null,
                 auto_qa_result: autoQaResult,
@@ -1247,8 +1275,8 @@ class WhatsAppManager {
                     data: {
                         replyToJid: replyToJidForSend,
                         sender,
-                        rawSender: message.key?.remoteJid,
-                        fromLid: !!(message.key?.remoteJid && String(message.key.remoteJid).endsWith('@lid'))
+                        rawSender: rawMessage?.key?.remoteJid,
+                        fromLid: !!(rawMessage?.key?.remoteJid && String(rawMessage.key.remoteJid).endsWith('@lid'))
                     },
                     timestamp: Date.now(),
                     sessionId: 'debug-session',
@@ -1411,6 +1439,70 @@ class WhatsAppManager {
         } catch (error) {
             console.error('[WhatsApp] Error handling message:', error);
         }
+    }
+
+    /**
+     * Drain handler: process a batch of enqueued messages (save all, then one pipeline run with combined message).
+     */
+    async handleBatchDrain(toolId, conversationId, batch) {
+        if (!batch.length) return;
+        const sock = this.connections.get(toolId);
+        if (!sock) {
+            console.warn('[WhatsApp] handleBatchDrain: no socket for toolId', toolId, '- batch not processed');
+            return;
+        }
+        const first = batch[0];
+        const context = {
+            conversation: first.conversation,
+            agent: first.agent,
+            sender: first.sender,
+            contactName: first.contactName,
+            contactNumberForConv: first.contactNumberForConv,
+            replyToJidForSend: first.replyToJidForSend
+        };
+        const conversation = await db.get('SELECT * FROM conversations WHERE id = ?', conversationId);
+        const agent = await db.get('SELECT * FROM agents WHERE id = ?', context.agent?.id);
+        if (!conversation || !agent) {
+            console.warn('[WhatsApp] handleBatchDrain: conversation or agent not found', { conversationId, agentId: context.agent?.id });
+            return;
+        }
+        if (!agent.is_active) {
+            console.log('[WhatsApp] Agent inactive, saving batch but not sending response');
+        }
+        context.conversation = conversation;
+        context.agent = agent;
+        const lastCreatedAt = batch[batch.length - 1].createdAt;
+        let firstMsgId = null;
+        for (const item of batch) {
+            const inMsgId = uuidv4();
+            if (!firstMsgId) firstMsgId = inMsgId;
+            await db.run(`
+                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
+                VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
+            `, inMsgId, conversationId, item.content, item.whatsapp_id, item.messageType || 'text', item.mediaUrl || null, item.createdAt);
+        }
+        await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', lastCreatedAt, conversationId);
+        void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
+            conversationId,
+            messageId: firstMsgId,
+            agentId: agent.id,
+            userId: agent.user_id,
+            contactJid: context.sender,
+            contactName: context.contactName,
+            contactNumber: context.contactNumberForConv,
+            message: batch.map(m => m.content).join('\n\n').substring(0, 500),
+            messageType: 'text'
+        }, agent.id, agent.user_id);
+        this.getProfilePicture(agent.id, context.sender).catch(() => {});
+        const combinedMessage = batch.map(m => m.content).join('\n\n');
+        const normalizedPayload = {
+            tenant_id: agent.user_id,
+            conversation_id: conversationId,
+            from: context.sender,
+            message: combinedMessage,
+            timestamp: Date.now()
+        };
+        await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: 'text' });
     }
 
     /**

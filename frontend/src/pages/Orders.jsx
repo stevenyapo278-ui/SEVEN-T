@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -50,27 +51,28 @@ import {
 } from 'recharts'
 
 const ORDER_STATUSES = {
-  pending: { label: 'En attente', color: 'amber', icon: Clock },
-  validated: { label: 'Validée', color: 'green', icon: CheckCircle },
-  delivered: { label: 'Livrée / Payée', color: 'emerald', icon: CheckCircle },
-  rejected: { label: 'Rejetée', color: 'red', icon: XCircle },
-  completed: { label: 'Terminée', color: 'blue', icon: Check },
-  cancelled: { label: 'Annulée', color: 'gray', icon: X }
+  pending: { nameKey: 'orders.statusPending', color: 'amber', icon: Clock },
+  validated: { nameKey: 'orders.statusValidated', color: 'green', icon: CheckCircle },
+  delivered: { nameKey: 'orders.statusDelivered', color: 'emerald', icon: CheckCircle },
+  rejected: { nameKey: 'orders.statusRejected', color: 'red', icon: XCircle },
+  completed: { nameKey: 'orders.statusCompleted', color: 'blue', icon: Check },
+  cancelled: { nameKey: 'orders.statusCancelled', color: 'gray', icon: X }
 }
 
 const PAYMENT_METHODS = {
-  on_delivery: { label: 'Paiement à la livraison', short: 'À la livraison' },
-  online: { label: 'Paiement en ligne', short: 'En ligne' }
+  on_delivery: { nameKey: 'orders.paymentOnDelivery', shortKey: 'orders.paymentOnDelivery' },
+  online: { nameKey: 'orders.paymentOnline', shortKey: 'orders.paymentOnline' }
 }
 
 const ORDERS_TABS = [
-  { id: 'overview', label: 'Aperçu', icon: TrendingUp },
-  { id: 'analytics', label: 'Statistiques', icon: BarChart },
-  { id: 'orders', label: 'Commandes', icon: ShoppingCart },
-  { id: 'logs', label: 'Historique', icon: History },
+  { id: 'overview', nameKey: 'orders.tabOverview', icon: TrendingUp },
+  { id: 'analytics', nameKey: 'orders.tabAnalytics', icon: BarChart },
+  { id: 'orders', nameKey: 'orders.tabOrders', icon: ShoppingCart },
+  { id: 'logs', nameKey: 'orders.tabLogs', icon: History },
 ]
 
 export default function Orders() {
+  const { t } = useTranslation()
   const { showConfirm } = useConfirm()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
@@ -138,7 +140,7 @@ export default function Orders() {
       setOrders(response.data.orders || [])
     } catch (error) {
       console.error('Error loading orders:', error)
-      toast.error('Erreur lors du chargement')
+      toast.error(t('messages.errorLoad'))
     } finally {
       setLoading(false)
     }
@@ -419,10 +421,10 @@ export default function Orders() {
                 <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl">
                   <ShoppingCart className="w-8 h-8 text-space-950" />
                 </div>
-                Commandes
+                {t('orders.title')}
               </h1>
               <p className="text-gray-400 mt-2">
-                Validez les commandes détectées par l'IA
+                {t('orders.subtitle')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -431,7 +433,7 @@ export default function Orders() {
                 className="px-4 py-2 rounded-xl flex items-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors"
               >
                 <Download className="w-5 h-5" />
-                Exporter CSV
+                {t('orders.exportCsv')}
               </button>
               <button
                 onClick={() => { setActiveTab('logs'); loadLogs(); }}
@@ -589,7 +591,7 @@ export default function Orders() {
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {tab.label}
+                {t(tab.nameKey)}
               </button>
             )
           })}
@@ -928,7 +930,7 @@ export default function Orders() {
         >
           <option value="all">Tous les statuts</option>
           {Object.entries(ORDER_STATUSES).map(([key, value]) => (
-            <option key={key} value={key}>{value.label}</option>
+            <option key={key} value={key}>{t(value.nameKey)}</option>
           ))}
         </select>
       </div>
@@ -978,7 +980,7 @@ export default function Orders() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-gray-100">{order.customer_name}</h3>
                           <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusBadgeClasses(order.status)}`}>
-                            {statusInfo.label}
+                            {t(statusInfo.nameKey)}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
@@ -1055,12 +1057,12 @@ export default function Orders() {
                           onClick={(e) => e.stopPropagation()}
                           className="input-dark w-full max-w-xs"
                         >
-                          <option value="on_delivery">{PAYMENT_METHODS.on_delivery.label}</option>
-                          <option value="online">{PAYMENT_METHODS.online.label}</option>
+                          <option value="on_delivery">{t(PAYMENT_METHODS.on_delivery.nameKey)}</option>
+                          <option value="online">{t(PAYMENT_METHODS.online.nameKey)}</option>
                         </select>
                       ) : (
                         <p className="text-sm text-gray-300">
-                          {PAYMENT_METHODS[order.payment_method]?.label || PAYMENT_METHODS.on_delivery.label}
+                          {t(PAYMENT_METHODS[order.payment_method]?.nameKey || PAYMENT_METHODS.on_delivery.nameKey)}
                         </p>
                       )}
                     </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useCurrency } from '../contexts/CurrencyContext'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -27,6 +28,7 @@ import {
 import toast from 'react-hot-toast'
 
 export default function Products() {
+  const { t } = useTranslation()
   const { formatPrice, getSymbol } = useCurrency()
   const { showConfirm } = useConfirm()
   const [products, setProducts] = useState([])
@@ -58,10 +60,10 @@ export default function Products() {
       const uniqueCategories = [...new Set(response.data.products?.map(p => p.category).filter(Boolean))]
       setCategories(uniqueCategories)
     } catch (error) {
-      const message = error.response?.data?.error || error.message || 'Erreur de chargement'
+      const message = error.response?.data?.error || error.message || t('messages.errorLoad')
       setLoadError(message)
       console.error('Error loading products:', error)
-      toast.error('Erreur lors du chargement des produits')
+      toast.error(t('messages.errorLoad'))
     } finally {
       setLoading(false)
     }
@@ -77,7 +79,7 @@ export default function Products() {
       setHistoryList(response.data.history || [])
     } catch (error) {
       console.error('Error loading history:', error)
-      toast.error('Erreur lors du chargement de l\'historique')
+      toast.error(t('messages.historyLoadError'))
       setHistoryList([])
     } finally {
       setHistoryLoading(false)
@@ -94,10 +96,10 @@ export default function Products() {
     if (!ok) return
     try {
       await api.delete(`/products/${id}`)
-      toast.success('Produit supprimé')
+      toast.success(t('messages.productDeleted'))
       loadProducts()
     } catch (error) {
-      toast.error('Erreur lors de la suppression')
+      toast.error(t('messages.errorDelete'))
     }
   }
 
@@ -134,10 +136,10 @@ export default function Products() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
               <h1 className="text-3xl font-display font-bold text-gray-100 mb-2">
-                Catalogue Produits
+                {t('products.title')}
               </h1>
               <p className="text-gray-400">
-                Gérez votre catalogue de produits pour vos agents IA
+                {t('products.subtitle')}
               </p>
             </div>
             <div className="flex gap-3">
@@ -353,12 +355,20 @@ export default function Products() {
                   </div>
                   <div className="min-w-0">
                     <h3 className="font-medium text-gray-100 truncate">{product.name}</h3>
-                    {product.category && (
-                      <span className="inline-flex items-center gap-1 text-xs text-gray-500 mt-1">
-                        <Tag className="w-3 h-3" />
-                        {product.category}
-                      </span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      {product.category && (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+                          <Tag className="w-3 h-3" />
+                          {product.category}
+                        </span>
+                      )}
+                      {(!product.description?.trim() || !product.image_url?.trim()) && (
+                        <span className="inline-flex items-center gap-1 text-xs text-amber-500/90" title="Ajoutez une description et/ou une image pour améliorer les réponses de l'agent">
+                          <Image className="w-3 h-3" />
+                          Fiche à compléter
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -480,6 +490,7 @@ export default function Products() {
 }
 
 function ProductModal({ product, onClose, onSaved, getSymbol }) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: product?.name || '',
     sku: product?.sku || '',
@@ -496,21 +507,21 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.name.trim()) {
-      toast.error('Le nom est requis')
+      toast.error(t('messages.productNameRequired'))
       return
     }
     setLoading(true)
     try {
       if (product) {
         await api.put(`/products/${product.id}`, formData)
-        toast.success('Produit mis à jour')
+        toast.success(t('messages.productUpdated'))
       } else {
         await api.post('/products', formData)
-        toast.success('Produit ajouté')
+        toast.success(t('messages.productAdded'))
       }
       onSaved()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur')
+      toast.error(error.response?.data?.error || t('messages.errorGeneric'))
     } finally {
       setLoading(false)
     }
@@ -599,24 +610,40 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">URL de l'image</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                URL de l'image
+                {!formData.image_url?.trim() && (
+                  <span className="ml-2 text-amber-400/90 text-xs font-normal">(recommandé)</span>
+                )}
+              </label>
               <input
                 type="url"
                 value={formData.image_url}
                 onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
+                placeholder="https://exemple.com/image.jpg — pour le catalogue et l'agent e-commerce"
                 className="input-dark w-full"
               />
+              {!formData.image_url?.trim() && (
+                <p className="mt-1 text-xs text-gray-500">Une image aide l'IA à présenter le produit aux clients.</p>
+              )}
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description
+                {!formData.description?.trim() && (
+                  <span className="ml-2 text-amber-400/90 text-xs font-normal">(recommandé)</span>
+                )}
+              </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Description du produit..."
+                placeholder="Décrivez le produit pour que l'agent e-commerce puisse le présenter correctement aux clients (recommandé)"
                 rows={3}
                 className="input-dark w-full resize-none"
               />
+              {!formData.description?.trim() && (
+                <p className="mt-1 text-xs text-gray-500">Une description améliore les réponses de l'agent sur le catalogue.</p>
+              )}
             </div>
           </div>
           <div className="flex gap-3 pt-4">
@@ -634,6 +661,7 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
 }
 
 function ImportModal({ onClose, onImported }) {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -649,10 +677,10 @@ function ImportModal({ onClose, onImported }) {
       const response = await api.post('/products/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      toast.success(`${response.data.imported} produits importés`)
+      toast.success(t('messages.productsImported', { count: response.data.imported }))
       onImported()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'import')
+      toast.error(error.response?.data?.error || t('messages.errorImport'))
     } finally {
       setLoading(false)
     }

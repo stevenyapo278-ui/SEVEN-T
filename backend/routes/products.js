@@ -423,6 +423,7 @@ router.post('/:id/images', authenticateToken, async (req, res) => {
             await db.run('UPDATE products SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', url.trim(), req.params.id);
         }
 
+        messageAnalyzer.invalidateProductCache(req.user.id);
         const image = await db.get('SELECT * FROM product_images WHERE id = ?', id);
         res.status(201).json({ image });
     } catch (error) {
@@ -440,6 +441,7 @@ router.delete('/:productId/images/:imageId', authenticateToken, async (req, res)
         }
 
         await db.run('DELETE FROM product_images WHERE id = ? AND product_id = ?', req.params.imageId, req.params.productId);
+        messageAnalyzer.invalidateProductCache(req.user.id);
         res.json({ message: 'Image supprimée' });
     } catch (error) {
         console.error('Delete product image error:', error);
