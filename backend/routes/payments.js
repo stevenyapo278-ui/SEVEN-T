@@ -251,6 +251,21 @@ router.post('/:id/cancel', authenticateToken, async (req, res) => {
     }
 });
 
+// Delete payment link
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const payment = await db.get('SELECT * FROM payment_links WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        if (!payment) {
+            return res.status(404).json({ error: 'Paiement non trouvé' });
+        }
+        await db.run('DELETE FROM payment_links WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        res.json({ message: 'Lien supprimé' });
+    } catch (error) {
+        console.error('Delete payment error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get payment stats
 router.get('/stats', authenticateToken, async (req, res) => {
     try {

@@ -52,9 +52,15 @@ import {
 const ORDER_STATUSES = {
   pending: { label: 'En attente', color: 'amber', icon: Clock },
   validated: { label: 'Validée', color: 'green', icon: CheckCircle },
+  delivered: { label: 'Livrée / Payée', color: 'emerald', icon: CheckCircle },
   rejected: { label: 'Rejetée', color: 'red', icon: XCircle },
   completed: { label: 'Terminée', color: 'blue', icon: Check },
   cancelled: { label: 'Annulée', color: 'gray', icon: X }
+}
+
+const PAYMENT_METHODS = {
+  on_delivery: { label: 'Paiement à la livraison', short: 'À la livraison' },
+  online: { label: 'Paiement en ligne', short: 'En ligne' }
 }
 
 const ORDERS_TABS = [
@@ -77,7 +83,7 @@ export default function Orders() {
 
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ pending: 0, validated: 0, rejected: 0, totalRevenue: 0 })
+  const [stats, setStats] = useState({ pending: 0, validated: 0, delivered: 0, rejected: 0, totalRevenue: 0 })
   const [statusFilter, setStatusFilter] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedOrder, setExpandedOrder] = useState(null)
@@ -91,6 +97,7 @@ export default function Orders() {
   const [analyticsPeriod, setAnalyticsPeriod] = useState('30d')
   const [paymentLinkModal, setPaymentLinkModal] = useState({ open: false, order: null, message: '', url: '', loading: false })
   const [paymetrustConfigured, setPaymetrustConfigured] = useState(false)
+  const [sendingInConversation, setSendingInConversation] = useState(null)
 
   useEffect(() => {
     loadOrders()
@@ -222,6 +229,49 @@ export default function Orders() {
     }
   }
 
+  const handleMarkDelivered = async (orderId) => {
+    try {
+      const response = await api.post(`/orders/${orderId}/mark-delivered`)
+      if (response.data.success) {
+        toast.success('Commande marquée comme livrée (paiement reçu).')
+        loadOrders()
+        loadStats()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur')
+    }
+  }
+
+  const handlePaymentMethodChange = async (orderId, paymentMethod) => {
+    try {
+      const response = await api.patch(`/orders/${orderId}/payment-method`, { payment_method: paymentMethod })
+      if (response.data.success) {
+        toast.success('Mode de paiement mis à jour.')
+        loadOrders()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur')
+    }
+  }
+
+  const handleSendPaymentLinkInConversation = async (order) => {
+    if (!order.conversation_id) {
+      toast.error('Cette commande n\'est pas liée à une conversation WhatsApp')
+      return
+    }
+    setSendingInConversation(order.id)
+    try {
+      await api.post(`/orders/${order.id}/send-payment-link-in-conversation`)
+      toast.success('Lien de paiement envoyé dans la conversation WhatsApp.')
+      setPaymentLinkModal(prev => ({ ...prev, open: false }))
+      loadOrders()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur')
+    } finally {
+      setSendingInConversation(null)
+    }
+  }
+
   const handleReject = async (orderId) => {
     const reason = prompt('Raison du rejet (optionnel):')
     try {
@@ -323,6 +373,22 @@ export default function Orders() {
   })
 
   const getStatusInfo = (status) => ORDER_STATUSES[status] || ORDER_STATUSES.pending
+
+  const getStatusBadgeClasses = (status) => {
+    const c = getStatusInfo(status).color
+    if (c === 'emerald') return 'bg-emerald-500/20 text-emerald-400'
+    return `bg-${c}-500/20 text-${c}-400`
+  }
+  const getStatusIconBgClasses = (status) => {
+    const c = getStatusInfo(status).color
+    if (c === 'emerald') return 'bg-emerald-500/20'
+    return `bg-${c}-500/20`
+  }
+  const getStatusIconClasses = (status) => {
+    const c = getStatusInfo(status).color
+    if (c === 'emerald') return 'text-emerald-400'
+    return `text-${c}-400`
+  }
 
   const handleExportCsv = async () => {
     try {
@@ -446,7 +512,7 @@ export default function Orders() {
           </div>
 
           {/* Stats - always visible in header on Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
             <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-500/20 rounded-xl">
@@ -466,6 +532,17 @@ export default function Orders() {
                 <div>
                   <p className="text-2xl font-bold text-gray-100">{stats.validated}</p>
                   <p className="text-xs text-gray-500">Validées</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/20 rounded-xl">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-emerald-400">{stats.delivered ?? 0}</p>
+                  <p className="text-xs text-gray-500">Livrées</p>
                 </div>
               </div>
             </div>
@@ -882,7 +959,7 @@ export default function Orders() {
               <div 
                 key={order.id}
                 className={`card overflow-hidden ${
-                  order.status === 'pending' ? 'border-l-4 border-l-amber-500' : ''
+                  order.status === 'pending' ? 'border-l-4 border-l-amber-500' : order.status === 'delivered' ? 'border-l-4 border-l-emerald-500' : ''
                 }`}
               >
                 {/* Order Header */}
@@ -892,13 +969,13 @@ export default function Orders() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-xl bg-${statusInfo.color}-500/20`}>
-                        <StatusIcon className={`w-6 h-6 text-${statusInfo.color}-400`} />
+                      <div className={`p-3 rounded-xl ${getStatusIconBgClasses(order.status)}`}>
+                        <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-gray-100">{order.customer_name}</h3>
-                          <span className={`px-2 py-0.5 text-xs rounded-full bg-${statusInfo.color}-500/20 text-${statusInfo.color}-400`}>
+                          <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusBadgeClasses(order.status)}`}>
                             {statusInfo.label}
                           </span>
                         </div>
@@ -966,8 +1043,28 @@ export default function Orders() {
                       </div>
                     )}
 
-                    {/* Actions: send payment link (pending or validated) */}
-                    {(order.status === 'pending' || order.status === 'validated') && (
+                    {/* Payment method: always show and editable for pending/validated */}
+                    <div className="mb-4">
+                      <p className="text-xs text-gray-500 mb-1">Mode de paiement</p>
+                      {(order.status === 'pending' || order.status === 'validated') ? (
+                        <select
+                          value={order.payment_method || 'on_delivery'}
+                          onChange={(e) => { e.stopPropagation(); handlePaymentMethodChange(order.id, e.target.value); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="input-dark w-full max-w-xs"
+                        >
+                          <option value="on_delivery">{PAYMENT_METHODS.on_delivery.label}</option>
+                          <option value="online">{PAYMENT_METHODS.online.label}</option>
+                        </select>
+                      ) : (
+                        <p className="text-sm text-gray-300">
+                          {PAYMENT_METHODS[order.payment_method]?.label || PAYMENT_METHODS.on_delivery.label}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Actions: send payment link - always available (e.g. client sans liquidité à la livraison) */}
+                    {['pending', 'validated', 'delivered'].includes(order.status) && (
                       <div className="flex flex-wrap items-center gap-2 mb-4">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCreatePaymentLink(order); }}
@@ -976,6 +1073,20 @@ export default function Orders() {
                           <Link2 className="w-4 h-4" />
                           Envoyer lien de paiement au client
                         </button>
+                        {order.conversation_id && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleSendPaymentLinkInConversation(order); }}
+                            disabled={sendingInConversation === order.id}
+                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors disabled:opacity-50"
+                          >
+                            {sendingInConversation === order.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <MessageSquare className="w-4 h-4" />
+                            )}
+                            Envoyer le lien dans la conversation WhatsApp
+                          </button>
+                        )}
                       </div>
                     )}
 
@@ -1037,13 +1148,24 @@ export default function Orders() {
                       </div>
                     )}
 
-                    {/* Validation info */}
-                    {order.status === 'validated' && order.validated_at && (
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-2 text-sm text-green-400">
-                          <CheckCircle className="w-4 h-4" />
-                          Validée le {formatDate(order.validated_at)}
-                          {order.validated_by && ` par ${order.validated_by}`}
+                    {/* Validated: show "Marquer comme livré" + validation info */}
+                    {order.status === 'validated' && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <div className="flex items-center gap-3">
+                          {order.validated_at && (
+                            <div className="flex items-center gap-2 text-sm text-green-400">
+                              <CheckCircle className="w-4 h-4" />
+                              Validée le {formatDate(order.validated_at)}
+                              {order.validated_by && ` par ${order.validated_by}`}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => handleMarkDelivered(order.id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors"
+                          >
+                            <Package className="w-4 h-4" />
+                            Marquer comme livré (paiement reçu)
+                          </button>
                         </div>
                         {showDeleteConfirm === order.id ? (
                           <div className="flex items-center gap-2">
@@ -1067,6 +1189,27 @@ export default function Orders() {
                             className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                             title="Supprimer"
                           >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Delivered info */}
+                    {order.status === 'delivered' && order.delivered_at && (
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center gap-2 text-sm text-emerald-400">
+                          <CheckCircle className="w-4 h-4" />
+                          Livrée le {formatDate(order.delivered_at)}
+                        </div>
+                        {showDeleteConfirm === order.id ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-400">Confirmer ?</span>
+                            <button onClick={() => handleDelete(order.id)} className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600">Oui</button>
+                            <button onClick={() => setShowDeleteConfirm(null)} className="px-3 py-1.5 bg-space-700 text-gray-300 text-sm rounded-lg">Non</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setShowDeleteConfirm(order.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg" title="Supprimer">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}

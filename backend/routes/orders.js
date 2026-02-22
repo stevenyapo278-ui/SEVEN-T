@@ -1,8 +1,11 @@
 import express from 'express';
+import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate, orderPaymentLinkSchema } from '../middleware/security.js';
 import { orderService, ORDER_STATUSES } from '../services/orders.js';
 import { createPaymentLink } from './payments.js';
+import paymetrust from '../services/paymetrust.js';
+import { whatsappManager } from '../services/whatsapp.js';
 
 const router = express.Router();
 
@@ -97,7 +100,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create order manually
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { customerName, customerPhone, items, notes, currency } = req.body;
+        const { customerName, customerPhone, items, notes, currency, paymentMethod } = req.body;
         
         if (!customerName || !items || items.length === 0) {
             return res.status(400).json({ error: 'Nom du client et articles requis' });
@@ -108,7 +111,8 @@ router.post('/', authenticateToken, async (req, res) => {
             customerPhone,
             items,
             notes,
-            currency
+            currency,
+            paymentMethod: paymentMethod || 'on_delivery'
         });
 
         if (!order) {
@@ -138,6 +142,96 @@ router.post('/:id/validate', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Validate order error:', error);
         res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Update order payment method
+router.patch('/:id/payment-method', authenticateToken, async (req, res) => {
+    try {
+        const { payment_method: paymentMethod } = req.body;
+        const result = await orderService.updatePaymentMethod(req.params.id, req.user.id, paymentMethod);
+        if (!result.success) return res.status(400).json({ error: result.error });
+        res.json({ success: true, order: result.order });
+    } catch (error) {
+        console.error('Update payment method error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Mark order as delivered (paiement à la livraison reçu)
+router.post('/:id/mark-delivered', authenticateToken, async (req, res) => {
+    try {
+        const result = await orderService.markAsDelivered(req.params.id, req.user.id);
+        if (!result.success) return res.status(400).json({ error: result.error });
+        res.json({ success: true, order: result.order });
+    } catch (error) {
+        console.error('Mark delivered error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Send payment link in WhatsApp conversation (checkout 100% in-app)
+router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (req, res) => {
+    try {
+        const order = await orderService.getOrderById(req.params.id, req.user.id);
+        if (!order) return res.status(404).json({ error: 'Commande non trouvée' });
+        if (order.status === 'rejected' || order.status === 'cancelled') {
+            return res.status(400).json({ error: 'Impossible d\'envoyer un lien pour cette commande' });
+        }
+        if (!order.conversation_id) {
+            return res.status(400).json({ error: 'Cette commande n\'est pas liée à une conversation WhatsApp' });
+        }
+
+        const conversation = await db.get(`
+            SELECT c.id, c.agent_id FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE c.id = ? AND a.user_id = ?
+        `, order.conversation_id, req.user.id);
+        if (!conversation) {
+            return res.status(404).json({ error: 'Conversation non trouvée' });
+        }
+
+        const itemsList = (order.items || [])
+            .map(i => `${i.product_name || 'Article'} x${i.quantity || 1}`)
+            .join(', ');
+        const description = itemsList ? `Commande: ${itemsList}` : `Commande #${(order.id || '').slice(0, 8)}`;
+        const provider = paymetrust.isConfigured() ? 'paymetrust' : 'manual';
+        const payment = await createPaymentLink(req.user.id, {
+            amount: order.total_amount,
+            currency: order.currency || 'XOF',
+            description,
+            order_id: order.id,
+            conversation_id: order.conversation_id,
+            provider,
+            expires_in_hours: 24
+        });
+        if (!payment) {
+            return res.status(500).json({ error: 'Erreur lors de la création du lien de paiement' });
+        }
+
+        const customerName = order.customer_name || 'Client';
+        const messageText = `Bonjour ${customerName},
+
+Voici votre lien de paiement pour la commande :
+
+📝 ${description}
+💵 Montant total : *${Number(order.total_amount).toLocaleString()} ${order.currency || 'XOF'}*
+
+🔗 Payer en ligne (lien sécurisé) :
+${payment.payment_url}
+
+⏰ Ce lien est valable 24h.`;
+
+        await whatsappManager.sendMessage(conversation.agent_id, order.conversation_id, messageText, req.user.id);
+
+        res.json({
+            success: true,
+            message: 'Lien de paiement envoyé dans la conversation WhatsApp',
+            payment_url: payment.payment_url
+        });
+    } catch (error) {
+        console.error('Send payment link in conversation error:', error);
+        res.status(500).json({ error: error.message || 'Erreur serveur' });
     }
 });
 
@@ -263,7 +357,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.delete('/bulk/:status', authenticateToken, async (req, res) => {
     try {
         const { status } = req.params;
-        const validStatuses = ['pending', 'validated', 'rejected', 'cancelled', 'completed'];
+        const validStatuses = ['pending', 'validated', 'rejected', 'cancelled', 'completed', 'delivered'];
         
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Statut invalide' });

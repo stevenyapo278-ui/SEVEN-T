@@ -16,11 +16,12 @@ export const ORDER_STATUSES = {
     validated: { label: 'Validée', color: 'green' },
     rejected: { label: 'Rejetée', color: 'red' },
     completed: { label: 'Terminée', color: 'blue' },
-    cancelled: { label: 'Annulée', color: 'gray' }
+    cancelled: { label: 'Annulée', color: 'gray' },
+    delivered: { label: 'Livrée / Payée', color: 'emerald' }
 };
 
 class OrderService {
-    async createOrder(userId, { conversationId, customerName, customerPhone, items, notes, currency = 'XOF' }) {
+    async createOrder(userId, { conversationId, customerName, customerPhone, items, notes, currency = 'XOF', paymentMethod = 'on_delivery' }) {
         try {
             const orderId = uuidv4();
             let totalAmount = 0;
@@ -29,10 +30,11 @@ class OrderService {
                 totalAmount += (item.quantity || 1) * (item.unitPrice || 0);
             }
 
+            const pm = paymentMethod === 'online' ? 'online' : 'on_delivery';
             await db.run(`
-                INSERT INTO orders (id, user_id, conversation_id, customer_name, customer_phone, total_amount, currency, notes)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `, orderId, userId, conversationId || null, customerName, customerPhone || null, totalAmount, currency, notes || null);
+                INSERT INTO orders (id, user_id, conversation_id, customer_name, customer_phone, total_amount, currency, notes, payment_method)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, orderId, userId, conversationId || null, customerName, customerPhone || null, totalAmount, currency, notes || null, pm);
 
             for (const item of items) {
                 const itemId = uuidv4();
@@ -296,6 +298,40 @@ class OrderService {
         }
     }
 
+    async updatePaymentMethod(orderId, userId, paymentMethod) {
+        try {
+            const order = await this.getOrderById(orderId, userId);
+            if (!order) return { success: false, error: 'Commande non trouvée' };
+            const pm = paymentMethod === 'online' ? 'online' : 'on_delivery';
+            await db.run(`
+                UPDATE orders SET payment_method = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?
+            `, pm, orderId, userId);
+            return { success: true, order: await this.getOrderById(orderId, userId) };
+        } catch (error) {
+            console.error('[Orders] Update payment method error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async markAsDelivered(orderId, userId) {
+        try {
+            const order = await this.getOrderById(orderId, userId);
+            if (!order) return { success: false, error: 'Commande non trouvée' };
+            if (order.status !== 'validated') {
+                return { success: false, error: 'Seules les commandes validées peuvent être marquées comme livrées' };
+            }
+            await db.run(`
+                UPDATE orders SET status = 'delivered', delivered_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND user_id = ?
+            `, orderId, userId);
+            console.log(`[Orders] Marked order ${orderId} as delivered`);
+            return { success: true, order: await this.getOrderById(orderId, userId) };
+        } catch (error) {
+            console.error('[Orders] Mark delivered error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     async updateProductStock(productId, userId, quantityChange, orderId = null, notes = null) {
         try {
             const product = await db.get('SELECT * FROM products WHERE id = ?', productId);
@@ -361,6 +397,7 @@ class OrderService {
         const stats = {
             pending: 0,
             validated: 0,
+            delivered: 0,
             rejected: 0,
             totalRevenue: 0,
             todayOrders: 0
@@ -376,7 +413,11 @@ class OrderService {
             if (row.status === 'pending') stats.pending = row.count;
             if (row.status === 'validated') {
                 stats.validated = row.count;
-                stats.totalRevenue = row.total || 0;
+                stats.totalRevenue = (stats.totalRevenue || 0) + (row.total || 0);
+            }
+            if (row.status === 'delivered') {
+                stats.delivered = row.count;
+                stats.totalRevenue = (stats.totalRevenue || 0) + (row.total || 0);
             }
             if (row.status === 'rejected') stats.rejected = row.count;
         }

@@ -445,6 +445,12 @@ class AIService {
         
         const parts = ['🔍 CONTEXTE TEMPS RÉEL:'];
         
+        // Language: force reply in the same language as the client
+        if (analysis.language && analysis.language !== 'unknown') {
+            const langLabel = analysis.language === 'fr' ? 'français' : analysis.language === 'en' ? 'anglais' : analysis.language;
+            parts.push(`\n🌐 Langue du message client : ${langLabel}. Réponds UNIQUEMENT dans cette langue.`);
+        }
+        
         // Intent
         if (analysis.intent) {
             const intentLabels = {

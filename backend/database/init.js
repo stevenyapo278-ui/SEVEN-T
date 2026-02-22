@@ -960,6 +960,55 @@ export async function initDatabase() {
         }
     }
 
+    // Migration: orders - payment_method (online | on_delivery) and delivered_at for "paiement à la livraison"
+    try {
+        await db.run('ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT \'on_delivery\'');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('orders.payment_method column migration:', e?.message);
+        }
+    }
+    try {
+        await db.run('ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('orders.delivered_at column migration:', e?.message);
+        }
+    }
+
+    // Migration: users.voice_responses_enabled (per-user TTS)
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS voice_responses_enabled INTEGER DEFAULT 0');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.voice_responses_enabled column migration:', e?.message);
+        }
+    }
+
+    // Seed platform setting: voice_responses_enabled (global TTS)
+    const voiceSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'voice_responses_enabled');
+    if (!voiceSetting) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'voice_responses_enabled', '0');
+    }
+
+    // Migration: users.parent_user_id (mode agence - sous-comptes)
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT');
+        const hasFk = await db.get(
+            "SELECT 1 FROM pg_constraint WHERE conname = 'users_parent_user_id_fkey'"
+        );
+        if (!hasFk) {
+            await db.run(`
+                ALTER TABLE users ADD CONSTRAINT users_parent_user_id_fkey
+                FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE SET NULL
+            `);
+        }
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.parent_user_id column migration:', e?.message);
+        }
+    }
+
     console.log('PostgreSQL schema initialized successfully');
 }
 

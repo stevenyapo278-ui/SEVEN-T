@@ -82,6 +82,7 @@ router.get('/users', authenticateAdmin, async (req, res) => {
 
         let query = `
             SELECT u.*,
+                   p.name as parent_name,
                    (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
                    (SELECT COUNT(*) FROM conversations c 
                     JOIN agents a ON c.agent_id = a.id 
@@ -91,6 +92,7 @@ router.get('/users', authenticateAdmin, async (req, res) => {
                     JOIN agents a ON c.agent_id = a.id 
                     WHERE a.user_id = u.id) as messages_count
             FROM users u
+            LEFT JOIN users p ON u.parent_user_id = p.id
             WHERE 1=1
         `;
         const params = [];
@@ -158,33 +160,54 @@ router.get('/users', authenticateAdmin, async (req, res) => {
 });
 
 // Get single user details
-router.get('/users/:id', authenticateAdmin, (req, res) => {
+router.get('/users/:id', authenticateAdmin, async (req, res) => {
     try {
-        const user = db.prepare(`
-            SELECT u.*,
-                   (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
-                   (SELECT COUNT(*) FROM conversations c 
-                    JOIN agents a ON c.agent_id = a.id 
-                    WHERE a.user_id = u.id) as conversations_count,
-                   (SELECT COUNT(*) FROM messages m 
-                    JOIN conversations c ON m.conversation_id = c.id 
-                    JOIN agents a ON c.agent_id = a.id 
-                    WHERE a.user_id = u.id) as messages_count
-            FROM users u
-            WHERE u.id = ?
-        `).get(req.params.id);
+        let user;
+        try {
+            user = await db.get(`
+                SELECT u.*,
+                       p.name as parent_name,
+                       (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
+                       (SELECT COUNT(*) FROM conversations c 
+                        JOIN agents a ON c.agent_id = a.id 
+                        WHERE a.user_id = u.id) as conversations_count,
+                       (SELECT COUNT(*) FROM messages m 
+                        JOIN conversations c ON m.conversation_id = c.id 
+                        JOIN agents a ON c.agent_id = a.id 
+                        WHERE a.user_id = u.id) as messages_count
+                FROM users u
+                LEFT JOIN users p ON u.parent_user_id = p.id
+                WHERE u.id = ?
+            `, req.params.id);
+        } catch (queryError) {
+            // Fallback when parent_user_id column does not exist (migration not run yet)
+            user = await db.get(`
+                SELECT u.*,
+                       (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
+                       (SELECT COUNT(*) FROM conversations c 
+                        JOIN agents a ON c.agent_id = a.id 
+                        WHERE a.user_id = u.id) as conversations_count,
+                       (SELECT COUNT(*) FROM messages m 
+                        JOIN conversations c ON m.conversation_id = c.id 
+                        JOIN agents a ON c.agent_id = a.id 
+                        WHERE a.user_id = u.id) as messages_count
+                FROM users u
+                WHERE u.id = ?
+            `, req.params.id);
+            if (user) user.parent_name = null;
+        }
 
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
         // Get user's agents
-        const agents = db.prepare(`
+        const agents = await db.all(`
             SELECT a.*,
                    (SELECT COUNT(*) FROM conversations WHERE agent_id = a.id) as conversations_count
             FROM agents a
             WHERE a.user_id = ?
-        `).all(req.params.id);
+        `, req.params.id);
 
         // Remove password
         const { password, ...userWithoutPassword } = user;
@@ -199,7 +222,7 @@ router.get('/users/:id', authenticateAdmin, (req, res) => {
 // Update user
 router.put('/users/:id', authenticateAdmin, async (req, res) => {
     try {
-        const { name, email, company, plan, credits, is_admin, is_active } = req.body;
+        const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, parent_user_id } = req.body;
 
         const existing = await db.get('SELECT id, is_admin FROM users WHERE id = ?', req.params.id);
         if (!existing) {
@@ -230,6 +253,8 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
             }
         }
 
+        const voiceValue = voice_responses_enabled !== undefined ? (voice_responses_enabled ? 1 : 0) : null;
+        const parentId = parent_user_id === '' || parent_user_id === null || parent_user_id === undefined ? null : parent_user_id;
         await db.run(`
             UPDATE users SET 
                 name = COALESCE(?, name),
@@ -239,9 +264,11 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
                 credits = COALESCE(?, credits),
                 is_admin = COALESCE(?, is_admin),
                 is_active = COALESCE(?, is_active),
+                voice_responses_enabled = CASE WHEN ? IS NOT NULL THEN ? ELSE voice_responses_enabled END,
+                parent_user_id = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, name, email, company, plan, credits, is_admin, is_active, req.params.id);
+        `, name, email, company, plan, credits, is_admin, is_active, voiceValue, voiceValue, parentId, req.params.id);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;
@@ -482,27 +509,27 @@ router.post('/users/:id/restore', authenticateAdmin, (req, res) => {
 // Create new user (admin)
 router.post('/users', authenticateAdmin, async (req, res) => {
     try {
-        const { name, email, password, company, plan, credits, is_admin } = req.body;
+        const { name, email, password, company, plan, credits, is_admin, parent_user_id } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Nom, email et mot de passe requis' });
         }
 
-        // Check if email exists
-        const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+        const existing = await db.get('SELECT id FROM users WHERE email = ?', email);
         if (existing) {
             return res.status(400).json({ error: 'Cet email est déjà utilisé' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = uuidv4();
+        const parentId = parent_user_id === '' || parent_user_id === null || parent_user_id === undefined ? null : parent_user_id;
 
-        db.prepare(`
-            INSERT INTO users (id, name, email, password, company, plan, credits, is_admin)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(userId, name, email, hashedPassword, company || '', plan || 'free', credits || 100, is_admin || 0);
+        await db.run(`
+            INSERT INTO users (id, name, email, password, company, plan, credits, is_admin, parent_user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, userId, name, email, hashedPassword, company || '', plan || 'free', credits ?? 100, is_admin || 0, parentId);
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+        const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         const { password: pwd, ...userWithoutPassword } = user;
 
         res.status(201).json({ user: userWithoutPassword });

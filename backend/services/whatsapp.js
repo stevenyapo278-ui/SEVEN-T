@@ -29,6 +29,7 @@ import { notificationService } from './notifications.js';
 import { staticResponses } from '../config/staticResponses.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
+import * as ttsService from './tts.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
@@ -1256,9 +1257,25 @@ class WhatsAppManager {
                 });
                 // #endregion
                 let sendResult;
-                try {
-                    sendResult = await sock.sendMessage(replyToJidForSend, { text: aiResponse.content });
-                } catch (sendErr) {
+                let sentAsVoice = false;
+                const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
+                const userVoiceRow = await db.get('SELECT voice_responses_enabled FROM users WHERE id = ?', userId);
+                const userVoice = !!(userVoiceRow?.voice_responses_enabled === 1 || userVoiceRow?.voice_responses_enabled === true);
+                if (messageType === 'audio' && platformVoice && userVoice && ttsService.isAvailable()) {
+                    const audioBuffer = await ttsService.generate(aiResponse.content, { lang: messageAnalysis?.language || 'fr' });
+                    if (audioBuffer && audioBuffer.length > 0) {
+                        try {
+                            sendResult = await sock.sendMessage(replyToJidForSend, { audio: audioBuffer, mimetype: 'audio/mpeg' });
+                            sentAsVoice = true;
+                        } catch (e) {
+                            console.warn('[WhatsApp] TTS audio send failed, falling back to text:', e?.message);
+                        }
+                    }
+                }
+                if (!sendResult) {
+                    try {
+                        sendResult = await sock.sendMessage(replyToJidForSend, { text: aiResponse.content });
+                    } catch (sendErr) {
                     // #region agent log
                     debugIngest({
                         location: 'whatsapp.js:sendError',
@@ -1270,6 +1287,7 @@ class WhatsAppManager {
                     });
                     // #endregion
                     throw sendErr;
+                }
                 }
                 // #region agent log
                 debugIngest({
@@ -1288,9 +1306,9 @@ class WhatsAppManager {
                 const whatsappMsgId = sendResult?.key?.id;
                 const outMsgId = uuidv4();
                 await db.run(`
-                    INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, created_at)
-                    VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?)
-                `, outMsgId, conversation.id, aiResponse.content, aiResponse.tokens || 0, whatsappMsgId, new Date().toISOString());
+                    INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, created_at)
+                    VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?)
+                `, outMsgId, conversation.id, aiResponse.content, aiResponse.tokens || 0, whatsappMsgId, sentAsVoice ? 'audio' : null, new Date().toISOString());
                 if (aiResponse.credits_deducted !== undefined) {
                     console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}. Remaining: ${aiResponse.credits_remaining}`);
                 }

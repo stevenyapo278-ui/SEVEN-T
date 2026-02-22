@@ -136,6 +136,16 @@ export default function Admin() {
     }
   }
 
+  const saveVoiceResponsesEnabled = async (enabled) => {
+    try {
+      const res = await api.put('/admin/ai/settings', { voice_responses_enabled: enabled })
+      setPlatformSettings(prev => ({ ...prev, ...res.data.settings }))
+      toast.success(enabled ? 'Réponses vocales activées pour la plateforme' : 'Réponses vocales désactivées pour la plateforme')
+    } catch (error) {
+      toast.error('Erreur lors de l\'enregistrement')
+    }
+  }
+
   const loadPlans = async () => {
     setLoadingPlans(true)
     try {
@@ -583,6 +593,7 @@ export default function Admin() {
           platformSettings={platformSettings}
           savingMediaModel={savingMediaModel}
           onSaveMediaModel={saveDefaultMediaModel}
+          onSaveVoiceResponsesEnabled={saveVoiceResponsesEnabled}
           onToggleModel={handleToggleModel}
           onDeleteModel={handleDeleteModel}
           onEditModel={(model) => { setEditingModel(model); setShowModelModal(true); }}
@@ -639,6 +650,7 @@ export default function Admin() {
         <EditUserModal 
           user={selectedUser}
           plans={plans}
+          allUsers={users}
           onClose={() => { setShowUserModal(false); setSelectedUser(null); }}
           onSave={() => { setShowUserModal(false); setSelectedUser(null); loadUsers(); }}
         />
@@ -648,6 +660,7 @@ export default function Admin() {
       {showCreateModal && (
         <CreateUserModal 
           plans={plans}
+          allUsers={users}
           onClose={() => { setShowCreateModal(false); }}
           onSave={() => { setShowCreateModal(false); loadUsers(); }}
         />
@@ -986,6 +999,9 @@ function UsersContent({
                         </div>
                         <div>
                           <div className="font-medium text-gray-100">{user.name}</div>
+                          {user.parent_name && (
+                            <div className="text-xs text-gray-500">Sous-compte de {user.parent_name}</div>
+                          )}
                           <div className="text-sm text-gray-500">{user.email}</div>
                         </div>
                       </div>
@@ -1097,7 +1113,7 @@ function getCreditsForPlan(plans, planId) {
 }
 
 // Edit User Modal
-function EditUserModal({ user, onClose, onSave, plans = [] }) {
+function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
   const [formData, setFormData] = useState({
     name: user.name,
     email: user.email,
@@ -1105,7 +1121,9 @@ function EditUserModal({ user, onClose, onSave, plans = [] }) {
     plan: user.plan,
     credits: user.credits,
     is_admin: user.is_admin,
-    is_active: user.is_active
+    is_active: user.is_active,
+    voice_responses_enabled: !!user.voice_responses_enabled,
+    parent_user_id: user.parent_user_id || ''
   })
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
@@ -1122,7 +1140,10 @@ function EditUserModal({ user, onClose, onSave, plans = [] }) {
     e.preventDefault()
     setSaving(true)
     try {
-      await api.put(`/admin/users/${user.id}`, formData)
+      await api.put(`/admin/users/${user.id}`, {
+        ...formData,
+        parent_user_id: formData.parent_user_id || null
+      })
       
       if (newPassword) {
         await api.post(`/admin/users/${user.id}/reset-password`, { new_password: newPassword })
@@ -1231,7 +1252,32 @@ function EditUserModal({ user, onClose, onSave, plans = [] }) {
               />
               <span className="text-sm text-gray-300">Compte actif</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.voice_responses_enabled}
+                onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
+                className="w-4 h-4 rounded border-space-700 bg-space-800 text-violet-400 focus:ring-violet-400"
+              />
+              <span className="text-sm text-gray-300">Réponses vocales activées pour cet utilisateur</span>
+            </label>
           </div>
+          {allUsers.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Compte agence (parent)</label>
+              <select
+                value={formData.parent_user_id || ''}
+                onChange={(e) => setFormData({ ...formData, parent_user_id: e.target.value || '' })}
+                className="input-dark w-full"
+              >
+                <option value="">Aucun (compte indépendant)</option>
+                {allUsers.filter(u => u.id !== user.id).map(u => (
+                  <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Sous-compte d&apos;un compte agence</p>
+            </div>
+          )}
           {isPromotingToAdmin && (
             <div className="p-3 rounded-xl bg-gold-400/10 border border-gold-400/30">
               <p className="text-sm text-gray-300 mb-2">
@@ -1273,7 +1319,7 @@ function EditUserModal({ user, onClose, onSave, plans = [] }) {
 }
 
 // Create User Modal
-function CreateUserModal({ onClose, onSave, plans = [] }) {
+function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -1281,7 +1327,8 @@ function CreateUserModal({ onClose, onSave, plans = [] }) {
     company: '',
     plan: 'free',
     credits: 100,
-    is_admin: 0
+    is_admin: 0,
+    parent_user_id: ''
   })
   const [saving, setSaving] = useState(false)
   const initialCreditsSyncedRef = useRef(false)
@@ -1303,7 +1350,7 @@ function CreateUserModal({ onClose, onSave, plans = [] }) {
     e.preventDefault()
     setSaving(true)
     try {
-      await api.post('/admin/users', formData)
+      await api.post('/admin/users', { ...formData, parent_user_id: formData.parent_user_id || null })
       toast.success('Utilisateur créé')
       onSave()
     } catch (error) {
@@ -1398,6 +1445,22 @@ function CreateUserModal({ onClose, onSave, plans = [] }) {
               />
             </div>
           </div>
+          {allUsers.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Compte agence (parent)</label>
+              <select
+                value={formData.parent_user_id || ''}
+                onChange={(e) => setFormData({ ...formData, parent_user_id: e.target.value || '' })}
+                className="input-dark w-full"
+              >
+                <option value="">Aucun (compte indépendant)</option>
+                {allUsers.map(u => (
+                  <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Créer comme sous-compte d&apos;un compte agence</p>
+            </div>
+          )}
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -1787,12 +1850,13 @@ function AnomaliesContent({ anomalies, stats, loading, onResolve, onResolveByTyp
 // ==================== AI MODELS CONTENT ====================
 function AIModelsContent({ 
   models, apiKeys, stats, loading, 
-  platformSettings = {}, savingMediaModel, onSaveMediaModel,
+  platformSettings = {}, savingMediaModel, onSaveMediaModel, onSaveVoiceResponsesEnabled,
   onToggleModel, onDeleteModel, onEditModel, onCreateModel,
   onEditKey, onTestKey, onRefresh 
 }) {
   const [showKeys, setShowKeys] = useState({})
   const mediaModelValue = platformSettings.default_media_model || 'gemini-1.5-flash'
+  const voiceResponsesEnabled = platformSettings.voice_responses_enabled === '1'
   const MEDIA_MODEL_OPTIONS = [
     { value: 'models/gemini-2.5-flash', label: 'Gemini 2.5 Flash - Dernier modèle ⭐' },
     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash - Très rapide' },
@@ -1889,6 +1953,23 @@ function AIModelsContent({
           </select>
           {savingMediaModel && <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />}
         </div>
+      </div>
+
+      {/* Voice responses (TTS) - platform-wide */}
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold text-gray-100 mb-2">Réponses vocales (TTS)</h3>
+        <p className="text-gray-400 text-sm mb-4">
+          Si activé, les utilisateurs autorisés peuvent recevoir une réponse en message vocal lorsque le client envoie une note vocale. Désactivé par défaut.
+        </p>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={voiceResponsesEnabled}
+            onChange={(e) => onSaveVoiceResponsesEnabled?.(e.target.checked)}
+            className="w-4 h-4 rounded border-space-700 bg-space-800 text-violet-400 focus:ring-violet-400"
+          />
+          <span className="text-sm text-gray-300">Réponses vocales activées pour la plateforme</span>
+        </label>
       </div>
 
       {/* API Keys Section */}
