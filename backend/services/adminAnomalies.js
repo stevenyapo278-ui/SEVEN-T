@@ -348,7 +348,7 @@ class AdminAnomaliesService {
             `);
 
             for (const user of users) {
-                const plan = getPlan(user.plan);
+                const plan = await getPlan(user.plan);
                 const agentsCount = Number(user.agents_count);
                 const waCount = Number(user.wa_count);
                 if (plan.limits.agents !== -1 && agentsCount > plan.limits.agents) {

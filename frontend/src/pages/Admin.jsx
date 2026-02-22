@@ -1697,42 +1697,79 @@ function AnomaliesContent({ anomalies, stats, loading, onResolve, onResolveByTyp
           {anomalies.map((anomaly) => {
             const typeInfo = getTypeInfo(anomaly.type)
             const TypeIcon = typeInfo.icon
+            const hasAccount = anomaly.user_id || anomaly.user_email || anomaly.user_name
+            const hasAgent = anomaly.agent_id || anomaly.agent_name
+            const hasMetadata = anomaly.metadata && Object.keys(anomaly.metadata).length > 0
             return (
               <div 
                 key={anomaly.id} 
                 className={`card p-4 border ${getSeverityColor(anomaly.severity)}`}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${getSeverityColor(anomaly.severity)}`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${getSeverityColor(anomaly.severity)}`}>
                     <TypeIcon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h4 className="font-medium text-gray-100">{anomaly.title}</h4>
                       <span className={`px-2 py-0.5 rounded text-xs ${getSeverityColor(anomaly.severity)}`}>
                         {anomaly.severity}
                       </span>
+                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                        {typeInfo.label}
+                      </span>
                     </div>
-                    <p className="text-sm text-gray-400 mb-2">{anomaly.message}</p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      <span>{formatDate(anomaly.created_at)}</span>
-                      {anomaly.user_name && (
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {anomaly.user_name}
-                        </span>
-                      )}
-                      {anomaly.agent_name && (
-                        <span className="flex items-center gap-1">
-                          <Bot className="w-3 h-3" />
-                          {anomaly.agent_name}
-                        </span>
-                      )}
+                    <p className="text-sm text-gray-400 mb-3">{anomaly.message}</p>
+
+                    {/* Compte concerné */}
+                    {hasAccount && (
+                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          Compte concerné
+                        </p>
+                        <div className="text-sm text-gray-300 space-y-0.5">
+                          {anomaly.user_name && <p><span className="text-gray-500">Nom :</span> {anomaly.user_name}</p>}
+                          {anomaly.user_email && <p><span className="text-gray-500">Email :</span> {anomaly.user_email}</p>}
+                          {anomaly.user_id && <p className="text-xs text-gray-500 font-mono">ID : {anomaly.user_id}</p>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Agent concerné */}
+                    {hasAgent && (
+                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                          <Bot className="w-3.5 h-3.5" />
+                          Agent concerné
+                        </p>
+                        <div className="text-sm text-gray-300 space-y-0.5">
+                          {anomaly.agent_name && <p><span className="text-gray-500">Nom :</span> {anomaly.agent_name}</p>}
+                          {anomaly.agent_id && <p className="text-xs text-gray-500 font-mono">ID : {anomaly.agent_id}</p>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Métadonnées / Détails techniques */}
+                    {hasMetadata && (
+                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
+                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">Détails techniques</p>
+                        <pre className="text-xs text-gray-300 overflow-x-auto whitespace-pre-wrap font-sans">
+                          {JSON.stringify(anomaly.metadata, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+                      <span title={new Date(anomaly.created_at).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'medium' })}>
+                        {formatDate(anomaly.created_at)}
+                      </span>
+                      <span className="font-mono text-gray-600" title={`ID anomalie: ${anomaly.id}`}>#{anomaly.id?.slice(0, 8)}…</span>
                     </div>
                   </div>
                   <button
                     onClick={() => onResolve(anomaly.id)}
-                    className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                    className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors shrink-0"
                     title="Marquer comme résolu"
                   >
                     <CheckCircle className="w-5 h-5" />
