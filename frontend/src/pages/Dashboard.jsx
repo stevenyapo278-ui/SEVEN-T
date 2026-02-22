@@ -339,8 +339,8 @@ export default function Dashboard() {
           
           {agentStatusData.length > 0 ? (
             <div className="flex flex-col items-center">
-              <div className="w-full min-h-[180px]" style={{ height: 180, minWidth: 0 }}>
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={160}>
+              <div className="w-full" style={{ width: '100%', minWidth: 200, height: 180, minHeight: 160 }}>
+                <ResponsiveContainer width="100%" height={180} minWidth={200} minHeight={160}>
                 <PieChart>
                   <Pie
                     data={agentStatusData}

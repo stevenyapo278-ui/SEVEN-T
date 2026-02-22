@@ -1123,6 +1123,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     is_admin: user.is_admin,
     is_active: user.is_active,
     voice_responses_enabled: !!user.voice_responses_enabled,
+    payment_module_enabled: !!user.payment_module_enabled,
     parent_user_id: user.parent_user_id || ''
   })
   const [newPassword, setNewPassword] = useState('')
@@ -1261,6 +1262,15 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               />
               <span className="text-sm text-gray-300">Réponses vocales activées pour cet utilisateur</span>
             </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={formData.payment_module_enabled}
+              onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
+              className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+            />
+            <span className="text-sm text-gray-300">Module Moyens de paiement activé (config PaymeTrust, etc.)</span>
           </div>
           {allUsers.length > 0 && (
             <div>

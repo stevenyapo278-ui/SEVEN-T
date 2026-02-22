@@ -10,9 +10,9 @@ if (isProduction && !process.env.JWT_SECRET) {
     process.exit(1);
 }
 
-// In development, generate a consistent secret per session (warning will be shown)
+// In development, generate a consistent secret per process (warning will be shown)
 const devSecret = crypto.randomBytes(64).toString('hex');
-const JWT_SECRET = process.env.JWT_SECRET || devSecret;
+export const JWT_SECRET = process.env.JWT_SECRET || devSecret;
 
 if (!process.env.JWT_SECRET) {
     console.warn('⚠️  Using auto-generated JWT_SECRET. Set JWT_SECRET in .env for persistent sessions.');
@@ -88,4 +88,4 @@ export async function requireAdmin(req, res, next) {
     next();
 }
 
-export default { authenticateToken, authenticateAdmin, requireAdmin, generateToken };
+export default { authenticateToken, authenticateAdmin, requireAdmin, generateToken, JWT_SECRET };

@@ -204,8 +204,8 @@ export default function Analytics() {
         {/* Messages Timeline */}
         <div className="card p-6">
           <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Messages dans le temps</h3>
-          <div className="h-80 min-h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+          <div className="w-full" style={{ width: '100%', minWidth: 200, height: 320, minHeight: 200 }}>
+            <ResponsiveContainer width="100%" height={320} minWidth={200} minHeight={200}>
               <AreaChart data={timeline}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
@@ -246,8 +246,8 @@ export default function Analytics() {
               <span>Pics: {peakHours.peakHours?.join(', ') || 'N/A'}</span>
             </div>
           </div>
-          <div className="h-80 min-h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+          <div className="w-full" style={{ width: '100%', minWidth: 200, height: 320, minHeight: 200 }}>
+            <ResponsiveContainer width="100%" height={320} minWidth={200} minHeight={200}>
               <BarChart data={peakHours.data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="label" stroke="#9CA3AF" fontSize={10} interval={2} />

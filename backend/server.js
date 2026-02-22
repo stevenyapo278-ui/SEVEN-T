@@ -16,7 +16,7 @@ import {
     helmetConfig,
     sanitizeInput 
 } from './middleware/security.js';
-import { authenticateToken } from './middleware/auth.js';
+import { authenticateToken, JWT_SECRET } from './middleware/auth.js';
 import jwt from 'jsonwebtoken';
 
 // Routes
@@ -199,12 +199,12 @@ app.get('/api/users/me', async (req, res) => {
         if (!token) {
             return res.json({ user: null });
         }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret');
+        const decoded = jwt.verify(token, JWT_SECRET);
         const userId = decoded?.id;
         if (!userId) {
             return res.json({ user: null });
         }
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, payment_module_enabled FROM users WHERE id = ?', userId);
         return res.json({ user: user || null });
     } catch (err) {
         console.error('GET /api/users/me error:', err?.message || err);

@@ -222,7 +222,7 @@ router.get('/users/:id', authenticateAdmin, async (req, res) => {
 // Update user
 router.put('/users/:id', authenticateAdmin, async (req, res) => {
     try {
-        const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, parent_user_id } = req.body;
+        const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, payment_module_enabled, parent_user_id } = req.body;
 
         const existing = await db.get('SELECT id, is_admin FROM users WHERE id = ?', req.params.id);
         if (!existing) {
@@ -254,6 +254,7 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
         }
 
         const voiceValue = voice_responses_enabled !== undefined ? (voice_responses_enabled ? 1 : 0) : null;
+        const paymentModuleValue = payment_module_enabled !== undefined ? (payment_module_enabled ? 1 : 0) : null;
         const parentId = parent_user_id === '' || parent_user_id === null || parent_user_id === undefined ? null : parent_user_id;
         await db.run(`
             UPDATE users SET 
@@ -265,10 +266,11 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
                 is_admin = COALESCE(?, is_admin),
                 is_active = COALESCE(?, is_active),
                 voice_responses_enabled = CASE WHEN ? IS NOT NULL THEN ? ELSE voice_responses_enabled END,
+                payment_module_enabled = CASE WHEN ? IS NOT NULL THEN ? ELSE payment_module_enabled END,
                 parent_user_id = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, name, email, company, plan, credits, is_admin, is_active, voiceValue, voiceValue, parentId, req.params.id);
+        `, name, email, company, plan, credits, is_admin, is_active, voiceValue, voiceValue, paymentModuleValue, paymentModuleValue, parentId, req.params.id);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;

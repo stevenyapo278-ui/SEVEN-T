@@ -108,7 +108,7 @@ export default function Orders() {
     const loadPaymentProviders = async () => {
       try {
         const res = await api.get('/payments/providers')
-        setPaymetrustConfigured(!!res.data?.paymetrustConfigured)
+        setPaymetrustConfigured(!!(res.data?.configured?.paymetrust ?? res.data?.paymetrustConfigured))
       } catch {
         // ignore
       }
@@ -743,7 +743,8 @@ export default function Orders() {
                 <h3 className="text-lg font-semibold text-gray-100 mb-4">
                   Évolution des ventes (30 derniers jours)
                 </h3>
-                <ResponsiveContainer width="100%" height={300} minWidth={0} minHeight={200}>
+                <div className="w-full" style={{ width: '100%', minWidth: 200, height: 300, minHeight: 200 }}>
+                <ResponsiveContainer width="100%" height={300} minWidth={200} minHeight={200}>
                   <LineChart data={analytics.chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis 
@@ -774,6 +775,7 @@ export default function Orders() {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Row 4: Top Products & Customers */}

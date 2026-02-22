@@ -11,18 +11,82 @@ const PAYMETRUST_API_KEY = process.env.PAYMETRUST_API_KEY;
 const isConfigured = () => !!(PAYMETRUST_ACCOUNT_ID && PAYMETRUST_API_KEY);
 
 /**
- * Créer une facture de paiement et obtenir l'URL de la page de paiement (HPP)
- * @param {Object} params
- * @param {number} params.amount - Montant
- * @param {string} params.currency - ISO (USD, EUR, XOF...)
- * @param {string} params.description - Description / référence commande
- * @param {string} params.referenceId - ID unique (ex: order_id ou payment_link id)
- * @param {string} params.returnUrl - URL de retour après paiement
- * @param {string} params.callbackUrl - URL webhook pour notification de statut
- * @param {string} [params.service] - Service PaymentsTrust (ex: payment_card_usd_hpp). Si non fourni, déduit de la devise.
+ * Create invoice using explicit credentials (per-user config).
+ * @param {Object} credentials - { account_id, api_key }
+ * @param {Object} params - amount, currency, description, referenceId, returnUrl, callbackUrl, service
  * @returns {Promise<{ invoiceId: string, paymentUrl: string }|null>}
  */
-async function createInvoice({ amount, currency, description, referenceId, returnUrl, callbackUrl, service }) {
+async function createInvoiceWithCredentials(credentials, { amount, currency, description, referenceId, returnUrl, callbackUrl, service }) {
+    const accountId = credentials?.account_id || credentials?.accountId;
+    const apiKey = credentials?.api_key || credentials?.apiKey;
+    if (!accountId || !apiKey) {
+        console.warn('[PaymeTrust] credentials missing account_id or api_key');
+        return null;
+    }
+
+    const safeService = service || getServiceForCurrency(currency);
+    const body = {
+        data: {
+            type: 'payment-invoices',
+            attributes: {
+                reference_id: referenceId,
+                description: description || `Paiement ${referenceId}`,
+                currency: currency || 'XOF',
+                amount: Number(amount),
+                service: safeService,
+                return_url: returnUrl,
+                callback_url: callbackUrl
+            }
+        }
+    };
+
+    const auth = Buffer.from(`${accountId}:${apiKey}`).toString('base64');
+    const url = `${(process.env.PAYMETRUST_BASE_URL || PAYMETRUST_BASE_URL).replace(/\/$/, '')}/api/payment-invoices`;
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${auth}`
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            console.error('[PaymeTrust] Create invoice error:', res.status);
+            return null;
+        }
+
+        const attrs = data?.data?.attributes;
+        const paymentUrl = attrs?.flow_data?.action || attrs?.flow_data?.metadata?.action;
+        const invoiceId = data?.data?.id;
+
+        if (!paymentUrl || !invoiceId) {
+            console.error('[PaymeTrust] Response missing flow_data.action or id');
+            return null;
+        }
+
+        return { invoiceId, paymentUrl };
+    } catch (err) {
+        console.error('[PaymeTrust] Request error:', err.message);
+        return null;
+    }
+}
+
+/**
+ * Créer une facture de paiement (env or credentials).
+ * Si credentials est fourni, l'utiliser ; sinon variables d'env (test/admin).
+ * @param {Object} params
+ * @param {Object} [params.credentials] - optional { account_id, api_key }
+ * @returns {Promise<{ invoiceId: string, paymentUrl: string }|null>}
+ */
+async function createInvoice({ amount, currency, description, referenceId, returnUrl, callbackUrl, service, credentials }) {
+    if (credentials && (credentials.account_id || credentials.accountId) && (credentials.api_key || credentials.apiKey)) {
+        return createInvoiceWithCredentials(credentials, { amount, currency, description, referenceId, returnUrl, callbackUrl, service });
+    }
     if (!isConfigured()) {
         console.warn('[PaymeTrust] PAYMETRUST_ACCOUNT_ID / PAYMETRUST_API_KEY non configurés');
         return null;
@@ -60,7 +124,7 @@ async function createInvoice({ amount, currency, description, referenceId, retur
         const data = await res.json();
 
         if (!res.ok) {
-            console.error('[PaymeTrust] Create invoice error:', res.status, data);
+            console.error('[PaymeTrust] Create invoice error:', res.status);
             return null;
         }
 
@@ -69,7 +133,7 @@ async function createInvoice({ amount, currency, description, referenceId, retur
         const invoiceId = data?.data?.id;
 
         if (!paymentUrl || !invoiceId) {
-            console.error('[PaymeTrust] Response missing flow_data.action or id:', data);
+            console.error('[PaymeTrust] Response missing flow_data.action or id');
             return null;
         }
 
@@ -95,5 +159,6 @@ function getServiceForCurrency(currency) {
 
 export default {
     isConfigured,
-    createInvoice
+    createInvoice,
+    createInvoiceWithCredentials
 };

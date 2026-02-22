@@ -5,11 +5,10 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import db from '../database/init.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, JWT_SECRET } from '../middleware/auth.js';
 import * as outlookService from '../services/outlook.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const STATE_EXPIRY = '10m';
 
 /**

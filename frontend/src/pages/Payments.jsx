@@ -69,7 +69,7 @@ export default function Payments() {
       ])
       setLinks(paymentsRes.data.payments || [])
       setStats(statsRes.data.stats || { total: 0, pending: 0, paid: 0, totalAmount: 0 })
-      setPaymetrustConfigured(!!providersRes.data.paymetrustConfigured)
+      setPaymetrustConfigured(!!(providersRes.data?.configured?.paymetrust ?? providersRes.data?.paymetrustConfigured))
     } catch (error) {
       console.error('Error loading payments:', error)
       setLinks([])

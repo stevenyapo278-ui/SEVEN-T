@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Outlet, NavLink, useNavigate, Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
@@ -776,6 +776,15 @@ export default function DashboardLayout() {
   const location = useLocation()
   usePageTitle(pathToTitle(location.pathname))
 
+  const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
+  const navGroups = useMemo(() => {
+    if (paymentModuleEnabled) return navigationGroups
+    return navigationGroups.map(g => ({
+      ...g,
+      items: g.items.filter(item => item.href !== '/dashboard/payments')
+    }))
+  }, [paymentModuleEnabled])
+
   useEffect(() => {
     const tick = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(tick)
@@ -800,7 +809,7 @@ export default function DashboardLayout() {
             </button>
           </div>
           <nav className="p-4 space-y-1 overflow-y-auto flex-1">
-            {navigationGroups.map((group) => (
+            {navGroups.map((group) => (
               <NavGroup
                 key={group.name}
                 group={group}
@@ -869,7 +878,7 @@ export default function DashboardLayout() {
           </div>
           
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navigationGroups.map((group) => (
+            {navGroups.map((group) => (
               <NavGroup
                 key={group.name}
                 group={group}

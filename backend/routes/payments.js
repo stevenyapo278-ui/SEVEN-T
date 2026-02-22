@@ -3,14 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate, createPaymentLinkSchema } from '../middleware/security.js';
-import paymetrust from '../services/paymetrust.js';
+import * as paymentProviders from '../services/paymentProviders.js';
 
 const router = Router();
 
 const baseUrl = () => (process.env.FRONTEND_URL || process.env.BASE_URL || 'http://localhost:5173').replace(/\/$/, '');
 
-// Payment providers configuration
-const PAYMENT_PROVIDERS = {
+// Display list for UI (manual + supported providers)
+const PAYMENT_PROVIDERS_DISPLAY = {
     manual: { name: 'Manuel', icon: '💵' },
     paymetrust: { name: 'PaymeTrust', icon: '🔒' },
     wave: { name: 'Wave', icon: '🌊' },
@@ -113,13 +113,85 @@ router.post('/webhook/paymetrust', async (req, res) => {
     }
 });
 
-// Get payment providers
-router.get('/providers', authenticateToken, (req, res) => {
-    res.json({ providers: PAYMENT_PROVIDERS, paymetrustConfigured: paymetrust.isConfigured() });
+// Get payment providers (list + per-user configured status; no secrets). Only if admin enabled module for this user.
+router.get('/providers', authenticateToken, async (req, res) => {
+    try {
+        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const providerIds = paymentProviders.getSupportedProviderIds();
+        const providers = { ...PAYMENT_PROVIDERS_DISPLAY };
+        const configured = {};
+        if (paymentModuleEnabled) {
+            for (const id of providerIds) {
+                configured[id] = await paymentProviders.isProviderConfiguredForUser(req.user.id, id);
+            }
+        }
+        res.json({ providers, configured, paymetrustConfigured: configured.paymetrust ?? false, paymentModuleEnabled });
+    } catch (error) {
+        console.error('Get payment providers error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Put provider config (save credentials for current user). Only if admin enabled payment module for this user.
+router.put('/providers/:provider', authenticateToken, async (req, res) => {
+    try {
+        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        if (!paymentModuleEnabled) {
+            return res.status(403).json({ error: 'Le module Moyens de paiement n\'est pas activé pour votre compte. Contactez l\'administrateur.' });
+        }
+        const { provider } = req.params;
+        if (!paymentProviders.getSupportedProviderIds().includes(provider)) {
+            return res.status(400).json({ error: 'Provider non supporté' });
+        }
+        if (provider === 'paymetrust') {
+            const { account_id, api_key } = req.body || {};
+            if (!account_id || typeof account_id !== 'string' || !api_key || typeof api_key !== 'string') {
+                return res.status(400).json({ error: 'account_id et api_key requis' });
+            }
+            if (account_id.length > 500 || api_key.length > 500) {
+                return res.status(400).json({ error: 'Champs trop longs' });
+            }
+            const credentials = JSON.stringify({ account_id: account_id.trim(), api_key: api_key.trim() });
+            await db.run(`
+                INSERT INTO user_payment_providers (user_id, provider, credentials, updated_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id, provider) DO UPDATE SET credentials = EXCLUDED.credentials, updated_at = CURRENT_TIMESTAMP
+            `, req.user.id, provider, credentials);
+        } else {
+            return res.status(400).json({ error: 'Provider non supporté' });
+        }
+        res.json({ message: 'Configuration enregistrée', provider });
+    } catch (error) {
+        console.error('Put payment provider error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Delete provider config for current user. Only if admin enabled payment module.
+router.delete('/providers/:provider', authenticateToken, async (req, res) => {
+    try {
+        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        if (!paymentModuleEnabled) {
+            return res.status(403).json({ error: 'Le module Moyens de paiement n\'est pas activé pour votre compte.' });
+        }
+        const { provider } = req.params;
+        if (!paymentProviders.getSupportedProviderIds().includes(provider)) {
+            return res.status(400).json({ error: 'Provider non supporté' });
+        }
+        await db.run('DELETE FROM user_payment_providers WHERE user_id = ? AND provider = ?', req.user.id, provider);
+        res.json({ message: 'Configuration supprimée', provider });
+    } catch (error) {
+        console.error('Delete payment provider error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
 });
 
 /**
  * Helper: create a payment link (used by POST /payments and POST /orders/:id/payment-link)
+ * Uses per-user provider config from user_payment_providers; no platform env for receiving.
  */
 export async function createPaymentLink(userId, opts = {}) {
     const {
@@ -141,10 +213,13 @@ export async function createPaymentLink(userId, opts = {}) {
     let payment_url_external = null;
     let external_id = null;
 
-    if (provider === 'paymetrust' && paymetrust.isConfigured()) {
+    const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', userId);
+    const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+
+    if (provider !== 'manual' && paymentModuleEnabled) {
         const returnUrl = `${baseUrl()}/pay/${shortId}/return`;
         const callbackUrl = process.env.BASE_URL ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/payments/webhook/paymetrust` : `${baseUrl()}/api/payments/webhook/paymetrust`;
-        const result = await paymetrust.createInvoice({
+        const result = await paymentProviders.createInvoiceForUser(userId, provider, {
             amount: Number(amount),
             currency: currency || 'XOF',
             description: description || `Paiement ${shortId}`,

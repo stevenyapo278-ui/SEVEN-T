@@ -4,7 +4,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validate, orderPaymentLinkSchema } from '../middleware/security.js';
 import { orderService, ORDER_STATUSES } from '../services/orders.js';
 import { createPaymentLink } from './payments.js';
-import paymetrust from '../services/paymetrust.js';
+import * as paymentProviders from '../services/paymentProviders.js';
 import { whatsappManager } from '../services/whatsapp.js';
 
 const router = express.Router();
@@ -195,7 +195,10 @@ router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (
             .map(i => `${i.product_name || 'Article'} x${i.quantity || 1}`)
             .join(', ');
         const description = itemsList ? `Commande: ${itemsList}` : `Commande #${(order.id || '').slice(0, 8)}`;
-        const provider = paymetrust.isConfigured() ? 'paymetrust' : 'manual';
+        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const usePaymetrust = paymentModuleEnabled && await paymentProviders.isProviderConfiguredForUser(req.user.id, 'paymetrust');
+        const provider = usePaymetrust ? 'paymetrust' : 'manual';
         const payment = await createPaymentLink(req.user.id, {
             amount: order.total_amount,
             currency: order.currency || 'XOF',

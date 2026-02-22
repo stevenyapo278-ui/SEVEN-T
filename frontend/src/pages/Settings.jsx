@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
 import api from '../services/api'
-import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard } from 'lucide-react'
+import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Settings() {
@@ -33,6 +33,12 @@ export default function Settings() {
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState(null)
   const [portalLoading, setPortalLoading] = useState(false)
+
+  const [paymentProvidersData, setPaymentProvidersData] = useState({ providers: {}, configured: {} })
+  const [paymentProvidersLoading, setPaymentProvidersLoading] = useState(true)
+  const [paymentProviderModal, setPaymentProviderModal] = useState(null)
+  const [paymentProviderForm, setPaymentProviderForm] = useState({ account_id: '', api_key: '' })
+  const [paymentProviderSaving, setPaymentProviderSaving] = useState(false)
 
   // Handle redirect after Stripe Checkout (success or cancel)
   useEffect(() => {
@@ -70,6 +76,45 @@ export default function Settings() {
     }
     loadPlans()
   }, [])
+
+  const loadPaymentProviders = async () => {
+    setPaymentProvidersLoading(true)
+    try {
+      const res = await api.get('/payments/providers').catch(() => ({ data: { providers: {}, configured: {} } }))
+      setPaymentProvidersData({ providers: res.data?.providers || {}, configured: res.data?.configured || {} })
+    } catch (e) {
+      setPaymentProvidersData({ providers: {}, configured: {} })
+    } finally {
+      setPaymentProvidersLoading(false)
+    }
+  }
+  useEffect(() => { loadPaymentProviders() }, [])
+
+  const handleSavePaymentProvider = async (e) => {
+    e.preventDefault()
+    if (!paymentProviderModal?.provider) return
+    setPaymentProviderSaving(true)
+    try {
+      await api.put(`/payments/providers/${paymentProviderModal.provider}`, paymentProviderForm)
+      toast.success('Configuration enregistrée')
+      setPaymentProviderModal(null)
+      setPaymentProviderForm({ account_id: '', api_key: '' })
+      loadPaymentProviders()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur')
+    } finally {
+      setPaymentProviderSaving(false)
+    }
+  }
+  const handleDeletePaymentProvider = async (provider) => {
+    try {
+      await api.delete(`/payments/providers/${provider}`)
+      toast.success('Configuration supprimée')
+      loadPaymentProviders()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur')
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -348,6 +393,126 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Moyens de paiement — affiché uniquement si l'admin a activé le module pour cet utilisateur */}
+      {user?.payment_module_enabled && (
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+          <Lock className="w-5 h-5 text-gold-400" />
+          Moyens de paiement
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Configurez les moyens de paiement avec lesquels vous recevez l&apos;argent de vos clients (liens de paiement, commandes).
+        </p>
+        {paymentProvidersLoading ? (
+          <div className="flex items-center gap-2 text-gray-500">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Chargement...
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {Object.keys(paymentProvidersData.providers)
+              .filter((k) => k !== 'manual' && Object.prototype.hasOwnProperty.call(paymentProvidersData.configured, k))
+              .map((providerId) => {
+                const p = paymentProvidersData.providers[providerId]
+                const configured = !!paymentProvidersData.configured[providerId]
+                return (
+                  <div
+                    key={providerId}
+                    className="flex items-center justify-between p-4 rounded-xl border border-space-700 bg-space-800/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{p?.icon || '💳'}</span>
+                      <div>
+                        <p className="font-medium text-gray-100">{p?.name || providerId}</p>
+                        <p className="text-xs text-gray-500">
+                          {configured ? 'Configuré' : 'Non configuré'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {providerId === 'paymetrust' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentProviderModal({ provider: 'paymetrust' })
+                              setPaymentProviderForm({ account_id: '', api_key: '' })
+                            }}
+                            className="text-sm px-3 py-1.5 rounded-lg bg-gold-400/20 text-gold-400 hover:bg-gold-400/30"
+                          >
+                            {configured ? 'Modifier' : 'Configurer'}
+                          </button>
+                          {configured && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePaymentProvider('paymetrust')}
+                              className="text-sm px-3 py-1.5 rounded-lg text-red-400 hover:bg-red-500/20"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Modal config PaymeTrust */}
+      {user?.payment_module_enabled && paymentProviderModal?.provider === 'paymetrust' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
+          <div className="relative w-full max-w-md rounded-2xl border border-space-700 bg-space-900 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-display font-semibold text-gray-100">Configurer PaymeTrust</h3>
+              <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="text-gray-400 hover:text-gray-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Saisissez les identifiants de votre compte PaymeTrust. Ils ne sont jamais affichés en clair après enregistrement.
+            </p>
+            <form onSubmit={handleSavePaymentProvider} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Account ID</label>
+                <input
+                  type="text"
+                  value={paymentProviderForm.account_id}
+                  onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, account_id: e.target.value }))}
+                  className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                  placeholder="Votre Account ID"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
+                <input
+                  type="password"
+                  value={paymentProviderForm.api_key}
+                  onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
+                  className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setPaymentProviderModal(null)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800">
+                  Annuler
+                </button>
+                <button type="submit" disabled={paymentProviderSaving} className="btn-primary inline-flex items-center gap-2 disabled:opacity-50">
+                  {paymentProviderSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Intelligence artificielle */}
       <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4 mb-6">

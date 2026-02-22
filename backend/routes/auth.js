@@ -293,7 +293,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -339,7 +339,7 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled FROM users WHERE id = ?', req.user.id);
 
         res.json({ user });
     } catch (error) {

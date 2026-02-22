@@ -611,6 +611,16 @@ export async function initDatabase() {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS user_payment_providers (
+            user_id TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            credentials TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, provider),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS workflows (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -752,6 +762,7 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_campaigns_user ON campaigns(user_id);
         CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);
         CREATE INDEX IF NOT EXISTS idx_payment_links_user ON payment_links(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_payment_providers_user ON user_payment_providers(user_id);
         CREATE INDEX IF NOT EXISTS idx_workflows_user ON workflows(user_id);
         CREATE INDEX IF NOT EXISTS idx_chatbot_flows_user ON chatbot_flows(user_id);
         CREATE INDEX IF NOT EXISTS idx_chatbot_flows_agent ON chatbot_flows(agent_id);
@@ -989,6 +1000,15 @@ export async function initDatabase() {
     const voiceSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'voice_responses_enabled');
     if (!voiceSetting) {
         await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'voice_responses_enabled', '0');
+    }
+
+    // Migration: users.payment_module_enabled (module Moyens de paiement visible si admin l'active)
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER DEFAULT 0');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.payment_module_enabled column migration:', e?.message);
+        }
     }
 
     // Migration: users.parent_user_id (mode agence - sous-comptes)
