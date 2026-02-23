@@ -237,7 +237,7 @@ export default function Dashboard() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats">
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
@@ -430,7 +430,7 @@ export default function Dashboard() {
         </div>
 
         {/* Agents Section */}
-        <div className="lg:col-span-2 card">
+        <div className="lg:col-span-2 card" data-tour="agents-list">
           <div className="p-6 border-b border-space-700 flex items-center justify-between">
             <h2 className="text-lg font-display font-semibold text-gray-100">Mes Agents</h2>
             <Link

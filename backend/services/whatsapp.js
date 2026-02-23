@@ -860,13 +860,11 @@ class WhatsAppManager {
                 return;
             }
             
-            // Check if conversation is in human takeover mode
-            // BUT: allow AI to respond if it has high confidence (smart de-escalation)
+            // Check if conversation is in human takeover mode → no automatic AI reply
             const isHumanTakeover = conversation.human_takeover;
             if (isHumanTakeover) {
-                console.log(`[WhatsApp] Conversation ${conversation.id} is in human takeover mode, checking if AI can handle this message...`);
-                // We'll let the pre-analysis and AI decide if it can handle it
-                // If AI responds with high confidence and need_human=false, we'll auto de-escalate
+                console.log(`[WhatsApp] Conversation ${conversation.id} is in human takeover mode, skipping AI reply`);
+                return;
             }
 
             // ==================== CHECK AVAILABILITY HOURS ====================
@@ -1023,7 +1021,13 @@ class WhatsAppManager {
    - Demande de prix spécial ou négociation
    - Réclamation ou problème
    - Question hors de ta connaissance
-   - Dans ces cas, dis: "Je transfère votre demande à un conseiller qui vous répondra rapidement"`
+   - Dans ces cas, dis: "Je transfère votre demande à un conseiller qui vous répondra rapidement"
+
+5. INFORMATIONS DE LIVRAISON (adresse, téléphone):
+   - Quand tu as demandé au client sa commune/ville, quartier et numéro de téléphone pour finaliser une commande, accepte les réponses partielles ou sur plusieurs messages.
+   - Un message contenant UNIQUEMENT un numéro de téléphone (ex: 0758519080, 07 58 51 90 80) est VALIDE si tu attends le téléphone: considère-le comme le numéro de livraison et confirme la commande ou demande l'adresse si elle manque encore.
+   - Un message contenant UNIQUEMENT une adresse ou un lieu (ex: Bingerville, Santai) est VALIDE si tu attends l'adresse: enregistre-la et demande le numéro si tu ne l'as pas encore.
+   - Ne dis jamais "Je ne peux pas traiter un numéro de téléphone seul" (ou équivalent) lorsque tu viens de demander ce numéro pour finaliser une commande.`
                     }]
                     : [{
                         title: '📦 CATALOGUE PRODUITS',
@@ -1341,12 +1345,6 @@ class WhatsAppManager {
                     console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}. Remaining: ${aiResponse.credits_remaining}`);
                 }
                 console.log(`[WhatsApp] Replied to ${contactName}`);
-                
-                // SMART DE-ESCALATION: If conversation was in takeover but AI handled it well, release takeover
-                if (isHumanTakeover && !aiResponse.need_human) {
-                    await db.run('UPDATE conversations SET human_takeover = 0 WHERE id = ?', conversation.id);
-                    console.log(`[WhatsApp] Smart de-escalation: AI handled message confidently, released human takeover for conversation ${conversation.id}`);
-                }
             } else {
                 // escalate or fallback: flag and optionally send fallback (do not send on pre_processing_ignore)
                 humanInterventionService.flagConversation(
@@ -1354,6 +1352,9 @@ class WhatsAppManager {
                     userId,
                     decision.reason || (messageAnalysis.needsHuman?.reasons?.join(', ')) || 'escalation'
                 );
+                // Switch conversation to human takeover so the AI won't reply to subsequent messages until a human takes over or disables the mode
+                await db.run('UPDATE conversations SET human_takeover = 1 WHERE id = ?', conversation.id);
+                console.log(`[WhatsApp] Conversation ${conversation.id} set to human takeover (AI requested human)`);
                 if (decision.reason !== 'pre_processing_ignore') {
                     const fallbackText = agent.fallback_message || 'Un conseiller vous répondra sous peu.';
                     await sock.sendMessage(replyToJidForSend, { text: fallbackText });

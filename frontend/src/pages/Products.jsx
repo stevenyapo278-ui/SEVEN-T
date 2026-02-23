@@ -130,12 +130,15 @@ export default function Products() {
   return (
     <div className="space-y-6">
       {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-950 border border-space-700 p-8">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5"></div>
+      <div className="relative overflow-hidden rounded-3xl border border-space-700 p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" aria-hidden="true" />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2">
+              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex items-center gap-3">
+                <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl">
+                  <Package className="w-8 h-8 text-space-950" />
+                </div>
                 {t('products.title')}
               </h1>
               <p className="text-gray-400">

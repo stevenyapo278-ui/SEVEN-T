@@ -162,9 +162,9 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
               `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                 isActive
                   ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
-                  : isDark 
+: isDark 
                     ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
               }`
             }
           >
@@ -177,7 +177,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
   }
 
   return (
-    <div 
+    <div
       className="space-y-0.5"
       onMouseEnter={!isMobile ? handleMouseEnter : undefined}
       onMouseLeave={!isMobile ? handleMouseLeave : undefined}
@@ -193,7 +193,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
                 : 'bg-violet-50 text-violet-600'
               : isDark 
                 ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100' 
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
           }`}
         >
           <div className="flex items-center gap-3">
@@ -212,7 +212,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
                 : 'bg-violet-50 text-violet-600'
               : isDark 
                 ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100' 
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
           }`}
         >
           <div className="flex items-center gap-3">
@@ -246,7 +246,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
                       : 'bg-violet-100 text-violet-700'
                     : isDark 
                       ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                 }`
               }
             >
@@ -839,7 +839,7 @@ export default function DashboardLayout() {
                         ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
                         : isDark 
                           ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                     }`
                   }
                 >
@@ -853,7 +853,7 @@ export default function DashboardLayout() {
             {user?.is_admin === 1 && (
               <>
                 <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-                  <span className="px-3 text-xs font-medium text-gold-400 uppercase tracking-wider">Admin</span>
+                  <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</span>
                 </div>
                 {adminNavigation.map((item) => (
                   <NavLink
@@ -864,7 +864,9 @@ export default function DashboardLayout() {
                       `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                         isActive
                           ? 'bg-gold-400/20 text-gold-400 border border-gold-400/30'
-                          : 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
+                          : isDark 
+                            ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
+                            : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                       }`
                     }
                   >
@@ -908,7 +910,7 @@ export default function DashboardLayout() {
                         ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
                         : isDark 
                           ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                     }`
                   }
                 >
@@ -922,7 +924,7 @@ export default function DashboardLayout() {
             {user?.is_admin === 1 && (
               <>
                 <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-                  <span className="px-3 text-xs font-medium text-gold-400 uppercase tracking-wider">Admin</span>
+                  <span className={`px-3 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</span>
                 </div>
                 {adminNavigation.map((item) => (
                   <NavLink
@@ -932,7 +934,9 @@ export default function DashboardLayout() {
                       `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                         isActive
                           ? 'bg-gold-400/20 text-gold-400 border border-gold-400/30'
-                          : 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
+                          : isDark 
+                            ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
+                            : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                       }`
                     }
                   >
@@ -982,7 +986,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={`lg:pl-64 min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
         {/* Mobile header */}
         <div className={`sticky top-0 z-40 flex h-16 items-center justify-between border-b backdrop-blur-md px-4 lg:hidden ${
           isDark ? 'border-space-700 bg-space-900/80' : 'border-gray-200 bg-white/90'

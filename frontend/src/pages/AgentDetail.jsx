@@ -2438,8 +2438,11 @@ function PlaygroundTab({ agent }) {
     setLoading(true)
 
     try {
-      // Call the real AI test endpoint
-      const response = await api.post(`/agents/${agent.id}/test`, { message: userMessage })
+      // Call the real AI test endpoint (send conversation history so the AI has context, e.g. for order flow)
+      const response = await api.post(`/agents/${agent.id}/test`, {
+        message: userMessage,
+        conversation: messages.map(m => ({ role: m.role, content: m.content }))
+      })
       
       setMessages(prev => [...prev, { 
         role: 'assistant', 

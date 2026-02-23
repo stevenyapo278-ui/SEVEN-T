@@ -73,13 +73,16 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Light mode text color overrides - Couleurs plus douces et lisibles */
-.light .text-gray-100 { color: #1e293b; }
-.light .text-gray-200 { color: #334155; }
-.light .text-gray-300 { color: #475569; }
-.light .text-gray-400 { color: #64748b; }
-.light .text-gray-500 { color: #94a3b8; }
-.light .text-gray-600 { color: #cbd5e1; }
+/* Light mode text color overrides - Contraste amélioré pour une lecture facile */
+.light .text-gray-100 { color: #0f172a; }
+.light .text-gray-200 { color: #1e293b; }
+.light .text-gray-300 { color: #334155; }
+.light .text-gray-400 { color: #475569; }
+.light .text-gray-500 { color: #64748b; }
+.light .text-gray-600 { color: #94a3b8; }
+.light .text-gray-700 { color: #334155; }
+.light .text-gray-800 { color: #1e293b; }
+.light .text-gray-900 { color: #0f172a; }
 
 /* Light mode background overrides - Tons plus chauds */
 .light .bg-space-950 { background-color: #ffffff; }
@@ -94,11 +97,19 @@ body {
 /* Light mode hover states - Transitions plus douces */
 .light .hover\:bg-space-800:hover { background-color: #e2e8f0; }
 .light .hover\:bg-space-700:hover { background-color: #cbd5e1; }
+.light .hover\:bg-space-600:hover { background-color: #cbd5e1; }
+.light .hover\:border-space-600:hover { border-color: #94a3b8; }
 
-/* Light mode gradient fixes */
+/* Light mode gradient fixes - hero Catalogue / Commandes / Leads */
 .light .from-space-800 { --tw-gradient-from: #f1f5f9; }
 .light .to-space-800 { --tw-gradient-to: #f1f5f9; }
+.light .to-space-950 { --tw-gradient-to: #ffffff; }
 .light .via-space-900 { --tw-gradient-via: #fafbfc; }
+
+/* Light mode: masquer le motif SVG sombre sur les hero (Produits, Leads) */
+.light .hero-pattern-overlay {
+  opacity: 0;
+}
 
 /* Light mode specific component styles */
 .light .divide-space-700 > :not([hidden]) ~ :not([hidden]) {
@@ -124,13 +135,17 @@ body {
   background-color: rgba(250, 251, 252, 0.95);
 }
 
+.light .bg-space-950\/80 {
+  background-color: rgba(248, 250, 252, 0.92);
+}
+
 .light .bg-space-950\/90 {
   background-color: rgba(255, 255, 255, 0.98);
 }
 
 /* Light mode opacity backgrounds - Couleurs d'accent plus saturées */
 .light .bg-space-800\/50 {
-  background-color: rgba(241, 245, 249, 0.8);
+  background-color: rgba(241, 245, 249, 0.9);
 }
 
 .light .bg-violet-500\/20 {

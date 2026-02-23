@@ -67,7 +67,6 @@ const PAYMENT_METHODS = {
 }
 
 const ORDERS_TABS = [
-  { id: 'overview', nameKey: 'orders.tabOverview', icon: TrendingUp },
   { id: 'analytics', nameKey: 'orders.tabAnalytics', icon: BarChart },
   { id: 'orders', nameKey: 'orders.tabOrders', icon: ShoppingCart },
   { id: 'logs', nameKey: 'orders.tabLogs', icon: History },
@@ -80,10 +79,10 @@ export default function Orders() {
   const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
-  const activeTab = ORDERS_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'overview'
+  const activeTab = ORDERS_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'orders'
 
   const setActiveTab = (tab) => {
-    if (tab === 'overview') setSearchParams({})
+    if (tab === 'orders') setSearchParams({})
     else setSearchParams({ tab })
   }
 
@@ -522,7 +521,7 @@ export default function Orders() {
   return (
     <div className="space-y-6">
       {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-space-800 via-space-900 to-space-950 border border-space-700 p-4 sm:p-8">
+      <div className="relative overflow-hidden rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <div className="relative z-10">
           <div className="flex items-center justify-between">
             <div>
@@ -629,7 +628,7 @@ export default function Orders() {
             </div>
           </div>
 
-          {/* Stats - always visible in header on Overview */}
+          {/* Stats - always visible in header */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
             <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
               <div className="flex items-center gap-3">
@@ -713,22 +712,6 @@ export default function Orders() {
           })}
         </div>
       </div>
-
-      {/* Overview tab */}
-      {activeTab === 'overview' && (
-        <div className="card p-6">
-          <p className="text-gray-400 mb-4">
-            Résumé des commandes détectées par l'IA. Les statistiques ci-dessus sont mises à jour en temps réel.
-          </p>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className="px-4 py-2 bg-gold-400/20 text-gold-400 hover:bg-gold-400/30 rounded-xl transition-colors flex items-center gap-2"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            Voir la liste des commandes
-          </button>
-        </div>
-      )}
 
       {/* Analytics tab */}
       {activeTab === 'analytics' && (

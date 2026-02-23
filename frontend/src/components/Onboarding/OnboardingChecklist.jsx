@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { 
   CheckCircle, 
   Circle, 
@@ -10,31 +11,30 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  X,
   Rocket
 } from 'lucide-react'
 
 const CHECKLIST_ITEMS = [
   {
     id: 'create_agent',
-    title: 'Créer votre premier agent',
-    description: 'Un assistant IA pour répondre à vos clients',
+    titleKey: 'onboarding.checklistCreateAgent',
+    descKey: 'onboarding.checklistCreateAgentDesc',
     icon: Bot,
     href: '/dashboard/agents?create=true',
     check: (data) => data.agentsCount > 0
   },
   {
     id: 'connect_whatsapp',
-    title: 'Connecter WhatsApp',
-    description: 'Liez votre compte WhatsApp pour recevoir des messages',
+    titleKey: 'onboarding.checklistWhatsApp',
+    descKey: 'onboarding.checklistWhatsAppDesc',
     icon: MessageSquare,
     href: '/dashboard/agents',
     check: (data) => data.whatsappConnected > 0
   },
   {
     id: 'add_product',
-    title: 'Ajouter un produit',
-    description: 'Créez votre catalogue produits (optionnel, pour les agents vente)',
+    titleKey: 'onboarding.checklistAddProduct',
+    descKey: 'onboarding.checklistAddProductDesc',
     icon: Package,
     href: '/dashboard/products?create=true',
     check: (data) => data.productsCount > 0,
@@ -42,8 +42,8 @@ const CHECKLIST_ITEMS = [
   },
   {
     id: 'add_knowledge',
-    title: 'Enrichir la base de connaissances',
-    description: 'Ajoutez des informations pour que l\'IA réponde mieux',
+    titleKey: 'onboarding.checklistAddKnowledge',
+    descKey: 'onboarding.checklistAddKnowledgeDesc',
     icon: BookOpen,
     href: '/dashboard/knowledge',
     check: (data) => data.knowledgeCount > 0,
@@ -51,8 +51,8 @@ const CHECKLIST_ITEMS = [
   },
   {
     id: 'test_agent',
-    title: 'Tester votre agent',
-    description: 'Envoyez un message pour voir la magie opérer',
+    titleKey: 'onboarding.checklistTestAgent',
+    descKey: 'onboarding.checklistTestAgentDesc',
     icon: Sparkles,
     href: '/dashboard/conversations',
     check: (data) => data.messagesCount > 0
@@ -60,6 +60,7 @@ const CHECKLIST_ITEMS = [
 ]
 
 export default function OnboardingChecklist({ data, onDismiss }) {
+  const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(true)
   const [dismissed, setDismissed] = useState(false)
 
@@ -108,9 +109,9 @@ export default function OnboardingChecklist({ data, onDismiss }) {
               <Rocket className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-display font-semibold text-gray-100">Guide de démarrage</h3>
+              <h3 className="font-display font-semibold text-gray-100">{t('onboarding.checklistTitle')}</h3>
               <p className="text-sm text-gray-400">
-                {completedCount}/{totalItems} étapes complétées
+                {t('onboarding.checklistSteps', { count: completedCount, total: totalItems })}
               </p>
             </div>
           </div>
@@ -190,15 +191,15 @@ export default function OnboardingChecklist({ data, onDismiss }) {
                     <h4 className={`font-medium ${
                       isComplete ? 'text-emerald-400' : 'text-gray-100'
                     }`}>
-                      {item.title}
+                      {t(item.titleKey)}
                     </h4>
                     {item.optional && (
                       <span className="px-1.5 py-0.5 text-xs bg-space-700 text-gray-400 rounded">
-                        Optionnel
+                        {t('onboarding.optional')}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{item.description}</p>
+                  <p className="text-sm text-gray-500 truncate">{t(item.descKey)}</p>
                 </div>
                 {isComplete ? (
                   <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
@@ -215,7 +216,7 @@ export default function OnboardingChecklist({ data, onDismiss }) {
               onClick={handleDismiss}
               className="w-full mt-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
             >
-              Masquer ce guide
+              {t('onboarding.hideGuide')}
             </button>
           )}
         </div>

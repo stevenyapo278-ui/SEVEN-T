@@ -678,11 +678,16 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 // Test agent (Playground)
 router.post('/:id/test', authenticateToken, async (req, res) => {
     try {
-        const { message } = req.body;
+        const { message, conversation } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: 'Message requis' });
         }
+
+        // Historique de conversation (Playground): tableau de { role: 'user'|'assistant', content: string }
+        const conversationHistory = Array.isArray(conversation)
+            ? conversation.filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+            : [];
 
         // Get agent
         const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
@@ -744,7 +749,13 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
    - Demande de prix spécial ou négociation
    - Réclamation ou problème
    - Question hors de ta connaissance
-   - Dans ces cas, dis: "Je transfère votre demande à un conseiller qui vous répondra rapidement"`
+   - Dans ces cas, dis: "Je transfère votre demande à un conseiller qui vous répondra rapidement"
+
+5. INFORMATIONS DE LIVRAISON (adresse, téléphone):
+   - Quand tu as demandé au client sa commune/ville, quartier et numéro de téléphone pour finaliser une commande, accepte les réponses partielles ou sur plusieurs messages.
+   - Un message contenant UNIQUEMENT un numéro de téléphone (ex: 0758519080, 07 58 51 90 80) est VALIDE si tu attends le téléphone: considère-le comme le numéro de livraison et confirme la commande ou demande l'adresse si elle manque encore.
+   - Un message contenant UNIQUEMENT une adresse ou un lieu (ex: Bingerville, Santai) est VALIDE si tu attends l'adresse: enregistre-la et demande le numéro si tu ne l'as pas encore.
+   - Ne dis jamais "Je ne peux pas traiter un numéro de téléphone seul" (ou équivalent) lorsque tu viens de demander ce numéro pour finaliser une commande.`
             }]
             : [];
 
@@ -756,7 +767,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         // Generate AI response
         console.log(`[Playground] Testing agent ${agent.name} with message: ${message.substring(0, 50)}...`);
         
-        const response = await aiService.generateResponse(agent, [], message, knowledge, req.user.id);
+        const response = await aiService.generateResponse(agent, conversationHistory, message, knowledge, req.user.id);
 
         console.log(`[Playground] Response: ${response.content.substring(0, 50)}...`);
 
