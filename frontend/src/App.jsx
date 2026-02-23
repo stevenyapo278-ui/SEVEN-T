@@ -23,6 +23,7 @@ import Campaigns from './pages/Campaigns'
 import Templates from './pages/Templates'
 import Workflows from './pages/Workflows'
 import Payments from './pages/Payments'
+import Expenses from './pages/Expenses'
 import Flows from './pages/Flows'
 import FlowBuilder from './pages/FlowBuilder'
 import Reports from './pages/Reports'
@@ -109,6 +110,7 @@ function App() {
         <Route path="templates" element={<Templates />} />
         <Route path="workflows" element={<Workflows />} />
         <Route path="payments" element={<Payments />} />
+        <Route path="expenses" element={<Expenses />} />
         <Route path="tools" element={<Tools />} />
         <Route path="flows" element={<Flows />} />
         <Route path="flows/:id" element={<FlowBuilder />} />

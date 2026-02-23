@@ -507,6 +507,18 @@ export async function initDatabase() {
             FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS expenses (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            expense_date DATE NOT NULL,
+            category TEXT NOT NULL,
+            amount DOUBLE PRECISION NOT NULL,
+            currency TEXT DEFAULT 'XOF',
+            note TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS product_logs (
             id TEXT PRIMARY KEY,
             product_id TEXT NOT NULL,
@@ -754,6 +766,7 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
         CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);
         CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+        CREATE INDEX IF NOT EXISTS idx_expenses_user_date ON expenses(user_id, expense_date);
         CREATE INDEX IF NOT EXISTS idx_product_logs_product ON product_logs(product_id);
         CREATE INDEX IF NOT EXISTS idx_tags_user ON tags(user_id);
         CREATE INDEX IF NOT EXISTS idx_conv_tags_conv ON conversation_tags(conversation_id);

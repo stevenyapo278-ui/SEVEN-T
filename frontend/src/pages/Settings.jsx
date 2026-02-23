@@ -40,6 +40,8 @@ export default function Settings() {
   const [paymentProviderForm, setPaymentProviderForm] = useState({ account_id: '', api_key: '' })
   const [paymentProviderSaving, setPaymentProviderSaving] = useState(false)
 
+  const [quotas, setQuotas] = useState(null)
+
   // Handle redirect after Stripe Checkout (success or cancel)
   useEffect(() => {
     const sub = searchParams.get('subscription')
@@ -60,6 +62,20 @@ export default function Settings() {
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [refreshUser])
+
+  const loadQuotas = async () => {
+    try {
+      const res = await api.get('/agents/quotas').catch(() => ({ data: null }))
+      setQuotas(res.data || null)
+    } catch {
+      setQuotas(null)
+    }
+  }
+
+  useEffect(() => {
+    if (!user?.id) return
+    loadQuotas()
+  }, [user?.id])
 
   // Load plans from API
   useEffect(() => {
@@ -306,7 +322,7 @@ export default function Settings() {
           </h2>
           <button
             type="button"
-            onClick={() => refreshUser()}
+            onClick={() => { refreshUser(); loadQuotas() }}
             className="text-sm text-gray-400 hover:text-gray-200 inline-flex items-center gap-1.5 transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
@@ -334,27 +350,42 @@ export default function Settings() {
               <p className="text-sm text-gray-500">Messages IA restants</p>
               <p className="text-2xl font-display font-bold text-violet-400 flex items-center gap-2">
                 <Sparkles className="w-5 h-5" />
-                {user?.credits ?? 0}
+                {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : (user?.credits ?? 0)}
               </p>
             </div>
           </div>
         </div>
-        {currentPlan.limits?.credits_per_month > 0 && (
-          <div className="mb-3">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-400">Utilisation ce mois</span>
-              <span className="text-gray-300">
-                {Math.max(0, (currentPlan.limits?.credits_per_month || 0) - (user?.credits ?? 0))} / {currentPlan.limits?.credits_per_month || 0} messages IA
-              </span>
-            </div>
-            <div className="w-full bg-space-700 rounded-full h-2">
-              <div
-                className="bg-violet-500 h-2 rounded-full transition-all"
-                style={{ width: `${Math.min(100, (((currentPlan.limits?.credits_per_month || 0) - (user?.credits ?? 0)) / (currentPlan.limits?.credits_per_month || 1)) * 100)}%` }}
-              />
-            </div>
-          </div>
-        )}
+        {(() => {
+          const limit = quotas?.limits?.credits_per_month ?? currentPlan.limits?.credits_per_month ?? 0
+          const used = quotas?.usage?.credits_used_this_month ?? (limit > 0 ? Math.max(0, limit - (user?.credits ?? 0)) : 0)
+          if (limit === -1) {
+            return (
+              <div className="mb-3">
+                <p className="text-sm text-gray-400">Utilisation ce mois : illimitée</p>
+              </div>
+            )
+          }
+          if (limit > 0) {
+            const percentUsed = Math.min(100, (used / limit) * 100)
+            return (
+              <div className="mb-3">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-gray-400">Utilisation ce mois</span>
+                  <span className="text-gray-300">
+                    {used} utilisés / {limit} inclus
+                  </span>
+                </div>
+                <div className="w-full bg-space-700 rounded-full h-2">
+                  <div
+                    className="bg-violet-500 h-2 rounded-full transition-all"
+                    style={{ width: `${percentUsed}%` }}
+                  />
+                </div>
+              </div>
+            )
+          }
+          return null
+        })()}
         <p className="text-xs text-gray-500">
           1 crédit = 1 réponse IA. Les limites de votre plan peuvent être mises à jour par l&apos;administrateur.
         </p>
