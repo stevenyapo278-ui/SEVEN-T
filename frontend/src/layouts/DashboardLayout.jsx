@@ -809,14 +809,17 @@ export default function DashboardLayout() {
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}>
         <div className={`fixed inset-0 backdrop-blur-sm ${isDark ? 'bg-space-950/90' : 'bg-slate-900/40'}`} onClick={() => setSidebarOpen(false)} />
-        <div className={`fixed inset-y-0 left-0 w-64 shadow-2xl border-r ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
-          <div className={`flex h-16 items-center justify-between px-4 border-b ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-            <Logo />
-            <button onClick={() => setSidebarOpen(false)} className={`transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100' : 'text-gray-500 hover:text-gray-700'}`}>
+        <div className={`fixed inset-y-0 left-0 w-64 max-w-[85vw] shadow-2xl border-r flex flex-col ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`} style={{ paddingLeft: 'env(safe-area-inset-left)' }}>
+          <div className={`flex h-16 flex-shrink-0 items-center justify-between px-4 border-b ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
+            <div className="flex items-center gap-2 min-w-0">
+              <Logo className="flex-shrink-0" />
+              <span className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
+            </div>
+            <button type="button" onClick={() => setSidebarOpen(false)} className={`touch-target flex items-center justify-center p-2 -mr-2 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100 hover:bg-space-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} aria-label="Fermer le menu">
               <X className="w-6 h-6" />
             </button>
           </div>
-          <nav className="p-4 space-y-1 overflow-y-auto flex-1">
+          <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0">
             {navGroups.map((group) => (
               <NavGroup
                 key={group.nameKey}
@@ -877,14 +880,50 @@ export default function DashboardLayout() {
               </>
             )}
           </nav>
+
+          {/* User section — nom + email visibles en mobile */}
+          <div className={`flex-shrink-0 p-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`} style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-violet-500' : 'bg-gradient-to-br from-violet-500 to-gold-400'
+              }`}>
+                {user?.is_admin ? (
+                  <Shield className="w-5 h-5 text-white" />
+                ) : (
+                  <span className="text-white font-bold text-sm">
+                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{user?.name}</p>
+                  {user?.is_admin === 1 && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded shrink-0">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user?.email}</p>
+              </div>
+            </div>
+            <div className={`flex items-center justify-between text-sm px-2 py-2 rounded-lg ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-gold-400" />
+                <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Crédits</span>
+              </div>
+              <span className="font-semibold text-gold-400">{user?.credits ?? 0}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className={`flex flex-col flex-grow border-r ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
-          <div className={`flex h-16 items-center px-4 border-b ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-            <Logo />
+          <div className={`flex h-16 items-center gap-2 px-4 border-b min-w-0 ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
+            <Logo className="flex-shrink-0" />
+            <span className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
           </div>
           
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -987,23 +1026,29 @@ export default function DashboardLayout() {
 
       {/* Main content */}
       <div className={`lg:pl-64 min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
-        {/* Mobile header */}
-        <div className={`sticky top-0 z-40 flex h-16 items-center justify-between border-b backdrop-blur-md px-4 lg:hidden ${
+        {/* Mobile header — heure centrée, nom entreprise en dessous pour voir la totalité (Android / mobile) */}
+        <div className={`relative sticky top-0 z-40 flex h-[4.5rem] min-h-16 items-center border-b backdrop-blur-md px-4 lg:hidden ${
           isDark ? 'border-space-700 bg-space-900/80' : 'border-gray-200 bg-white/90'
-        }`}>
+        }`} style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <button onClick={() => setSidebarOpen(true)} className={`flex-shrink-0 transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100' : 'text-gray-500 hover:text-gray-700'}`}>
+            <button type="button" onClick={() => setSidebarOpen(true)} className={`touch-target flex-shrink-0 flex items-center justify-center p-2 -ml-2 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100 hover:bg-space-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} aria-label="Ouvrir le menu">
               <Menu className="w-6 h-6" />
             </button>
-            <Logo />
-            <span className={`text-xs font-medium truncate max-w-[80px] ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-              {user?.company?.trim() ? user.company.trim() : 'Mon espace'}
-            </span>
+            <Logo className="flex-shrink-0" />
           </div>
-          <div className={`flex items-center gap-1.5 flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            <Clock className="w-3.5 h-3.5" />
-            <span className="text-xs font-medium tabular-nums">
-              {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          {/* Heure + nom entreprise en dessous (centré) pour afficher le nom en entier sur mobile */}
+          <div
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-0.5 pointer-events-none min-w-0 max-w-[50vw] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="text-xs font-medium tabular-nums whitespace-nowrap">
+                {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <span className={`text-[10px] sm:text-xs font-medium text-center break-words line-clamp-2 leading-tight ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+              {user?.company?.trim() ? user.company.trim() : 'Mon espace'}
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1065,8 +1110,8 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Page content */}
-        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-hidden">
+        {/* Page content - safe area bottom for Android gesture bar */}
+        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Outlet />
         </main>
       </div>

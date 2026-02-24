@@ -84,6 +84,27 @@ router.get('/export', authenticateToken, async (req, res) => {
     }
 });
 
+// Get all product logs (must be before /:id to avoid "logs" matching as order id)
+router.get('/logs/all', authenticateToken, async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 100;
+        const logs = await orderService.getAllProductLogs(req.user.id, limit);
+        res.json({ logs });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Get product logs for one product (must be before /:id)
+router.get('/products/:productId/logs', authenticateToken, async (req, res) => {
+    try {
+        const logs = await orderService.getProductLogs(req.params.productId, req.user.id);
+        res.json({ logs });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
 // Get order by ID
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
@@ -334,27 +355,6 @@ ${payment.payment_url}
     } catch (error) {
         console.error('Create order payment link error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-// Get product logs
-router.get('/products/:productId/logs', authenticateToken, async (req, res) => {
-    try {
-        const logs = await orderService.getProductLogs(req.params.productId, req.user.id);
-        res.json({ logs });
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur' });
-    }
-});
-
-// Get all product logs
-router.get('/logs/all', authenticateToken, async (req, res) => {
-    try {
-        const limit = parseInt(req.query.limit) || 100;
-        const logs = await orderService.getAllProductLogs(req.user.id, limit);
-        res.json({ logs });
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur' });
     }
 });
 

@@ -30,6 +30,7 @@ import Reports from './pages/Reports'
 import Notifications from './pages/Notifications'
 import Tools from './pages/Tools'
 import ErrorBoundary from './components/ErrorBoundary'
+import CookieConsentBanner from './components/CookieConsentBanner'
 
 // Layout
 import DashboardLayout from './layouts/DashboardLayout'
@@ -79,6 +80,7 @@ function AdminRoute({ children }) {
 function App() {
   return (
     <ErrorBoundary>
+      <CookieConsentBanner />
       <Routes>
       {/* Public routes */}
       <Route path="/" element={<Landing />} />

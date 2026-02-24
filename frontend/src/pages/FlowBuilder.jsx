@@ -195,30 +195,30 @@ export default function FlowBuilder() {
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className={`p-4 border-b flex items-center justify-between ${
+      <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
       }`}>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
           <button 
             onClick={() => navigate('/dashboard/flows')}
-            className={`p-2 rounded-lg ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+            className={`p-2 rounded-lg flex-shrink-0 touch-target ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className={`font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          <div className="min-w-0">
+            <h1 className={`font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               {flow?.name}
             </h1>
-            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            <p className={`text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               {nodes.length} noeuds · {edges.length} connexions
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
           <button
             onClick={handleToggle}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 touch-target ${
               flow?.is_active
                 ? 'bg-emerald-500/20 text-emerald-400'
                 : isDark ? 'bg-space-800 text-gray-400' : 'bg-gray-100 text-gray-600'
@@ -230,7 +230,7 @@ export default function FlowBuilder() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center justify-center gap-2 touch-target"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Enregistrer

@@ -172,16 +172,16 @@ export default function Dashboard() {
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-gray-100">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-display font-bold text-gray-100 truncate">
             {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
           </h1>
           <p className="text-gray-400">{t('dashboard.welcomeSubtitle')}</p>
         </div>
         <button 
           onClick={loadData}
-          className="p-2 text-gray-400 hover:text-gray-100 hover:bg-space-800 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-gray-100 hover:bg-space-800 rounded-lg transition-colors touch-target flex items-center justify-center flex-shrink-0"
           title={t('dashboard.refresh')}
         >
           <RefreshCw className="w-5 h-5" />
@@ -199,7 +199,7 @@ export default function Dashboard() {
           {alerts.map((alert, index) => (
             <div 
               key={index}
-              className={`flex items-center justify-between p-4 rounded-xl border ${
+              className={`flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border ${
                 alert.type === 'error' 
                   ? 'bg-red-500/10 border-red-500/30' 
                   : alert.type === 'warning'
@@ -207,7 +207,7 @@ export default function Dashboard() {
                     : 'bg-blue-500/10 border-blue-500/30'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <AlertTriangle className={`w-5 h-5 ${
                   alert.type === 'error' ? 'text-red-400' : 
                   alert.type === 'warning' ? 'text-amber-400' : 'text-blue-400'
@@ -431,11 +431,11 @@ export default function Dashboard() {
 
         {/* Agents Section */}
         <div className="lg:col-span-2 card" data-tour="agents-list">
-          <div className="p-6 border-b border-space-700 flex items-center justify-between">
-            <h2 className="text-lg font-display font-semibold text-gray-100">Mes Agents</h2>
+          <div className="p-6 border-b border-space-700 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">Mes Agents</h2>
             <Link
               to="/dashboard/agents"
-              className="text-gold-400 hover:text-gold-300 text-sm font-medium flex items-center gap-1 transition-colors"
+              className="text-gold-400 hover:text-gold-300 text-sm font-medium flex items-center justify-center gap-1 transition-colors touch-target flex-shrink-0"
             >
               Voir tout
               <ArrowRight className="w-4 h-4" />
@@ -467,10 +467,10 @@ export default function Dashboard() {
                 <Link
                   key={agent.id}
                   to={`/dashboard/agents/${agent.id}`}
-                  className="flex items-center justify-between p-4 hover:bg-space-800 transition-colors"
+                  className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-space-800 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                       !agent.is_active 
                         ? 'bg-gray-500/20' 
                         : agent.whatsapp_connected 
@@ -485,9 +485,9 @@ export default function Dashboard() {
                             : 'text-orange-400'
                       }`} />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-gray-100">{agent.name}</h3>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-medium text-gray-100 truncate">{agent.name}</h3>
                         {!agent.is_active && (
                           <span className="text-xs px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400">
                             Inactif

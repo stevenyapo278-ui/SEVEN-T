@@ -268,16 +268,16 @@ export function validate(schema) {
 }
 
 /**
- * Sanitize string to prevent XSS
+ * Sanitize string to prevent XSS (only escape characters that can break HTML/script context).
+ * Do not escape quotes/apostrophes so stored values (e.g. company "RANS'O AFRO") display correctly
+ * when rendered as text in React; React escapes output when rendering.
  */
 export function sanitizeString(str) {
     if (typeof str !== 'string') return str;
     return str
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(/>/g, '&gt;');
 }
 
 /**

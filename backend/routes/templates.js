@@ -5,8 +5,8 @@ import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
 
-// Template categories
-const TEMPLATE_CATEGORIES = ['greeting', 'closing', 'info', 'support', 'sales', 'follow-up', 'general'];
+// Template categories (align with frontend dropdown)
+const TEMPLATE_CATEGORIES = ['greeting', 'closing', 'info', 'support', 'sales', 'follow-up', 'followup', 'faq', 'general'];
 
 // Get all templates for user
 router.get('/', authenticateToken, async (req, res) => {
@@ -66,11 +66,12 @@ router.post('/', authenticateToken, async (req, res) => {
         const extractedVars = content.match(/\{\{([^}]+)\}\}/g) || [];
         const allVariables = [...new Set([...variables, ...extractedVars.map(v => v.replace(/\{\{|\}\}/g, ''))])];
 
+        const shortcut = req.body.shortcut?.trim().replace(/[^a-z0-9]/g, '') || null;
         const id = uuidv4();
         await db.run(`
-            INSERT INTO message_templates (id, user_id, name, content, category, variables)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, id, req.user.id, name.trim(), content.trim(), category, JSON.stringify(allVariables));
+            INSERT INTO message_templates (id, user_id, name, content, category, variables, shortcut)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, id, req.user.id, name.trim(), content.trim(), category, JSON.stringify(allVariables), shortcut || null);
 
         const template = await db.get('SELECT * FROM message_templates WHERE id = ?', id);
         template.variables = allVariables;
@@ -85,7 +86,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // Update template
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
-        const { name, content, category, is_active } = req.body;
+        const { name, content, category, is_active, shortcut } = req.body;
 
         const existing = await db.get('SELECT * FROM message_templates WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
@@ -98,15 +99,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
             variables = JSON.stringify(extractedVars.map(v => v.replace(/\{\{|\}\}/g, '')));
         }
 
+        const shortcutVal = shortcut !== undefined ? (String(shortcut || '').trim().replace(/[^a-z0-9]/g, '') || null) : existing.shortcut;
         await db.run(`
             UPDATE message_templates 
             SET name = COALESCE(?, name),
                 content = COALESCE(?, content),
                 category = COALESCE(?, category),
                 variables = COALESCE(?, variables),
-                is_active = COALESCE(?, is_active)
+                is_active = COALESCE(?, is_active),
+                shortcut = ?
             WHERE id = ?
-        `, name?.trim(), content?.trim(), category, variables, is_active, req.params.id);
+        `, name?.trim(), content?.trim(), category, variables, is_active, shortcutVal, req.params.id);
 
         const template = await db.get('SELECT * FROM message_templates WHERE id = ?', req.params.id);
         try {

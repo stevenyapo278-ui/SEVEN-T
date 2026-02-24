@@ -71,6 +71,33 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Safe area for Android notch / gesture bar */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Minimum touch target for mobile (Android/iOS) - 44px recommended */
+@media (max-width: 1023px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Tables: horizontal scroll on small screens */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-responsive table {
+    min-width: 600px;
+  }
+  /* Modals: full width on small screens, safe margins */
+  .modal-responsive {
+    width: 100%;
+    max-width: min(calc(100vw - 2rem), 32rem);
+    margin-left: env(safe-area-inset-left);
+    margin-right: env(safe-area-inset-right);
+  }
 }
 
 /* Light mode text color overrides - Contraste amélioré pour une lecture facile */
@@ -209,12 +236,13 @@ body {
   border-color: rgba(217, 119, 6, 0.35);
 }
 
-/* Light mode text gradient - Contraste amélioré */
+/* Light mode text gradient - Couleur unie pour rendu net (pas de dégradé) */
 .light .text-gradient {
-  background: linear-gradient(135deg, #d97706 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: #7c3aed;
+  background-clip: unset;
+  color: #7c3aed;
 }
 
 /* Light mode button adjustments - Boutons plus définis */
@@ -230,13 +258,14 @@ body {
   color: #7c3aed;
 }
 
-/* Light mode primary button - Plus de contraste */
+/* Light mode primary button - Fond uni pour rendu net (pas de dégradé) */
 .light .btn-primary {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: #d97706;
   box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
 }
 
 .light .btn-primary:hover {
+  background: #b45309;
   box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
 }
 
@@ -337,6 +366,96 @@ body {
 
 .light .card:hover {
   box-shadow: 0 4px 12px rgba(100, 116, 139, 0.12);
+}
+
+/* Legal page — organisation du contenu (titres, espacements, tableaux) */
+.legal-content {
+  @apply text-gray-300;
+}
+.legal-content h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #f3f4f6;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.legal-content .lead {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+}
+.legal-content h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: #e5e7eb;
+}
+.legal-content h2:first-of-type {
+  margin-top: 0;
+}
+.legal-content h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: #d1d5db;
+}
+.legal-content p {
+  margin-bottom: 1rem;
+  line-height: 1.65;
+  max-width: 65ch;
+}
+.legal-content ul {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+.legal-content li {
+  margin-bottom: 0.35rem;
+}
+.legal-content table {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1.25rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.legal-content thead {
+  background: var(--bg-tertiary);
+}
+.legal-content th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.legal-content td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+}
+.legal-content tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.light .legal-content tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.02);
+}
+.legal-content a {
+  color: var(--gold-400);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.legal-content a:hover {
+  color: var(--gold-300);
+}
+.legal-content code {
+  font-size: 0.875em;
+  padding: 0.15em 0.4em;
+  border-radius: 0.25rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
 }
 
 /* Glow effects */
@@ -721,17 +840,64 @@ select.input option {
 .light .from-violet-400 { --tw-gradient-from: #8b5cf6; }
 .light .to-amber-500 { --tw-gradient-to: #f59e0b; }
 
-/* Light mode gradient backgrounds */
+/* Light mode gradient backgrounds - Couleurs unies pour rendu net */
 .light .bg-gradient-to-r.from-gold-400.to-amber-500 {
-  background: linear-gradient(to right, #f59e0b, #d97706);
+  background: #d97706;
 }
 
 .light .bg-gradient-to-br.from-gold-400.to-violet-500 {
-  background: linear-gradient(to bottom right, #f59e0b, #7c3aed);
+  background: #7c3aed;
 }
 
 .light .bg-gradient-to-br.from-violet-500.to-gold-400 {
-  background: linear-gradient(to bottom right, #7c3aed, #f59e0b);
+  background: #7c3aed;
+}
+
+/* Hero - vagues violettes (parallax) : charte violet uniquement */
+.landing-hero-wave-1 { color: rgba(139, 92, 246, 0.18); }
+.landing-hero-wave-2 { color: rgba(139, 92, 246, 0.26); }
+.landing-hero-wave-3 { color: rgba(124, 58, 237, 0.22); }
+:root, .dark { --wave-grid-color: rgba(167, 139, 250, 0.18); }
+
+/* Light mode - Landing : hero et CTA sans dégradés blanc/gris/noir (uniquement aplats) */
+.light .landing-hero-wave-1 { color: rgba(124, 58, 237, 0.14); }
+.light .landing-hero-wave-2 { color: rgba(124, 58, 237, 0.2); }
+.light .landing-hero-wave-3 { color: rgba(109, 40, 217, 0.16); }
+.light { --wave-grid-color: rgba(124, 58, 237, 0.1); }
+.light .landing-hero-bg .bg-gradient-to-b,
+.light .landing-hero-bg .animate-float {
+  opacity: 0.06;
+}
+.light .landing-hero-dots {
+  opacity: 0.12;
+}
+.light .landing-cta-gradient {
+  background: #f8fafc;
+}
+.light .landing-cta-glow {
+  opacity: 0.04;
+}
+/* Toute section en dégradé from-space/to-space → fond uni en mode clair (pas de dégradé blanc→gris/noir) */
+.light section.bg-gradient-to-b,
+.light section[class*="bg-gradient-to-b"][class*="from-space"],
+.light section[class*="bg-gradient-to-r"][class*="from-space"] {
+  background: #fafbfc !important;
+}
+
+/* Light mode - Cartes landing (étapes, features) : icônes en dégradé → couleur unie */
+.light .landing-hero .bg-gradient-to-br.from-gold-400.to-violet-500,
+.light .landing-hero .bg-gradient-to-br.from-violet-500.to-gold-400,
+.light #features .bg-gradient-to-br,
+.light #how-it-works .bg-gradient-to-br.from-gold-400.to-violet-500,
+.light #pricing .bg-gradient-to-br.from-gold-400.to-amber-500,
+.light #pricing .bg-gradient-to-r.from-gold-400.to-amber-500 {
+  background: #7c3aed;
+}
+.light #features .bg-gradient-to-br.from-blue-500 { background: #0284c7; }
+.light #features .bg-gradient-to-br.from-gold-400 { background: #d97706; }
+.light #features .bg-gradient-to-br.from-emerald-500 { background: #059669; }
+.light .bg-gradient-to-b.from-gold-400\/10.to-transparent {
+  background: rgba(217, 119, 6, 0.08);
 }
 
 /* Light mode notification badges */

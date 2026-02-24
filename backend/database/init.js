@@ -985,6 +985,15 @@ export async function initDatabase() {
     }
 
     // Migration: orders - payment_method (online | on_delivery) and delivered_at for "paiement à la livraison"
+    // Migration: message_templates shortcut column (for Templates page)
+    try {
+        await db.run('ALTER TABLE message_templates ADD COLUMN shortcut TEXT');
+    } catch (e) {
+        if (!/duplicate column name|already exists/i.test(e?.message || '')) {
+            console.warn('message_templates.shortcut column migration:', e?.message);
+        }
+    }
+
     try {
         await db.run('ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT \'on_delivery\'');
     } catch (e) {

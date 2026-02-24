@@ -111,23 +111,23 @@ export default function Notifications() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
             isDark ? 'bg-space-800 text-violet-400' : 'bg-violet-50 text-violet-600'
           }`}>
             <Bell className="w-5 h-5" />
           </div>
-          <div>
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h1>
+          <div className="min-w-0">
+            <h1 className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h1>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               {unreadCount} non lue(s)
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
           <button
             onClick={() => loadNotifications(activeFilter)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm touch-target ${
               isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -137,7 +137,7 @@ export default function Notifications() {
           <button
             onClick={markAllAsRead}
             disabled={actionLoading || unreadCount === 0}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm touch-target ${
               actionLoading || unreadCount === 0
                 ? 'opacity-50 cursor-not-allowed'
                 : isDark
@@ -151,12 +151,12 @@ export default function Notifications() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map((filter) => (
           <button
             key={filter.id}
             onClick={() => setActiveFilter(filter.id)}
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-sm transition-colors touch-target ${
               activeFilter === filter.id
                 ? isDark
                   ? 'bg-violet-500 text-white'

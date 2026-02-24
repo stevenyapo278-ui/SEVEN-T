@@ -133,8 +133,8 @@ export default function Expenses() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-gray-100">{t('expenses.title')}</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-display font-bold text-gray-100 truncate">{t('expenses.title')}</h1>
           <p className="text-gray-400">{t('expenses.subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -163,7 +163,7 @@ export default function Expenses() {
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <button onClick={openAdd} className="btn-primary flex items-center gap-2">
+          <button onClick={openAdd} className="btn-primary flex items-center justify-center gap-2 touch-target">
             <Plus className="w-5 h-5" />
             {t('expenses.addExpense')}
           </button>
@@ -171,12 +171,12 @@ export default function Expenses() {
       </div>
 
       <div className="card p-6 bg-gradient-to-br from-violet-400/20 to-violet-400/5 border border-violet-400/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-400/20">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-400/20 flex-shrink-0">
               <Wallet className="w-6 h-6 text-violet-400" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-gray-400">
                 {categoryFilter ? t('expenses.totalFiltered') : t('expenses.totalMonth')}
                 {categoryFilter && (
@@ -294,7 +294,7 @@ export default function Expenses() {
             {expenses.length === 0 ? t('expenses.noExpenses') : t('expenses.noExpensesForCategory')}
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-responsive">
             <table className="w-full">
               <thead>
                 <tr className="text-left text-sm text-gray-400 border-b border-space-700">
@@ -431,13 +431,13 @@ function ExpenseModal({ expense, onClose, onSaved }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-2xl shadow-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-display font-semibold text-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <h2 className="text-xl font-display font-semibold text-gray-100 min-w-0 truncate">
             {isEdit ? t('expenses.editExpense') : t('expenses.addExpense')}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-300 rounded-lg transition-colors"
+            className="p-2 text-gray-500 hover:text-gray-300 rounded-lg transition-colors flex-shrink-0 touch-target"
           >
             <X className="w-5 h-5" />
           </button>

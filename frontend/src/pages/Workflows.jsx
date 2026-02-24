@@ -339,17 +339,17 @@ export default function Workflows() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-display font-bold text-gray-100">Automatisations</h1>
-          <p className="text-gray-400">Créez des workflows automatiques pour vos agents</p>
+          <p className="text-gray-400 text-sm sm:text-base">Créez des workflows automatiques pour vos agents</p>
         </div>
         <button
           onClick={() => {
             resetForm()
             setShowModal(true)
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
         >
           <Plus className="w-5 h-5" />
           Nouveau workflow
@@ -398,10 +398,10 @@ export default function Workflows() {
 
       {/* Contacts pour les actions (livreur, gérant, etc.) */}
       <div className="card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-gold-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2 truncate">
+              <UserPlus className="w-5 h-5 text-gold-400 flex-shrink-0" />
               Contacts enregistrés
             </h2>
             <p className="text-sm text-gray-400 mt-1">Utilisez ces contacts dans l’action « Envoyer un message »</p>
@@ -409,7 +409,7 @@ export default function Workflows() {
           <button
             type="button"
             onClick={() => openContactModal()}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
           >
             <Plus className="w-4 h-4" />
             Ajouter un contact
@@ -418,7 +418,7 @@ export default function Workflows() {
         {contacts.length === 0 ? (
           <p className="text-gray-500 text-sm py-4">Aucun contact. Ajoutez-en pour les utiliser dans vos workflows.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-responsive">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-400 border-b border-space-700">
@@ -575,19 +575,19 @@ export default function Workflows() {
 
       {/* Workflow execution history */}
       <div className="card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <History className="w-5 h-5 text-blue-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2 truncate">
+              <History className="w-5 h-5 text-blue-400 flex-shrink-0" />
               Historique d’exécution
             </h2>
             <p className="text-sm text-gray-400 mt-1">Les 100 dernières exécutions de workflows</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
             <button
               type="button"
               onClick={refreshLogs}
-              className="btn-secondary flex items-center gap-2"
+              className="btn-secondary flex items-center justify-center gap-2 touch-target"
             >
               <History className="w-4 h-4" />
               Rafraîchir
@@ -596,15 +596,15 @@ export default function Workflows() {
               type="button"
               onClick={handleDeleteAllLogs}
               disabled={deletingLogs || logs.length === 0}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              className="flex items-center justify-center gap-2 px-3 py-2 min-h-[44px] text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors disabled:opacity-50 disabled:pointer-events-none touch-target whitespace-nowrap"
               title="Supprimer tout l'historique"
             >
               {deletingLogs ? (
-                <RotateCw className="w-4 h-4 animate-spin" />
+                <RotateCw className="w-4 h-4 animate-spin flex-shrink-0" />
               ) : (
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 flex-shrink-0" />
               )}
-              Supprimer l'historique
+              <span className="truncate max-w-[180px] sm:max-w-none">Supprimer l'historique</span>
             </button>
           </div>
         </div>
@@ -616,7 +616,7 @@ export default function Workflows() {
         ) : logs.length === 0 ? (
           <p className="text-gray-500 text-sm py-4">Aucune exécution pour le moment.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-responsive">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-400 border-b border-space-700">

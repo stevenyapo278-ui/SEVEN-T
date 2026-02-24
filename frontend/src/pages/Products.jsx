@@ -134,9 +134,9 @@ export default function Products() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" aria-hidden="true" />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex flex-wrap items-center gap-3 truncate">
+                <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl flex-shrink-0">
                   <Package className="w-8 h-8 text-space-950" />
                 </div>
                 {t('products.title')}
@@ -145,24 +145,24 @@ export default function Products() {
                 {t('products.subtitle')}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3 flex-shrink-0">
               <button
                 onClick={() => loadHistory(null)}
-                className="btn-secondary inline-flex items-center gap-2"
+                className="btn-secondary inline-flex items-center justify-center gap-2 touch-target"
               >
                 <History className="w-4 h-4" />
                 Historique
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-                className="btn-secondary inline-flex items-center gap-2"
+                className="btn-secondary inline-flex items-center justify-center gap-2 touch-target"
               >
                 <Upload className="w-4 h-4" />
                 Importer CSV
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="btn-primary inline-flex items-center gap-2"
+                className="btn-primary inline-flex items-center justify-center gap-2 touch-target"
               >
                 <Plus className="w-5 h-5" />
                 Ajouter un produit
@@ -171,70 +171,70 @@ export default function Products() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-500/20 rounded-xl">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8 min-w-0">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-violet-500/20 rounded-xl flex-shrink-0">
                   <Package className="w-5 h-5 text-violet-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.total}</p>
-                  <p className="text-xs text-gray-500">Total produits</p>
+                <div className="min-w-0">
+                  <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={stats.total}>{stats.total}</p>
+                  <p className="text-xs text-gray-500 break-words">Total produits</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-green-500/20 rounded-xl flex-shrink-0">
                   <Check className="w-5 h-5 text-green-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.inStock}</p>
-                  <p className="text-xs text-gray-500">En stock</p>
+                <div className="min-w-0">
+                  <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={stats.inStock}>{stats.inStock}</p>
+                  <p className="text-xs text-gray-500 break-words">En stock</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-amber-500/20 rounded-xl flex-shrink-0">
                   <AlertTriangle className="w-5 h-5 text-amber-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.lowStock}</p>
-                  <p className="text-xs text-gray-500">Stock faible</p>
+                <div className="min-w-0">
+                  <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={stats.lowStock}>{stats.lowStock}</p>
+                  <p className="text-xs text-gray-500 break-words">Stock faible</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-red-500/20 rounded-xl flex-shrink-0">
                   <Archive className="w-5 h-5 text-red-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.outOfStock}</p>
-                  <p className="text-xs text-gray-500">Rupture</p>
+                <div className="min-w-0">
+                  <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={stats.outOfStock}>{stats.outOfStock}</p>
+                  <p className="text-xs text-gray-500 break-words">Rupture</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gold-400/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-gold-400/20 rounded-xl flex-shrink-0">
                   <DollarSign className="w-5 h-5 text-gold-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{formatPrice(stats.totalValue)}</p>
-                  <p className="text-xs text-gray-500">Valeur stock</p>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={formatPrice(stats.totalValue)}>{formatPrice(stats.totalValue)}</p>
+                  <p className="text-xs text-gray-500 break-words">Valeur stock</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-emerald-500/20 rounded-xl flex-shrink-0">
                   <DollarSign className="w-5 h-5 text-emerald-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{formatPrice(totalMargin)}</p>
-                  <p className="text-xs text-gray-500">Marge potentielle stock</p>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={formatPrice(totalMargin)}>{formatPrice(totalMargin)}</p>
+                  <p className="text-xs text-gray-500 break-words">Marge potentielle stock</p>
                 </div>
               </div>
             </div>
@@ -787,18 +787,18 @@ function HistoryModal({ history, loading, productId, productName, formatPrice, o
     if (entry.quantity_change != null && entry.quantity_change !== 0) {
       const sign = entry.quantity_change > 0 ? '+' : ''
       parts.push(
-        <span key="stock" className="text-amber-400">
+        <span key="stock-qty" className="text-amber-400">
           Stock {entry.stock_before} → {entry.stock_after} ({sign}{entry.quantity_change})
         </span>
       )
     }
     if (entry.details && typeof entry.details === 'object') {
-      Object.entries(entry.details).forEach(([field, [oldVal, newVal]]) => {
+      Object.entries(entry.details).forEach(([field, [oldVal, newVal]], index) => {
         const label = { name: 'Nom', sku: 'SKU', price: 'Prix', cost_price: 'Prix d\'achat', stock: 'Stock', category: 'Catégorie' }[field] || field
         const oldStr = field === 'price' || field === 'cost_price' ? formatPrice(oldVal) : String(oldVal ?? '-')
         const newStr = field === 'price' || field === 'cost_price' ? formatPrice(newVal) : String(newVal ?? '-')
         parts.push(
-          <span key={field} className="text-gray-400">
+          <span key={`detail-${field}-${index}`} className="text-gray-400">
             {label}: {oldStr} → {newStr}
           </span>
         )

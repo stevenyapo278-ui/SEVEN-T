@@ -574,11 +574,11 @@ export default function ConversationDetail() {
       {/* Header */}
       <div className="card mb-6">
         <div className="p-4 border-b border-space-700">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
               <button
                 onClick={() => navigate('/dashboard/conversations')}
-                className="flex items-center gap-2 text-gray-400 hover:text-gray-100 transition-colors"
+                className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-100 transition-colors touch-target"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Retour aux conversations
@@ -586,19 +586,19 @@ export default function ConversationDetail() {
               <button
                 onClick={handleDeleteConversation}
                 disabled={deletingConversation}
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 touch-target"
                 title="Supprimer la conversation"
               >
                 {deletingConversation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 Supprimer la conversation
               </button>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Human Takeover Toggle */}
               <button
                 onClick={toggleHumanTakeover}
                 disabled={togglingTakeover}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-all ${
+                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-all touch-target ${
                   humanTakeover
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
@@ -620,7 +620,7 @@ export default function ConversationDetail() {
               <button
                 onClick={handleSync}
                 disabled={syncing}
-                className="flex items-center gap-2 text-gold-400 hover:text-gold-300 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 text-gold-400 hover:text-gold-300 transition-colors disabled:opacity-50 touch-target"
               >
                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                 {syncing ? 'Sync...' : 'Sync'}
@@ -628,7 +628,7 @@ export default function ConversationDetail() {
               <button
                 onClick={handleExportPdf}
                 disabled={exportingPdf}
-                className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 touch-target"
                 title="Exporter la conversation en PDF"
               >
                 <FileDown className={`w-4 h-4 ${exportingPdf ? 'animate-pulse' : ''}`} />
@@ -639,7 +639,7 @@ export default function ConversationDetail() {
                   {!selectionMode ? (
                     <button
                       onClick={() => setSelectionMode(true)}
-                      className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors"
+                      className="flex items-center justify-center gap-2 text-amber-400 hover:text-amber-300 transition-colors touch-target"
                       title="Sélectionner des messages à supprimer"
                     >
                       <Square className="w-4 h-4" />
@@ -649,7 +649,7 @@ export default function ConversationDetail() {
                     <>
                       <button
                         onClick={() => { setSelectionMode(false); setSelectedMessageIds(new Set()) }}
-                        className="flex items-center gap-2 text-gray-400 hover:text-gray-200 transition-colors"
+                        className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200 transition-colors touch-target"
                       >
                         <X className="w-4 h-4" />
                         Annuler
@@ -657,7 +657,7 @@ export default function ConversationDetail() {
                       <button
                         onClick={handleDeleteSelection}
                         disabled={selectedMessageIds.size === 0 || deletingMessages}
-                        className="flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 touch-target"
                         title="Supprimer la sélection"
                       >
                         {deletingMessages ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
@@ -666,7 +666,7 @@ export default function ConversationDetail() {
                       <button
                         onClick={handleDeleteAllMessages}
                         disabled={deletingMessages}
-                        className="flex items-center gap-2 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 touch-target"
                         title="Supprimer tous les messages"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -719,8 +719,8 @@ export default function ConversationDetail() {
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 mb-1">
-                  <h1 className="text-xl font-display font-bold text-gray-100">
+                <div className="flex items-center gap-2 mb-1 min-w-0">
+                  <h1 className="text-xl font-display font-bold text-gray-100 truncate">
                     {isNameJustNumber(conversation.contact_name, conversation.contact_number)
                       ? formatPhoneNumber(conversation.contact_number)
                       : conversation.contact_name

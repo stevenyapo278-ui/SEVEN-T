@@ -808,6 +808,31 @@ class WhatsAppManager {
                 await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: payload.messageType, rawMessage: message });
                 return;
             }
+            // Human takeover: save incoming text immediately so it appears in the SaaS conversation view (no batching, no AI reply)
+            const conversationFresh = await db.get('SELECT human_takeover FROM conversations WHERE id = ?', context.conversation.id);
+            if (conversationFresh?.human_takeover) {
+                await conversationMessageQueue.flush(toolId, context.conversation.id);
+                const inMsgId = payload.inMsgId || uuidv4();
+                await db.run(`
+                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
+                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
+                `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.createdAt);
+                await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', payload.createdAt, context.conversation.id);
+                console.log(`[WhatsApp] Message saved (human takeover): ${context.contactName} -> ${payload.content.substring(0, 30)}...`);
+                void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
+                    conversationId: context.conversation.id,
+                    messageId: inMsgId,
+                    agentId: context.agent.id,
+                    userId: context.agent.user_id,
+                    contactJid: context.sender,
+                    contactName: context.contactName,
+                    contactNumber: context.contactNumberForConv,
+                    message: payload.content,
+                    messageType: 'text'
+                }, context.agent.id, context.agent.user_id);
+                this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
+                return;
+            }
             conversationMessageQueue.enqueue(toolId, context.conversation.id, { ...payload, ...context });
         } catch (error) {
             console.error('[WhatsApp] Error handling message:', error);

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Mail, Lock, User, Building, ArrowRight } from 'lucide-react'
+import { Mail, Lock, User, Building, ArrowRight, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const GOOGLE_LOGIN_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') ? `${import.meta.env.VITE_API_URL}/auth/google` : '/api/auth/google'
@@ -18,6 +18,7 @@ export default function Register() {
     password: '',
     company: ''
   })
+  const [acceptTerms, setAcceptTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -28,6 +29,10 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!acceptTerms) {
+      toast.error('Veuillez accepter les conditions d\'utilisation et la politique de confidentialité')
+      return
+    }
     setLoading(true)
 
     try {
@@ -147,9 +152,24 @@ export default function Register() {
               </div>
             </div>
 
+            <label className="flex items-start gap-3 cursor-pointer mt-4 p-3 rounded-xl bg-space-800/50 border border-space-600 hover:border-space-500 transition-colors">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-1 w-4 h-4 rounded border-space-500 bg-space-800 text-gold-400 focus:ring-gold-400/50"
+              />
+              <span className="text-sm text-gray-300">
+                J'ai lu et j'accepte les{' '}
+                <Link to="/legal?tab=terms" target="_blank" className="text-gold-400 hover:underline">conditions d'utilisation</Link>
+                {' '}et la{' '}
+                <Link to="/legal?tab=privacy" target="_blank" className="text-gold-400 hover:underline">politique de confidentialité</Link>.
+              </span>
+            </label>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !acceptTerms}
               className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
               {loading ? (
@@ -184,10 +204,6 @@ export default function Register() {
               S'inscrire avec Google
             </a>
           </form>
-
-          <p className="mt-6 text-xs text-center text-gray-500">
-            En créant un compte, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
-          </p>
         </div>
       </div>
     </div>

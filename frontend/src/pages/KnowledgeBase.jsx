@@ -129,8 +129,8 @@ export default function KnowledgeBase() {
         />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <h1 className={`text-3xl font-display font-bold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+            <div className="min-w-0">
+              <h1 className={`text-3xl font-display font-bold mb-2 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 Base de Connaissances
               </h1>
               <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
@@ -139,7 +139,7 @@ export default function KnowledgeBase() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary inline-flex items-center gap-2"
+              className="btn-primary inline-flex items-center justify-center gap-2 flex-shrink-0 touch-target"
             >
               <Plus className="w-5 h-5" />
               Ajouter du contenu

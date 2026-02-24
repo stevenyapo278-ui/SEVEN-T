@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
 import api from '../services/api'
@@ -8,7 +8,8 @@ import toast from 'react-hot-toast'
 
 export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { user, updateUser, refreshUser } = useAuth()
+  const { user, updateUser, refreshUser, logout } = useAuth()
+  const navigate = useNavigate()
   const { currency, setCurrency } = useCurrency()
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -17,6 +18,8 @@ export default function Settings() {
   })
   const [saving, setSaving] = useState(false)
   const [exportingData, setExportingData] = useState(false)
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   // Sync form when user is loaded/updated
   useEffect(() => {
@@ -315,15 +318,15 @@ export default function Settings() {
 
       {/* Abonnement et usage */}
       <div className="card p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2">
-            <Crown className="w-5 h-5 text-gold-400" />
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2 min-w-0 truncate">
+            <Crown className="w-5 h-5 text-gold-400 flex-shrink-0" />
             Abonnement et usage
           </h2>
           <button
             type="button"
             onClick={() => { refreshUser(); loadQuotas() }}
-            className="text-sm text-gray-400 hover:text-gray-200 inline-flex items-center gap-1.5 transition-colors"
+            className="text-sm text-gray-400 hover:text-gray-200 inline-flex items-center justify-center gap-1.5 transition-colors touch-target flex-shrink-0"
           >
             <RefreshCw className="w-4 h-4" />
             Actualiser
@@ -450,18 +453,18 @@ export default function Settings() {
                 return (
                   <div
                     key={providerId}
-                    className="flex items-center justify-between p-4 rounded-xl border border-space-700 bg-space-800/50"
+                    className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-space-700 bg-space-800/50"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{p?.icon || '💳'}</span>
-                      <div>
-                        <p className="font-medium text-gray-100">{p?.name || providerId}</p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{p?.icon || '💳'}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-100 truncate">{p?.name || providerId}</p>
                         <p className="text-xs text-gray-500">
                           {configured ? 'Configuré' : 'Non configuré'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {providerId === 'paymetrust' && (
                         <>
                           <button
@@ -499,9 +502,9 @@ export default function Settings() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
           <div className="relative w-full max-w-md rounded-2xl border border-space-700 bg-space-900 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-display font-semibold text-gray-100">Configurer PaymeTrust</h3>
-              <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="text-gray-400 hover:text-gray-200">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h3 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">Configurer PaymeTrust</h3>
+              <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="flex-shrink-0 touch-target text-gray-400 hover:text-gray-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -578,6 +581,68 @@ export default function Settings() {
           {exportingData ? 'Export en cours...' : 'Exporter mes données'}
         </button>
       </div>
+
+      {/* Supprimer mon compte (droit à l'effacement RGPD) */}
+      <div className="card p-6 mb-6 border-red-500/30">
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+          <Trash2 className="w-5 h-5 text-red-400" />
+          Supprimer mon compte
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Cette action est irréversible. Toutes vos données (compte, agents, conversations, messages, produits, commandes) seront définitivement supprimées. Vous pouvez d&apos;abord exporter vos données ci-dessus.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDeleteAccountModal(true)}
+          disabled={deletingAccount}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+          Supprimer définitivement mon compte
+        </button>
+      </div>
+
+      {/* Modal confirmation suppression compte */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !deletingAccount && setShowDeleteAccountModal(false)}>
+          <div className="bg-space-900 border border-space-600 rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-display font-semibold text-gray-100 mb-2">Supprimer définitivement mon compte ?</h3>
+            <p className="text-sm text-gray-400 mb-6">
+              Toutes vos données seront effacées. Cette action est irréversible.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteAccountModal(false)}
+                disabled={deletingAccount}
+                className="px-4 py-2 rounded-xl font-medium bg-space-700 text-gray-300 hover:bg-space-600 disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setDeletingAccount(true)
+                  try {
+                    await api.delete('/auth/me')
+                    toast.success('Compte supprimé')
+                    logout()
+                    navigate('/login')
+                  } catch (e) {
+                    toast.error(e.response?.data?.error || 'Erreur lors de la suppression')
+                    setDeletingAccount(false)
+                  }
+                }}
+                disabled={deletingAccount}
+                className="px-4 py-2 rounded-xl font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 inline-flex items-center gap-2"
+              >
+                {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Changer de plan */}
       <div className="mb-6">

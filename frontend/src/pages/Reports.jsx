@@ -143,14 +143,14 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-display font-bold text-gray-100">Rapports</h1>
-          <p className="text-gray-400">Générez et planifiez des rapports automatiques</p>
+          <p className="text-gray-400 text-sm sm:text-base">Générez et planifiez des rapports automatiques</p>
         </div>
         <button
           onClick={() => setShowSubModal(true)}
-          className="btn-secondary flex items-center gap-2"
+          className="btn-secondary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
         >
           <Mail className="w-5 h-5" />
           Programmer un rapport
@@ -197,9 +197,9 @@ export default function Reports() {
       {/* Generated Report Preview */}
       {generatedReport && (
         <div className="card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-100">{generatedReport.title}</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className="min-w-0">
+              <h3 className="text-lg font-semibold text-gray-100 truncate">{generatedReport.title}</h3>
               <p className="text-sm text-gray-400">
                 Période: {new Date(generatedReport.period?.start || generatedReport.period_start).toLocaleDateString('fr-FR')} - {new Date(generatedReport.period?.end || generatedReport.period_end).toLocaleDateString('fr-FR')}
               </p>
@@ -275,7 +275,7 @@ export default function Reports() {
             {generatedReport.data?.products && (
               <div className="col-span-full">
                 <h4 className="text-sm font-medium text-gray-400 mb-3">Produits vendus</h4>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto table-responsive">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-gray-500 border-b border-space-700">

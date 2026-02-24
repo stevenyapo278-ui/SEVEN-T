@@ -207,8 +207,8 @@ export default function Leads() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" aria-hidden="true" />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex items-center gap-3">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex flex-wrap items-center gap-3 truncate">
                 <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl">
                   <UserPlus className="w-8 h-8 text-space-950" />
                 </div>
@@ -220,7 +220,7 @@ export default function Leads() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary inline-flex items-center gap-2"
+              className="btn-primary inline-flex items-center justify-center gap-2 flex-shrink-0 touch-target"
             >
               <Plus className="w-5 h-5" />
               Ajouter un lead
@@ -506,14 +506,14 @@ export default function Leads() {
             return (
               <div 
                 key={lead.id}
-                className="card p-4 md:p-6 hover:border-space-600 transition-all"
+                className="card p-4 md:p-6 hover:border-space-600 transition-all overflow-hidden"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex flex-wrap items-start gap-3 sm:gap-4">
                   {/* Avatar */}
-                  <div className="relative">
-                    <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-gold-400 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <span className="text-space-950 font-bold text-lg">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-gold-400 rounded-xl flex items-center justify-center">
+                      <span className="text-space-950 font-bold text-base sm:text-lg">
                         {lead.name?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     </div>
@@ -523,34 +523,34 @@ export default function Leads() {
                   </div>
 
                   {/* Lead Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="font-semibold text-gray-100 flex items-center gap-2">
-                          {lead.name}
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-gray-100 flex flex-wrap items-center gap-x-2 gap-y-0">
+                          <span className="truncate">{lead.name}</span>
                           {lead.company && (
-                            <span className="text-sm font-normal text-gray-500">• {lead.company}</span>
+                            <span className="text-sm font-normal text-gray-500 truncate">• {lead.company}</span>
                           )}
                         </h3>
-                        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-400">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-400">
                           {lead.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3.5 h-3.5" />
-                              {lead.phone}
+                            <span className="flex items-center gap-1 min-w-0">
+                              <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate">{lead.phone}</span>
                             </span>
                           )}
                           {lead.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="w-3.5 h-3.5" />
-                              {lead.email}
+                            <span className="flex items-center gap-1 min-w-0">
+                              <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate">{lead.email}</span>
                             </span>
                           )}
                         </div>
                       </div>
 
                       {/* Status badge */}
-                      <div className="flex items-center gap-2">
-                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap
                           ${statusInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
                           ${statusInfo.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : ''}
                           ${statusInfo.color === 'violet' ? 'bg-violet-500/20 text-violet-400' : ''}
@@ -558,14 +558,14 @@ export default function Leads() {
                           ${statusInfo.color === 'green' ? 'bg-green-500/20 text-green-400' : ''}
                           ${statusInfo.color === 'red' ? 'bg-red-500/20 text-red-400' : ''}
                         `}>
-                          <StatusIcon className="w-3.5 h-3.5" />
+                          <StatusIcon className="w-3.5 h-3.5 flex-shrink-0" />
                           {statusInfo.label}
                         </div>
                       </div>
                     </div>
 
                     {/* Tags & Meta */}
-                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       {lead.source && (
                         <span className="text-xs px-2 py-0.5 bg-space-800 text-gray-400 rounded-full">
                           {LEAD_SOURCES.find(s => s.id === lead.source)?.label || lead.source}
@@ -577,24 +577,24 @@ export default function Leads() {
                         </span>
                       ))}
                       <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
                         {new Date(lead.created_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
 
                     {/* Notes preview */}
                     {lead.notes && (
-                      <p className="text-sm text-gray-500 mt-2 line-clamp-1">
+                      <p className="text-sm text-gray-500 line-clamp-1">
                         {lead.notes}
                       </p>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => handleToggleFavorite(lead)}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg transition-colors touch-target flex items-center justify-center ${
                         lead.is_favorite 
                           ? 'text-gold-400 hover:bg-gold-400/10' 
                           : 'text-gray-500 hover:text-gray-300 hover:bg-space-700'
@@ -605,14 +605,14 @@ export default function Leads() {
                     </button>
                     <button
                       onClick={() => setEditingLead(lead)}
-                      className="p-2 text-gray-400 hover:text-violet-400 hover:bg-space-700 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 hover:text-violet-400 hover:bg-space-700 rounded-lg transition-colors touch-target flex items-center justify-center"
                       title="Modifier"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDelete(lead.id)}
-                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors touch-target flex items-center justify-center"
                       title="Supprimer"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -620,13 +620,13 @@ export default function Leads() {
                   </div>
                 </div>
 
-                {/* Quick status change */}
-                <div className="flex gap-2 mt-4 pt-4 border-t border-space-700">
+                {/* Quick status change — wrap on mobile so all 6 visible */}
+                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-space-700">
                   {LEAD_STATUSES.map(status => (
                     <button
                       key={status.id}
                       onClick={() => handleStatusChange(lead, status.id)}
-                      className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                      className={`min-w-[calc(50%-0.25rem)] sm:flex-1 sm:min-w-0 py-2 text-xs font-medium rounded-lg transition-all ${
                         lead.status === status.id
                           ? status.color === 'blue' ? 'bg-blue-500/30 text-blue-400 border border-blue-500/30' :
                             status.color === 'amber' ? 'bg-amber-500/30 text-amber-400 border border-amber-500/30' :

@@ -149,6 +149,11 @@ export default function Orders() {
     loadAnalytics()
   }, [analyticsPeriod])
 
+  // Charger l'historique des mouvements de stock quand on ouvre l'onglet Historique
+  useEffect(() => {
+    if (activeTab === 'logs') loadLogs()
+  }, [activeTab])
+
   const loadOrders = async () => {
     try {
       const response = await api.get('/orders')
@@ -220,6 +225,8 @@ export default function Orders() {
       setLogs(response.data.logs || [])
     } catch (error) {
       console.error('Error loading logs:', error)
+      toast.error(error.response?.data?.error || 'Impossible de charger l\'historique des mouvements de stock')
+      setLogs([])
     } finally {
       setLogsLoading(false)
     }
@@ -522,55 +529,57 @@ export default function Orders() {
     <div className="space-y-6">
       {/* Header Hero */}
       <div className="relative overflow-hidden rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="relative z-10">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-100 flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl">
-                  <ShoppingCart className="w-8 h-8 text-space-950" />
-                </div>
-                {t('orders.title')}
-              </h1>
-              <p className="text-gray-400 mt-2">
-                {t('orders.subtitle')}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={openNewOrderModal}
-                className="px-4 py-2 rounded-xl flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Nouvelle commande
-              </button>
-              <button
-                onClick={handleExportCsv}
-                className="px-4 py-2 rounded-xl flex items-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors"
-              >
-                <Download className="w-5 h-5" />
-                {t('orders.exportCsv')}
-              </button>
-              <button
-                onClick={() => { setActiveTab('logs'); loadLogs(); }}
-                className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-colors ${
-                  activeTab === 'logs'
-                    ? 'bg-violet-500 text-white'
-                    : 'bg-space-800 text-gray-300 hover:bg-space-700'
-                }`}
-              >
-                <History className="w-5 h-5" />
-                Historique
-              </button>
-              
-              {/* Cleanup Menu */}
-              <div className="relative cleanup-menu-container">
+        <div className="relative z-10 space-y-6">
+          {/* Titre et sous-titre : bloc dédié, jamais sous les boutons */}
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold text-gray-100 flex flex-wrap items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl flex-shrink-0">
+                <ShoppingCart className="w-8 h-8 text-space-950" />
+              </div>
+              <span className="break-words">{t('orders.title')}</span>
+            </h1>
+            <p className="text-gray-400 mt-2 break-words">
+              {t('orders.subtitle')}
+            </p>
+          </div>
+
+          {/* Boutons : rangée dédiée, wrap propre sans recouvrir le texte */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={openNewOrderModal}
+              className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-600 text-white transition-colors touch-target whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5 flex-shrink-0" />
+              <span>Nouvelle commande</span>
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap"
+            >
+              <Download className="w-5 h-5 flex-shrink-0" />
+              <span>{t('orders.exportCsv')}</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('logs'); loadLogs(); }}
+              className={`px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 transition-colors touch-target whitespace-nowrap ${
+                activeTab === 'logs'
+                  ? 'bg-violet-500 text-white'
+                  : 'bg-space-800 text-gray-300 hover:bg-space-700'
+              }`}
+            >
+              <History className="w-5 h-5 flex-shrink-0" />
+              <span>Historique</span>
+            </button>
+
+            {/* Cleanup Menu */}
+            <div className="relative cleanup-menu-container">
                 <button
                   onClick={() => setShowCleanupMenu(!showCleanupMenu)}
-                  className="px-4 py-2 rounded-xl flex items-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors"
+                  className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap"
                 >
-                  <Sparkles className="w-5 h-5" />
-                  Nettoyer
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showCleanupMenu ? 'rotate-180' : ''}`} />
+                  <Sparkles className="w-5 h-5 flex-shrink-0" />
+                  <span>Nettoyer</span>
+                  <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${showCleanupMenu ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showCleanupMenu && (
@@ -626,62 +635,61 @@ export default function Orders() {
                 )}
               </div>
             </div>
-          </div>
 
           {/* Stats - always visible in header */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8">
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/20 rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 min-w-0">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-amber-500/20 rounded-xl flex-shrink-0">
                   <Clock className="w-5 h-5 text-amber-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-amber-400">{stats.pending}</p>
-                  <p className="text-xs text-gray-500">En attente</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold text-amber-400 truncate" title={stats.pending}>{stats.pending}</p>
+                  <p className="text-xs text-gray-500 truncate">En attente</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-green-500/20 rounded-xl flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-green-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.validated}</p>
-                  <p className="text-xs text-gray-500">Validées</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold text-gray-100 truncate" title={stats.validated}>{stats.validated}</p>
+                  <p className="text-xs text-gray-500 truncate">Validées</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-emerald-500/20 rounded-xl flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-emerald-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-emerald-400">{stats.delivered ?? 0}</p>
-                  <p className="text-xs text-gray-500">Livrées</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold text-emerald-400 truncate" title={stats.delivered ?? 0}>{stats.delivered ?? 0}</p>
+                  <p className="text-xs text-gray-500 truncate">Livrées</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-red-500/20 rounded-xl flex-shrink-0">
                   <XCircle className="w-5 h-5 text-red-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.rejected}</p>
-                  <p className="text-xs text-gray-500">Rejetées</p>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold text-gray-100 truncate" title={stats.rejected}>{stats.rejected}</p>
+                  <p className="text-xs text-gray-500 truncate">Rejetées</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gold-400/20 rounded-xl">
+            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0 col-span-2 sm:col-span-3 lg:col-span-1">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 bg-gold-400/20 rounded-xl flex-shrink-0">
                   <TrendingUp className="w-5 h-5 text-gold-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gold-400">{formatCurrency(stats.totalRevenue)}</p>
-                  <p className="text-xs text-gray-500">Chiffre d'affaires</p>
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="text-2xl font-bold text-gold-400 truncate" title={formatCurrency(stats.totalRevenue)}>{formatCurrency(stats.totalRevenue)}</p>
+                  <p className="text-xs text-gray-500 truncate">Chiffre d'affaires</p>
                 </div>
               </div>
             </div>
@@ -690,8 +698,8 @@ export default function Orders() {
       </div>
 
       {/* Tab bar */}
-      <div className="border-b border-space-700 mb-6">
-        <div className="flex gap-1">
+      <div className="border-b border-space-700 mb-6 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex gap-1 min-w-max">
           {ORDERS_TABS.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -699,7 +707,7 @@ export default function Orders() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-3 px-4 border-b-2 transition-colors whitespace-nowrap ${
+                className={`flex items-center gap-2 pb-3 px-3 sm:px-4 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 touch-target ${
                   isActive
                     ? 'border-gold-400 text-gold-400'
                     : 'border-transparent text-gray-500 hover:text-gray-300'
@@ -739,45 +747,45 @@ export default function Orders() {
               {/* Row 1: Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Conversion Rate */}
-                <div className="card p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">Taux de conversion</p>
-                      <p className="text-3xl font-bold text-violet-400 mt-2">
+                <div className="card p-6 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-500 truncate">Taux de conversion</p>
+                      <p className="text-3xl font-bold text-violet-400 mt-2 truncate">
                         {analytics.conversionRate}%
                       </p>
                     </div>
-                    <div className="p-3 bg-violet-500/20 rounded-xl">
+                    <div className="p-3 bg-violet-500/20 rounded-xl flex-shrink-0">
                       <TrendingUp className="w-6 h-6 text-violet-400" />
                     </div>
                   </div>
                 </div>
 
                 {/* Daily Revenue */}
-                <div className="card p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">Revenus du jour</p>
-                      <p className="text-3xl font-bold text-gold-400 mt-2">
+                <div className="card p-6 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-500 truncate">Revenus du jour</p>
+                      <p className="text-3xl font-bold text-gold-400 mt-2 truncate" title={formatCurrency(analytics.dailyRevenue)}>
                         {formatCurrency(analytics.dailyRevenue)}
                       </p>
                     </div>
-                    <div className="p-3 bg-gold-400/20 rounded-xl">
+                    <div className="p-3 bg-gold-400/20 rounded-xl flex-shrink-0">
                       <DollarSign className="w-6 h-6 text-gold-400" />
                     </div>
                   </div>
                 </div>
 
                 {/* Monthly Revenue */}
-                <div className="card p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">Revenus du mois</p>
-                      <p className="text-3xl font-bold text-green-400 mt-2">
+                <div className="card p-6 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between gap-3 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-sm text-gray-500 truncate">Revenus du mois</p>
+                      <p className="text-3xl font-bold text-green-400 mt-2 truncate" title={formatCurrency(analytics.monthlyRevenue)}>
                         {formatCurrency(analytics.monthlyRevenue)}
                       </p>
                     </div>
-                    <div className="p-3 bg-green-500/20 rounded-xl">
+                    <div className="p-3 bg-green-500/20 rounded-xl flex-shrink-0">
                       <Calendar className="w-6 h-6 text-green-400" />
                     </div>
                   </div>
@@ -785,18 +793,18 @@ export default function Orders() {
               </div>
 
               {/* Row 2: Period Comparison */}
-              <div className="card p-6">
+              <div className="card p-6 min-w-0 overflow-hidden">
                 <h3 className="text-lg font-semibold text-gray-100 mb-4">
                   Comparaison mensuelle
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
+                  <div className="min-w-0">
                     <p className="text-sm text-gray-500 mb-2">Revenus</p>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-2xl font-bold text-gray-100">
+                    <div className="flex flex-wrap items-baseline gap-2 min-w-0">
+                      <p className="text-2xl font-bold text-gray-100 truncate">
                         {formatCurrency(analytics.periodComparison.thisMonth.revenue)}
                       </p>
-                      <span className={`flex items-center gap-1 text-sm ${
+                      <span className={`flex items-center gap-1 text-sm flex-shrink-0 ${
                         analytics.periodComparison.revenueGrowth >= 0 
                           ? 'text-green-400' 
                           : 'text-red-400'
@@ -809,17 +817,17 @@ export default function Orders() {
                         {Math.abs(analytics.periodComparison.revenueGrowth)}%
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 break-words">
                       vs {formatCurrency(analytics.periodComparison.lastMonth.revenue)} mois dernier
                     </p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-gray-500 mb-2">Commandes</p>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex flex-wrap items-baseline gap-2 min-w-0">
                       <p className="text-2xl font-bold text-gray-100">
                         {analytics.periodComparison.thisMonth.orders}
                       </p>
-                      <span className={`flex items-center gap-1 text-sm ${
+                      <span className={`flex items-center gap-1 text-sm flex-shrink-0 ${
                         analytics.periodComparison.ordersGrowth >= 0 
                           ? 'text-green-400' 
                           : 'text-red-400'
@@ -832,7 +840,7 @@ export default function Orders() {
                         {Math.abs(analytics.periodComparison.ordersGrowth)}%
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 break-words">
                       vs {analytics.periodComparison.lastMonth.orders} mois dernier
                     </p>
                   </div>
@@ -887,15 +895,15 @@ export default function Orders() {
                     <Package className="w-5 h-5 text-violet-400" />
                     Top 5 Produits
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-3 min-w-0">
                     {analytics.topProducts.map((product, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-space-800 rounded-xl">
-                        <div>
-                          <p className="text-sm font-medium text-gray-100">{product.product_name}</p>
+                      <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-space-800 rounded-xl min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-100 truncate">{product.product_name}</p>
                           <p className="text-xs text-gray-500">{product.order_count} commandes</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-gold-400">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-gold-400 truncate" title={formatCurrency(product.total_revenue)}>
                             {formatCurrency(product.total_revenue)}
                           </p>
                           <p className="text-xs text-gray-500">{product.total_quantity} unités</p>
@@ -914,15 +922,15 @@ export default function Orders() {
                     <User className="w-5 h-5 text-green-400" />
                     Top 5 Clients
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-3 min-w-0">
                     {analytics.topCustomers.map((customer, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-space-800 rounded-xl">
-                        <div>
-                          <p className="text-sm font-medium text-gray-100">{customer.customer_name}</p>
-                          <p className="text-xs text-gray-500">{customer.customer_phone}</p>
+                      <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-space-800 rounded-xl min-w-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-100 truncate">{customer.customer_name}</p>
+                          <p className="text-xs text-gray-500 truncate">{customer.customer_phone}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-green-400">
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-green-400 truncate" title={formatCurrency(customer.total_spent)}>
                             {formatCurrency(customer.total_spent)}
                           </p>
                           <p className="text-xs text-gray-500">{customer.order_count} commandes</p>
@@ -943,25 +951,33 @@ export default function Orders() {
       {/* Stock Logs Panel - Logs tab */}
       {activeTab === 'logs' && (
         <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <History className="w-5 h-5 text-violet-400" />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2 min-w-0 truncate">
+              <History className="w-5 h-5 text-violet-400 flex-shrink-0" />
               Historique des mouvements de stock
             </h3>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => loadLogs()}
+                disabled={logsLoading}
+                className="text-xs px-3 py-2 min-h-[44px] bg-space-700 text-gray-300 hover:bg-space-600 rounded-lg transition-colors touch-target flex items-center justify-center gap-1"
+              >
+                <RefreshCw className={`w-3 h-3 flex-shrink-0 ${logsLoading ? 'animate-spin' : ''}`} />
+                Réactualiser
+              </button>
               <button
                 onClick={() => handleClearLogs(30)}
                 disabled={actionLoading}
-                className="text-xs px-3 py-1.5 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg transition-colors"
+                className="text-xs px-3 py-2 min-h-[44px] bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg transition-colors touch-target"
               >
                 {">"} 30 jours
               </button>
               <button
                 onClick={() => handleClearLogs()}
                 disabled={actionLoading}
-                className="text-xs px-3 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors"
+                className="text-xs px-3 py-2 min-h-[44px] bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors touch-target flex items-center justify-center gap-1"
               >
-                <Trash2 className="w-3 h-3 inline mr-1" />
+                <Trash2 className="w-3 h-3 flex-shrink-0" />
                 Tout supprimer
               </button>
             </div>
@@ -1070,30 +1086,30 @@ export default function Orders() {
                   className="p-4 cursor-pointer"
                   onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-xl ${getStatusIconBgClasses(order.status)}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className={`p-3 rounded-xl flex-shrink-0 ${getStatusIconBgClasses(order.status)}`}>
                         <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-100">{order.customer_name}</h3>
-                          <span className={`px-2 py-0.5 text-xs rounded-full ${getStatusBadgeClasses(order.status)}`}>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold text-gray-100 truncate">{order.customer_name}</h3>
+                          <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getStatusBadgeClasses(order.status)}`}>
                             {t(statusInfo.nameKey)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-sm text-gray-400">
                           {order.customer_phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="w-3.5 h-3.5" />
-                              {order.customer_phone}
+                            <span className="flex items-center gap-1 truncate min-w-0">
+                              <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span className="truncate">{order.customer_phone}</span>
                             </span>
                           )}
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 flex-shrink-0">
                             <Calendar className="w-3.5 h-3.5" />
                             {formatDate(order.created_at)}
                           </span>
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 flex-shrink-0">
                             <Package className="w-3.5 h-3.5" />
                             {order.items?.length || 0} article(s)
                           </span>
@@ -1101,8 +1117,8 @@ export default function Orders() {
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-gold-400">
+                    <div className="text-right flex-shrink-0 min-w-0">
+                      <p className="text-xl font-bold text-gold-400 truncate" title={formatCurrency(order.total_amount, order.currency)}>
                         {formatCurrency(order.total_amount, order.currency)}
                       </p>
                       <p className="text-xs text-gray-500">#{order.id.substring(0, 8)}</p>
@@ -1118,18 +1134,18 @@ export default function Orders() {
                       <h4 className="text-sm font-medium text-gray-400 mb-2">Articles</h4>
                       <div className="space-y-2">
                         {order.items?.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-3 bg-space-900 rounded-xl">
-                            <div>
-                              <p className="text-sm font-medium text-gray-100">{item.product_name}</p>
+                          <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-space-900 rounded-xl min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-100 truncate">{item.product_name}</p>
                               {item.product_sku && (
-                                <p className="text-xs text-gray-500">SKU: {item.product_sku}</p>
+                                <p className="text-xs text-gray-500 truncate">SKU: {item.product_sku}</p>
                               )}
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm text-gray-300">
+                            <div className="text-right flex-shrink-0 min-w-0">
+                              <p className="text-sm text-gray-300 truncate">
                                 {item.quantity} x {formatCurrency(item.unit_price, order.currency)}
                               </p>
-                              <p className="text-sm font-medium text-gold-400">
+                              <p className="text-sm font-medium text-gold-400 truncate" title={formatCurrency(item.total_price, order.currency)}>
                                 {formatCurrency(item.total_price, order.currency)}
                               </p>
                             </div>
@@ -1173,23 +1189,23 @@ export default function Orders() {
                       <div className="flex flex-wrap items-center gap-2 mb-4">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCreatePaymentLink(order); }}
-                          className="flex items-center gap-2 px-4 py-2 bg-gold-400/20 hover:bg-gold-400/30 text-gold-400 rounded-xl transition-colors"
+                          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-gold-400/20 hover:bg-gold-400/30 text-gold-400 rounded-xl transition-colors touch-target"
                         >
-                          <Link2 className="w-4 h-4" />
-                          Envoyer lien de paiement au client
+                          <Link2 className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate">Envoyer lien de paiement au client</span>
                         </button>
                         {order.conversation_id && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleSendPaymentLinkInConversation(order); }}
                             disabled={sendingInConversation === order.id}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors disabled:opacity-50"
+                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors disabled:opacity-50 touch-target"
                           >
                             {sendingInConversation === order.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <MessageSquare className="w-4 h-4" />
                             )}
-                            Envoyer le lien dans la conversation WhatsApp
+                            <span className="truncate">Envoyer le lien dans la conversation WhatsApp</span>
                           </button>
                         )}
                       </div>
@@ -1197,27 +1213,27 @@ export default function Orders() {
 
                     {/* Actions for pending orders */}
                     {order.status === 'pending' && (
-                      <div className="flex items-center justify-between gap-3 pt-2">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
                           {order.conversation_id && (
                             <Link
                               to={`/dashboard/conversations/${order.conversation_id}`}
-                              className="flex items-center gap-2 px-4 py-2 bg-space-700 hover:bg-space-600 text-gray-300 rounded-xl transition-colors"
+                              className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-space-700 hover:bg-space-600 text-gray-300 rounded-xl transition-colors touch-target"
                             >
-                              <MessageSquare className="w-4 h-4" />
-                              Voir la conversation
+                              <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">Voir la conversation</span>
                             </Link>
                           )}
                           <button
                             onClick={() => handleValidate(order.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors"
+                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors touch-target"
                           >
                             <CheckCircle className="w-4 h-4" />
                             Valider
                           </button>
                           <button
                             onClick={() => handleReject(order.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors"
+                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors touch-target"
                           >
                             <XCircle className="w-4 h-4" />
                             Rejeter
@@ -1226,7 +1242,7 @@ export default function Orders() {
                         
                         {/* Delete Button for pending */}
                         {showDeleteConfirm === order.id ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
                             <span className="text-sm text-gray-400">Confirmer ?</span>
                             <button
                               onClick={() => handleDelete(order.id)}
@@ -1244,7 +1260,7 @@ export default function Orders() {
                         ) : (
                           <button
                             onClick={() => setShowDeleteConfirm(order.id)}
-                            className="flex items-center gap-2 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
+                            className="flex items-center justify-center gap-2 px-3 py-2 min-h-[44px] text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors touch-target"
                             title="Supprimer cette commande"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1256,7 +1272,7 @@ export default function Orders() {
                     {/* Validated: show "Marquer comme livré" + validation info */}
                     {order.status === 'validated' && (
                       <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
                           {order.validated_at && (
                             <div className="flex items-center gap-2 text-sm text-green-400">
                               <CheckCircle className="w-4 h-4" />
@@ -1266,7 +1282,7 @@ export default function Orders() {
                           )}
                           <button
                             onClick={() => handleMarkDelivered(order.id)}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors"
+                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors touch-target"
                           >
                             <Package className="w-4 h-4" />
                             Marquer comme livré
@@ -1302,8 +1318,8 @@ export default function Orders() {
 
                     {/* Delivered info */}
                     {order.status === 'delivered' && order.delivered_at && (
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-2 text-sm text-emerald-400">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <div className="flex items-center gap-2 text-sm text-emerald-400 min-w-0">
                           <CheckCircle className="w-4 h-4" />
                           Livrée le {formatDate(order.delivered_at)}
                         </div>
@@ -1323,11 +1339,11 @@ export default function Orders() {
 
                     {/* Rejection info */}
                     {order.status === 'rejected' && (
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-2 text-sm text-red-400">
-                          <XCircle className="w-4 h-4" />
-                          Rejetée le {formatDate(order.rejected_at)}
-                          {order.rejection_reason && ` - ${order.rejection_reason}`}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <div className="flex items-center gap-2 text-sm text-red-400 min-w-0 break-words">
+                          <XCircle className="w-4 h-4 flex-shrink-0" />
+                          <span>Rejetée le {formatDate(order.rejected_at)}
+                          {order.rejection_reason && ` - ${order.rejection_reason}`}</span>
                         </div>
                         {showDeleteConfirm === order.id ? (
                           <div className="flex items-center gap-2">

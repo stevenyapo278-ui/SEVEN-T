@@ -501,68 +501,70 @@ export default function Admin() {
         <p className="text-gray-400">Gérez les utilisateurs et supervisez votre plateforme</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b border-space-700">
-        <button
-          onClick={() => setActiveTab('dashboard')}
-          className={`pb-3 px-4 border-b-2 transition-colors ${
-            activeTab === 'dashboard' 
-              ? 'border-gold-400 text-gold-400' 
-              : 'border-transparent text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <TrendingUp className="w-5 h-5 inline mr-2" />
-          Dashboard
-        </button>
-        <button
-          onClick={() => setActiveTab('users')}
-          className={`pb-3 px-4 border-b-2 transition-colors ${
-            activeTab === 'users' 
-              ? 'border-gold-400 text-gold-400' 
-              : 'border-transparent text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <Users className="w-5 h-5 inline mr-2" />
-          Utilisateurs
-        </button>
-        <button
-          onClick={() => setActiveTab('anomalies')}
-          className={`pb-3 px-4 border-b-2 transition-colors relative ${
-            activeTab === 'anomalies' 
-              ? 'border-red-400 text-red-400' 
-              : 'border-transparent text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <AlertCircle className="w-5 h-5 inline mr-2" />
-          Anomalies
-          {anomalyStats.total > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-              {anomalyStats.total > 99 ? '99+' : anomalyStats.total}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('ai-models')}
-          className={`pb-3 px-4 border-b-2 transition-colors ${
-            activeTab === 'ai-models' 
-              ? 'border-violet-400 text-violet-400' 
-              : 'border-transparent text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <Cpu className="w-5 h-5 inline mr-2" />
-          Modèles IA
-        </button>
-        <button
-          onClick={() => setActiveTab('plans')}
-          className={`pb-3 px-4 border-b-2 transition-colors ${
-            activeTab === 'plans' 
-              ? 'border-violet-400 text-violet-400' 
-              : 'border-transparent text-gray-500 hover:text-gray-300'
-          }`}
-        >
-          <CreditCard className="w-5 h-5 inline mr-2" />
-          Plans
-        </button>
+      {/* Tabs - scroll horizontal on small screens so "Modèles IA" and "Plans" are visible */}
+      <div className="mb-6 border-b border-space-700 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex gap-1 sm:gap-4 min-w-max">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+              activeTab === 'dashboard' 
+                ? 'border-gold-400 text-gold-400' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <TrendingUp className="w-5 h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Dashboard</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+              activeTab === 'users' 
+                ? 'border-gold-400 text-gold-400' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <Users className="w-5 h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Utilisateurs</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('anomalies')}
+            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors relative touch-target flex items-center gap-2 ${
+              activeTab === 'anomalies' 
+                ? 'border-red-400 text-red-400' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Anomalies</span>
+            {anomalyStats.total > 0 && (
+              <span className="absolute -top-1 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                {anomalyStats.total > 99 ? '99+' : anomalyStats.total}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('ai-models')}
+            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+              activeTab === 'ai-models' 
+                ? 'border-violet-400 text-violet-400' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <Cpu className="w-5 h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Modèles IA</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('plans')}
+            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+              activeTab === 'plans' 
+                ? 'border-violet-400 text-violet-400' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <CreditCard className="w-5 h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Plans</span>
+          </button>
+        </div>
       </div>
 
       {/* Dashboard Tab */}
@@ -969,7 +971,7 @@ function UsersContent({
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-responsive">
             <table className="w-full">
               <thead className="bg-space-800">
                 <tr>
@@ -2461,25 +2463,25 @@ function PlansContent({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - stacked on small screens so "Nouveau plan" is always visible */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-display font-semibold text-gray-100">Plans d'abonnement</h2>
           <p className="text-sm text-gray-500 mt-1">Gérez les plans et leurs limites</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={onRefresh} className="btn-secondary">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          {onRestoreDefaults && (
-            <button onClick={onRestoreDefaults} className="btn-secondary border-amber-500/50 text-amber-400 hover:bg-amber-500/10">
-              Restaurer les plans par défaut
-            </button>
-          )}
-          <button onClick={onCreatePlan} className="btn-primary">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={onCreatePlan} className="btn-primary order-first sm:order-last">
             <Plus className="w-4 h-4 mr-2" />
             Nouveau plan
           </button>
+          <button onClick={onRefresh} className="btn-secondary touch-target flex items-center justify-center">
+            <RefreshCw className="w-4 h-4" />
+          </button>
+          {onRestoreDefaults && (
+            <button onClick={onRestoreDefaults} className="btn-secondary border-amber-500/50 text-amber-400 hover:bg-amber-500/10 text-sm whitespace-nowrap">
+              Restaurer les plans par défaut
+            </button>
+          )}
         </div>
       </div>
 

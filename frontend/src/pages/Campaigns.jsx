@@ -304,10 +304,10 @@ export default function Campaigns() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-display font-bold text-gray-100">Campagnes</h1>
-          <p className="text-gray-400">Envoyez des messages en masse à vos contacts</p>
+          <p className="text-gray-400 text-sm sm:text-base">Envoyez des messages en masse à vos contacts</p>
         </div>
         <button
           onClick={() => {
@@ -315,7 +315,7 @@ export default function Campaigns() {
             setForm({ name: '', message: '', agent_id: '', scheduled_at: '' })
             setShowModal(true)
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
         >
           <Plus className="w-5 h-5" />
           Nouvelle campagne
@@ -383,7 +383,7 @@ export default function Campaigns() {
         {leadsForSection.length === 0 ? (
           <p className="text-gray-500 text-sm">Aucun lead. Ajoutez des leads depuis la page Leads pour les inclure dans vos campagnes.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-responsive">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-400 border-b border-gray-700/50">
@@ -785,7 +785,7 @@ export default function Campaigns() {
               ) : historyData.recipients.length === 0 ? (
                 <p className="text-gray-400 text-center py-8">Aucun destinataire pour cette campagne.</p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto table-responsive">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-gray-400 border-b border-gray-700">

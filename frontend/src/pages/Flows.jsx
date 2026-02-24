@@ -248,11 +248,11 @@ export default function Flows() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className={`text-xs truncate min-w-0 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   {flow.agent_name || 'Tous les agents'}
                 </span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={(e) => { e.stopPropagation(); handleToggle(flow.id, flow.is_active); }}
                     className={`p-1.5 rounded-lg transition-colors ${

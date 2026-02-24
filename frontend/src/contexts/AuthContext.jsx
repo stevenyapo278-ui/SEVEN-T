@@ -3,6 +3,26 @@ import api from '../services/api'
 
 const AuthContext = createContext(null)
 
+/** Décode les entités HTML pour l'affichage (ex: données déjà stockées avec &#039;) */
+function decodeHtmlEntities(str) {
+  if (typeof str !== 'string') return str
+  return str
+    .replace(/&#039;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
+function decodeUser(u) {
+  if (!u) return u
+  return {
+    ...u,
+    name: u.name ? decodeHtmlEntities(u.name) : u.name,
+    company: u.company ? decodeHtmlEntities(u.company) : u.company
+  }
+}
+
 // Durée d'inactivité avant déconnexion (minutes). 0 = désactivé. Définir VITE_SESSION_IDLE_MINUTES pour override.
 const SESSION_IDLE_MINUTES = Number(import.meta.env.VITE_SESSION_IDLE_MINUTES) || 30
 
@@ -46,7 +66,7 @@ export function AuthProvider({ children }) {
     }
     try {
       const response = await api.get('/auth/me')
-      setUser(response.data.user)
+      setUser(decodeUser(response.data.user))
     } catch (error) {
       localStorage.removeItem('token')
     }
@@ -56,7 +76,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password })
     localStorage.setItem('token', response.data.token)
-    setUser(response.data.user)
+    setUser(decodeUser(response.data.user))
     return response.data
   }
 
@@ -64,7 +84,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', token)
     try {
       const response = await api.get('/auth/me')
-      setUser(response.data.user)
+      setUser(decodeUser(response.data.user))
     } catch (error) {
       localStorage.removeItem('token')
       throw error
@@ -74,7 +94,7 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const response = await api.post('/auth/register', data)
     localStorage.setItem('token', response.data.token)
-    setUser(response.data.user)
+    setUser(decodeUser(response.data.user))
     return response.data
   }
 
@@ -84,7 +104,7 @@ export function AuthProvider({ children }) {
   }
 
   const updateUser = (userData) => {
-    setUser(userData)
+    setUser(decodeUser(userData))
   }
 
   const refreshUser = useCallback(async () => {
@@ -92,7 +112,7 @@ export function AuthProvider({ children }) {
     if (!token) return
     try {
       const response = await api.get('/auth/me')
-      setUser(response.data.user)
+      setUser(decodeUser(response.data.user))
     } catch {
       // Keep current user on error (e.g. token expired will be handled on next nav)
     }

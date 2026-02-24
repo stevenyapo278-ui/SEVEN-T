@@ -7,67 +7,46 @@ import {
   Users, 
   ArrowRight,
   Check,
-  Sparkles,
   Zap,
   TrendingUp,
-  Bot,
-  BarChart3,
   Globe,
-  Play,
   Star,
   ChevronRight,
   Loader2,
-  CreditCard
+  CreditCard,
+  ShoppingCart
 } from 'lucide-react'
 import api from '../services/api'
 
-const features = [
+/* Style DigitaWeb : Nos métiers / solutions */
+const metiers = [
   {
-    icon: Clock,
-    title: 'Réponse en 10 secondes',
-    description: 'Ne laissez plus vos prospects en attente. Notre IA répond instantanément, 24h/24 et 7j/7.',
-    color: 'from-blue-500 to-cyan-500'
+    icon: MessageSquare,
+    title: 'Conversations',
+    description: 'Vous ne voulez plus laisser vos clients sans réponse ? Nous mettons en place des réponses automatiques 24h/24 sur WhatsApp, pour qualifier vos leads et ne manquer aucune opportunité.',
+    href: '/register',
+    label: 'Plus d\'infos'
   },
   {
     icon: Users,
-    title: 'Qualifie vos leads',
-    description: 'Automatisez la qualification de vos leads et la prise de rendez-vous directement via WhatsApp.',
-    color: 'from-violet-500 to-purple-500'
+    title: 'Leads & qualification',
+    description: 'Automatisez la prise de rendez-vous et la qualification de vos prospects directement dans la conversation. Un assistant dédié guide vos contacts jusqu’à la prise de RDV.',
+    href: '/register',
+    label: 'Plus d\'infos'
   },
   {
-    icon: MessageSquare,
-    title: 'Milliers de conversations',
-    description: 'Gérez plusieurs conversations simultanément sans jamais compromettre la qualité du service.',
-    color: 'from-gold-400 to-amber-500'
+    icon: ShoppingCart,
+    title: 'Commandes & ventes',
+    description: 'Catalogue produits, détection des commandes et suivi du stock. Idéal pour les boutiques et les entrepreneurs qui vendent via WhatsApp.',
+    href: '/register',
+    label: 'Plus d\'infos'
   },
   {
-    icon: TrendingUp,
-    title: 'Augmente vos conversions',
-    description: 'Transformez plus de prospects en clients grâce à des réponses instantanées et personnalisées.',
-    color: 'from-emerald-500 to-green-500'
-  }
-]
-
-const steps = [
-  { 
-    title: 'Créez votre chatbot', 
-    description: 'Créez votre assistant en quelques clics avec notre interface intuitive.',
-    icon: Bot
-  },
-  { 
-    title: 'Personnalisez sa mission', 
-    description: 'Définissez les objectifs : prise de RDV, qualification de leads, support...',
-    icon: Sparkles
-  },
-  { 
-    title: 'Testez votre assistant', 
-    description: 'Essayez votre assistant dans notre playground et affinez ses réponses.',
-    icon: Play
-  },
-  { 
-    title: 'Connectez WhatsApp', 
-    description: 'Scannez le QR code et votre assistant est prêt 24/7.',
-    icon: Globe
+    icon: Zap,
+    title: 'Support & fidélisation',
+    description: 'Répondez à vos clients en quelques secondes, gérez des milliers de conversations sans perdre en qualité. Améliorez la satisfaction et la fidélisation.',
+    href: '/register',
+    label: 'Plus d\'infos'
   }
 ]
 
@@ -107,7 +86,7 @@ const PlanCard = ({ plan, isPopular = false }) => {
 
   const getFeaturesList = () => {
     const list = []
-    if (limits?.agents) list.push(`${limits.agents === -1 ? 'Illimité' : limits.agents} agent${limits.agents > 1 ? 's' : ''} IA`)
+    if (limits?.agents) list.push(`${limits.agents === -1 ? 'Illimité' : limits.agents} agent${limits.agents > 1 ? 's' : ''}`)
     if (limits?.whatsappAccounts) list.push(`${limits.whatsappAccounts === -1 ? 'Illimité' : limits.whatsappAccounts} compte${limits.whatsappAccounts > 1 ? 's' : ''} WhatsApp`)
     if (limits?.monthlyCredits) list.push(`${limits.monthlyCredits === -1 ? 'Illimités' : limits.monthlyCredits.toLocaleString()} crédits/mois`)
     if (features?.knowledgeBase) list.push('Base de connaissances')
@@ -209,6 +188,13 @@ export default function Landing() {
     loadPlans()
   }, [])
 
+  const [scrollY, setScrollY] = useState(0)
+  useEffect(() => {
+    const onScroll = () => setScrollY(window.scrollY)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   // Déterminer le plan populaire (celui avec is_default ou le 2ème)
   const getPopularPlanId = () => {
     const defaultPlan = plans.find(p => p.is_default)
@@ -220,31 +206,20 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-space-950">
       {/* Header */}
-      <header className="border-b border-space-700/50 sticky top-0 z-50 bg-space-950/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-space-700/40 bg-space-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 md:h-18">
             <Link to="/" className="flex items-center focus:outline-none focus:ring-2 focus:ring-violet-500/50 rounded-lg">
               <Logo />
             </Link>
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-400 hover:text-gray-100 transition-colors text-sm font-medium">
-                Fonctionnalités
-              </a>
-              <a href="#how-it-works" className="text-gray-400 hover:text-gray-100 transition-colors text-sm font-medium">
-                Comment ça marche
-              </a>
-              <a href="#pricing" className="text-gray-400 hover:text-gray-100 transition-colors text-sm font-medium">
-                Tarifs
-              </a>
+              <a href="#pourquoi" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Pourquoi nous</a>
+              <a href="#metiers" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Solutions</a>
+              <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Tarifs</a>
             </nav>
             <div className="flex items-center gap-3">
-              <Link to="/login" className="text-gray-400 hover:text-gray-100 transition-colors text-sm font-medium">
-                Connexion
-              </Link>
-              <Link
-                to="/register"
-                className="btn-primary text-sm px-4 py-2"
-              >
+              <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium hidden sm:inline">Connexion</Link>
+              <Link to="/register" className="btn-primary text-sm px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
                 {t('landing.cta')}
               </Link>
             </div>
@@ -252,141 +227,137 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="pt-16 sm:pt-24 pb-28 sm:pb-36 relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-violet-500/20 via-violet-500/5 to-transparent rounded-full blur-3xl animate-glow-pulse"></div>
-          <div className="absolute top-1/3 left-0 w-96 h-96 bg-gold-400/10 rounded-full blur-3xl animate-float"></div>
-          <div className="absolute top-1/2 right-0 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMtOS45NCAwLTE4IDguMDYtMTggMThzOC4wNiAxOCAxOCAxOCAxOC04LjA2IDE4LTE4LTguMDYtMTgtMTgtMTh6bTAgMmMtOC44NCAwLTE2IDcuMTYtMTYgMTZzNy4xNiAxNiAxNiAxNiAxNi03LjE2IDE2LTE2LTcuMTYtMTYtMTYtMTZ6IiBzdHJva2U9IiMyYTJhMzgiIHN0cm9rZS13aWR0aD0iMC41Ii8+PC9nPjwvc3ZnPg==')] opacity-30"></div>
+      {/* Hero — impact + vagues parallax */}
+      <section className="landing-hero relative overflow-hidden bg-space-950 min-h-[90vh] flex flex-col justify-center pt-16 pb-20 sm:pt-24 sm:pb-28">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none landing-hero-bg" aria-hidden="true">
+          <div
+            className="absolute inset-0 landing-hero-wave landing-hero-wave-1 will-change-transform"
+            style={{ transform: `translate3d(0, ${scrollY * 0.12}px, 0)` }}
+          >
+            <svg className="absolute bottom-0 right-0 w-[140%] h-[90%] min-w-[900px]" viewBox="0 0 900 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMax meet">
+              <path className="landing-wave-fill-1" d="M0 400 Q200 320 400 360 T800 340 T1200 380 L1200 600 L0 600 Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div
+            className="absolute inset-0 landing-hero-wave landing-hero-wave-2 will-change-transform"
+            style={{ transform: `translate3d(0, ${scrollY * 0.2}px, 0)` }}
+          >
+            <svg className="absolute bottom-0 right-0 w-[130%] h-[85%] min-w-[800px]" viewBox="0 0 900 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMax meet">
+              <path className="landing-wave-fill-2" d="M0 420 Q250 300 500 380 T900 320 T1300 400 L1300 600 L0 600 Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div
+            className="absolute inset-0 landing-hero-wave landing-hero-wave-3 will-change-transform"
+            style={{ transform: `translate3d(0, ${scrollY * 0.28}px, 0)` }}
+          >
+            <svg className="absolute bottom-0 right-0 w-[120%] h-[80%] min-w-[700px]" viewBox="0 0 900 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMax meet">
+              <path className="landing-wave-fill-3" d="M0 380 Q300 280 600 360 T1000 300 L1000 600 L0 600 Z" fill="currentColor" />
+            </svg>
+          </div>
+          <div className="absolute inset-0 landing-hero-grid opacity-[0.03] dark:opacity-[0.06]" style={{ backgroundImage: 'linear-gradient(var(--wave-grid-color, rgba(139,92,246,0.15)) 1px, transparent 1px), linear-gradient(90deg, var(--wave-grid-color, rgba(139,92,246,0.15)) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-[120px]" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          {/* Logo centré et bien visible */}
-          <div className="flex justify-center w-full mb-8 sm:mb-10">
-            <Link to="/" className="focus:outline-none focus:ring-2 focus:ring-violet-500/50 rounded-lg transition-transform hover:scale-105 duration-300 inline-block animate-slide-up">
-              <Logo size="large" centered />
-            </Link>
-          </div>
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm font-medium mb-6 sm:mb-8 backdrop-blur-sm animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <Sparkles className="w-4 h-4" />
-            Propulsé par l'Intelligence Artificielle
-            <ChevronRight className="w-4 h-4" />
-          </div>
-
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-gray-100 mb-5 sm:mb-6 leading-tight animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            Automatisez vos conversations{' '}
-            <br className="hidden md:block" />
-            <span className="text-gradient">WhatsApp avec l'IA</span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-gray-400 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '0.3s' }}>
-            Des assistants IA qui répondent à vos clients 24h/24, qualifient vos leads et transforment vos prospects en clients. Sans code, en quelques minutes.
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full animate-fadeIn">
+          <div className="max-w-2xl">
+            <p className="text-violet-400 font-medium text-sm uppercase tracking-wider mb-4">Partenaire de votre croissance</p>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white leading-[1.1] tracking-tight mb-6">
+              Répondez à vos clients{' '}
+              <span className="text-gradient block sm:inline">24h/24</span>
+              {' '}sans rester collé à votre téléphone
+            </h1>
+          <p className="text-lg md:text-xl text-gray-400 max-w-xl leading-relaxed mb-8">
+            Automatisation WhatsApp, qualification de leads, commandes et support. Une seule plateforme pour faire grandir votre activité.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-            <Link
-              to="/register"
-              className="btn-primary inline-flex items-center justify-center gap-2 text-lg px-8 py-4 shadow-xl shadow-gold-400/20 hover:shadow-glow-gold transition-shadow duration-300"
-            >
-              {t('landing.ctaFree')}
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <a
-              href="#how-it-works"
-              className="btn-secondary inline-flex items-center justify-center gap-2 text-lg px-8 py-4"
-            >
-              <Play className="w-5 h-5" />
-              Voir comment ça marche
-            </a>
+          <div className="flex flex-wrap gap-4">
+              <Link to="/register" className="btn-primary inline-flex items-center justify-center gap-2 text-base px-8 py-4 rounded-xl font-semibold shadow-xl shadow-gold-400/25 hover:scale-[1.02] transition-all">
+                Commencer gratuitement
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <a href="#metiers" className="inline-flex items-center justify-center gap-2 text-base px-8 py-4 rounded-xl font-semibold border border-space-600 text-gray-300 hover:border-violet-500/50 hover:text-white hover:bg-violet-500/10 transition-all">
+                Voir les solutions
+              </a>
+            </div>
+            <p className="mt-6 text-sm text-gray-500">Sans carte bancaire · Configuration en 5 min</p>
           </div>
+        </div>
+      </section>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto animate-slide-up" style={{ animationDelay: '0.5s' }}>
+      {/* Bandeau stats */}
+      <section className="relative z-10 py-8 md:py-10 bg-space-900/90 border-y border-space-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {stats.map((stat, index) => (
-              <div key={index} className="p-4 rounded-xl bg-space-900/50 border border-space-700/50 backdrop-blur-sm hover:border-violet-500/30 transition-colors duration-300">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <stat.icon className="w-4 h-4 text-gold-400" />
-                  <span className="text-2xl font-display font-bold text-gray-100">{stat.value}</span>
+              <div key={index} className="flex items-center gap-4 md:flex-col md:text-center">
+                <div className="w-12 h-12 rounded-2xl bg-violet-500/20 flex items-center justify-center shrink-0">
+                  <stat.icon className="w-6 h-6 text-violet-400" />
                 </div>
-                <p className="text-xs text-gray-500">{stat.label}</p>
+                <div>
+                  <span className="text-2xl md:text-3xl font-display font-bold text-white block">{stat.value}</span>
+                  <span className="text-sm text-gray-500">{stat.label}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24 relative scroll-mt-20">
+      {/* Pourquoi SEVEN T */}
+      <section id="pourquoi" className="py-20 md:py-28 bg-space-950 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-sm font-medium mb-4">
-              <Zap className="w-4 h-4" />
-              Fonctionnalités
-            </div>
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-gray-100 mb-4">
-              Tout ce qu'il vous faut pour{' '}
-              <span className="text-gradient">réussir</span>
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
+              Pourquoi choisir <span className="text-gradient">SEVEN T</span> ?
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Une plateforme complète pour automatiser vos conversations, fidéliser vos clients et faire grandir votre activité.
+              Une plateforme pensée pour les entrepreneurs qui veulent scaler sans perdre le contact humain.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="group relative p-6 rounded-2xl bg-space-900 border border-space-700 hover:border-transparent transition-all duration-300 overflow-hidden hover:shadow-xl hover:shadow-violet-500/5"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {/* Gradient background on hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
-
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <feature.icon className="w-6 h-6 text-white" />
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {[
+              { icon: Zap, title: 'Réponses en secondes', desc: 'Vos clients reçoivent une réponse instantanée, même la nuit ou le week-end.' },
+              { icon: TrendingUp, title: 'Plus de ventes', desc: 'Qualification des leads et suivi des commandes automatisés pour ne rien manquer.' },
+              { icon: MessageSquare, title: 'Une seule interface', desc: 'Conversations, catalogue, stock et analytics au même endroit.' }
+            ].map((item, i) => (
+              <div key={i} className="group p-8 rounded-3xl bg-space-900 border border-space-700 hover:border-violet-500/40 hover:bg-space-800/50 transition-all duration-300">
+                <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-6 group-hover:bg-violet-500/30 transition-colors">
+                  <item.icon className="w-7 h-7 text-violet-400" />
                 </div>
-                <h3 className="font-display font-semibold text-lg text-gray-100 mb-2 relative z-10">{feature.title}</h3>
-                <p className="text-gray-400 text-sm relative z-10">{feature.description}</p>
+                <h3 className="font-display font-semibold text-xl text-white mb-3">{item.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how-it-works" className="py-24 bg-gradient-to-b from-space-900 to-space-950 scroll-mt-20">
+      {/* Nos solutions / métiers */}
+      <section id="metiers" className="py-20 md:py-28 bg-space-900 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 text-violet-400 text-sm font-medium mb-4">
-              <BarChart3 className="w-4 h-4" />
-              Comment ça marche
-            </div>
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-gray-100 mb-4">
-              4 étapes pour{' '}
-              <span className="text-gradient">automatiser</span>
+            <p className="text-violet-400 font-medium text-sm uppercase tracking-wider mb-2">Nos solutions</p>
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
+              Tout pour automatiser et faire grandir votre activité
             </h2>
-            <p className="text-gray-400 text-lg max-w-xl mx-auto">
-              Créez et déployez votre assistant IA en moins de 5 minutes, sans compétence technique.
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              De la première conversation à la commande, nous vous accompagnons.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
-            {/* Connection line */}
-            <div className="hidden lg:block absolute top-16 left-[12.5%] right-[12.5%] h-0.5 bg-gradient-to-r from-gold-400/50 via-violet-500/50 to-gold-400/50"></div>
-
-            {steps.map((step, index) => (
-              <div key={index} className="relative group">
-                <div className="p-6 rounded-2xl bg-space-800/50 border border-space-700 h-full hover:border-violet-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/5">
-                  {/* Step number */}
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gold-400 to-violet-500 flex items-center justify-center text-space-950 font-bold text-lg mb-4 shadow-lg shadow-violet-500/20 relative z-10 group-hover:scale-110 transition-transform duration-300">
-                    {index + 1}
-                  </div>
-                  <div className="w-10 h-10 rounded-lg bg-space-700/50 flex items-center justify-center mb-3">
-                    <step.icon className="w-5 h-5 text-violet-400" />
-                  </div>
-                  <h3 className="font-display font-semibold text-lg text-gray-100 mb-2">{step.title}</h3>
-                  <p className="text-gray-400 text-sm">{step.description}</p>
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+            {metiers.map((m, index) => (
+              <div
+                key={index}
+                className="group p-8 rounded-3xl bg-space-950 border border-space-700 hover:border-violet-500/40 hover:shadow-xl hover:shadow-violet-500/5 transition-all duration-300"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <m.icon className="w-7 h-7 text-violet-400" />
                 </div>
+                <h3 className="font-display font-semibold text-xl text-white mb-3">{m.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed mb-6">{m.description}</p>
+                <Link to={m.href} className="text-violet-400 hover:text-violet-300 font-medium inline-flex items-center gap-1.5 text-sm">
+                  {m.label}
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
             ))}
           </div>
@@ -394,16 +365,12 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-24 scroll-mt-20">
+      <section id="pricing" className="py-20 md:py-28 bg-space-950 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-400/10 text-gold-400 text-sm font-medium mb-4">
-              <CreditCard className="w-4 h-4" />
-              Tarification
-            </div>
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-gray-100 mb-4">
-              Des plans adaptés à{' '}
-              <span className="text-gradient">vos besoins</span>
+            <p className="text-violet-400 font-medium text-sm uppercase tracking-wider mb-2">Tarification</p>
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
+              Des plans adaptés à <span className="text-gradient">vos besoins</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-xl mx-auto">
               Sans engagement. Commencez gratuitement et passez à la vitesse supérieure quand vous le souhaitez.
@@ -438,57 +405,41 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonial / Social Proof */}
-      <section className="py-24 bg-space-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
-            <p className="text-sm font-medium text-violet-400 mb-2">Ils nous font confiance</p>
-            <div className="flex justify-center gap-1 mb-4">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-6 h-6 text-gold-400 fill-current" />
-              ))}
+      {/* Témoignage */}
+      <section className="py-20 md:py-28 bg-space-900">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-violet-400 font-medium text-sm uppercase tracking-wider mb-6">Témoignage</p>
+          <blockquote className="text-xl md:text-2xl lg:text-3xl font-display font-medium text-white mb-10 text-center leading-relaxed">
+            « Nos prospects reçoivent une réponse instantanée. Notre taux de conversion a augmenté. Un accompagnement sur mesure de grande qualité. »
+          </blockquote>
+          <div className="flex items-center justify-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold text-lg">
+              A
             </div>
-            <blockquote className="text-xl sm:text-2xl md:text-3xl font-display text-gray-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-              "SEVEN T a transformé notre service client. Nos prospects reçoivent une réponse instantanée et notre taux de conversion a augmenté de 40%."
-            </blockquote>
-            <div className="inline-flex items-center gap-4 p-4 rounded-2xl bg-space-800/60 border border-space-700 hover:border-violet-500/20 transition-colors duration-300">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-gold-400 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                A
-              </div>
-              <div className="text-left">
-                <p className="text-gray-100 font-medium">Amadou K.</p>
-                <p className="text-gray-500 text-sm">Entrepreneur, Dakar</p>
-              </div>
+            <div className="text-left">
+              <p className="text-white font-semibold">Amadou K.</p>
+              <p className="text-gray-500 text-sm">Entrepreneur, Dakar</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-24 relative overflow-hidden border-y border-space-800">
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/20 via-space-950 to-gold-400/20"></div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-violet-500/30 to-transparent rounded-full blur-3xl animate-glow-pulse"></div>
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-gray-100 mb-6">
-            Prêt à automatiser vos{' '}
-            <span className="text-gradient">conversations</span> ?
+      {/* CTA final */}
+      <section className="landing-cta py-20 md:py-28 bg-space-800 border-y border-space-700">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
+            Prêt à répondre à vos clients 24h/24 ?
           </h2>
-          <p className="text-gray-400 mb-8 text-lg max-w-2xl mx-auto">
-            Rejoignez les entrepreneurs qui utilisent SEVEN T pour répondre à leurs clients 24h/24 et augmenter leurs ventes.
+          <p className="text-gray-400 mb-10 text-lg">
+            Rejoignez les entrepreneurs qui font grandir leur activité avec SEVEN T.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/register"
-              className="btn-primary inline-flex items-center justify-center gap-2 text-lg px-8 py-4 shadow-xl shadow-gold-400/20 hover:shadow-glow-gold hover:scale-[1.02] transition-all duration-300"
-            >
-              Créer mon assistant gratuitement
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-          <p className="mt-6 text-sm text-gray-500">
-            Sans carte bancaire · Configuration en 5 minutes
-          </p>
+          <Link
+            to="/register"
+            className="btn-primary inline-flex items-center justify-center gap-2 text-lg px-10 py-4 rounded-xl font-semibold shadow-xl shadow-gold-400/25 hover:scale-[1.02] transition-all"
+          >
+            Commencer gratuitement
+            <ArrowRight className="w-5 h-5" />
+          </Link>
         </div>
       </section>
 
@@ -499,23 +450,24 @@ export default function Landing() {
             <div className="md:col-span-2">
               <Logo />
               <p className="mt-4 text-gray-500 text-sm max-w-md">
-                La plateforme tout-en-un pour automatiser vos conversations WhatsApp avec l'intelligence artificielle.
+                La plateforme pour automatiser vos conversations WhatsApp et répondre à vos clients 24h/24.
               </p>
             </div>
             <div>
               <h4 className="text-gray-100 font-semibold mb-4">Produit</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#features" className="text-gray-500 hover:text-gray-300 transition-colors">Fonctionnalités</a></li>
+                <li><a href="#pourquoi" className="text-gray-500 hover:text-gray-300 transition-colors">Pourquoi nous</a></li>
+                <li><a href="#metiers" className="text-gray-500 hover:text-gray-300 transition-colors">Solutions</a></li>
                 <li><a href="#pricing" className="text-gray-500 hover:text-gray-300 transition-colors">Tarifs</a></li>
-                <li><a href="#how-it-works" className="text-gray-500 hover:text-gray-300 transition-colors">Comment ça marche</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-gray-100 font-semibold mb-4">Légal</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link to="/legal?tab=terms" className="text-gray-500 hover:text-gray-300 transition-colors">CGU</Link></li>
-                <li><Link to="/legal?tab=privacy" className="text-gray-500 hover:text-gray-300 transition-colors">Confidentialité</Link></li>
-                <li><Link to="/legal?tab=cookies" className="text-gray-500 hover:text-gray-300 transition-colors">Cookies</Link></li>
+                <li><Link to="/legal?tab=terms" className="text-gray-500 hover:text-gray-300 transition-colors">Conditions d'utilisation</Link></li>
+                <li><Link to="/legal?tab=privacy" className="text-gray-500 hover:text-gray-300 transition-colors">Politique de confidentialité</Link></li>
+                <li><Link to="/legal?tab=dpa" className="text-gray-500 hover:text-gray-300 transition-colors">Accord de traitement des données (DPA)</Link></li>
+                <li><Link to="/legal?tab=rgpd" className="text-gray-500 hover:text-gray-300 transition-colors">Conformité RGPD</Link></li>
               </ul>
             </div>
           </div>
@@ -523,10 +475,9 @@ export default function Landing() {
             <p className="text-gray-500 text-sm">
               © {new Date().getFullYear()} SEVEN T. Tous droits réservés.
             </p>
-            <div className="flex items-center gap-3">
-              <span className="text-gray-500 text-sm">Propulsé par</span>
+            <div className="flex items-center gap-2">
               <Logo className="h-6 opacity-90" />
-              <span className="text-gray-400 text-sm font-medium">IA Générative</span>
+              <span className="text-gray-500 text-sm">SEVEN T</span>
             </div>
           </div>
         </div>

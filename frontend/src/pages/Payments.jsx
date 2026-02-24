@@ -211,8 +211,8 @@ export default function Payments() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className={`text-2xl font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+        <div className="min-w-0">
+          <h1 className={`text-2xl font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             💳 {t('payments.title')}
           </h1>
           <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
@@ -220,17 +220,17 @@ export default function Payments() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 flex-shrink-0">
           <button
             onClick={handleExportCsv}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl border touch-target ${isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
           >
             <Download className="w-4 h-4" />
             {t('payments.exportCsv')}
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center justify-center gap-2 touch-target"
           >
             <Plus className="w-4 h-4" />
             {t('payments.newLink')}
@@ -445,13 +445,13 @@ function PaymentModal({ onClose, onSave, isDark, paymetrustConfigured }) {
       <div className={`relative w-full max-w-md rounded-2xl border ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
       }`}>
-        <div className={`p-4 border-b flex items-center justify-between ${
+        <div className={`p-4 border-b flex flex-wrap items-center justify-between gap-3 ${
           isDark ? 'border-space-700' : 'border-gray-200'
         }`}>
-          <h2 className={`text-lg font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          <h2 className={`text-lg font-display font-bold min-w-0 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Nouveau lien de paiement
           </h2>
-          <button onClick={onClose} className={isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}>
+          <button onClick={onClose} className={`flex-shrink-0 touch-target ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}>
             <X className="w-5 h-5" />
           </button>
         </div>

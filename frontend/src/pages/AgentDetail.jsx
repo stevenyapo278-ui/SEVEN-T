@@ -244,8 +244,8 @@ export default function AgentDetail() {
           <ArrowLeft className="w-4 h-4" />
           Retour aux agents
         </button>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
               !isActive ? 'bg-gray-500/20' :
               agent.whatsapp_connected ? 'bg-emerald-500/20' : 'bg-space-800'
@@ -255,9 +255,9 @@ export default function AgentDetail() {
                 agent.whatsapp_connected ? 'text-emerald-400' : 'text-gray-500'
               }`} />
             </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-display font-bold text-gray-100">{agent.name}</h1>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <h1 className="text-xl sm:text-2xl font-display font-bold text-gray-100 truncate">{agent.name}</h1>
                 {!isActive && (
                   <span className="px-2 py-1 rounded text-xs font-medium bg-gray-500/20 text-gray-400">
                     Inactif
@@ -276,7 +276,7 @@ export default function AgentDetail() {
           </div>
           
           {/* Toggle Active + Supprimer */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={handleToggleActive}
               disabled={toggling}
@@ -306,14 +306,14 @@ export default function AgentDetail() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-space-700 mb-6">
-        <div className="flex gap-6 overflow-x-auto">
+      {/* Tabs — scroll on small screens */}
+      <div className="border-b border-space-700 mb-6 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="flex gap-4 sm:gap-6 min-w-max">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 pb-3 border-b-2 transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-2 pb-3 px-1 sm:px-0 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 touch-target ${
                 activeTab === tab.id
                   ? 'border-gold-400 text-gold-400'
                   : 'border-transparent text-gray-500 hover:text-gray-300'
@@ -1189,17 +1189,42 @@ function SettingsTab({ agent, onUpdate }) {
     { id: 'limits', label: 'Limites' }
   ]
 
+  const scrollToSection = (id) => {
+    setActiveSection(id)
+    document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const id = entry.target.id?.replace('settings-', '')
+            if (id && SECTIONS.some((s) => s.id === id)) setActiveSection(id)
+            break
+          }
+        }
+      },
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+    )
+    SECTIONS.forEach((s) => {
+      const el = document.getElementById(`settings-${s.id}`)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div className="flex gap-6">
-      {/* Sidebar navigation */}
-      <div className="w-48 flex-shrink-0">
-        <nav className="space-y-1 sticky top-4">
+    <div className="flex flex-col md:flex-row gap-6 min-w-0">
+      {/* Navigation: horizontal scroll sur mobile, sidebar sur desktop */}
+      <div className="md:w-52 flex-shrink-0">
+        <nav className="flex md:flex-col gap-2 md:gap-1 overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:sticky md:top-4" style={{ WebkitOverflowScrolling: 'touch' }}>
           {SECTIONS.map((section) => (
             <button
               key={section.id}
               type="button"
-              onClick={() => setActiveSection(section.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              onClick={() => scrollToSection(section.id)}
+              className={`flex-shrink-0 md:w-full text-left px-4 py-2.5 md:px-3 md:py-2 rounded-xl md:rounded-lg text-sm font-medium transition-colors whitespace-nowrap touch-target ${
                 activeSection === section.id
                   ? 'bg-gold-400/20 text-gold-400'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-space-800'
@@ -1211,11 +1236,10 @@ function SettingsTab({ agent, onUpdate }) {
         </nav>
       </div>
 
-      {/* Form content */}
-      <form onSubmit={handleSubmit} className="flex-1 max-w-2xl space-y-6">
+      {/* Form content: toutes les sections visibles, scroll unique */}
+      <form onSubmit={handleSubmit} className="flex-1 min-w-0 max-w-2xl space-y-6">
         {/* General Section */}
-        {activeSection === 'general' && (
-          <div className="card p-6">
+        <div id="settings-general" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Informations générales</h2>
             <div className="space-y-4">
               <div>
@@ -1276,12 +1300,10 @@ function SettingsTab({ agent, onUpdate }) {
                 />
               </div>
             </div>
-          </div>
-        )}
+        </div>
 
         {/* AI Configuration Section */}
-        {activeSection === 'ai' && (
-          <div className="card p-6">
+        <div id="settings-ai" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Configuration IA</h2>
             <div className="space-y-4">
               <div>
@@ -1299,7 +1321,7 @@ function SettingsTab({ agent, onUpdate }) {
                   Ces instructions définissent la personnalité et le comportement de votre assistant.
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Modèle IA</label>
                   <select
@@ -1375,12 +1397,10 @@ function SettingsTab({ agent, onUpdate }) {
                 </p>
               </div>
             </div>
-          </div>
-        )}
+        </div>
 
         {/* Auto Reply Section */}
-        {activeSection === 'auto_reply' && (
-          <div className="card p-6">
+        <div id="settings-auto_reply" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Réponse automatique</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1429,12 +1449,10 @@ function SettingsTab({ agent, onUpdate }) {
                 </div>
               )}
             </div>
-          </div>
-        )}
+        </div>
 
         {/* Availability Section */}
-        {activeSection === 'availability' && (
-          <div className="card p-6">
+        <div id="settings-availability" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Horaires de disponibilité</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1459,7 +1477,7 @@ function SettingsTab({ agent, onUpdate }) {
 
               {formData.availability_enabled && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">Heure de début</label>
                       <input
@@ -1532,12 +1550,10 @@ function SettingsTab({ agent, onUpdate }) {
                 </>
               )}
             </div>
-          </div>
-        )}
+        </div>
 
         {/* Human Transfer Section */}
-        {activeSection === 'transfer' && (
-          <div className="card p-6">
+        <div id="settings-transfer" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Transfert vers un humain</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1599,12 +1615,10 @@ function SettingsTab({ agent, onUpdate }) {
                 </>
               )}
             </div>
-          </div>
-        )}
+        </div>
 
         {/* Limits Section */}
-        {activeSection === 'limits' && (
-          <div className="card p-6">
+        <div id="settings-limits" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Limites et restrictions</h2>
             <div className="space-y-4">
               <div>
@@ -1631,17 +1645,18 @@ function SettingsTab({ agent, onUpdate }) {
                 </p>
               </div>
             </div>
-          </div>
-        )}
+        </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-        >
-          <Save className="w-5 h-5" />
-          {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-        </button>
+        <div className="sticky bottom-0 pt-4 pb-2 bg-space-950/95 backdrop-blur-sm -mx-1 px-1">
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-5 h-5" />
+            {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+          </button>
+        </div>
       </form>
     </div>
   )

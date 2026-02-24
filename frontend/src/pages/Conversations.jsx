@@ -162,6 +162,7 @@ export default function Conversations() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const [conversations, setConversations] = useState([])
+  const [totalMessagesCount, setTotalMessagesCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -255,7 +256,8 @@ export default function Conversations() {
     setLoading(true)
     try {
       const response = await api.get('/conversations')
-      setConversations(response.data.conversations)
+      setConversations(response.data.conversations || [])
+      setTotalMessagesCount(response.data.totalMessages ?? (response.data.conversations || []).reduce((s, c) => s + (c.message_count || 0), 0))
       setLastPollTime(new Date().toISOString())
       setNewMessageCount(0)
     } catch (error) {
@@ -337,8 +339,7 @@ export default function Conversations() {
     return matchesSearch && matchesAgent
   })
 
-  // Stats
-  const totalMessages = conversations.reduce((sum, c) => sum + (c.message_count || 0), 0)
+  // Stats (totalMessagesCount vient de l'API pour être exact même avec > 100 conversations)
   const transferredCount = conversations.filter(c => c.is_transferred === 1).length
 
   if (loading) {
@@ -371,18 +372,18 @@ export default function Conversations() {
           aria-hidden
         />
         
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gold-400/10 rounded-xl">
+        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6 min-w-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 mb-2 min-w-0">
+              <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                 <MessageSquare className="w-6 h-6 text-gold-400" />
               </div>
-              <h1 className={`text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Conversations</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Conversations</h1>
             </div>
-            <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
+            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
             {newMessageCount > 0 && (
               <button
                 onClick={loadConversations}
@@ -460,37 +461,37 @@ export default function Conversations() {
         )}
 
         {/* Stats Row - theme-aware */}
-        <div className="relative grid grid-cols-3 gap-4 mt-8">
-          <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-emerald-500/10 rounded-lg">
+        <div className="relative grid grid-cols-3 gap-4 mt-8 min-w-0">
+          <div className={`backdrop-blur-sm rounded-2xl p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
                 <MessageCircle className="w-5 h-5 text-emerald-400" />
               </div>
-              <div>
-                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{conversations.length}</p>
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Conversations</p>
+              <div className="min-w-0">
+                <p className={`text-lg md:text-2xl font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} title={conversations.length}>{conversations.length}</p>
+                <p className={`text-xs sm:text-sm break-words ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Conversations</p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
+          <div className={`backdrop-blur-sm rounded-2xl p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
                 <Sparkles className="w-5 h-5 text-blue-400" />
               </div>
-              <div>
-                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalMessages.toLocaleString()}</p>
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
+              <div className="min-w-0">
+                <p className={`text-lg md:text-2xl font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} title={totalMessagesCount.toLocaleString()}>{totalMessagesCount.toLocaleString()}</p>
+                <p className={`text-xs sm:text-sm break-words ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
+          <div className={`backdrop-blur-sm rounded-2xl p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-amber-500/10 rounded-lg flex-shrink-0">
                 <Bot className="w-5 h-5 text-amber-400" />
               </div>
-              <div>
-                <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents actifs</p>
+              <div className="min-w-0">
+                <p className={`text-lg md:text-2xl font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} title={agents.length}>{agents.length}</p>
+                <p className={`text-xs sm:text-sm break-words ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents actifs</p>
               </div>
             </div>
           </div>
@@ -645,9 +646,9 @@ export default function Conversations() {
                   />
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-4 mb-1.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <h3 className="font-semibold text-gray-100 truncate text-lg group-hover:text-white transition-colors">
+                    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-1.5">
+                      <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <h3 className="font-semibold text-gray-100 truncate text-lg group-hover:text-white transition-colors" title={getDisplayName(conv)}>
                           {getDisplayName(conv)}
                         </h3>
                         {/* Mode IA/Humain indicator */}
@@ -699,26 +700,26 @@ export default function Conversations() {
                       </div>
                     </div>
                     
-                    <p className="text-gray-400 truncate mb-2 text-[15px]">
+                    <p className="text-gray-400 truncate mb-2 text-[15px] min-w-0">
                       {conv.last_message || 'Aucun message'}
                     </p>
                     
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <Bot className="w-3.5 h-3.5" />
-                        <span className="text-xs">{conv.agent_name}</span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
+                      <div className="flex items-center gap-1.5 text-gray-500 min-w-0">
+                        <Bot className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="text-xs truncate break-words" title={conv.agent_name}>{conv.agent_name}</span>
                       </div>
-                      <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
-                      <div className="flex items-center gap-1.5 text-gray-500">
+                      <div className="w-1 h-1 bg-gray-600 rounded-full flex-shrink-0"></div>
+                      <div className="flex items-center gap-1.5 text-gray-500 flex-shrink-0">
                         <MessageCircle className="w-3.5 h-3.5" />
                         <span className="text-xs">{conv.message_count} messages</span>
                       </div>
                       {getDisplayName(conv) !== formatPhoneNumber(conv.contact_number) && (
                         <>
-                          <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
-                          <div className="flex items-center gap-1.5 text-gray-500">
-                            <Phone className="w-3.5 h-3.5" />
-                            <span className="text-xs">{formatPhoneNumber(conv.contact_number)}</span>
+                          <div className="w-1 h-1 bg-gray-600 rounded-full flex-shrink-0"></div>
+                          <div className="flex items-center gap-1.5 text-gray-500 min-w-0 max-w-full">
+                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="text-xs truncate break-all" title={formatPhoneNumber(conv.contact_number)}>{formatPhoneNumber(conv.contact_number)}</span>
                           </div>
                         </>
                       )}

@@ -19,9 +19,11 @@ const COMPANY_INFO = {
 }
 
 const TABS = [
-  { id: 'terms', label: 'Conditions Générales', icon: FileText },
-  { id: 'privacy', label: 'Confidentialité', icon: Shield },
-  { id: 'cookies', label: 'Cookies', icon: Cookie },
+  { id: 'terms', label: 'Conditions d\'utilisation', icon: FileText },
+  { id: 'privacy', label: 'Politique de confidentialité', icon: Shield },
+  { id: 'dpa', label: 'Accord de traitement des données (DPA)', icon: FileText },
+  { id: 'cookies', label: 'Cookies et stockage local', icon: Cookie },
+  { id: 'rgpd', label: 'Conformité RGPD', icon: Shield },
   { id: 'legal', label: 'Mentions Légales', icon: Scale },
 ]
 
@@ -78,10 +80,12 @@ export default function Legal() {
         </div>
 
         {/* Content */}
-        <div className="card p-8 prose prose-invert prose-gold max-w-none">
+        <div className="card p-6 sm:p-8 md:p-10 legal-content max-w-none">
           {activeTab === 'terms' && <TermsContent />}
           {activeTab === 'privacy' && <PrivacyContent />}
+          {activeTab === 'dpa' && <DPAContent />}
           {activeTab === 'cookies' && <CookiesContent />}
+          {activeTab === 'rgpd' && <RgpdContent />}
           {activeTab === 'legal' && <LegalMentionsContent />}
         </div>
 
@@ -366,102 +370,185 @@ function PrivacyContent() {
   )
 }
 
+function DPAContent() {
+  return (
+    <>
+      <h1>Accord de traitement des données (DPA)</h1>
+      <p className="lead">
+        Le présent accord définit les conditions dans lesquelles {COMPANY_INFO.legalName} (« le Sous-traitant »)
+        traite les données personnelles pour le compte du client (« le Responsable du traitement ») dans le cadre
+        des services {COMPANY_INFO.name}, conformément au Règlement (UE) 2016/679 (RGPD).
+      </p>
+
+      <h2>1. Objet et définitions</h2>
+      <p>
+        Le Sous-traitant s'engage à traiter les données personnelles uniquement sur instruction documentée du
+        Responsable du traitement, pour les finalités décrites dans les Conditions d'utilisation et la Politique
+        de confidentialité. Les termes « données personnelles », « traitement », « Responsable du traitement »,
+        « Sous-traitant » et « données concernées » ont le sens défini à l'article 4 du RGPD.
+      </p>
+
+      <h2>2. Obligations du Sous-traitant</h2>
+      <p>Le Sous-traitant s'engage à :</p>
+      <ul>
+        <li>Traiter les données personnelles uniquement pour les finalités et la durée convenues</li>
+        <li>Garantir la confidentialité des personnes autorisées à traiter les données</li>
+        <li>Mettre en œuvre des mesures techniques et organisationnelles appropriées (sécurité, pseudonymisation, chiffrement)</li>
+        <li>Faire appel à des sous-traitants uniquement avec l'accord préalable du Responsable du traitement et sous un engagement écrit équivalent</li>
+        <li>Assister le Responsable du traitement pour répondre aux demandes d'exercice des droits des personnes concernées</li>
+        <li>Assister le Responsable du traitement pour garantir la conformité aux obligations relatives à la sécurité, aux notifications de violation et aux analyses d'impact</li>
+        <li>Restituer ou détruire les données personnelles à la fin de la prestation, selon le choix du Responsable du traitement</li>
+        <li>Mettre à disposition toutes les informations nécessaires pour démontrer le respect des obligations du présent accord</li>
+      </ul>
+
+      <h2>3. Sous-traitants et transferts</h2>
+      <p>
+        Les données peuvent être traitées par des sous-traitants (hébergement, fournisseurs d'IA, paiement).
+        La liste des sous-traitants et leurs garanties sont disponibles sur demande à {COMPANY_INFO.email}.
+        Tout transfert de données hors UE/EEE est encadré par les clauses contractuelles types de la Commission
+        européenne ou des garanties appropriées (décision d'adéquation, BCR, etc.).
+      </p>
+
+      <h2>4. Durée et résiliation</h2>
+      <p>
+        Le présent accord s'applique pour la durée de la fourniture des services. À la fin du contrat, le
+        Sous-traitant restitue ou détruit les données personnelles dans un délai raisonnable, sauf obligation
+        légale de conservation. Le Responsable du traitement peut demander une copie des données avant résiliation.
+      </p>
+
+      <h2>5. Audit et contrôle</h2>
+      <p>
+        Le Responsable du traitement peut vérifier le respect du présent accord par des audits ou des
+        questionnaires. Le Sous-traitant fournit les éléments de preuve nécessaires. En cas d'audit sur site,
+        celui-ci est notifié à l'avance et réalisé pendant les heures ouvrables, sans perturber l'activité du
+        Sous-traitant.
+      </p>
+
+      <h2>6. Contact</h2>
+      <p>
+        Pour toute question relative au présent DPA : <a href={`mailto:${COMPANY_INFO.dpo}`}>{COMPANY_INFO.dpo}</a>
+        (Délégué à la Protection des Données).
+      </p>
+      <p>
+        <strong>{COMPANY_INFO.legalName}</strong><br />
+        {COMPANY_INFO.address}<br />
+        Dernière mise à jour : {COMPANY_INFO.lastUpdate}
+      </p>
+    </>
+  )
+}
+
+function RgpdContent() {
+  return (
+    <>
+      <h1>Conformité RGPD</h1>
+      <p className="lead">
+        Ce document résume les mesures prises par {COMPANY_INFO.name} pour respecter le Règlement général sur la protection des données (RGPD).
+      </p>
+
+      <h2>1. Ce qui est en place (conforme)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Exigence RGPD</th>
+            <th>Détail</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Information des personnes</td><td>Politique de confidentialité (finalités, bases légales, durées, droits, DPO).</td></tr>
+          <tr><td>Droit d&apos;accès</td><td>Export des données (Paramètres → « Exporter mes données ») : JSON complet (compte, agents, conversations, messages, produits, commandes, leads, bases de connaissances).</td></tr>
+          <tr><td>Droit de rectification</td><td>Modification du profil (nom, entreprise) dans Paramètres.</td></tr>
+          <tr><td>Droit à l&apos;effacement</td><td>Suppression du compte par l&apos;utilisateur (Paramètres → « Supprimer mon compte »). Route DELETE /api/auth/me.</td></tr>
+          <tr><td>Exercice des droits</td><td>Contact DPO par email indiqué dans la politique et le DPA.</td></tr>
+          <tr><td>Sous-traitants / transferts</td><td>Liste dans la politique ; DPA et clauses contractuelles types pour transferts hors UE.</td></tr>
+          <tr><td>Sécurité</td><td>HTTPS, mots de passe hashés (bcrypt), accès restreint, sauvegardes.</td></tr>
+          <tr><td>Durées de conservation</td><td>Tableau en politique (compte, conversations, factures, logs).</td></tr>
+          <tr><td>DPA (B2B)</td><td>Accord de traitement des données pour clients professionnels.</td></tr>
+          <tr><td>Réclamation CNIL</td><td>Lien CNIL et contact DPO dans la politique.</td></tr>
+          <tr><td>Consentement explicite</td><td>Case à cocher obligatoire à l&apos;inscription (CGU et politique de confidentialité).</td></tr>
+          <tr><td>Cookies / stockage local</td><td>Politique dédiée ; bandeau d&apos;information ; pas de cookies de suivi.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>2. Synthèse</h2>
+      <p>
+        La solution est alignée avec les exigences principales du RGPD : information, droits (accès, rectification, effacement, portabilité via export), sécurité, contact DPO, réclamation CNIL, politique cookies et stockage local cohérente.
+      </p>
+      <p>
+        Pour toute question : <a href={`mailto:${COMPANY_INFO.dpo}`}>{COMPANY_INFO.dpo}</a> (DPO).
+      </p>
+      <p className="text-sm text-gray-500 mt-4">
+        Dernière mise à jour : {COMPANY_INFO.lastUpdate}
+      </p>
+    </>
+  )
+}
+
 function CookiesContent() {
   return (
     <>
-      <h1>Politique de Cookies</h1>
+      <h1>Politique Cookies et stockage local</h1>
       <p className="lead">
-        Cette politique explique comment {COMPANY_INFO.name} utilise les cookies et technologies similaires.
+        Cette page explique ce que {COMPANY_INFO.name} enregistre dans votre navigateur (stockage local et, le cas échéant, cookies).
       </p>
 
-      <h2>1. Qu'est-ce qu'un cookie ?</h2>
+      <h2>1. Ce que nous utilisons : le stockage local (localStorage)</h2>
       <p>
-        Un cookie est un petit fichier texte stocké sur votre appareil lors de la visite d'un site web.
-        Il permet de mémoriser vos préférences et d'améliorer votre expérience.
+        Notre application utilise le <strong>stockage local</strong> (localStorage) de votre navigateur, et non des cookies HTTP, pour le fonctionnement du service. Aucun cookie de suivi ou publicitaire n’est déposé.
       </p>
 
-      <h2>2. Types de cookies utilisés</h2>
-      
-      <h3>2.1 Cookies essentiels</h3>
-      <p>Nécessaires au fonctionnement du site. Ils ne peuvent pas être désactivés.</p>
+      <h2>2. Données enregistrées dans le navigateur</h2>
+      <p className="text-sm text-gray-500 mb-3">Clés utilisées par l’application et finalités.</p>
       <table>
         <thead>
           <tr>
-            <th>Nom</th>
+            <th>Clé (localStorage)</th>
             <th>Finalité</th>
             <th>Durée</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>auth_token</td>
-            <td>Authentification</td>
-            <td>7 jours</td>
+            <td>token</td>
+            <td>Authentification (session utilisateur)</td>
+            <td>Jusqu’à déconnexion / expiration</td>
           </tr>
           <tr>
-            <td>session_id</td>
-            <td>Session utilisateur</td>
-            <td>Session</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h3>2.2 Cookies analytiques</h3>
-      <p>Nous aident à comprendre comment les visiteurs utilisent le site.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Finalité</th>
-            <th>Durée</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>_ga</td>
-            <td>Google Analytics</td>
-            <td>2 ans</td>
+            <td>locale</td>
+            <td>Langue de l’interface (fr, en)</td>
+            <td>Jusqu’à suppression</td>
           </tr>
           <tr>
-            <td>_gid</td>
-            <td>Google Analytics</td>
-            <td>24 heures</td>
+            <td>seven-t-theme</td>
+            <td>Thème d’affichage (clair / sombre)</td>
+            <td>Jusqu’à suppression</td>
           </tr>
-        </tbody>
-      </table>
-
-      <h3>2.3 Cookies de préférence</h3>
-      <p>Mémorisent vos choix (thème, langue, etc.).</p>
-      <table>
-        <thead>
           <tr>
-            <th>Nom</th>
-            <th>Finalité</th>
-            <th>Durée</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>theme</td>
-            <td>Thème d'affichage</td>
-            <td>1 an</td>
+            <td>currency</td>
+            <td>Devise préférée (après connexion)</td>
+            <td>Jusqu’à suppression</td>
           </tr>
           <tr>
             <td>cookie_consent</td>
-            <td>Choix cookies</td>
+            <td>Enregistrement de votre choix sur le bandeau d’information</td>
             <td>1 an</td>
+          </tr>
+          <tr>
+            <td>Autres clés (onboarding, favoris, etc.)</td>
+            <td>Préférences d’utilisation de l’application</td>
+            <td>Jusqu’à suppression</td>
           </tr>
         </tbody>
       </table>
 
-      <h2>3. Gestion des cookies</h2>
-      <h3>3.1 Via notre bandeau</h3>
+      <h2>3. Bandeau d’information et consentement</h2>
       <p>
-        Lors de votre première visite, un bandeau vous permet d'accepter ou de refuser les cookies non essentiels.
+        Lors de votre première visite, un bandeau en bas de page vous informe de l’utilisation du stockage local. En cliquant sur « Tout accepter », vous confirmez avoir pris connaissance de cette politique. Votre choix est enregistré (clé <code className="text-sm bg-space-800 px-1 rounded">cookie_consent</code>) pour ne plus afficher le bandeau. Vous pouvez à tout moment vider le stockage local via les paramètres de votre navigateur.
       </p>
 
-      <h3>3.2 Via votre navigateur</h3>
-      <p>Vous pouvez également gérer les cookies via les paramètres de votre navigateur :</p>
+      <h2>4. Gestion et suppression</h2>
+      <h3>4.1 Via votre navigateur</h3>
+      <p>Vous pouvez gérer ou supprimer les données du site (cookies et stockage local) via les paramètres de votre navigateur :</p>
       <ul>
         <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener">Chrome</a></li>
         <li><a href="https://support.mozilla.org/fr/kb/cookies-informations-sites-enregistrent" target="_blank" rel="noopener">Firefox</a></li>
@@ -469,14 +556,12 @@ function CookiesContent() {
         <li><a href="https://support.microsoft.com/fr-fr/microsoft-edge/supprimer-les-cookies-dans-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank" rel="noopener">Edge</a></li>
       </ul>
 
-      <h2>4. Conséquences du refus</h2>
-      <p>
-        Si vous refusez les cookies non essentiels :
-      </p>
+      <h3>4.2 Conséquences de la suppression du stockage local</h3>
+      <p>Si vous supprimez les données du site :</p>
       <ul>
-        <li>Le site fonctionnera normalement</li>
-        <li>Nous ne pourrons pas analyser votre utilisation</li>
-        <li>Certaines préférences ne seront pas mémorisées</li>
+        <li>Vous serez déconnecté (le token sera supprimé)</li>
+        <li>La langue et le thème reviendront aux valeurs par défaut</li>
+        <li>Le bandeau d’information cookies réapparaîtra à la prochaine visite</li>
       </ul>
 
       <h2>5. Contact</h2>

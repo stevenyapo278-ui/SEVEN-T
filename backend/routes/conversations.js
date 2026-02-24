@@ -61,7 +61,18 @@ router.get('/', authenticateToken, async (req, res) => {
             LIMIT 100
         `, req.user.id);
 
-        res.json({ conversations });
+        const totalMessagesRow = await db.get(`
+            SELECT COUNT(*) as count FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            JOIN agents a ON c.agent_id = a.id
+            WHERE a.user_id = ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+        `, req.user.id);
+        const totalMessages = totalMessagesRow?.count ?? 0;
+
+        res.json({ conversations, totalMessages: Number(totalMessages) });
     } catch (error) {
         console.error('Get all conversations error:', error);
         res.status(500).json({ error: 'Erreur serveur' });

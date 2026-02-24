@@ -96,7 +96,13 @@ export default function Templates() {
     }
   }
 
-  const copyToClipboard = (content) => {
+  const copyToClipboard = async (template) => {
+    const content = typeof template === 'string' ? template : template.content
+    try {
+      if (typeof template === 'object' && template?.id) {
+        await api.post(`/templates/${template.id}/use`, { variables: {} })
+      }
+    } catch (_) { /* ignore */ }
     navigator.clipboard.writeText(content)
     toast.success('Copié dans le presse-papier')
   }
@@ -146,17 +152,17 @@ export default function Templates() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-display font-bold text-gray-100">Modèles de messages</h1>
-          <p className="text-gray-400">Réponses rapides et templates personnalisés</p>
+          <p className="text-gray-400 text-sm sm:text-base">Réponses rapides et templates personnalisés</p>
         </div>
         <button
           onClick={() => {
             resetForm()
             setShowModal(true)
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
         >
           <Plus className="w-5 h-5" />
           Nouveau template
@@ -174,7 +180,7 @@ export default function Templates() {
             {popular.slice(0, 5).map((t) => (
               <div
                 key={t.id}
-                onClick={() => copyToClipboard(t.content)}
+                onClick={() => copyToClipboard(t)}
                 className="flex-shrink-0 p-3 bg-space-800 rounded-xl cursor-pointer hover:bg-space-700 transition-colors min-w-[200px] max-w-[250px]"
               >
                 <p className="font-medium text-gray-100 text-sm mb-1 truncate">{t.name}</p>
@@ -244,7 +250,7 @@ export default function Templates() {
                 </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                   <button
-                    onClick={() => copyToClipboard(template.content)}
+                    onClick={() => copyToClipboard(template)}
                     className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg"
                     title="Copier"
                   >

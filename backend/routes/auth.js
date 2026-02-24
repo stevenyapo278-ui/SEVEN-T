@@ -2,12 +2,19 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
+import { existsSync, rmSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import db from '../database/init.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import { validate, registerSchema, loginSchema } from '../middleware/security.js';
 import { sendWelcomeEmail } from '../services/email.js';
 import { notificationService } from '../services/notifications.js';
 import { debugIngest } from '../utils/debugIngest.js';
+import { whatsappManager } from '../services/whatsapp.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const sessionsDir = join(__dirname, '..', '..', 'sessions');
 
 const router = Router();
 
@@ -345,6 +352,35 @@ router.put('/me', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Update user error:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour' });
+    }
+});
+
+// Supprimer son compte (droit à l'effacement RGPD Art. 17)
+router.delete('/me', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const agents = await db.all('SELECT id, whatsapp_connected FROM agents WHERE user_id = ?', userId);
+
+        for (const agent of agents) {
+            try {
+                if (whatsappManager.isConnected(agent.id)) {
+                    await whatsappManager.disconnect(agent.id, false);
+                }
+                const sessionPath = join(sessionsDir, agent.id);
+                if (existsSync(sessionPath)) {
+                    rmSync(sessionPath, { recursive: true, force: true });
+                }
+            } catch (err) {
+                console.error(`Cleanup agent ${agent.id} on account delete:`, err);
+            }
+        }
+
+        await db.run('DELETE FROM users WHERE id = ?', userId);
+
+        res.json({ message: 'Compte et données supprimés définitivement' });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression du compte' });
     }
 });
 

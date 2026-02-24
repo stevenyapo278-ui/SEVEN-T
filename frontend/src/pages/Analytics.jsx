@@ -135,12 +135,12 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-display font-bold text-gray-100">Analytics</h1>
-          <p className="text-gray-400">Performances et métriques de votre activité</p>
+          <p className="text-gray-400 text-sm sm:text-base">Performances et métriques de votre activité</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {/* Period selector */}
           <div className="flex bg-space-800 rounded-lg p-1">
             {['7d', '30d', '90d'].map((p) => (
@@ -338,7 +338,7 @@ export default function Analytics() {
       {topProducts.length > 0 && (
         <div className="card p-6">
           <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Top produits vendus</h3>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto table-responsive">
             <table className="w-full">
               <thead>
                 <tr className="text-left text-sm text-gray-400 border-b border-space-700">
