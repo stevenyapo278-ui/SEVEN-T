@@ -313,7 +313,7 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
       >
         <div className="bg-space-800 border border-gold-400/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-gold-400/10 to-violet-500/10 border-b border-space-700">
+          <div className="px-4 py-3 bg-gradient-to-r from-gold-400/10 to-blue-500/10 border-b border-space-700">
             <div className="flex items-center justify-between">
               <h4 className="font-display font-semibold text-gray-100">{step.title}</h4>
               <button 
@@ -429,7 +429,7 @@ function TourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }
       {/* Content */}
       <div className="bg-space-800 border border-gold-400/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
         {/* Header */}
-        <div className="px-4 py-3 bg-gradient-to-r from-gold-400/10 to-violet-500/10 border-b border-space-700">
+        <div className="px-4 py-3 bg-gradient-to-r from-gold-400/10 to-blue-500/10 border-b border-space-700">
           <div className="flex items-center justify-between">
             <h4 className="font-display font-semibold text-gray-100">{step.title}</h4>
             <button 

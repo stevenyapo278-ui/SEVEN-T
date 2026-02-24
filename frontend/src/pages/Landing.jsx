@@ -101,7 +101,7 @@ const PlanCard = ({ plan, isPopular = false }) => {
     <div className={`relative rounded-2xl border-2 p-6 transition-all duration-300 hover:scale-[1.02] ${
       isPopular 
         ? 'border-gold-400 bg-gradient-to-b from-gold-400/10 to-transparent shadow-xl shadow-gold-400/10' 
-        : 'border-space-700 bg-space-900 hover:border-violet-500/50'
+        : 'border-space-700 bg-space-900 hover:border-blue-500/50'
     }`}>
       {isPopular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -135,9 +135,9 @@ const PlanCard = ({ plan, isPopular = false }) => {
         {getFeaturesList().map((feature, index) => (
           <li key={index} className="flex items-center gap-3">
             <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-              isPopular ? 'bg-gold-400/20' : 'bg-violet-500/20'
+              isPopular ? 'bg-gold-400/20' : 'bg-blue-500/20'
             }`}>
-              <Check className={`w-3 h-3 ${isPopular ? 'text-gold-400' : 'text-violet-400'}`} />
+              <Check className={`w-3 h-3 ${isPopular ? 'text-gold-400' : 'text-blue-400'}`} />
             </div>
             <span className="text-gray-300 text-sm">{feature}</span>
           </li>
@@ -209,7 +209,7 @@ export default function Landing() {
       <header className="sticky top-0 z-50 border-b border-space-700/40 bg-space-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 md:h-18">
-            <Link to="/" className="flex items-center focus:outline-none focus:ring-2 focus:ring-violet-500/50 rounded-lg">
+            <Link to="/" className="flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500/50 rounded-lg">
               <Logo />
             </Link>
             <nav className="hidden md:flex items-center gap-8">
@@ -218,7 +218,7 @@ export default function Landing() {
               <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Tarifs</a>
             </nav>
             <div className="flex items-center gap-3">
-              <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium hidden sm:inline">Connexion</Link>
+              <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Connexion</Link>
               <Link to="/register" className="btn-primary text-sm px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
                 {t('landing.cta')}
               </Link>
@@ -255,12 +255,12 @@ export default function Landing() {
             </svg>
           </div>
           <div className="absolute inset-0 landing-hero-grid opacity-[0.03] dark:opacity-[0.06]" style={{ backgroundImage: 'linear-gradient(var(--wave-grid-color, rgba(139,92,246,0.15)) 1px, transparent 1px), linear-gradient(90deg, var(--wave-grid-color, rgba(139,92,246,0.15)) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
-          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-[120px]" />
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[120px]" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full animate-fadeIn">
           <div className="max-w-2xl">
-            <p className="text-violet-400 font-medium text-sm uppercase tracking-wider mb-4">Partenaire de votre croissance</p>
+            <p className="text-blue-400 font-medium text-sm uppercase tracking-wider mb-4">Partenaire de votre croissance</p>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-white leading-[1.1] tracking-tight mb-6">
               Répondez à vos clients{' '}
               <span className="text-gradient block sm:inline">24h/24</span>
@@ -274,7 +274,7 @@ export default function Landing() {
                 Commencer gratuitement
                 <ArrowRight className="w-5 h-5" />
               </Link>
-              <a href="#metiers" className="inline-flex items-center justify-center gap-2 text-base px-8 py-4 rounded-xl font-semibold border border-space-600 text-gray-300 hover:border-violet-500/50 hover:text-white hover:bg-violet-500/10 transition-all">
+              <a href="#metiers" className="inline-flex items-center justify-center gap-2 text-base px-8 py-4 rounded-xl font-semibold border border-space-600 text-gray-300 hover:border-blue-500/50 hover:text-white hover:bg-blue-500/10 transition-all">
                 Voir les solutions
               </a>
             </div>
@@ -289,8 +289,8 @@ export default function Landing() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {stats.map((stat, index) => (
               <div key={index} className="flex items-center gap-4 md:flex-col md:text-center">
-                <div className="w-12 h-12 rounded-2xl bg-violet-500/20 flex items-center justify-center shrink-0">
-                  <stat.icon className="w-6 h-6 text-violet-400" />
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center shrink-0">
+                  <stat.icon className="w-6 h-6 text-blue-400" />
                 </div>
                 <div>
                   <span className="text-2xl md:text-3xl font-display font-bold text-white block">{stat.value}</span>
@@ -319,9 +319,9 @@ export default function Landing() {
               { icon: TrendingUp, title: 'Plus de ventes', desc: 'Qualification des leads et suivi des commandes automatisés pour ne rien manquer.' },
               { icon: MessageSquare, title: 'Une seule interface', desc: 'Conversations, catalogue, stock et analytics au même endroit.' }
             ].map((item, i) => (
-              <div key={i} className="group p-8 rounded-3xl bg-space-900 border border-space-700 hover:border-violet-500/40 hover:bg-space-800/50 transition-all duration-300">
-                <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-6 group-hover:bg-violet-500/30 transition-colors">
-                  <item.icon className="w-7 h-7 text-violet-400" />
+              <div key={i} className="group p-8 rounded-3xl bg-space-900 border border-space-700 hover:border-blue-500/40 hover:bg-space-800/50 transition-all duration-300">
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-6 group-hover:bg-blue-500/30 transition-colors">
+                  <item.icon className="w-7 h-7 text-blue-400" />
                 </div>
                 <h3 className="font-display font-semibold text-xl text-white mb-3">{item.title}</h3>
                 <p className="text-gray-400 leading-relaxed">{item.desc}</p>
@@ -335,7 +335,7 @@ export default function Landing() {
       <section id="metiers" className="py-20 md:py-28 bg-space-900 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-violet-400 font-medium text-sm uppercase tracking-wider mb-2">Nos solutions</p>
+            <p className="text-blue-400 font-medium text-sm uppercase tracking-wider mb-2">Nos solutions</p>
             <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
               Tout pour automatiser et faire grandir votre activité
             </h2>
@@ -347,14 +347,14 @@ export default function Landing() {
             {metiers.map((m, index) => (
               <div
                 key={index}
-                className="group p-8 rounded-3xl bg-space-950 border border-space-700 hover:border-violet-500/40 hover:shadow-xl hover:shadow-violet-500/5 transition-all duration-300"
+                className="group p-8 rounded-3xl bg-space-950 border border-space-700 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300"
               >
-                <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <m.icon className="w-7 h-7 text-violet-400" />
+                <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <m.icon className="w-7 h-7 text-blue-400" />
                 </div>
                 <h3 className="font-display font-semibold text-xl text-white mb-3">{m.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed mb-6">{m.description}</p>
-                <Link to={m.href} className="text-violet-400 hover:text-violet-300 font-medium inline-flex items-center gap-1.5 text-sm">
+                <Link to={m.href} className="text-blue-400 hover:text-blue-300 font-medium inline-flex items-center gap-1.5 text-sm">
                   {m.label}
                   <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -368,7 +368,7 @@ export default function Landing() {
       <section id="pricing" className="py-20 md:py-28 bg-space-950 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-violet-400 font-medium text-sm uppercase tracking-wider mb-2">Tarification</p>
+            <p className="text-blue-400 font-medium text-sm uppercase tracking-wider mb-2">Tarification</p>
             <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
               Des plans adaptés à <span className="text-gradient">vos besoins</span>
             </h2>
@@ -379,7 +379,7 @@ export default function Landing() {
           
           {loadingPlans ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
             </div>
           ) : (
             <div className={`grid gap-6 ${
@@ -408,12 +408,12 @@ export default function Landing() {
       {/* Témoignage */}
       <section className="py-20 md:py-28 bg-space-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-violet-400 font-medium text-sm uppercase tracking-wider mb-6">Témoignage</p>
+          <p className="text-center text-blue-400 font-medium text-sm uppercase tracking-wider mb-6">Témoignage</p>
           <blockquote className="text-xl md:text-2xl lg:text-3xl font-display font-medium text-white mb-10 text-center leading-relaxed">
             « Nos prospects reçoivent une réponse instantanée. Notre taux de conversion a augmenté. Un accompagnement sur mesure de grande qualité. »
           </blockquote>
           <div className="flex items-center justify-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold text-lg">
+            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-lg">
               A
             </div>
             <div className="text-left">

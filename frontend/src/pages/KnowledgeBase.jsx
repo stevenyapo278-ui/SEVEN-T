@@ -34,7 +34,7 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5" }) => {
     case 'website':
       return <Globe className={`${className} text-blue-400`} />
     default:
-      return <FileText className={`${className} text-violet-400`} />
+      return <FileText className={`${className} text-blue-400`} />
   }
 }
 
@@ -133,7 +133,7 @@ export default function KnowledgeBase() {
               <h1 className={`text-3xl font-display font-bold mb-2 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 Base de Connaissances
               </h1>
-              <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
+              <p className={isDark ? 'text-gray-400' : 'text-gray-700'}>
                 Centralisez les informations partagées par tous vos agents
               </p>
             </div>
@@ -150,8 +150,8 @@ export default function KnowledgeBase() {
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
             <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-500/20 rounded-xl">
-                  <Database className="w-5 h-5 text-violet-400" />
+                <div className="p-2 bg-blue-500/20 rounded-xl">
+                  <Database className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</p>
@@ -161,8 +161,8 @@ export default function KnowledgeBase() {
             </div>
             <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-500/20 rounded-xl">
-                  <FileText className="w-5 h-5 text-violet-400" />
+                <div className="p-2 bg-blue-500/20 rounded-xl">
+                  <FileText className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.text}</p>
@@ -221,13 +221,13 @@ export default function KnowledgeBase() {
       {/* Filters - theme-aware */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">
-          <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-icon" />
           <input
             type="text"
             placeholder="Rechercher dans la base de connaissances..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-12 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500/50 ${
+            className={`w-full pl-12 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 ${
               isDark ? 'input-dark bg-space-800 border-space-700' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
             }`}
           />
@@ -235,7 +235,7 @@ export default function KnowledgeBase() {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className={`min-w-[150px] py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-violet-500/20 ${
+          className={`min-w-[150px] py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
             isDark ? 'input-dark bg-space-800 border-space-700' : 'bg-white border-gray-300 text-gray-900'
           }`}
         >
@@ -265,12 +265,12 @@ export default function KnowledgeBase() {
       {/* Knowledge Items List */}
       {!loadError && loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
         </div>
       ) : !loadError && filteredItems.length === 0 ? (
         <div className="text-center py-20">
           <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
-            <BookOpen className={`w-10 h-10 ${isDark ? 'text-gray-600' : 'text-gray-500'}`} />
+            <BookOpen className="w-10 h-10 text-icon" />
           </div>
           <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             {items.length === 0 ? 'Base de connaissances vide' : 'Aucun résultat'}
@@ -292,14 +292,15 @@ export default function KnowledgeBase() {
         </div>
       ) : !loadError ? (
         <div className="space-y-3">
-          {filteredItems.map((item) => {
+          {filteredItems.map((item, index) => {
             const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {})
             return (
               <div 
                 key={item.id} 
-                className={`p-4 rounded-2xl border transition-colors ${
+                className={`p-4 rounded-2xl border transition-colors animate-fadeIn ${
                   isDark ? 'card hover:border-space-600 bg-space-800/30 border-space-700' : 'bg-white border-gray-200 hover:border-gray-300'
                 }`}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-start gap-4">
                   <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
@@ -396,7 +397,7 @@ function AddKnowledgeModal({ onClose, onAdded }) {
   const fileInputRef = useRef(null)
 
   const typeOptions = [
-    { id: 'text', label: 'Texte', icon: FileText, color: 'violet' },
+    { id: 'text', label: 'Texte', icon: FileText, color: 'blue' },
     { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
     { id: 'youtube', label: 'YouTube', icon: Video, color: 'red' },
     { id: 'website', label: 'Site web', icon: Globe, color: 'blue' },
@@ -480,7 +481,7 @@ function AddKnowledgeModal({ onClose, onAdded }) {
               const Icon = option.icon
               const isActive = activeType === option.id
               const colorClasses = {
-                violet: isActive ? 'bg-violet-500/20 text-violet-400 border-violet-500/30' : '',
+                blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
                 red: isActive ? 'bg-red-500/20 text-red-400 border-red-500/30' : '',
                 blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
               }
@@ -511,10 +512,10 @@ function AddKnowledgeModal({ onClose, onAdded }) {
           {/* Text input */}
           {activeType === 'text' && (
             <form onSubmit={handleTextSubmit} className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl mb-4">
-                <FileText className="w-6 h-6 text-violet-400" />
+              <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
+                <FileText className="w-6 h-6 text-blue-400" />
                 <div>
-                  <p className="text-sm font-medium text-violet-400">Texte personnalisé</p>
+                  <p className="text-sm font-medium text-blue-400">Texte personnalisé</p>
                   <p className="text-xs text-gray-400">Ajoutez des informations pour vos agents</p>
                 </div>
               </div>

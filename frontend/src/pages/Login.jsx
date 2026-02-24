@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Mail, Lock, ArrowRight } from 'lucide-react'
+import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const GOOGLE_LOGIN_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') ? `${import.meta.env.VITE_API_URL}/auth/google` : '/api/auth/google'
@@ -24,6 +24,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loginError, setLoginError] = useState(null)
   const { login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -31,13 +32,16 @@ export default function Login() {
   useEffect(() => {
     const error = searchParams.get('error')
     if (error) {
-      toast.error(ERROR_MESSAGES[error] || 'Erreur de connexion')
+      const msg = ERROR_MESSAGES[error] || 'Erreur de connexion'
+      setLoginError(msg)
+      toast.error(msg)
       window.history.replaceState({}, '', '/login')
     }
   }, [searchParams])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoginError(null)
     setLoading(true)
 
     try {
@@ -45,17 +49,21 @@ export default function Login() {
       toast.success('Connexion réussie!')
       navigate('/dashboard')
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur de connexion')
+      const msg = error.response?.data?.error || 'Erreur de connexion'
+      setLoginError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
   }
 
+  const clearError = () => setLoginError(null)
+
   return (
     <div className="min-h-screen bg-space-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl"></div>
       </div>
 
@@ -75,6 +83,29 @@ export default function Login() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        {loginError && (
+          <div
+            role="alert"
+            className="mb-6 p-5 rounded-2xl border border-red-500/40 bg-red-500/10 flex items-start gap-4 animate-fadeIn"
+          >
+            <AlertCircle className="w-8 h-8 text-red-400 flex-shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <p className="text-lg sm:text-xl font-semibold text-red-300">
+                {loginError}
+              </p>
+              <p className="mt-1 text-sm text-red-400/90">
+                Vérifiez votre email et votre mot de passe, puis réessayez.
+              </p>
+              <button
+                type="button"
+                onClick={clearError}
+                className="mt-3 text-sm font-medium text-red-400 hover:text-red-300 underline"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
         <div className="card py-8 px-4 sm:px-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -90,7 +121,7 @@ export default function Login() {
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); clearError(); }}
                   placeholder="vous@exemple.com"
                 />
               </div>
@@ -109,7 +140,7 @@ export default function Login() {
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); clearError(); }}
                   placeholder="••••••••"
                 />
               </div>

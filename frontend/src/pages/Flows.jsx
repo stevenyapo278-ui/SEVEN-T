@@ -148,14 +148,14 @@ export default function Flows() {
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Noeuds total</p>
         </div>
         <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
-          <p className={`text-2xl font-bold text-violet-500`}>{templates.length}</p>
+          <p className={`text-2xl font-bold text-blue-500`}>{templates.length}</p>
           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Templates</p>
         </div>
       </div>
 
       {/* Search */}
       <div className="input-with-icon">
-        <div className={`pl-3 flex items-center justify-center flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        <div className="pl-3 flex items-center justify-center flex-shrink-0 text-icon">
           <Search className="w-5 h-5" />
         </div>
         <input
@@ -172,7 +172,7 @@ export default function Flows() {
           <div className={`col-span-full text-center py-12 rounded-xl border ${
             isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'
           }`}>
-            <GitBranch className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+            <GitBranch className="w-12 h-12 mx-auto mb-4 text-icon" />
             <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Aucun flow
             </h3>
@@ -181,12 +181,13 @@ export default function Flows() {
             </p>
           </div>
         ) : (
-          filteredFlows.map(flow => (
+          filteredFlows.map((flow, index) => (
             <div
               key={flow.id}
-              className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-lg ${
+              className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-lg animate-fadeIn ${
                 isDark ? 'bg-space-800 border-space-700 hover:border-space-600' : 'bg-white border-gray-200 hover:border-gray-300'
               }`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -265,13 +266,13 @@ export default function Flows() {
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/flows/${flow.id}`); }}
-                    className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-space-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+                    className={`p-1.5 rounded-lg text-icon ${isDark ? 'hover:bg-space-700' : 'hover:bg-gray-100'}`}
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDuplicate(flow.id); }}
-                    className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-space-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+                    className={`p-1.5 rounded-lg text-icon ${isDark ? 'hover:bg-space-700' : 'hover:bg-gray-100'}`}
                   >
                     <Copy className="w-4 h-4" />
                   </button>
@@ -350,7 +351,7 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
           <h2 className={`text-lg font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Nouveau flow
           </h2>
-          <button onClick={onClose} className={isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}>
+          <button onClick={onClose} className="text-icon hover:opacity-80">
             <X className="w-5 h-5" />
           </button>
         </div>

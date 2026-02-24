@@ -161,14 +161,14 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
 : isDark 
                     ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
                     : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
               }`
             }
           >
-            <item.icon className="w-5 h-5" />
+            <item.icon className="w-5 h-5 text-icon" />
             {t(item.nameKey)}
           </NavLink>
         ))}
@@ -189,18 +189,18 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
           className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
             isGroupActive
               ? isDark 
-                ? 'bg-violet-500/10 text-violet-400' 
-                : 'bg-violet-50 text-violet-600'
+                ? 'bg-blue-500/10 text-blue-400' 
+                : 'bg-blue-50 text-blue-600'
               : isDark 
                 ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100' 
                 : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
           }`}
         >
           <div className="flex items-center gap-3">
-            {group.icon && <group.icon className="w-5 h-5" />}
+            {group.icon && <group.icon className="w-5 h-5 text-icon" />}
             <span className="text-sm font-medium">{t(group.nameKey)}</span>
           </div>
-          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-icon transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
         </button>
       ) : (
         <NavLink
@@ -208,18 +208,18 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
           className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
             isGroupActive
               ? isDark 
-                ? 'bg-violet-500/10 text-violet-400' 
-                : 'bg-violet-50 text-violet-600'
+                ? 'bg-blue-500/10 text-blue-400' 
+                : 'bg-blue-50 text-blue-600'
               : isDark 
                 ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100' 
                 : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
           }`}
         >
           <div className="flex items-center gap-3">
-            {group.icon && <group.icon className="w-5 h-5" />}
+            {group.icon && <group.icon className="w-5 h-5 text-icon" />}
             <span className="text-sm font-medium">{t(group.nameKey)}</span>
           </div>
-          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-icon transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
         </NavLink>
       )}
 
@@ -242,15 +242,15 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
                 `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                   isActive
                     ? isDark
-                      ? 'bg-violet-500/20 text-violet-400'
-                      : 'bg-violet-100 text-violet-700'
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-blue-100 text-blue-700'
                     : isDark 
                       ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
                       : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                 }`
               }
             >
-              <item.icon className="w-4 h-4" />
+              <item.icon className="w-4 h-4 text-icon" />
               {t(item.nameKey)}
             </NavLink>
           ))}
@@ -282,14 +282,14 @@ const LanguageSwitcher = ({ className = '' }) => {
       <button
         type="button"
         onClick={() => setLang('fr')}
-        className={`px-2 py-1 text-xs font-medium ${lang === 'fr' ? 'bg-violet-500/20 text-violet-400' : 'opacity-70 hover:opacity-100'}`}
+        className={`px-2 py-1 text-xs font-medium ${lang === 'fr' ? 'bg-blue-500/20 text-blue-400' : 'opacity-70 hover:opacity-100'}`}
       >
         FR
       </button>
       <button
         type="button"
         onClick={() => setLang('en')}
-        className={`px-2 py-1 text-xs font-medium ${lang === 'en' ? 'bg-violet-500/20 text-violet-400' : 'opacity-70 hover:opacity-100'}`}
+        className={`px-2 py-1 text-xs font-medium ${lang === 'en' ? 'bg-blue-500/20 text-blue-400' : 'opacity-70 hover:opacity-100'}`}
       >
         EN
       </button>
@@ -352,10 +352,10 @@ const UserMenu = ({ user, onLogout }) => {
         }`}
       >
         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-          user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-violet-500' : 'bg-gradient-to-br from-violet-500 to-gold-400'
+          user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
         }`}>
           {user?.is_admin ? (
-            <Shield className="w-4 h-4 text-space-950" />
+            <Shield className="w-4 h-4 icon-on-gradient" />
           ) : (
             <span className="text-space-950 font-bold text-xs">
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -367,7 +367,7 @@ const UserMenu = ({ user, onLogout }) => {
             {user?.name?.split(' ')[0]}
           </p>
         </div>
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''} ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+        <ChevronDown className={`w-4 h-4 text-icon transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -380,10 +380,10 @@ const UserMenu = ({ user, onLogout }) => {
           <div className={`p-4 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
             <div className="flex items-center gap-3">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-violet-500' : 'bg-gradient-to-br from-violet-500 to-gold-400'
+                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
               }`}>
                 {user?.is_admin ? (
-                  <Shield className="w-6 h-6 text-space-950" />
+                  <Shield className="w-6 h-6 icon-on-gradient" />
                 ) : (
                   <span className="text-space-950 font-bold text-lg">
                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -411,7 +411,7 @@ const UserMenu = ({ user, onLogout }) => {
                 ) : (
                   <Link
                     to="/dashboard/settings"
-                    className={`text-xs mt-1 inline-block ${isDark ? 'text-violet-400 hover:text-violet-300' : 'text-violet-600 hover:text-violet-700'}`}
+                    className={`text-xs mt-1 inline-block ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                   >
                     Ajouter mon entreprise
                   </Link>
@@ -442,7 +442,7 @@ const UserMenu = ({ user, onLogout }) => {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <User className="w-4 h-4" />
+              <User className="w-4 h-4 text-icon" />
               Mon profil
             </Link>
             <Link
@@ -454,7 +454,7 @@ const UserMenu = ({ user, onLogout }) => {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <CreditCard className="w-4 h-4" />
+              <CreditCard className="w-4 h-4 text-icon" />
               Abonnement
             </Link>
             <Link
@@ -466,7 +466,7 @@ const UserMenu = ({ user, onLogout }) => {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4 text-icon" />
               Paramètres
             </Link>
             <a
@@ -479,9 +479,9 @@ const UserMenu = ({ user, onLogout }) => {
                   : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <HelpCircle className="w-4 h-4" />
+              <HelpCircle className="w-4 h-4 text-icon" />
               Aide
-              <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
+              <ExternalLink className="w-3 h-3 ml-auto opacity-50 text-icon" />
             </a>
           </div>
 
@@ -495,7 +495,7 @@ const UserMenu = ({ user, onLogout }) => {
                   : 'text-red-500 hover:bg-red-50'
               }`}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 text-icon" />
               Déconnexion
             </button>
           </div>
@@ -611,7 +611,7 @@ const NotificationsMenu = () => {
       case 'success': return <div className="w-2 h-2 bg-green-400 rounded-full" />
       case 'warning': return <div className="w-2 h-2 bg-amber-400 rounded-full" />
       case 'error': return <div className="w-2 h-2 bg-red-400 rounded-full" />
-      case 'lead': return <div className="w-2 h-2 bg-violet-400 rounded-full" />
+      case 'lead': return <div className="w-2 h-2 bg-blue-400 rounded-full" />
       case 'whatsapp': return <div className="w-2 h-2 bg-green-400 rounded-full" />
       case 'credit': return <div className="w-2 h-2 bg-gold-400 rounded-full" />
       default: return <div className="w-2 h-2 bg-blue-400 rounded-full" />
@@ -624,11 +624,11 @@ const NotificationsMenu = () => {
         onClick={() => setIsOpen(!isOpen)}
         className={`relative p-2 rounded-xl transition-colors ${
           isDark 
-            ? 'text-gray-400 hover:text-gray-100 hover:bg-space-800' 
-            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            ? 'hover:bg-space-800' 
+            : 'hover:bg-gray-100'
         }`}
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-5 h-5 text-icon" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-4 h-4 bg-gold-400 text-space-900 text-[10px] font-bold rounded-full flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -648,7 +648,7 @@ const NotificationsMenu = () => {
             {unreadCount > 0 && (
               <button 
                 onClick={markAllAsRead}
-                className="text-xs text-violet-400 hover:text-violet-300"
+                className="text-xs text-blue-400 hover:text-blue-300"
               >
                 Tout marquer comme lu
               </button>
@@ -659,8 +659,8 @@ const NotificationsMenu = () => {
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-6 text-center">
-                <Bell className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Aucune notification</p>
+                <Bell className="w-8 h-8 mx-auto mb-2 text-icon" />
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Aucune notification</p>
               </div>
             ) : (
               notifications.map((notif) => (
@@ -693,15 +693,15 @@ const NotificationsMenu = () => {
                         <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                           {notif.title}
                         </p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           {notif.message}
                         </p>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                           {formatRelativeTime(notif.created_at)}
                         </p>
                       </div>
                       {!notif.is_read && (
-                        <div className="w-2 h-2 bg-violet-400 rounded-full flex-shrink-0 mt-2" />
+                        <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2" />
                       )}
                     </Link>
                   ) : (
@@ -711,15 +711,15 @@ const NotificationsMenu = () => {
                         <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                           {notif.title}
                         </p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                           {notif.message}
                         </p>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                           {formatRelativeTime(notif.created_at)}
                         </p>
                       </div>
                       {!notif.is_read && (
-                        <div className="w-2 h-2 bg-violet-400 rounded-full flex-shrink-0 mt-2" />
+                        <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2" />
                       )}
                     </div>
                   )}
@@ -734,8 +734,8 @@ const NotificationsMenu = () => {
             onClick={() => setIsOpen(false)}
             className={`flex items-center justify-center gap-2 p-3 text-sm font-medium transition-colors ${
               isDark 
-                ? 'text-violet-400 hover:bg-space-700 border-t border-space-700'
-                : 'text-violet-600 hover:bg-gray-50 border-t border-gray-100'
+                ? 'text-blue-400 hover:bg-space-700 border-t border-space-700'
+                : 'text-blue-600 hover:bg-gray-50 border-t border-gray-100'
             }`}
           >
             Voir toutes les notifications
@@ -798,6 +798,21 @@ export default function DashboardLayout() {
     return () => clearInterval(tick)
   }, [])
 
+  // Bloquer le défilement de la page quand la sidebar mobile est ouverte
+  useEffect(() => {
+    if (!sidebarOpen) return
+    const mql = window.matchMedia('(max-width: 1023px)')
+    if (!mql.matches) return
+    const prevOverflow = document.body.style.overflow
+    const prevTouchAction = document.body.style.touchAction
+    document.body.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.body.style.touchAction = prevTouchAction
+    }
+  }, [sidebarOpen])
+
   const handleLogout = () => {
     logout()
     navigate('/login')
@@ -815,7 +830,7 @@ export default function DashboardLayout() {
               <Logo className="flex-shrink-0" />
               <span className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
             </div>
-            <button type="button" onClick={() => setSidebarOpen(false)} className={`touch-target flex items-center justify-center p-2 -mr-2 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100 hover:bg-space-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} aria-label="Fermer le menu">
+            <button type="button" onClick={() => setSidebarOpen(false)} className={`touch-target flex items-center justify-center p-2 -mr-2 rounded-lg transition-colors text-icon ${isDark ? 'hover:text-gray-100 hover:bg-space-800' : 'hover:text-gray-800 hover:bg-gray-100'}`} aria-label="Fermer le menu">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -839,14 +854,14 @@ export default function DashboardLayout() {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                         : isDark 
                           ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
                           : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                     }`
                   }
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className="w-5 h-5 text-icon" />
                   {t(item.nameKey)}
                 </NavLink>
               ))}
@@ -873,7 +888,7 @@ export default function DashboardLayout() {
                       }`
                     }
                   >
-                    <item.icon className="w-5 h-5" />
+                    <item.icon className="w-5 h-5 text-icon" />
                     {t(item.nameKey)}
                   </NavLink>
                 ))}
@@ -885,10 +900,10 @@ export default function DashboardLayout() {
           <div className={`flex-shrink-0 p-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`} style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-violet-500' : 'bg-gradient-to-br from-violet-500 to-gold-400'
+                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
               }`}>
                 {user?.is_admin ? (
-                  <Shield className="w-5 h-5 text-white" />
+                  <Shield className="w-5 h-5 icon-on-gradient" />
                 ) : (
                   <span className="text-white font-bold text-sm">
                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -946,14 +961,14 @@ export default function DashboardLayout() {
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                         : isDark 
                           ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
                           : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
                     }`
                   }
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className="w-5 h-5 text-icon" />
                   {t(item.nameKey)}
                 </NavLink>
               ))}
@@ -979,7 +994,7 @@ export default function DashboardLayout() {
                       }`
                     }
                   >
-                    <item.icon className="w-5 h-5" />
+                    <item.icon className="w-5 h-5 text-icon" />
                     {t(item.nameKey)}
                   </NavLink>
                 ))}
@@ -991,10 +1006,10 @@ export default function DashboardLayout() {
           <div className={`p-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-violet-500' : 'bg-gradient-to-br from-violet-500 to-gold-400'
+                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
               }`}>
                 {user?.is_admin ? (
-                  <Shield className="w-5 h-5 text-white" />
+                  <Shield className="w-5 h-5 icon-on-gradient" />
                 ) : (
                   <span className="text-white font-bold text-sm">
                     {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -1031,14 +1046,14 @@ export default function DashboardLayout() {
           isDark ? 'border-space-700 bg-space-900/80' : 'border-gray-200 bg-white/90'
         }`} style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <button type="button" onClick={() => setSidebarOpen(true)} className={`touch-target flex-shrink-0 flex items-center justify-center p-2 -ml-2 rounded-lg transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100 hover:bg-space-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} aria-label="Ouvrir le menu">
+            <button type="button" onClick={() => setSidebarOpen(true)} className={`touch-target flex-shrink-0 flex items-center justify-center p-2 -ml-2 rounded-lg transition-colors text-icon ${isDark ? 'hover:text-gray-100 hover:bg-space-800' : 'hover:text-gray-800 hover:bg-gray-100'}`} aria-label="Ouvrir le menu">
               <Menu className="w-6 h-6" />
             </button>
             <Logo className="flex-shrink-0" />
           </div>
           {/* Heure + nom entreprise en dessous (centré) pour afficher le nom en entier sur mobile */}
           <div
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-0.5 pointer-events-none min-w-0 max-w-[50vw] ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-0.5 pointer-events-none min-w-0 max-w-[50vw] text-icon"
             aria-live="polite"
           >
             <div className="flex items-center gap-1.5">
@@ -1066,11 +1081,11 @@ export default function DashboardLayout() {
           <Link
             to="/dashboard/settings"
             className={`flex items-center gap-2 min-w-0 max-w-[220px] rounded-lg px-3 py-2 -ml-2 transition-colors ${
-              isDark ? 'text-gray-300 hover:text-gray-100 hover:bg-space-800/80' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
+              isDark ? 'text-gray-300 hover:text-gray-100 hover:bg-space-800/80' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100/80'
             }`}
             title={user?.company ? user.company : 'Renseigner mon entreprise'}
           >
-            <Building className={`w-4 h-4 flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <Building className="w-4 h-4 flex-shrink-0 text-icon" />
             <span className="text-sm font-medium truncate">
               {user?.company?.trim() ? user.company.trim() : 'Mon espace'}
             </span>
@@ -1079,7 +1094,7 @@ export default function DashboardLayout() {
           {/* Center - Heure */}
           <div
             className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
+              'text-icon'
             }`}
             aria-live="polite"
           >
@@ -1101,7 +1116,7 @@ export default function DashboardLayout() {
             >
               <Zap className="w-4 h-4 text-gold-400" />
               <span className="text-sm font-semibold text-gold-400 tabular-nums">{user?.credits ?? 0}</span>
-              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>crédits</span>
+              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>crédits</span>
             </Link>
             <ThemeToggle size="sm" />
             <NotificationsMenu />

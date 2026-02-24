@@ -134,7 +134,7 @@ export default function Templates() {
     const colors = {
       greeting: 'bg-emerald-500/20 text-emerald-400',
       closing: 'bg-blue-500/20 text-blue-400',
-      followup: 'bg-violet-500/20 text-violet-400',
+      followup: 'bg-blue-500/20 text-blue-400',
       faq: 'bg-orange-500/20 text-orange-400',
       sales: 'bg-gold-500/20 text-gold-400'
     }

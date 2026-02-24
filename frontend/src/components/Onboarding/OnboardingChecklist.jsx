@@ -74,10 +74,12 @@ export default function OnboardingChecklist({ data, onDismiss }) {
 
   if (!data || dismissed) return null
 
-  // Calculate completion - count ALL items (not just required)
+  // Required = non-optional items (create agent, connect WhatsApp, test agent)
+  const requiredItems = CHECKLIST_ITEMS.filter(item => !item.optional)
   const totalItems = CHECKLIST_ITEMS.length
   const completedItems = CHECKLIST_ITEMS.filter(item => item.check(data))
   const completedCount = completedItems.length
+  const requiredCompleted = requiredItems.every(item => item.check(data))
   const progress = Math.round((completedCount / totalItems) * 100)
   
   // SVG circle calculation
@@ -85,8 +87,8 @@ export default function OnboardingChecklist({ data, onDismiss }) {
   const circumference = 2 * Math.PI * radius // ≈ 100.53
   const strokeDashoffset = circumference - (progress / 100) * circumference
 
-  // If all items are complete, auto-dismiss
-  if (completedCount === totalItems) {
+  // Disappear when all required actions are done (or all items including optional)
+  if (requiredCompleted || completedCount === totalItems) {
     return null
   }
 
@@ -100,13 +102,13 @@ export default function OnboardingChecklist({ data, onDismiss }) {
     <div className="card overflow-hidden mb-6 border-gold-400/30">
       {/* Header */}
       <div 
-        className="p-4 bg-gradient-to-r from-gold-400/10 to-violet-500/10 cursor-pointer"
+        className="p-4 bg-gradient-to-r from-gold-400/10 to-blue-500/10 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-gold-400 to-violet-500 rounded-xl flex items-center justify-center">
-              <Rocket className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-gold-400 to-blue-500 rounded-xl flex items-center justify-center">
+              <Rocket className="w-5 h-5 icon-on-gradient" />
             </div>
             <div>
               <h3 className="font-display font-semibold text-gray-100">{t('onboarding.checklistTitle')}</h3>

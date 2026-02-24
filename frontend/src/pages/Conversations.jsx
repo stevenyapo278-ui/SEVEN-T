@@ -58,7 +58,7 @@ function ProfileAvatar({ agentId, contactJid, name, size = 'md', className = '',
   
   // Gradient backgrounds based on name
   const gradients = [
-    'bg-gradient-to-br from-violet-500 to-purple-600',
+    'bg-gradient-to-br from-blue-500 to-blue-600',
     'bg-gradient-to-br from-emerald-500 to-teal-600',
     'bg-gradient-to-br from-blue-500 to-indigo-600',
     'bg-gradient-to-br from-amber-500 to-orange-600',
@@ -380,7 +380,7 @@ export default function Conversations() {
               </div>
               <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Conversations</h1>
             </div>
-            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
+            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
@@ -648,7 +648,7 @@ export default function Conversations() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-1.5">
                       <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <h3 className="font-semibold text-gray-100 truncate text-lg group-hover:text-white transition-colors" title={getDisplayName(conv)}>
+                        <h3 className={`font-semibold truncate text-lg transition-colors ${isDark ? 'text-gray-100 group-hover:text-white' : 'text-gray-800 group-hover:text-gray-900'}`} title={getDisplayName(conv)}>
                           {getDisplayName(conv)}
                         </h3>
                         {/* Mode IA/Humain indicator */}
@@ -664,7 +664,7 @@ export default function Conversations() {
                           </span>
                         )}
                         {isFromSavedContacts(conv) && (
-                          <span className="flex-shrink-0 text-xs bg-violet-500/15 text-violet-400 px-2 py-0.5 rounded-full font-medium">
+                          <span className="flex-shrink-0 text-xs bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded-full font-medium">
                             Contact
                           </span>
                         )}

@@ -170,17 +170,17 @@ export default function Expenses() {
         </div>
       </div>
 
-      <div className="card p-6 bg-gradient-to-br from-violet-400/20 to-violet-400/5 border border-violet-400/30">
+      <div className="card p-6 bg-gradient-to-br from-blue-400/20 to-blue-400/5 border border-blue-400/30">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-400/20 flex-shrink-0">
-              <Wallet className="w-6 h-6 text-violet-400" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-400/20 flex-shrink-0">
+              <Wallet className="w-6 h-6 text-blue-400" />
             </div>
             <div className="min-w-0">
               <p className="text-sm text-gray-400">
                 {categoryFilter ? t('expenses.totalFiltered') : t('expenses.totalMonth')}
                 {categoryFilter && (
-                  <span className="ml-1 text-violet-300">({getCategoryLabel(categoryFilter)})</span>
+                  <span className="ml-1 text-blue-300">({getCategoryLabel(categoryFilter)})</span>
                 )}
               </p>
               <p className="text-3xl font-display font-bold text-gray-100">
@@ -320,7 +320,7 @@ export default function Expenses() {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEdit(e)}
-                          className="p-2 text-gray-400 hover:text-violet-400 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-blue-400 rounded-lg transition-colors"
                           title={t('expenses.edit')}
                         >
                           <Pencil className="w-4 h-4" />
@@ -525,7 +525,7 @@ function ExpenseModal({ expense, onClose, onSaved }) {
             <button
               type="submit"
               disabled={submitLoading}
-              className="flex-1 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitLoading && <Loader2 className="w-5 h-5 animate-spin" />}
               {t('common.save')}

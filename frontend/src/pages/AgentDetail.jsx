@@ -98,7 +98,7 @@ function ProfileAvatar({ agentId, contactJid, name, size = 'md', className = '' 
     : '?'
   
   // Generate a consistent color based on name
-  const colors = ['bg-violet-500', 'bg-emerald-500', 'bg-blue-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500']
+  const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-blue-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500']
   const colorIndex = name ? name.charCodeAt(0) % colors.length : 0
   const bgColor = colors[colorIndex]
   
@@ -693,8 +693,8 @@ function OverviewTab({ agent, onUpdate }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-violet-400" />
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-100">{stats?.totalConversations || 0}</p>
@@ -1028,7 +1028,7 @@ function ContactsTab({ agent }) {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {contacts.map((contact, index) => (
-            <div key={contact.jid || index} className="card p-4">
+            <div key={contact.jid || index} className="card p-4 animate-fadeIn" style={{ animationDelay: `${index * 50}ms` }}>
               <div className="flex items-center gap-3">
                 <ProfileAvatar 
                   agentId={agent.id}
@@ -1683,7 +1683,7 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5" }) => {
       )
     case 'markdown':
       return (
-        <svg className={`${className} text-purple-400`} viewBox="0 0 24 24" fill="currentColor">
+        <svg className={`${className} text-blue-400`} viewBox="0 0 24 24" fill="currentColor">
           <path d="M22.27 19.385H1.73A1.73 1.73 0 010 17.655V6.345a1.73 1.73 0 011.73-1.73h20.54A1.73 1.73 0 0124 6.345v11.308a1.73 1.73 0 01-1.73 1.731zM5.769 15.923v-4.5l2.308 2.885 2.307-2.885v4.5h2.308V8.078h-2.308l-2.307 2.885-2.308-2.885H3.46v7.847zM21.232 12h-2.309V8.077h-2.307V12h-2.308l3.461 4.039z"/>
         </svg>
       )
@@ -1830,11 +1830,11 @@ function KnowledgeTab({ agentId }) {
       </div>
 
       {/* Global Knowledge Section */}
-      <div className="card p-6 mb-6 bg-gradient-to-br from-violet-500/10 to-blue-500/10 border-violet-500/20">
+      <div className="card p-6 mb-6 bg-gradient-to-br from-blue-500/10 to-blue-500/10 border-blue-500/20">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-violet-500/20 rounded-xl">
-              <Globe className="w-5 h-5 text-violet-400" />
+            <div className="p-2 bg-blue-500/20 rounded-xl">
+              <Globe className="w-5 h-5 text-blue-400" />
             </div>
             <div>
               <h4 className="font-medium text-gray-100 mb-1">
@@ -2005,7 +2005,7 @@ function KnowledgeTab({ agentId }) {
                   <p className="text-gray-400">Aucune connaissance globale disponible</p>
                   <Link 
                     to="/dashboard/knowledge"
-                    className="text-violet-400 hover:text-violet-300 text-sm mt-2 inline-block"
+                    className="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block"
                   >
                     Ajouter des connaissances globales →
                   </Link>
@@ -2022,7 +2022,7 @@ function KnowledgeTab({ agentId }) {
                         onClick={() => toggleGlobalKnowledge(item.id)}
                         className={`card p-4 cursor-pointer transition-all ${
                           isSelected 
-                            ? 'border-violet-500 bg-violet-500/10' 
+                            ? 'border-blue-500 bg-blue-500/10' 
                             : 'hover:border-space-600'
                         }`}
                       >
@@ -2030,7 +2030,7 @@ function KnowledgeTab({ agentId }) {
                           {/* Checkbox */}
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                             isSelected 
-                              ? 'bg-violet-500 border-violet-500' 
+                              ? 'bg-blue-500 border-blue-500' 
                               : 'border-gray-600'
                           }`}>
                             {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -2106,7 +2106,7 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
   const fileInputRef = useRef(null)
 
   const typeOptions = [
-    { id: 'text', label: 'Texte', icon: FileText, color: 'violet' },
+    { id: 'text', label: 'Texte', icon: FileText, color: 'blue' },
     { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
     { id: 'youtube', label: 'YouTube', icon: Video, color: 'red' },
     { id: 'website', label: 'Site web', icon: Globe, color: 'blue' },
@@ -2195,7 +2195,7 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               const Icon = option.icon
               const isActive = activeType === option.id
               const colorClasses = {
-                violet: isActive ? 'bg-violet-500/20 text-violet-400 border-violet-500/30' : '',
+                blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
                 red: isActive ? 'bg-red-500/20 text-red-400 border-red-500/30' : '',
                 blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
               }
@@ -2226,10 +2226,10 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
           {/* Text input */}
           {activeType === 'text' && (
             <form onSubmit={handleTextSubmit} className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl mb-4">
-                <FileText className="w-6 h-6 text-violet-400" />
+              <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
+                <FileText className="w-6 h-6 text-blue-400" />
                 <div>
-                  <p className="text-sm font-medium text-violet-400">Texte personnalisé</p>
+                  <p className="text-sm font-medium text-blue-400">Texte personnalisé</p>
                   <p className="text-xs text-gray-400">Ajoutez des informations que votre agent doit connaître</p>
                 </div>
               </div>
@@ -2483,7 +2483,7 @@ function PlaygroundTab({ agent }) {
               <h2 className="font-display font-semibold text-gray-100">Testez votre assistant</h2>
               <p className="text-sm text-gray-400">Testez les réponses IA en temps réel</p>
             </div>
-            <span className="text-xs bg-violet-500/20 text-violet-400 px-2 py-1 rounded-full">
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
               {agent.model || 'gemini-1.5-flash'}
             </span>
           </div>
@@ -2597,7 +2597,7 @@ function TemplatesTab({ agentId }) {
     general: { label: 'Général', color: 'bg-gray-500' },
     greeting: { label: 'Salutation', color: 'bg-emerald-500' },
     closing: { label: 'Clôture', color: 'bg-blue-500' },
-    faq: { label: 'FAQ', color: 'bg-violet-500' },
+    faq: { label: 'FAQ', color: 'bg-blue-500' },
     promotion: { label: 'Promotion', color: 'bg-amber-500' }
   }
 

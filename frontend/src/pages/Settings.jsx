@@ -343,7 +343,7 @@ export default function Settings() {
                 type="button"
                 onClick={handleManageSubscription}
                 disabled={portalLoading}
-                className="text-sm text-violet-400 hover:text-violet-300 inline-flex items-center gap-1.5 disabled:opacity-50"
+                className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1.5 disabled:opacity-50"
               >
                 <CreditCard className="w-4 h-4" />
                 {portalLoading ? 'Chargement...' : 'Gérer mon abonnement'}
@@ -351,7 +351,7 @@ export default function Settings() {
             )}
             <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500">Messages IA restants</p>
-              <p className="text-2xl font-display font-bold text-violet-400 flex items-center gap-2">
+              <p className="text-2xl font-display font-bold text-blue-400 flex items-center gap-2">
                 <Sparkles className="w-5 h-5" />
                 {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : (user?.credits ?? 0)}
               </p>
@@ -380,7 +380,7 @@ export default function Settings() {
                 </div>
                 <div className="w-full bg-space-700 rounded-full h-2">
                   <div
-                    className="bg-violet-500 h-2 rounded-full transition-all"
+                    className="bg-blue-500 h-2 rounded-full transition-all"
                     style={{ width: `${percentUsed}%` }}
                   />
                 </div>
@@ -414,7 +414,7 @@ export default function Settings() {
                   onClick={() => setCurrency(curr.code)}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     currency === curr.code
-                      ? 'border-violet-500 bg-violet-500/10'
+                      ? 'border-blue-500 bg-blue-500/10'
                       : 'border-space-700 bg-space-800/50 hover:border-space-600'
                   }`}
                 >
@@ -549,13 +549,13 @@ export default function Settings() {
       )}
 
       {/* Intelligence artificielle */}
-      <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4 mb-6">
+      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
         <div className="flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" />
+          <Sparkles className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
           <div>
             <h3 className="font-medium text-gray-100">Intelligence artificielle incluse</h3>
             <p className="text-sm text-gray-400 mt-1">
-              Votre abonnement inclut l&apos;accès à <strong className="text-violet-400">Google Gemini</strong> et <strong className="text-gold-400">OpenAI GPT-4</strong>.
+              Votre abonnement inclut l&apos;accès à <strong className="text-blue-400">Google Gemini</strong> et <strong className="text-gold-400">OpenAI GPT-4</strong>.
               Aucune configuration requise.
             </p>
           </div>
@@ -652,7 +652,7 @@ export default function Settings() {
         </p>
         {loadingPlans ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+            <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
             <span className="ml-2 text-gray-400">Chargement des plans...</span>
           </div>
         ) : plans.length === 0 ? (
@@ -667,16 +667,17 @@ export default function Settings() {
               return (
                 <div 
                   key={plan.id}
-                  className={`card p-5 relative ${
+                  className={`card p-5 relative animate-fadeIn ${
                     isCurrentPlan
                       ? 'border-gold-400' 
                       : isPopular 
-                        ? 'border-violet-500' 
+                        ? 'border-blue-500' 
                         : ''
                   }`}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   {isPopular && !isCurrentPlan && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-500 text-white text-xs px-3 py-1 rounded-full">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs px-3 py-1 rounded-full">
                       Populaire
                     </span>
                   )}
@@ -715,7 +716,7 @@ export default function Settings() {
                           : checkoutLoadingPlanId === plan.id
                             ? 'bg-space-700 text-gray-400'
                             : isPopular
-                              ? 'bg-violet-500 text-white hover:bg-violet-600'
+                              ? 'bg-blue-500 text-white hover:bg-blue-600'
                               : 'bg-space-800 text-gray-300 hover:bg-space-700'
                     }`}
                   >

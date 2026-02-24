@@ -386,8 +386,8 @@ export default function Workflows() {
           </div>
         </div>
         <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-violet-400/20 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-violet-400" />
+          <div className="w-12 h-12 rounded-xl bg-blue-400/20 flex items-center justify-center">
+            <Clock className="w-6 h-6 text-blue-400" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-100">{stats?.recentExecutions || 0}</p>
@@ -496,10 +496,10 @@ export default function Workflows() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredWorkflows.map((workflow) => {
+          {filteredWorkflows.map((workflow, index) => {
             const TriggerIcon = TRIGGER_ICONS[workflow.trigger_type] || Zap
             return (
-              <div key={workflow.id} className="card p-6">
+              <div key={workflow.id} className="card p-6 animate-fadeIn" style={{ animationDelay: `${index * 50}ms` }}>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -656,7 +656,7 @@ export default function Workflows() {
                           <div className="text-xs text-gray-500 mt-1 truncate">Contact: {contactLabel}</div>
                         )}
                         {convoId && (
-                          <div className="text-xs text-violet-400 mt-1">
+                          <div className="text-xs text-blue-400 mt-1">
                             <Link to={`/dashboard/conversations/${convoId}`} className="hover:underline">Voir la conversation</Link>
                           </div>
                         )}

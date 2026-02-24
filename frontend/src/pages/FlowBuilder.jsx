@@ -38,7 +38,7 @@ const NODE_ICONS = {
 const NODE_COLORS = {
   start: 'bg-emerald-500/20 border-emerald-500 text-emerald-400',
   message: 'bg-blue-500/20 border-blue-500 text-blue-400',
-  question: 'bg-violet-500/20 border-violet-500 text-violet-400',
+  question: 'bg-blue-500/20 border-blue-500 text-blue-400',
   condition: 'bg-amber-500/20 border-amber-500 text-amber-400',
   action: 'bg-cyan-500/20 border-cyan-500 text-cyan-400',
   delay: 'bg-gray-500/20 border-gray-500 text-gray-400',
@@ -201,7 +201,7 @@ export default function FlowBuilder() {
         <div className="flex items-center gap-4 min-w-0 flex-1">
           <button 
             onClick={() => navigate('/dashboard/flows')}
-            className={`p-2 rounded-lg flex-shrink-0 touch-target ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+            className={`p-2 rounded-lg flex-shrink-0 touch-target text-icon ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -221,7 +221,7 @@ export default function FlowBuilder() {
             className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 touch-target ${
               flow?.is_active
                 ? 'bg-emerald-500/20 text-emerald-400'
-                : isDark ? 'bg-space-800 text-gray-400' : 'bg-gray-100 text-gray-600'
+                : isDark ? 'bg-space-800 text-icon' : 'bg-gray-100 text-gray-600'
             }`}
           >
             {flow?.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -248,7 +248,7 @@ export default function FlowBuilder() {
             className={`p-3 rounded-xl transition-colors ${
               showNodePanel
                 ? 'bg-gold-400 text-space-900'
-                : isDark ? 'bg-space-800 hover:bg-space-700 text-gray-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                : isDark ? 'bg-space-800 hover:bg-space-700 text-icon' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
             }`}
             title="Ajouter un noeud"
           >
@@ -430,7 +430,7 @@ export default function FlowBuilder() {
               </h3>
               <button
                 onClick={() => setSelectedNode(null)}
-                className={isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
+                className="text-icon hover:opacity-80"
               >
                 <X className="w-5 h-5" />
               </button>

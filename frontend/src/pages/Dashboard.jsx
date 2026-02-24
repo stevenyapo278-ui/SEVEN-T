@@ -199,13 +199,14 @@ export default function Dashboard() {
           {alerts.map((alert, index) => (
             <div 
               key={index}
-              className={`flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border ${
+              className={`flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border animate-fadeIn ${
                 alert.type === 'error' 
                   ? 'bg-red-500/10 border-red-500/30' 
                   : alert.type === 'warning'
                     ? 'bg-amber-500/10 border-amber-500/30'
                     : 'bg-blue-500/10 border-blue-500/30'
               }`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <AlertTriangle className={`w-5 h-5 ${
@@ -240,8 +241,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-tour="stats">
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-violet-400" />
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-blue-400" />
             </div>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
               stats?.agents?.active > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
@@ -394,8 +395,8 @@ export default function Dashboard() {
               to="/dashboard/agents"
               className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
             >
-              <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                <Plus className="w-5 h-5 text-violet-400" />
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <Plus className="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <p className="font-medium text-gray-100">Créer un agent</p>

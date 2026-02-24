@@ -49,7 +49,7 @@ const AVAILABLE_TAGS = [
   { id: 'commerce', label: 'Commerce', color: 'emerald' },
   { id: 'support', label: 'Support', color: 'blue' },
   { id: 'marketing', label: 'Marketing', color: 'pink' },
-  { id: 'rh', label: 'RH', color: 'purple' },
+  { id: 'rh', label: 'RH', color: 'blue' },
   { id: 'technique', label: 'Technique', color: 'orange' },
   { id: 'general', label: 'Général', color: 'gray' }
 ]
@@ -286,8 +286,8 @@ export default function Agents() {
         <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
-                <Bot className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg flex-shrink-0">
+                <Bot className="w-5 h-5 sm:w-6 sm:h-6 icon-on-gradient" />
               </div>
               <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Mes Agents</h1>
               {quotas && (
@@ -332,8 +332,8 @@ export default function Agents() {
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6 lg:mt-8">
           <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-violet-500/10 rounded-lg flex-shrink-0">
-                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-violet-400" />
+              <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
                 <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
@@ -479,7 +479,7 @@ export default function Agents() {
             placeholder="Rechercher un agent..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 border rounded-xl focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all text-sm sm:text-base min-h-[44px] ${
+            className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 border rounded-xl focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base min-h-[44px] ${
               isDark ? 'bg-space-800 border-space-700 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
             }`}
           />
@@ -509,7 +509,7 @@ export default function Agents() {
               onClick={() => setFilter(f.id)}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 min-h-[40px] ${
                 filter === f.id 
-                  ? (isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-500/15 text-violet-700')
+                  ? (isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-500/15 text-blue-700')
                   : isDark 
                     ? 'text-gray-400 hover:text-gray-200' 
                     : 'text-gray-700 hover:text-gray-900 hover:bg-gray-200'
@@ -548,7 +548,7 @@ export default function Agents() {
                       onClick={() => { setSortBy(s.id); setShowSortMenu(false) }}
                       className={`flex items-center gap-2 w-full px-4 py-2.5 text-sm transition-colors ${
                         sortBy === s.id 
-                          ? 'bg-violet-500/20 text-violet-400' 
+                          ? 'bg-blue-500/20 text-blue-400' 
                           : 'text-gray-400 hover:bg-space-700 hover:text-white'
                       }`}
                     >
@@ -566,7 +566,7 @@ export default function Agents() {
             onClick={() => { setBulkMode(!bulkMode); setSelectedAgents([]) }}
             className={`p-2.5 rounded-xl border transition-all min-h-[44px] min-w-[44px] flex items-center justify-center ${
               bulkMode 
-                ? 'bg-violet-500/20 border-violet-500/30 text-violet-400' 
+                ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' 
                 : isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-300 text-gray-600 hover:text-gray-900'
             }`}
             title="Mode sélection multiple"
@@ -619,8 +619,8 @@ export default function Agents() {
         <>
       {filteredAgents.length === 0 ? (
         <div className="bg-space-800/50 border border-space-700/50 rounded-3xl p-16 text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-space-700 to-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-            <Bot className="w-10 h-10 text-gray-500" />
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Bot className="w-10 h-10 icon-on-gradient" />
           </div>
           <h3 className="text-xl font-semibold text-gray-100 mb-3">
             {searchQuery || filter !== 'all' ? 'Aucun agent trouvé' : 'Aucun agent créé'}
@@ -780,7 +780,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
     <div 
       onClick={handleCardClick}
       className={`group relative bg-space-800/50 border rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50 animate-fadeIn cursor-pointer min-w-0 overflow-hidden ${
-        isSelected ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-space-700/50 hover:border-space-600'
+        isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-space-700/50 hover:border-space-600'
       } ${!isActive ? 'opacity-70' : ''}`}
       style={{ animationDelay: `${index * 50}ms` }}
     >
@@ -792,7 +792,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
           aria-label={isSelected ? 'Désélectionner' : 'Sélectionner'}
         >
           {isSelected ? (
-            <CheckSquare className="w-5 h-5 text-violet-400" />
+            <CheckSquare className="w-5 h-5 text-blue-400" />
           ) : (
             <Square className="w-5 h-5 text-gray-500" />
           )}
@@ -808,7 +808,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
             }`}>
               <Bot className={`w-6 h-6 ${
                 !isActive ? 'text-gray-500' :
-                agent.whatsapp_connected ? 'text-white' : 'text-gray-400'
+                agent.whatsapp_connected ? 'icon-on-gradient' : 'text-gray-400'
               }`} />
               {agent.whatsapp_connected && isActive && (
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-space-800 flex items-center justify-center">
@@ -964,7 +964,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
           <Link
             to={`/dashboard/agents/${agent.id}?tab=playground`}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 flex items-center justify-center gap-2 py-2 bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 rounded-lg text-sm font-medium transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 rounded-lg text-sm font-medium transition-all"
           >
             <Play className="w-4 h-4" />
             Tester
@@ -1048,12 +1048,12 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
   return (
     <div 
       onClick={handleRowClick}
-      className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-space-800/70 transition-colors cursor-pointer min-w-0 ${!isLast ? 'border-b border-space-700/50' : ''} ${!isActive ? 'opacity-70' : ''} ${isSelected ? 'bg-violet-500/10' : ''}`}
+      className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-space-800/70 transition-colors cursor-pointer min-w-0 ${!isLast ? 'border-b border-space-700/50' : ''} ${!isActive ? 'opacity-70' : ''} ${isSelected ? 'bg-blue-500/10' : ''}`}
     >
       {bulkMode && (
         <button onClick={(e) => { e.stopPropagation(); onToggleSelect(); }} className="flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center p-2">
           {isSelected ? (
-            <CheckSquare className="w-5 h-5 text-violet-400" />
+            <CheckSquare className="w-5 h-5 text-blue-400" />
           ) : (
             <Square className="w-5 h-5 text-gray-500" />
           )}
@@ -1073,7 +1073,7 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
       }`}>
         <Bot className={`w-5 h-5 ${
           !isActive ? 'text-gray-500' :
-          agent.whatsapp_connected ? 'text-white' : 'text-gray-400'
+          agent.whatsapp_connected ? 'icon-on-gradient' : 'text-gray-400'
         }`} />
       </div>
 
@@ -1128,7 +1128,7 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
         <Link
           to={`/dashboard/agents/${agent.id}?tab=playground`}
           onClick={(e) => e.stopPropagation()}
-          className="p-2 text-violet-400 hover:bg-violet-500/20 rounded-lg transition-colors"
+          className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
         >
           <Play className="w-4 h-4" />
         </Link>
@@ -1217,7 +1217,7 @@ function CreateAgentModal({ onClose, onCreated }) {
       name: 'Assistant Général',
       description: 'Un assistant polyvalent qui répond à toutes les questions',
       icon: '🤖',
-      color: 'from-violet-500 to-purple-600'
+      color: 'from-blue-500 to-blue-600'
     },
     {
       id: 'ecommerce',
@@ -1377,7 +1377,7 @@ function CreateAgentModal({ onClose, onCreated }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Assistant Commercial SEVEN T"
-                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
               <p className="text-xs text-gray-500 mt-1.5">
                 Ce nom sera utilisé dans les conversations et l'interface
@@ -1393,7 +1393,7 @@ function CreateAgentModal({ onClose, onCreated }) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Décrivez le rôle de cet agent pour vous y retrouver..."
                 rows={3}
-                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition-all resize-none"
+                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
               />
             </div>
 

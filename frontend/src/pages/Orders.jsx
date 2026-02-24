@@ -533,8 +533,8 @@ export default function Orders() {
           {/* Titre et sous-titre : bloc dédié, jamais sous les boutons */}
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-100 flex flex-wrap items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl flex-shrink-0">
-                <ShoppingCart className="w-8 h-8 text-space-950" />
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-gold-400 rounded-2xl flex-shrink-0">
+                <ShoppingCart className="w-8 h-8 icon-on-gradient" />
               </div>
               <span className="break-words">{t('orders.title')}</span>
             </h1>
@@ -547,7 +547,7 @@ export default function Orders() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={openNewOrderModal}
-              className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-600 text-white transition-colors touch-target whitespace-nowrap"
+              className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white transition-colors touch-target whitespace-nowrap"
             >
               <Plus className="w-5 h-5 flex-shrink-0" />
               <span>Nouvelle commande</span>
@@ -563,7 +563,7 @@ export default function Orders() {
               onClick={() => { setActiveTab('logs'); loadLogs(); }}
               className={`px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 transition-colors touch-target whitespace-nowrap ${
                 activeTab === 'logs'
-                  ? 'bg-violet-500 text-white'
+                  ? 'bg-blue-500 text-white'
                   : 'bg-space-800 text-gray-300 hover:bg-space-700'
               }`}
             >
@@ -628,7 +628,7 @@ export default function Orders() {
                     </div>
                     {actionLoading && (
                       <div className="p-3 flex items-center justify-center">
-                        <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+                        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
                       </div>
                     )}
                   </div>
@@ -740,7 +740,7 @@ export default function Orders() {
 
           {analyticsLoading ? (
             <div className="flex justify-center py-20">
-              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
             </div>
           ) : analytics ? (
             <>
@@ -751,12 +751,12 @@ export default function Orders() {
                   <div className="flex items-center justify-between gap-3 min-w-0">
                     <div className="min-w-0">
                       <p className="text-sm text-gray-500 truncate">Taux de conversion</p>
-                      <p className="text-3xl font-bold text-violet-400 mt-2 truncate">
+                      <p className="text-3xl font-bold text-blue-400 mt-2 truncate">
                         {analytics.conversionRate}%
                       </p>
                     </div>
-                    <div className="p-3 bg-violet-500/20 rounded-xl flex-shrink-0">
-                      <TrendingUp className="w-6 h-6 text-violet-400" />
+                    <div className="p-3 bg-blue-500/20 rounded-xl flex-shrink-0">
+                      <TrendingUp className="w-6 h-6 text-blue-400" />
                     </div>
                   </div>
                 </div>
@@ -892,7 +892,7 @@ export default function Orders() {
                 {/* Top Products */}
                 <div className="card p-6">
                   <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center gap-2">
-                    <Package className="w-5 h-5 text-violet-400" />
+                    <Package className="w-5 h-5 text-blue-400" />
                     Top 5 Produits
                   </h3>
                   <div className="space-y-3 min-w-0">
@@ -953,7 +953,7 @@ export default function Orders() {
         <div className="card p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2 min-w-0 truncate">
-              <History className="w-5 h-5 text-violet-400 flex-shrink-0" />
+              <History className="w-5 h-5 text-blue-400 flex-shrink-0" />
               Historique des mouvements de stock
             </h3>
             <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
@@ -984,7 +984,7 @@ export default function Orders() {
           </div>
           {logsLoading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+              <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
             </div>
           ) : logs.length === 0 ? (
             <p className="text-gray-500 text-center py-8">Aucun mouvement de stock enregistré</p>
@@ -1053,7 +1053,7 @@ export default function Orders() {
       {/* Orders List */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-20">
@@ -1069,7 +1069,7 @@ export default function Orders() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => {
+          {filteredOrders.map((order, index) => {
             const statusInfo = getStatusInfo(order.status)
             const StatusIcon = statusInfo.icon
             const isExpanded = expandedOrder === order.id
@@ -1077,9 +1077,10 @@ export default function Orders() {
             return (
               <div 
                 key={order.id}
-                className={`card overflow-hidden ${
+                className={`card overflow-hidden animate-fadeIn ${
                   order.status === 'pending' ? 'border-l-4 border-l-amber-500' : order.status === 'delivered' ? 'border-l-4 border-l-emerald-500' : ''
                 }`}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Order Header */}
                 <div 
@@ -1441,7 +1442,7 @@ export default function Orders() {
           <div className="bg-space-800 border border-space-700 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-space-700">
               <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-violet-400" />
+                <Plus className="w-5 h-5 text-blue-400" />
                 Nouvelle commande (manuelle)
               </h2>
               <p className="text-sm text-gray-400 mt-1">Créez une commande en attente de validation.</p>
@@ -1471,7 +1472,7 @@ export default function Orders() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-300">Articles *</label>
-                  <button type="button" onClick={addNewOrderLine} className="text-sm text-violet-400 hover:text-violet-300 flex items-center gap-1">
+                  <button type="button" onClick={addNewOrderLine} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
                     <Plus className="w-4 h-4" />
                     Ajouter une ligne
                   </button>
@@ -1578,7 +1579,7 @@ export default function Orders() {
                 <button
                   type="submit"
                   disabled={newOrderLoading}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50"
                 >
                   {newOrderLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                   Créer la commande

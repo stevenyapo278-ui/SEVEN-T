@@ -136,8 +136,8 @@ export default function Products() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
               <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex flex-wrap items-center gap-3 truncate">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl flex-shrink-0">
-                  <Package className="w-8 h-8 text-space-950" />
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-gold-400 rounded-2xl flex-shrink-0">
+                  <Package className="w-8 h-8 icon-on-gradient" />
                 </div>
                 {t('products.title')}
               </h1>
@@ -174,8 +174,8 @@ export default function Products() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-8 min-w-0">
             <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-violet-500/20 rounded-xl flex-shrink-0">
-                  <Package className="w-5 h-5 text-violet-400" />
+                <div className="p-2 bg-blue-500/20 rounded-xl flex-shrink-0">
+                  <Package className="w-5 h-5 text-blue-400" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-lg md:text-2xl font-bold text-gray-100 break-words" title={stats.total}>{stats.total}</p>
@@ -294,7 +294,7 @@ export default function Products() {
       {/* Products List */}
       {!loadError && loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
         </div>
       ) : !loadError && filteredProducts.length === 0 ? (
         <div className="text-center py-20">
@@ -426,7 +426,7 @@ export default function Products() {
                   </button>
                   <button
                     onClick={() => setEditingProduct(product)}
-                    className="p-2 text-gray-400 hover:text-violet-400 hover:bg-space-700 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 hover:text-blue-400 hover:bg-space-700 rounded-lg transition-colors"
                     title="Modifier"
                   >
                     <Edit className="w-4 h-4" />
@@ -715,10 +715,10 @@ function ImportModal({ onClose, onImported }) {
           </div>
         </div>
         <div className="p-6 space-y-6">
-          <div className="flex items-center gap-3 p-4 bg-violet-500/10 border border-violet-500/20 rounded-xl">
-            <FileSpreadsheet className="w-6 h-6 text-violet-400" />
+          <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <FileSpreadsheet className="w-6 h-6 text-blue-400" />
             <div>
-              <p className="text-sm font-medium text-violet-400">Format CSV</p>
+              <p className="text-sm font-medium text-blue-400">Format CSV</p>
               <p className="text-xs text-gray-400">Colonnes: name, sku, price, cost_price, stock, category, description, image_url</p>
             </div>
           </div>
@@ -733,7 +733,7 @@ function ImportModal({ onClose, onImported }) {
 
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-space-600 hover:border-violet-500/50 rounded-2xl p-8 text-center cursor-pointer transition-colors"
+            className="border-2 border-dashed border-space-600 hover:border-blue-500/50 rounded-2xl p-8 text-center cursor-pointer transition-colors"
           >
             <input
               ref={fileInputRef}
@@ -743,7 +743,7 @@ function ImportModal({ onClose, onImported }) {
               className="hidden"
             />
             <div className="w-16 h-16 bg-space-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Upload className="w-8 h-8 text-violet-400" />
+              <Upload className="w-8 h-8 text-blue-400" />
             </div>
             <p className="text-gray-300 font-medium mb-2">
               {loading ? 'Import en cours...' : 'Cliquez pour sélectionner un fichier CSV'}
@@ -827,7 +827,7 @@ function HistoryModal({ history, loading, productId, productName, formatPrice, o
         <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+              <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
             </div>
           ) : history.length === 0 ? (
             <p className="text-gray-500 text-center py-8">Aucune modification enregistrée.</p>
@@ -839,7 +839,7 @@ function HistoryModal({ history, loading, productId, productName, formatPrice, o
                   className="p-4 rounded-xl bg-space-800 border border-space-700"
                 >
                   <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-violet-500/20 text-violet-400 text-sm font-medium">
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-sm font-medium">
                       {ACTION_LABELS[entry.action] || entry.action}
                     </span>
                     {!productId && entry.product_name && (

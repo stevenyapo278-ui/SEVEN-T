@@ -87,10 +87,10 @@ export default function Analytics() {
         iconBg: 'bg-gold-400/20',
         iconText: 'text-gold-400'
       },
-      violet: {
-        gradient: 'from-violet-400/20 to-violet-400/5 border-violet-400/30',
-        iconBg: 'bg-violet-400/20',
-        iconText: 'text-violet-400'
+      blue: {
+        gradient: 'from-blue-400/20 to-blue-400/5 border-blue-400/30',
+        iconBg: 'bg-blue-400/20',
+        iconText: 'text-blue-400'
       },
       emerald: {
         gradient: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30',
@@ -181,7 +181,7 @@ export default function Analytics() {
           value={overview?.messages?.value}
           growth={overview?.messages?.growth}
           icon={BarChart3}
-          color="violet"
+          color="blue"
         />
         <StatCard
           title="Leads"

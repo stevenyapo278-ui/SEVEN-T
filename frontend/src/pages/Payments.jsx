@@ -189,7 +189,7 @@ export default function Payments() {
     return (
       <div className="space-y-6">
         <div className={`p-8 rounded-2xl border text-center ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
-          <CreditCard className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+          <CreditCard className="w-16 h-16 mx-auto mb-4 text-icon" />
           <h2 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Module paiement désactivé
           </h2>
@@ -198,7 +198,7 @@ export default function Payments() {
           </p>
           <Link
             to="/dashboard"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500 hover:bg-violet-600 text-white transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white transition-colors"
           >
             Retour au tableau de bord
           </Link>
@@ -263,7 +263,7 @@ export default function Payments() {
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="input-with-icon flex-1">
-          <div className={`pl-3 flex items-center justify-center flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          <div className="pl-3 flex items-center justify-center flex-shrink-0 text-icon">
             <Search className="w-5 h-5" />
           </div>
           <input
@@ -282,7 +282,7 @@ export default function Payments() {
               className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 statusFilter === status
                   ? 'bg-gold-400 text-space-900'
-                  : isDark ? 'bg-space-800 text-gray-400 hover:bg-space-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : isDark ? 'bg-space-800 text-icon hover:bg-space-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               {status === 'all' ? t(STATUS_KEYS.all) : t(STATUS_KEYS[status])}
@@ -297,7 +297,7 @@ export default function Payments() {
           <div className={`text-center py-12 rounded-xl border ${
             isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'
           }`}>
-            <CreditCard className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
+            <CreditCard className="w-12 h-12 mx-auto mb-4 text-icon" />
             <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Aucun lien de paiement
             </h3>
@@ -306,10 +306,11 @@ export default function Payments() {
             </p>
           </div>
         ) : (
-          filteredLinks.map(link => (
+          filteredLinks.map((link, index) => (
             <div
               key={link.id}
-              className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}
+              className={`p-4 rounded-xl border animate-fadeIn ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
@@ -368,7 +369,7 @@ export default function Payments() {
                       <button
                         onClick={() => handleShare(link.id)}
                         className={`p-2 rounded-lg transition-colors ${
-                          isDark ? 'hover:bg-space-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                          isDark ? 'hover:bg-space-700 text-icon' : 'hover:bg-gray-100 text-gray-600'
                         }`}
                         title="Partager"
                       >
@@ -451,7 +452,7 @@ function PaymentModal({ onClose, onSave, isDark, paymetrustConfigured }) {
           <h2 className={`text-lg font-display font-bold min-w-0 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Nouveau lien de paiement
           </h2>
-          <button onClick={onClose} className={`flex-shrink-0 touch-target ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-800'}`}>
+          <button onClick={onClose} className={`flex-shrink-0 touch-target text-icon ${isDark ? 'hover:text-gray-200' : 'hover:text-gray-800'}`}>
             <X className="w-5 h-5" />
           </button>
         </div>

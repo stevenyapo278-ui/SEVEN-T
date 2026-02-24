@@ -261,8 +261,8 @@ export default function Tools() {
         <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg flex-shrink-0">
-                <Wrench className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg flex-shrink-0">
+                <Wrench className="w-5 h-5 sm:w-6 sm:h-6 icon-on-gradient" />
               </div>
               <h1 className={`text-2xl sm:text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Outils</h1>
               {quotas?.plan && (
@@ -272,7 +272,7 @@ export default function Tools() {
                 </span>
               )}
             </div>
-            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Connectez vos canaux (WhatsApp, Outlook) et assignez-les à vos agents</p>
+            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Connectez vos canaux (WhatsApp, Outlook) et assignez-les à vos agents</p>
           </div>
           <button
             onClick={loadTools}

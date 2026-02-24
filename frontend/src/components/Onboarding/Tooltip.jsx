@@ -61,7 +61,7 @@ export function Tooltip({
         {/* Content */}
         <div className="bg-space-800 border border-gold-400/50 rounded-xl shadow-xl shadow-gold-400/10 overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-gold-400/20 to-violet-500/20 border-b border-space-700">
+          <div className="px-4 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 border-b border-space-700">
             <div className="flex items-center justify-between">
               <h4 className="font-display font-semibold text-gold-400">{title}</h4>
               <button 

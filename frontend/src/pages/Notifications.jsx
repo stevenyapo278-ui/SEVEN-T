@@ -99,10 +99,10 @@ export default function Notifications() {
       success: 'bg-green-500/10 text-green-500',
       warning: 'bg-amber-500/10 text-amber-500',
       error: 'bg-red-500/10 text-red-500',
-      lead: 'bg-violet-500/10 text-violet-500',
+      lead: 'bg-blue-500/10 text-blue-500',
       whatsapp: 'bg-emerald-500/10 text-emerald-500',
       credit: 'bg-yellow-500/10 text-yellow-500',
-      agent: 'bg-violet-500/10 text-violet-500',
+      agent: 'bg-blue-500/10 text-blue-500',
       info: 'bg-blue-500/10 text-blue-500'
     }
     return styles[type] || styles.info
@@ -113,13 +113,13 @@ export default function Notifications() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            isDark ? 'bg-space-800 text-violet-400' : 'bg-violet-50 text-violet-600'
+            isDark ? 'bg-space-800 text-blue-400' : 'bg-blue-50 text-blue-600'
           }`}>
             <Bell className="w-5 h-5" />
           </div>
           <div className="min-w-0">
             <h1 className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h1>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
               {unreadCount} non lue(s)
             </p>
           </div>
@@ -141,8 +141,8 @@ export default function Notifications() {
               actionLoading || unreadCount === 0
                 ? 'opacity-50 cursor-not-allowed'
                 : isDark
-                  ? 'bg-violet-500/10 text-violet-300 hover:bg-violet-500/20'
-                  : 'bg-violet-50 text-violet-600 hover:bg-violet-100'
+                  ? 'bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
+                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
             }`}
           >
             <Check className="w-4 h-4" />
@@ -159,8 +159,8 @@ export default function Notifications() {
             className={`px-3 py-1.5 rounded-full text-sm transition-colors touch-target ${
               activeFilter === filter.id
                 ? isDark
-                  ? 'bg-violet-500 text-white'
-                  : 'bg-violet-600 text-white'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-blue-600 text-white'
                 : isDark
                   ? 'bg-space-800 text-gray-300 hover:bg-space-700'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -174,25 +174,26 @@ export default function Notifications() {
       <div className={`rounded-2xl border ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-white'}`}>
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-violet-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
           </div>
         ) : notifications.length === 0 ? (
           <div className="p-8 text-center">
-            <Bell className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
-            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            <Bell className="w-8 h-8 mx-auto mb-2 text-icon" />
+            <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
               Aucune notification
             </p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-space-700">
-            {notifications.map((notif) => (
+            {notifications.map((notif, index) => (
               <div
                 key={notif.id}
-                className={`p-4 md:p-5 ${
+                className={`p-4 md:p-5 animate-fadeIn ${
                   isDark
                     ? notif.is_read ? 'bg-space-800' : 'bg-space-700/60'
-                    : notif.is_read ? 'bg-white' : 'bg-violet-50/40'
+                    : notif.is_read ? 'bg-white' : 'bg-blue-50/40'
                 }`}
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -201,11 +202,11 @@ export default function Notifications() {
                         {notif.type}
                       </span>
                       {!notif.is_read && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-violet-500/10 text-violet-400">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-400">
                           Non lue
                         </span>
                       )}
-                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                         {formatRelativeTime(notif.created_at)}
                       </span>
                     </div>
@@ -221,7 +222,7 @@ export default function Notifications() {
                     </div>
                     {notif.metadata && (
                       <div className={`mt-3 text-xs rounded-lg px-3 py-2 ${
-                        isDark ? 'bg-space-900/60 text-gray-400' : 'bg-gray-50 text-gray-500'
+                        isDark ? 'bg-space-900/60 text-gray-400' : 'bg-gray-50 text-gray-600'
                       }`}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                           {Object.entries(notif.metadata).map(([key, value]) => (
@@ -240,7 +241,7 @@ export default function Notifications() {
                             if (!notif.is_read) markAsRead(notif.id)
                           }}
                           className={`text-xs font-medium ${
-                            isDark ? 'text-violet-300 hover:text-violet-200' : 'text-violet-600 hover:text-violet-500'
+                            isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'
                           }`}
                         >
                           Ouvrir
@@ -253,7 +254,7 @@ export default function Notifications() {
                       <button
                         onClick={() => markAsRead(notif.id)}
                         className={`p-2 rounded-lg ${
-                          isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+                          isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
                         }`}
                         title="Marquer comme lu"
                       >
@@ -263,7 +264,7 @@ export default function Notifications() {
                     <button
                       onClick={() => deleteNotification(notif.id)}
                       className={`p-2 rounded-lg ${
-                        isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+                        isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
                       }`}
                       title="Supprimer"
                     >

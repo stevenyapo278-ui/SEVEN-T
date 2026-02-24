@@ -23,8 +23,8 @@ function getSteps(t) {
       icon: Sparkles,
       content: (
         <div className="space-y-4 text-center">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gold-400 to-violet-500 rounded-2xl flex items-center justify-center">
-            <Rocket className="w-10 h-10 text-white" />
+          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gold-400 to-blue-500 rounded-2xl flex items-center justify-center">
+            <Rocket className="w-10 h-10 icon-on-gradient" />
           </div>
           <p className="text-gray-300">{t('onboarding.welcomeIntro')}</p>
         </div>
@@ -38,7 +38,7 @@ function getSteps(t) {
       content: (
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 bg-space-800 rounded-xl border border-space-700">
-            <Bot className="w-8 h-8 text-violet-400 mb-2" />
+            <Bot className="w-8 h-8 text-blue-400 mb-2" />
             <h4 className="font-medium text-gray-100">{t('onboarding.stepAgentCommercial')}</h4>
             <p className="text-sm text-gray-400">{t('onboarding.stepAgentCommercialSub')}</p>
           </div>
@@ -92,8 +92,8 @@ function getSteps(t) {
               <p className="text-sm text-gray-400">{t('onboarding.stepReady24')}</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 mx-auto bg-violet-500/20 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle className="w-6 h-6 text-violet-400" />
+              <div className="w-12 h-12 mx-auto bg-blue-500/20 rounded-full flex items-center justify-center mb-2">
+                <CheckCircle className="w-6 h-6 text-blue-400" />
               </div>
               <p className="text-sm text-gray-400">{t('onboarding.stepReadyAI')}</p>
             </div>
@@ -145,7 +145,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
         {/* Progress bar */}
         <div className="h-1 bg-space-800">
           <div 
-            className="h-full bg-gradient-to-r from-gold-400 to-violet-500 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-gold-400 to-blue-500 transition-all duration-300"
             style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
           />
         </div>
@@ -169,7 +169,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
                   index === currentStep 
                     ? 'bg-gold-400' 
                     : index < currentStep 
-                    ? 'bg-violet-500' 
+                    ? 'bg-blue-500' 
                     : 'bg-space-700'
                 }`}
               />
@@ -178,7 +178,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
 
           {/* Icon */}
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-gold-400/20 to-violet-500/20 rounded-2xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-gold-400/20 to-blue-500/20 rounded-2xl flex items-center justify-center">
               <StepIcon className="w-8 h-8 text-gold-400" />
             </div>
           </div>

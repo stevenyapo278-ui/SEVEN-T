@@ -32,7 +32,7 @@ const TEMPLATES = [
     name: 'Commercial',
     description: 'Prospection, vente, conversion de leads',
     icon: Zap,
-    color: 'violet',
+    color: 'blue',
     features: ['Qualification de prospects', 'Présentation des offres', 'Gestion des objections', 'Prise de RDV']
   },
   {
@@ -174,7 +174,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
   const getColorClass = (color) => {
     const colors = {
       gold: 'from-gold-400/20 to-gold-400/5 border-gold-400/30 text-gold-400',
-      violet: 'from-violet-400/20 to-violet-400/5 border-violet-400/30 text-violet-400',
+      blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
       emerald: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30 text-emerald-400',
       blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
       orange: 'from-orange-400/20 to-orange-400/5 border-orange-400/30 text-orange-400'
@@ -191,8 +191,8 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
         <div className="sticky top-0 bg-space-900 border-b border-space-700 p-4 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-gold-400 to-violet-500 rounded-xl flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-gold-400 to-blue-500 rounded-xl flex items-center justify-center">
+                <Bot className="w-5 h-5 icon-on-gradient" />
               </div>
               <div>
                 <h2 className="font-display font-semibold text-gray-100">Créer un agent</h2>
@@ -392,8 +392,8 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
           {currentStepId === 'confirm' && (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gold-400 to-violet-500 rounded-2xl flex items-center justify-center mb-4">
-                  <Check className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gold-400 to-blue-500 rounded-2xl flex items-center justify-center mb-4">
+                  <Check className="w-8 h-8 icon-on-gradient" />
                 </div>
                 <h3 className="text-xl font-display font-bold text-gray-100">
                   Prêt à créer votre agent !

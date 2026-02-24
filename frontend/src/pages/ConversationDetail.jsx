@@ -131,7 +131,7 @@ function ProfileAvatar({ agentId, contactJid, name, size = 'md', className = '',
     ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : '?'
   
-  const colors = ['bg-violet-500', 'bg-emerald-500', 'bg-blue-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500']
+  const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-blue-500', 'bg-amber-500', 'bg-pink-500', 'bg-cyan-500']
   const colorIndex = name ? name.charCodeAt(0) % colors.length : 0
   const bgColor = colors[colorIndex]
   
@@ -601,7 +601,7 @@ export default function ConversationDetail() {
                 className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-all touch-target ${
                   humanTakeover
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                 }`}
                 title={humanTakeover ? 'Cliquez pour réactiver l\'IA' : 'Cliquez pour prendre en charge manuellement'}
               >
@@ -849,7 +849,7 @@ export default function ConversationDetail() {
                         {/* Sender type badge for assistant messages */}
                         {message.role === 'assistant' && (
                           <div className={`flex items-center gap-1 mb-1 text-xs font-medium ${
-                            isHumanSender ? 'text-emerald-200' : 'text-violet-300'
+                            isHumanSender ? 'text-emerald-200' : 'text-blue-300'
                           }`}>
                             {isHumanSender ? (
                               <>

@@ -14,9 +14,9 @@
   --gold-300: #fcd34d;
   --gold-400: #fbbf24;
   --gold-500: #f59e0b;
-  --violet-400: #a78bfa;
-  --violet-500: #8b5cf6;
-  --violet-600: #7c3aed;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
   
   /* Semantic colors */
   --bg-primary: #0a0a0f;
@@ -31,34 +31,34 @@
   --shadow-color: rgba(0, 0, 0, 0.4);
 }
 
-/* Light Mode - Harmonie améliorée */
+/* Light Mode - Arrière-plan un peu sombre (pas trop blanc) */
 .light {
-  --space-950: #ffffff;
-  --space-900: #fafbfc;
-  --space-800: #f4f6f8;
-  --space-700: #e8ecf0;
-  --space-600: #dce2e8;
+  --space-950: #f1f5f9;
+  --space-900: #e2e8f0;
+  --space-800: #e2e8f0;
+  --space-700: #cbd5e1;
+  --space-600: #94a3b8;
   --gold-300: #fbbf24;
   --gold-400: #f59e0b;
   --gold-500: #d97706;
-  --violet-400: #8b5cf6;
-  --violet-500: #7c3aed;
-  --violet-600: #6d28d9;
+  --blue-400: #3b82f6;
+  --blue-500: #2563eb;
+  --blue-600: #1d4ed8;
   
-  /* Semantic colors - Plus doux et harmonieux */
-  --bg-primary: #ffffff;
-  --bg-secondary: #fafbfc;
-  --bg-tertiary: #f4f6f8;
-  --bg-elevated: #ffffff;
-  --border-color: #e2e8f0;
-  --border-light: #cbd5e1;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --shadow-color: rgba(100, 116, 139, 0.1);
+  /* Semantic colors - Fond légèrement gris */
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #e2e8f0;
+  --bg-tertiary: #cbd5e1;
+  --bg-elevated: #f8fafc;
+  --border-color: #cbd5e1;
+  --border-light: #94a3b8;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --shadow-color: rgba(15, 23, 42, 0.08);
   
   /* Couleurs d'accent pour le mode clair */
-  --accent-primary: #7c3aed;
+  --accent-primary: #2563eb;
   --accent-secondary: #d97706;
   --accent-success: #059669;
   --accent-warning: #d97706;
@@ -100,22 +100,30 @@ body {
   }
 }
 
-/* Light mode text color overrides - Contraste amélioré pour une lecture facile */
+/* Icônes : garder la même couleur qu'en mode sombre (gris) */
+.text-icon {
+  color: #6b7280 !important;
+}
+.light .text-icon {
+  color: #6b7280 !important;
+}
+
+/* Light mode text color overrides - Texte assez sombre pour une bonne lisibilité */
 .light .text-gray-100 { color: #0f172a; }
 .light .text-gray-200 { color: #1e293b; }
 .light .text-gray-300 { color: #334155; }
 .light .text-gray-400 { color: #475569; }
 .light .text-gray-500 { color: #64748b; }
-.light .text-gray-600 { color: #94a3b8; }
+.light .text-gray-600 { color: #475569; }
 .light .text-gray-700 { color: #334155; }
 .light .text-gray-800 { color: #1e293b; }
 .light .text-gray-900 { color: #0f172a; }
 
-/* Light mode background overrides - Tons plus chauds */
-.light .bg-space-950 { background-color: #ffffff; }
-.light .bg-space-900 { background-color: #fafbfc; }
-.light .bg-space-800 { background-color: #f1f5f9; }
-.light .bg-space-700 { background-color: #e2e8f0; }
+/* Light mode background overrides - Arrière-plan un peu sombre */
+.light .bg-space-950 { background-color: #f1f5f9; }
+.light .bg-space-900 { background-color: #e2e8f0; }
+.light .bg-space-800 { background-color: #e2e8f0; }
+.light .bg-space-700 { background-color: #cbd5e1; }
 
 /* Light mode border overrides - Bordures plus subtiles */
 .light .border-space-700 { border-color: #e2e8f0; }
@@ -175,12 +183,12 @@ body {
   background-color: rgba(241, 245, 249, 0.9);
 }
 
-.light .bg-violet-500\/20 {
-  background-color: rgba(124, 58, 237, 0.1);
+.light .bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.1);
 }
 
-.light .bg-violet-500\/10 {
-  background-color: rgba(124, 58, 237, 0.06);
+.light .bg-blue-500\/10 {
+  background-color: rgba(59, 130, 246, 0.06);
 }
 
 .light .bg-gold-400\/20 {
@@ -220,7 +228,7 @@ body {
 }
 
 /* Light mode text colors for accent elements */
-.light .text-violet-400 { color: #7c3aed; }
+.light .text-blue-400 { color: #2563eb; }
 .light .text-gold-400 { color: #d97706; }
 .light .text-emerald-400 { color: #059669; }
 .light .text-amber-400 { color: #d97706; }
@@ -228,8 +236,8 @@ body {
 .light .text-blue-400 { color: #0284c7; }
 
 /* Light mode navigation active states - Plus visibles */
-.light .border-violet-500\/30 {
-  border-color: rgba(124, 58, 237, 0.35);
+.light .border-blue-500\/30 {
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 .light .border-gold-400\/30 {
@@ -240,9 +248,9 @@ body {
 .light .text-gradient {
   background: none;
   -webkit-background-clip: unset;
-  -webkit-text-fill-color: #7c3aed;
+  -webkit-text-fill-color: #2563eb;
   background-clip: unset;
-  color: #7c3aed;
+  color: #2563eb;
 }
 
 /* Light mode button adjustments - Boutons plus définis */
@@ -253,9 +261,9 @@ body {
 }
 
 .light .btn-secondary:hover {
-  border-color: #7c3aed;
-  background: rgba(124, 58, 237, 0.06);
-  color: #7c3aed;
+  border-color: #2563eb;
+  background: rgba(59, 130, 246, 0.06);
+  color: #2563eb;
 }
 
 /* Light mode primary button - Fond uni pour rendu net (pas de dégradé) */
@@ -308,7 +316,7 @@ body {
 }
 
 .text-gradient {
-  background: linear-gradient(90deg, #fbbf24 0%, #a78bfa 100%);
+  background: linear-gradient(90deg, #fbbf24 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -335,18 +343,18 @@ body {
 }
 
 .btn-secondary:hover {
-  border-color: var(--violet-500);
-  background: rgba(139, 92, 246, 0.1);
+  border-color: var(--blue-500);
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .btn-ghost {
   @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200;
-  background: rgba(139, 92, 246, 0.1);
-  color: #a78bfa;
+  background: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
 }
 
 .btn-ghost:hover {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(59, 130, 246, 0.2);
 }
 
 /* Card styles */
@@ -459,8 +467,8 @@ body {
 }
 
 /* Glow effects */
-.glow-violet {
-  box-shadow: 0 0 60px rgba(139, 92, 246, 0.3);
+.glow-blue {
+  box-shadow: 0 0 60px rgba(59, 130, 246, 0.3);
 }
 
 .glow-gold {
@@ -485,8 +493,8 @@ input.input-dark {
 .input:focus,
 .input-dark:focus {
   outline: none;
-  border-color: var(--violet-500);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .input::placeholder,
@@ -515,8 +523,8 @@ select.input option {
 
 .light .input:focus,
 .light .input-dark:focus {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
 .light .input::placeholder,
@@ -552,8 +560,8 @@ select.input option {
 }
 .input-with-icon:focus-within {
   outline: none;
-  border-color: var(--violet-500);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 .input-with-icon input {
   flex: 1;
@@ -581,8 +589,8 @@ select.input option {
   border-color: #cbd5e1;
 }
 .light .input-with-icon:focus-within {
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 .light .input-with-icon input::placeholder {
   color: #94a3b8;
@@ -605,7 +613,7 @@ select.input option {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--violet-500);
+  background: var(--blue-500);
 }
 
 .light ::-webkit-scrollbar-track {
@@ -617,7 +625,7 @@ select.input option {
 }
 
 .light ::-webkit-scrollbar-thumb:hover {
-  background: #7c3aed;
+  background: #2563eb;
 }
 
 /* Hide scrollbar (e.g. horizontal filter pills on mobile) */
@@ -722,8 +730,8 @@ select.input option {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5); }
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.5); }
 }
 
 .animate-pulse-glow {
@@ -776,7 +784,8 @@ select.input option {
   animation: countdown-pulse 1s ease-in-out infinite;
 }
 
-/* Fade in animation */
+/* Fade in animation - use on list items with stagger for consistent UX across the app.
+   Pattern: add class "animate-fadeIn" + style={{ animationDelay: `${index * 50}ms` }} on each item. */
 @keyframes fadeIn {
   from { 
     opacity: 0; 
@@ -835,35 +844,53 @@ select.input option {
 /* Light mode accent color enhancements */
 .light .from-gold-400 { --tw-gradient-from: #f59e0b; }
 .light .to-gold-400 { --tw-gradient-to: #f59e0b; }
-.light .from-violet-500 { --tw-gradient-from: #7c3aed; }
-.light .to-violet-500 { --tw-gradient-to: #7c3aed; }
-.light .from-violet-400 { --tw-gradient-from: #8b5cf6; }
+.light .from-blue-500 { --tw-gradient-from: #2563eb; }
+.light .to-blue-500 { --tw-gradient-to: #2563eb; }
+.light .from-blue-400 { --tw-gradient-from: #3b82f6; }
 .light .to-amber-500 { --tw-gradient-to: #f59e0b; }
 
-/* Light mode gradient backgrounds - Couleurs unies pour rendu net */
+/* Light mode gradient backgrounds - Couleurs unies pour rendu net (landing uniquement) */
 .light .bg-gradient-to-r.from-gold-400.to-amber-500 {
   background: #d97706;
 }
 
-.light .bg-gradient-to-br.from-gold-400.to-violet-500 {
-  background: #7c3aed;
+/* Dégradés or/bleu (cercles avatar, icônes pages) */
+.light .bg-gradient-to-br.from-gold-400.to-blue-500 {
+  --tw-gradient-from: #fbbf24;
+  --tw-gradient-to: #3b82f6;
+}
+.light .bg-gradient-to-br.from-blue-500.to-gold-400 {
+  --tw-gradient-from: #3b82f6;
+  --tw-gradient-to: #fbbf24;
+}
+.light .bg-gradient-to-br.from-blue-500.to-blue-600 {
+  --tw-gradient-from: #3b82f6;
+  --tw-gradient-to: #2563eb;
+}
+.light .bg-gradient-to-br.from-emerald-500.to-green-600 {
+  --tw-gradient-from: #10b981;
+  --tw-gradient-to: #16a34a;
 }
 
-.light .bg-gradient-to-br.from-violet-500.to-gold-400 {
-  background: #7c3aed;
+/* Icône sur dégradé : outline sombre, identique en mode clair et sombre */
+.icon-on-gradient {
+  color: #0f172a !important;
+}
+.light .icon-on-gradient {
+  color: #0f172a !important;
 }
 
-/* Hero - vagues violettes (parallax) : charte violet uniquement */
-.landing-hero-wave-1 { color: rgba(139, 92, 246, 0.18); }
-.landing-hero-wave-2 { color: rgba(139, 92, 246, 0.26); }
-.landing-hero-wave-3 { color: rgba(124, 58, 237, 0.22); }
-:root, .dark { --wave-grid-color: rgba(167, 139, 250, 0.18); }
+/* Hero - vagues bleues (parallax) */
+.landing-hero-wave-1 { color: rgba(59, 130, 246, 0.18); }
+.landing-hero-wave-2 { color: rgba(59, 130, 246, 0.26); }
+.landing-hero-wave-3 { color: rgba(37, 99, 235, 0.22); }
+:root, .dark { --wave-grid-color: rgba(96, 165, 250, 0.18); }
 
-/* Light mode - Landing : hero et CTA sans dégradés blanc/gris/noir (uniquement aplats) */
-.light .landing-hero-wave-1 { color: rgba(124, 58, 237, 0.14); }
-.light .landing-hero-wave-2 { color: rgba(124, 58, 237, 0.2); }
-.light .landing-hero-wave-3 { color: rgba(109, 40, 217, 0.16); }
-.light { --wave-grid-color: rgba(124, 58, 237, 0.1); }
+/* Light mode - Landing : hero et CTA */
+.light .landing-hero-wave-1 { color: rgba(59, 130, 246, 0.14); }
+.light .landing-hero-wave-2 { color: rgba(59, 130, 246, 0.2); }
+.light .landing-hero-wave-3 { color: rgba(29, 78, 216, 0.16); }
+.light { --wave-grid-color: rgba(59, 130, 246, 0.1); }
 .light .landing-hero-bg .bg-gradient-to-b,
 .light .landing-hero-bg .animate-float {
   opacity: 0.06;
@@ -885,13 +912,13 @@ select.input option {
 }
 
 /* Light mode - Cartes landing (étapes, features) : icônes en dégradé → couleur unie */
-.light .landing-hero .bg-gradient-to-br.from-gold-400.to-violet-500,
-.light .landing-hero .bg-gradient-to-br.from-violet-500.to-gold-400,
+.light .landing-hero .bg-gradient-to-br.from-gold-400.to-blue-500,
+.light .landing-hero .bg-gradient-to-br.from-blue-500.to-gold-400,
 .light #features .bg-gradient-to-br,
-.light #how-it-works .bg-gradient-to-br.from-gold-400.to-violet-500,
+.light #how-it-works .bg-gradient-to-br.from-gold-400.to-blue-500,
 .light #pricing .bg-gradient-to-br.from-gold-400.to-amber-500,
 .light #pricing .bg-gradient-to-r.from-gold-400.to-amber-500 {
-  background: #7c3aed;
+  background: #2563eb;
 }
 .light #features .bg-gradient-to-br.from-blue-500 { background: #0284c7; }
 .light #features .bg-gradient-to-br.from-gold-400 { background: #d97706; }
@@ -906,9 +933,9 @@ select.input option {
 }
 
 /* Light mode tags and badges */
-.light .px-2.py-0\.5.text-xs.bg-violet-500\/20 {
-  background-color: rgba(124, 58, 237, 0.12);
-  color: #6d28d9;
+.light .px-2.py-0\.5.text-xs.bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
 }
 
 .light .px-2.py-0\.5.text-xs.bg-emerald-500\/20 {
@@ -938,8 +965,8 @@ select.input option {
 }
 
 /* Light mode links */
-.light a.text-violet-400:hover {
-  color: #6d28d9;
+.light a.text-blue-400:hover {
+  color: #1d4ed8;
 }
 
 .light a.text-gold-400:hover {

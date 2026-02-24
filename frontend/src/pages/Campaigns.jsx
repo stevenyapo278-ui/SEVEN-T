@@ -352,8 +352,8 @@ export default function Campaigns() {
           </div>
         </div>
         <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-violet-400/20 flex items-center justify-center">
-            <BarChart2 className="w-6 h-6 text-violet-400" />
+          <div className="w-12 h-12 rounded-xl bg-blue-400/20 flex items-center justify-center">
+            <BarChart2 className="w-6 h-6 text-blue-400" />
           </div>
           <div>
             <p className="text-2xl font-bold text-gray-100">
@@ -501,7 +501,7 @@ export default function Campaigns() {
                           <button
                             type="button"
                             onClick={() => openRecipientsModal(campaign)}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 text-sm font-medium transition-colors"
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 text-sm font-medium transition-colors"
                           >
                             <UserCheck className="w-4 h-4" />
                             Gérer les destinataires

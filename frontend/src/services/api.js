@@ -16,11 +16,13 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle errors
+// Handle errors: redirect to login only when a 401 happens on an authenticated request
+// (not when the login request itself fails with 401 - wrong password / unknown user)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes?.('auth/login') && (error.config?.method === 'post' || error.config?.method === 'POST')
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }

@@ -42,7 +42,7 @@ import toast from 'react-hot-toast'
 const LEAD_STATUSES = [
   { id: 'new', label: 'Nouveau', color: 'blue', icon: UserPlus },
   { id: 'contacted', label: 'Contacté', color: 'amber', icon: MessageSquare },
-  { id: 'qualified', label: 'Qualifié', color: 'violet', icon: UserCheck },
+  { id: 'qualified', label: 'Qualifié', color: 'blue', icon: UserCheck },
   { id: 'negotiation', label: 'Négociation', color: 'orange', icon: TrendingUp },
   { id: 'customer', label: 'Client', color: 'green', icon: ShoppingCart },
   { id: 'lost', label: 'Perdu', color: 'red', icon: X },
@@ -158,6 +158,14 @@ export default function Leads() {
   }
 
   const handleStatusChange = async (lead, newStatus) => {
+    if (lead.status === newStatus) return
+    const newStatusInfo = LEAD_STATUSES.find(s => s.id === newStatus)
+    const ok = await showConfirm({
+      title: 'Changer le statut du lead',
+      message: `Passer « ${lead.name} » en statut « ${newStatusInfo?.label ?? newStatus} » ?`,
+      confirmLabel: 'Confirmer'
+    })
+    if (!ok) return
     try {
       await api.put(`/leads/${lead.id}`, { status: newStatus })
       toast.success('Statut mis à jour')
@@ -209,8 +217,8 @@ export default function Leads() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
               <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex flex-wrap items-center gap-3 truncate">
-                <div className="p-3 bg-gradient-to-br from-violet-500 to-gold-400 rounded-2xl">
-                  <UserPlus className="w-8 h-8 text-space-950" />
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-gold-400 rounded-2xl">
+                  <UserPlus className="w-8 h-8 icon-on-gradient" />
                 </div>
                 Gestion des Leads
               </h1>
@@ -231,8 +239,8 @@ export default function Leads() {
           <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
             <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-500/20 rounded-xl">
-                  <Users className="w-5 h-5 text-violet-400" />
+                <div className="p-2 bg-blue-500/20 rounded-xl">
+                  <Users className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-100">{stats.total}</p>
@@ -241,13 +249,13 @@ export default function Leads() {
               </div>
             </div>
             {stats.suggested > 0 && (
-              <div className="bg-gradient-to-br from-violet-500/20 to-gold-400/20 backdrop-blur-sm rounded-2xl p-4 border border-violet-500/30 animate-pulse">
+              <div className="bg-gradient-to-br from-blue-500/20 to-gold-400/20 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/30 animate-pulse">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-violet-500/30 rounded-xl">
-                    <Sparkles className="w-5 h-5 text-violet-400" />
+                  <div className="p-2 bg-blue-500/30 rounded-xl">
+                    <Sparkles className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-violet-400">{stats.suggested}</p>
+                    <p className="text-2xl font-bold text-blue-400">{stats.suggested}</p>
                     <p className="text-xs text-gray-400">À valider</p>
                   </div>
                 </div>
@@ -266,8 +274,8 @@ export default function Leads() {
             </div>
             <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-violet-500/20 rounded-xl">
-                  <UserCheck className="w-5 h-5 text-violet-400" />
+                <div className="p-2 bg-blue-500/20 rounded-xl">
+                  <UserCheck className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-100">{stats.qualified}</p>
@@ -339,17 +347,17 @@ export default function Leads() {
       {suggestedLeads.length > 0 && (
         <div className="mb-6">
           <div 
-            className="flex items-center justify-between p-4 bg-gradient-to-r from-violet-500/20 to-gold-400/20 border border-violet-500/30 rounded-2xl cursor-pointer"
+            className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/20 to-gold-400/20 border border-blue-500/30 rounded-2xl cursor-pointer"
             onClick={() => setShowSuggested(!showSuggested)}
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-violet-500/30 rounded-xl">
-                <Sparkles className="w-5 h-5 text-violet-400" />
+              <div className="p-2 bg-blue-500/30 rounded-xl">
+                <Sparkles className="w-5 h-5 text-blue-400" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-100 flex items-center gap-2">
                   Leads suggérés par l'IA
-                  <span className="px-2 py-0.5 bg-violet-500/30 text-violet-400 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-blue-500/30 text-blue-400 text-xs font-medium rounded-full">
                     {suggestedLeads.length}
                   </span>
                 </h3>
@@ -364,17 +372,17 @@ export default function Leads() {
               {suggestedLeads.map((lead) => (
                 <div 
                   key={lead.id}
-                  className="card p-4 border-l-4 border-l-violet-500"
+                  className="card p-4 border-l-4 border-l-blue-500"
                 >
                   <div className="flex items-start gap-4">
                     {/* Avatar with AI badge */}
                     <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-gold-400 rounded-xl flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
                         <span className="text-space-950 font-bold">
                           {lead.name?.charAt(0)?.toUpperCase() || '?'}
                         </span>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center">
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                         <Sparkles className="w-3 h-3 text-white" />
                       </div>
                     </div>
@@ -473,7 +481,7 @@ export default function Leads() {
       {/* Leads List */}
       {!loadError && loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
         </div>
       ) : !loadError && sortedLeads.length === 0 ? (
         <div className="text-center py-20">
@@ -512,12 +520,12 @@ export default function Leads() {
                 <div className="flex flex-wrap items-start gap-3 sm:gap-4">
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-violet-500 to-gold-400 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
                       <span className="text-space-950 font-bold text-base sm:text-lg">
                         {lead.name?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     </div>
-                    {lead.is_favorite && (
+                    {!!lead.is_favorite && (
                       <Star className="absolute -top-1 -right-1 w-4 h-4 text-gold-400 fill-gold-400" />
                     )}
                   </div>
@@ -553,7 +561,7 @@ export default function Leads() {
                         <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap
                           ${statusInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
                           ${statusInfo.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : ''}
-                          ${statusInfo.color === 'violet' ? 'bg-violet-500/20 text-violet-400' : ''}
+                          ${statusInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
                           ${statusInfo.color === 'orange' ? 'bg-orange-500/20 text-orange-400' : ''}
                           ${statusInfo.color === 'green' ? 'bg-green-500/20 text-green-400' : ''}
                           ${statusInfo.color === 'red' ? 'bg-red-500/20 text-red-400' : ''}
@@ -571,9 +579,9 @@ export default function Leads() {
                           {LEAD_SOURCES.find(s => s.id === lead.source)?.label || lead.source}
                         </span>
                       )}
-                      {lead.tags?.split(',').filter(Boolean).map((tag, i) => (
-                        <span key={i} className="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-400 rounded-full">
-                          {tag.trim()}
+                      {lead.tags?.split(',').map(t => t.trim()).filter(Boolean).filter(t => t !== '0').map((tag, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">
+                          {tag}
                         </span>
                       ))}
                       <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -605,7 +613,7 @@ export default function Leads() {
                     </button>
                     <button
                       onClick={() => setEditingLead(lead)}
-                      className="p-2 text-gray-400 hover:text-violet-400 hover:bg-space-700 rounded-lg transition-colors touch-target flex items-center justify-center"
+                      className="p-2 text-gray-400 hover:text-blue-400 hover:bg-space-700 rounded-lg transition-colors touch-target flex items-center justify-center"
                       title="Modifier"
                     >
                       <Edit className="w-4 h-4" />
@@ -630,7 +638,7 @@ export default function Leads() {
                         lead.status === status.id
                           ? status.color === 'blue' ? 'bg-blue-500/30 text-blue-400 border border-blue-500/30' :
                             status.color === 'amber' ? 'bg-amber-500/30 text-amber-400 border border-amber-500/30' :
-                            status.color === 'violet' ? 'bg-violet-500/30 text-violet-400 border border-violet-500/30' :
+                            status.color === 'blue' ? 'bg-blue-500/30 text-blue-400 border border-blue-500/30' :
                             status.color === 'orange' ? 'bg-orange-500/30 text-orange-400 border border-orange-500/30' :
                             status.color === 'green' ? 'bg-green-500/30 text-green-400 border border-green-500/30' :
                             'bg-red-500/30 text-red-400 border border-red-500/30'

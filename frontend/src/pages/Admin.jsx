@@ -546,7 +546,7 @@ export default function Admin() {
             onClick={() => setActiveTab('ai-models')}
             className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
               activeTab === 'ai-models' 
-                ? 'border-violet-400 text-violet-400' 
+                ? 'border-blue-400 text-blue-400' 
                 : 'border-transparent text-gray-500 hover:text-gray-300'
             }`}
           >
@@ -557,7 +557,7 @@ export default function Admin() {
             onClick={() => setActiveTab('plans')}
             className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
               activeTab === 'plans' 
-                ? 'border-violet-400 text-violet-400' 
+                ? 'border-blue-400 text-blue-400' 
                 : 'border-transparent text-gray-500 hover:text-gray-300'
             }`}
           >
@@ -822,7 +822,7 @@ function DashboardContent({ stats, loading, anomalyStats }) {
           label="Agents IA" 
           value={stats.stats.agents}
           subValue={`${stats.stats.activeAgents} connectés`}
-          color="violet"
+          color="blue"
         />
         <StatCard 
           icon={MessageSquare} 
@@ -850,7 +850,7 @@ function DashboardContent({ stats, loading, anomalyStats }) {
                 <div className="flex items-center gap-3">
                   <div className="w-32 h-2 bg-space-700 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-gold-400 to-violet-500 rounded-full"
+                      className="h-full bg-gradient-to-r from-gold-400 to-blue-500 rounded-full"
                       style={{ width: `${(item.count / stats.stats.users) * 100}%` }}
                     />
                   </div>
@@ -889,7 +889,7 @@ function DashboardContent({ stats, loading, anomalyStats }) {
 function StatCard({ icon: Icon, label, value, subValue, color }) {
   const colors = {
     gold: 'from-gold-400/20 to-gold-400/5 border-gold-400/30 text-gold-400',
-    violet: 'from-violet-400/20 to-violet-400/5 border-violet-400/30 text-violet-400',
+    blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
     emerald: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30 text-emerald-400',
     blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400'
   }
@@ -1010,7 +1010,7 @@ function UsersContent({
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user.plan === 'pro' ? 'bg-violet-500/20 text-violet-400' :
+                        user.plan === 'pro' ? 'bg-blue-500/20 text-blue-400' :
                         user.plan === 'starter' ? 'bg-blue-500/20 text-blue-400' :
                         user.plan === 'enterprise' ? 'bg-gold-400/20 text-gold-400' :
                         'bg-gray-500/20 text-gray-400'
@@ -1260,7 +1260,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
                 type="checkbox"
                 checked={formData.voice_responses_enabled}
                 onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-violet-400 focus:ring-violet-400"
+                className="w-4 h-4 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
               />
               <span className="text-sm text-gray-300">Réponses vocales activées pour cet utilisateur</span>
             </label>
@@ -1879,7 +1879,7 @@ function AIModelsContent({
     switch (provider) {
       case 'gemini': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       case 'openai': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-      case 'openrouter': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+      case 'openrouter': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
     }
   }
@@ -1896,7 +1896,7 @@ function AIModelsContent({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
       </div>
     )
   }
@@ -1928,7 +1928,7 @@ function AIModelsContent({
             <p className="text-xs text-gray-500">Modèles actifs</p>
           </div>
           <div className="card p-4">
-            <p className="text-2xl font-bold text-violet-400">{stats.overall?.total_requests?.toLocaleString() || 0}</p>
+            <p className="text-2xl font-bold text-blue-400">{stats.overall?.total_requests?.toLocaleString() || 0}</p>
             <p className="text-xs text-gray-500">Requêtes totales</p>
           </div>
           <div className="card p-4">
@@ -1963,7 +1963,7 @@ function AIModelsContent({
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          {savingMediaModel && <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />}
+          {savingMediaModel && <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />}
         </div>
       </div>
 
@@ -1978,7 +1978,7 @@ function AIModelsContent({
             type="checkbox"
             checked={voiceResponsesEnabled}
             onChange={(e) => onSaveVoiceResponsesEnabled?.(e.target.checked)}
-            className="w-4 h-4 rounded border-space-700 bg-space-800 text-violet-400 focus:ring-violet-400"
+            className="w-4 h-4 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
           />
           <span className="text-sm text-gray-300">Réponses vocales activées pour la plateforme</span>
         </label>
@@ -2038,7 +2038,7 @@ function AIModelsContent({
                   {hasKey && (
                     <button
                       onClick={() => onTestKey(provider)}
-                      className="text-xs px-3 py-1.5 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-lg transition-colors"
+                      className="text-xs px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg transition-colors"
                     >
                       <TestTube className="w-3 h-3 inline mr-1" />
                       Tester
@@ -2059,7 +2059,7 @@ function AIModelsContent({
       <div className="card overflow-hidden">
         <div className="p-4 border-b border-space-700">
           <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-violet-400" />
+            <Cpu className="w-5 h-5 text-blue-400" />
             Catalogue des modèles ({models.length})
           </h3>
         </div>
@@ -2401,7 +2401,7 @@ function APIKeyModal({ keyData, onClose, onSave }) {
                 href={getProviderLink(keyData?.provider)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-xs text-violet-400 hover:underline mt-1 inline-block"
+                className="text-xs text-blue-400 hover:underline mt-1 inline-block"
               >
                 Obtenir une clé API →
               </a>
@@ -2456,7 +2456,7 @@ function PlansContent({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-violet-400" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
       </div>
     )
   }
@@ -2490,12 +2490,12 @@ function PlansContent({
         {plans.map(plan => (
           <div 
             key={plan.id} 
-            className={`card p-4 relative ${!plan.is_active ? 'opacity-60' : ''} ${plan.is_default ? 'ring-2 ring-violet-500' : ''}`}
+            className={`card p-4 relative ${!plan.is_active ? 'opacity-60' : ''} ${plan.is_default ? 'ring-2 ring-blue-500' : ''}`}
           >
             {/* Status badges */}
             <div className="absolute top-3 right-3 flex gap-1">
               {plan.is_default && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-violet-500/20 text-violet-400 rounded-full">
+                <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">
                   Défaut
                 </span>
               )}
@@ -2509,7 +2509,7 @@ function PlansContent({
             {/* Header */}
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-gray-100">{plan.display_name}</h3>
-              <p className="text-2xl font-bold text-violet-400 mt-1">{formatPrice(plan.price)}</p>
+              <p className="text-2xl font-bold text-blue-400 mt-1">{formatPrice(plan.price)}</p>
               {plan.description && (
                 <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
               )}
@@ -2549,7 +2549,7 @@ function PlansContent({
                   <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Transfert humain</span>
                 )}
                 {plan.features?.api_access && (
-                  <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">API</span>
+                  <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">API</span>
                 )}
                 {plan.features?.priority_support && (
                   <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">Support prioritaire</span>
@@ -2572,7 +2572,7 @@ function PlansContent({
             <div className="flex flex-wrap gap-2 pt-3 border-t border-space-700">
               <button
                 onClick={() => onEditPlan(plan)}
-                className="text-xs px-2 py-1 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded transition-colors"
+                className="text-xs px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
               >
                 <Edit className="w-3 h-3 inline mr-1" />
                 Modifier
@@ -2736,7 +2736,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
               onClick={() => setActiveSection(section)}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeSection === section 
-                  ? 'text-violet-400 border-b-2 border-violet-400' 
+                  ? 'text-blue-400 border-b-2 border-blue-400' 
                   : 'text-gray-500 hover:text-gray-300'
               }`}
             >
@@ -2892,7 +2892,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                       key={model.id} 
                       className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                         formData.features.models?.includes(model.id) || formData.features.models?.includes(model.name)
-                          ? 'bg-violet-500/20 border border-violet-500/30'
+                          ? 'bg-blue-500/20 border border-blue-500/30'
                           : 'bg-space-800 hover:bg-space-700 border border-transparent'
                       }`}
                     >
@@ -2900,7 +2900,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                         type="checkbox"
                         checked={formData.features.models?.includes(model.id) || formData.features.models?.includes(model.name) || false}
                         onChange={() => handleModelToggle(model.id)}
-                        className="w-4 h-4 rounded border-space-700 bg-space-800 text-violet-400"
+                        className="w-4 h-4 rounded border-space-700 bg-space-800 text-blue-400"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -2908,7 +2908,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                           <span className={`text-xs px-1.5 py-0.5 rounded ${
                             model.provider === 'gemini' ? 'bg-blue-500/20 text-blue-400' :
                             model.provider === 'openai' ? 'bg-emerald-500/20 text-emerald-400' :
-                            'bg-purple-500/20 text-purple-400'
+                            'bg-blue-500/20 text-blue-400'
                           }`}>
                             {model.provider}
                           </span>
