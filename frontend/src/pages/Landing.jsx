@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import { useAuth } from '../contexts/AuthContext'
+import LandingChatbot from '../components/LandingChatbot'
 
 /* Style DigitaWeb : Nos métiers / solutions */
 const metiers = [
@@ -179,6 +181,7 @@ function ThemeToggle() {
 
 export default function Landing() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [plans, setPlans] = useState(defaultPlans)
   const [loadingPlans, setLoadingPlans] = useState(true)
 
@@ -238,10 +241,18 @@ export default function Landing() {
             </nav>
             <div className="flex items-center gap-2 sm:gap-3">
               <ThemeToggle />
-              <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium py-2">Connexion</Link>
-              <Link to="/register" className="btn-primary text-sm px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
-                {t('landing.cta')}
-              </Link>
+              {user ? (
+                <Link to="/dashboard" className="btn-primary text-sm px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
+                  Mon espace
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium py-2">Connexion</Link>
+                  <Link to="/register" className="btn-primary text-sm px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
+                    {t('landing.cta')}
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -502,6 +513,9 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* Chatbot conversion (visiteurs non connectés) */}
+      {!user && <LandingChatbot />}
     </div>
   )
 }

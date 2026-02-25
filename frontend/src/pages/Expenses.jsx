@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import {
   Wallet,
@@ -16,11 +17,9 @@ import {
   Filter
 } from 'lucide-react'
 import {
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -52,6 +51,7 @@ function formatAmount(n, curr = 'XOF') {
 export default function Expenses() {
   const { t } = useTranslation()
   const { isDark } = useTheme()
+  const { showConfirm } = useConfirm()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
@@ -107,7 +107,13 @@ export default function Expenses() {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm(t('expenses.confirmDelete'))) return
+    const ok = await showConfirm({
+      title: t('expenses.confirmDeleteTitle', 'Supprimer cette dépense'),
+      message: t('expenses.confirmDelete', 'Cette dépense sera supprimée définitivement. Continuer ?'),
+      variant: 'danger',
+      confirmLabel: t('common.delete', 'Supprimer')
+    })
+    if (!ok) return
     setDeleteLoading(id)
     try {
       await api.delete(`/expenses/${id}`)
@@ -201,29 +207,36 @@ export default function Expenses() {
           </h3>
           <div className="w-full overflow-visible px-1 sm:px-0" style={{ minHeight: 280 }}>
             {(() => {
-              const pieData = categoryFilter
+              const categoryData = categoryFilter
                 ? stats.byCategory.filter((c) => c.name === categoryFilter)
                 : stats.byCategory
-              return pieData.length === 0 ? (
+              const chartHeight = Math.max(220, categoryData.length * 44)
+              return categoryData.length === 0 ? (
                 <p className="text-gray-400 text-center py-8">{t('expenses.noData')}</p>
               ) : (
-                <ResponsiveContainer width="100%" height={280} className="overflow-visible">
-                  <PieChart margin={{ top: 24, right: 24, left: 24, bottom: 24 }}>
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ name, value }) =>
-                        `${getCategoryLabel(name)}: ${formatAmount(value)}`
-                      }
-                    >
-                      {pieData.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
+                <ResponsiveContainer width="100%" height={chartHeight} className="overflow-visible">
+                  <BarChart
+                    layout="vertical"
+                    data={categoryData}
+                    margin={{ top: 8, right: 8, left: 8, bottom: 24 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fill: '#9CA3AF', fontSize: 11 }}
+                      tickFormatter={(v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(0)}k` : String(v))}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={120}
+                      tick={{ fill: '#9CA3AF', fontSize: 12 }}
+                      tickFormatter={getCategoryLabel}
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: isDark ? '#1F2937' : '#374151',
@@ -232,8 +245,14 @@ export default function Expenses() {
                       }}
                       formatter={(value) => [formatAmount(value), '']}
                       labelFormatter={(name) => getCategoryLabel(name)}
+                      cursor={{ fill: 'transparent' }}
                     />
-                  </PieChart>
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} name="" maxBarSize={28}>
+                      {categoryData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               )
             })()}

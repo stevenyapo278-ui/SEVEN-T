@@ -182,29 +182,29 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="fixed inset-0 bg-space-950/90 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 rounded-t-2xl sm:rounded-2xl border border-space-700 overflow-hidden animate-fadeIn">
+      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 rounded-t-2xl sm:rounded-2xl border border-space-700 overflow-hidden animate-fadeIn" style={{ maxHeight: 'calc(90vh - env(safe-area-inset-bottom))' }}>
         {/* Header */}
-        <div className="sticky top-0 bg-space-900 border-b border-space-700 p-4 z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-gold-400 to-blue-500 rounded-xl flex items-center justify-center">
-                <Bot className="w-5 h-5 icon-on-gradient" />
+        <div className="flex-shrink-0 bg-space-900 border-b border-space-700 p-3 sm:p-4 z-10">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-gold-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5 icon-on-gradient" />
               </div>
-              <div>
-                <h2 className="font-display font-semibold text-gray-100">Créer un agent</h2>
-                <p className="text-sm text-gray-400">Étape {currentStep + 1} sur {STEPS.length}</p>
+              <div className="min-w-0">
+                <h2 className="font-display font-semibold text-gray-100 truncate">Créer un agent</h2>
+                <p className="text-xs sm:text-sm text-gray-400">Étape {currentStep + 1} sur {STEPS.length}</p>
               </div>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
+            <button onClick={onClose} className="flex-shrink-0 p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label="Fermer">
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Progress */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4">
             {STEPS.map((step, index) => (
               <div 
                 key={step.id}
@@ -216,19 +216,19 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* Content - scrollable on mobile */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           {/* Step 1: Template Selection */}
           {currentStepId === 'template' && (
             <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-display font-bold text-gray-100">
+              <div className="text-center mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-display font-bold text-gray-100">
                   Quel type d'agent souhaitez-vous créer ?
                 </h3>
-                <p className="text-gray-400">Choisissez un modèle pré-configuré</p>
+                <p className="text-sm text-gray-400 mt-1">Choisissez un modèle pré-configuré</p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 {TEMPLATES.map((template) => {
                   const Icon = template.icon
                   const isSelected = formData.template === template.id
@@ -236,28 +236,29 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                   return (
                     <button
                       key={template.id}
+                      type="button"
                       onClick={() => setFormData({ ...formData, template: template.id, name: template.name })}
-                      className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      className={`p-3 sm:p-4 rounded-xl border-2 text-left transition-all min-h-[44px] touch-target ${
                         isSelected 
                           ? `bg-gradient-to-br ${getColorClass(template.color)} border-2`
                           : 'bg-space-800 border-space-700 hover:border-space-600'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           isSelected ? 'bg-white/10' : 'bg-space-700'
                         }`}>
-                          <Icon className={`w-6 h-6 ${isSelected ? '' : 'text-gray-400'}`} />
+                          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isSelected ? '' : 'text-gray-400'}`} />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium text-gray-100">{template.name}</h4>
-                            {isSelected && <Check className="w-4 h-4 text-emerald-400" />}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h4 className="font-medium text-gray-100 truncate">{template.name}</h4>
+                            {isSelected && <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
                           </div>
-                          <p className="text-sm text-gray-400 mb-2">{template.description}</p>
+                          <p className="text-xs sm:text-sm text-gray-400 mb-2 line-clamp-2">{template.description}</p>
                           <div className="flex flex-wrap gap-1">
                             {template.features.slice(0, 2).map(f => (
-                              <span key={f} className="text-xs px-2 py-0.5 bg-space-700/50 text-gray-400 rounded">
+                              <span key={f} className="text-xs px-2 py-0.5 bg-space-700/50 text-gray-400 rounded truncate max-w-full inline-block">
                                 {f}
                               </span>
                             ))}
@@ -273,12 +274,12 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
 
           {/* Step 2: Name and Description */}
           {currentStepId === 'name' && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-display font-bold text-gray-100">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="text-center mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-display font-bold text-gray-100">
                   Comment s'appelle votre agent ?
                 </h3>
-                <p className="text-gray-400">Donnez-lui une identité unique</p>
+                <p className="text-sm text-gray-400 mt-1">Donnez-lui une identité unique</p>
               </div>
 
               <div>
@@ -289,8 +290,8 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: Sophie, Assistant Boutique, Support Pro..."
-                  className="input-dark w-full text-lg"
+                  placeholder="Ex: Sophie, Assistant Boutique..."
+                  className="input-dark w-full text-base sm:text-lg min-h-[44px] touch-target"
                   autoFocus
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -323,54 +324,53 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
 
           {/* Step 3: Model Selection */}
           {currentStepId === 'model' && (
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-display font-bold text-gray-100">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="text-center mb-4 sm:mb-6">
+                <h3 className="text-lg sm:text-xl font-display font-bold text-gray-100">
                   Quel modèle IA utiliser ?
                 </h3>
-                <p className="text-gray-400">Choisissez l'intelligence de votre agent</p>
+                <p className="text-sm text-gray-400 mt-1">Choisissez l'intelligence de votre agent</p>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {AI_MODELS.map((model) => {
                   const isSelected = formData.model === model.id
                   
                   return (
                     <button
                       key={model.id}
+                      type="button"
                       onClick={() => setFormData({ ...formData, model: model.id })}
-                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                      className={`w-full p-3 sm:p-4 rounded-xl border-2 text-left transition-all min-h-[44px] touch-target ${
                         isSelected 
                           ? 'bg-gold-400/10 border-gold-400/50'
                           : 'bg-space-800 border-space-700 hover:border-space-600'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                            isSelected ? 'bg-gold-400/20' : 'bg-space-700'
-                          }`}>
-                            <Sparkles className={`w-5 h-5 ${isSelected ? 'text-gold-400' : 'text-gray-400'}`} />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-gray-100">{model.name}</h4>
-                              {model.recommended && (
-                                <span className="text-xs px-2 py-0.5 bg-gold-400/20 text-gold-400 rounded">
-                                  Recommandé
-                                </span>
-                              )}
-                              {model.free && (
-                                <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">
-                                  Gratuit
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-gray-400">{model.description}</p>
-                          </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isSelected ? 'bg-gold-400/20' : 'bg-space-700'
+                        }`}>
+                          <Sparkles className={`w-4 h-4 sm:w-5 sm:h-5 ${isSelected ? 'text-gold-400' : 'text-gray-400'}`} />
                         </div>
-                        <div className="text-right">
-                          <span className={`text-lg font-bold ${model.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-medium text-gray-100 text-sm sm:text-base">{model.name}</h4>
+                            {model.recommended && (
+                              <span className="text-xs px-2 py-0.5 bg-gold-400/20 text-gold-400 rounded">
+                                Recommandé
+                              </span>
+                            )}
+                            {model.free && (
+                              <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">
+                                Gratuit
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm text-gray-400 truncate">{model.description}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className={`text-base sm:text-lg font-bold ${model.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>
                             {model.credits}
                           </span>
                           <span className="text-xs text-gray-500 block">crédits/msg</span>
@@ -389,33 +389,33 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
 
           {/* Step 4: Confirmation */}
           {currentStepId === 'confirm' && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gold-400 to-blue-500 rounded-2xl flex items-center justify-center mb-4">
-                  <Check className="w-8 h-8 icon-on-gradient" />
+            <div className="space-y-4 sm:space-y-6">
+              <div className="text-center mb-4 sm:mb-6">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto bg-gradient-to-br from-gold-400 to-blue-500 rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+                  <Check className="w-7 h-7 sm:w-8 sm:h-8 icon-on-gradient" />
                 </div>
-                <h3 className="text-xl font-display font-bold text-gray-100">
+                <h3 className="text-lg sm:text-xl font-display font-bold text-gray-100">
                   Prêt à créer votre agent !
                 </h3>
-                <p className="text-gray-400">Vérifiez les informations</p>
+                <p className="text-sm text-gray-400 mt-1">Vérifiez les informations</p>
               </div>
 
               <div className="bg-space-800 rounded-xl border border-space-700 divide-y divide-space-700">
-                <div className="p-4 flex items-center justify-between">
-                  <span className="text-gray-400">Type</span>
-                  <span className="text-gray-100 font-medium">{selectedTemplate?.name}</span>
+                <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-gray-400 text-sm flex-shrink-0">Type</span>
+                  <span className="text-gray-100 font-medium truncate text-right">{selectedTemplate?.name}</span>
                 </div>
-                <div className="p-4 flex items-center justify-between">
-                  <span className="text-gray-400">Nom</span>
-                  <span className="text-gray-100 font-medium">{formData.name}</span>
+                <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-gray-400 text-sm flex-shrink-0">Nom</span>
+                  <span className="text-gray-100 font-medium truncate text-right">{formData.name}</span>
                 </div>
-                <div className="p-4 flex items-center justify-between">
-                  <span className="text-gray-400">Modèle IA</span>
-                  <span className="text-gray-100 font-medium">{selectedModel?.name}</span>
+                <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-gray-400 text-sm flex-shrink-0">Modèle IA</span>
+                  <span className="text-gray-100 font-medium truncate text-right">{selectedModel?.name}</span>
                 </div>
-                <div className="p-4 flex items-center justify-between">
-                  <span className="text-gray-400">Coût par message</span>
-                  <span className={`font-bold ${selectedModel?.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>
+                <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
+                  <span className="text-gray-400 text-sm flex-shrink-0">Coût par message</span>
+                  <span className={`font-bold flex-shrink-0 ${selectedModel?.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>
                     {selectedModel?.credits} crédit{selectedModel?.credits !== 1 ? 's' : ''}
                   </span>
                 </div>
@@ -432,22 +432,24 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-space-900 border-t border-space-700 p-4">
-          <div className="flex gap-3">
+        <div className="flex-shrink-0 bg-space-900 border-t border-space-700 p-3 sm:p-4" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+          <div className="flex gap-2 sm:gap-3">
             {!isFirstStep && (
               <button
+                type="button"
                 onClick={handleBack}
                 disabled={creating}
-                className="btn-secondary inline-flex items-center gap-2"
+                className="btn-secondary inline-flex items-center gap-2 min-h-[44px] touch-target"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Retour
               </button>
             )}
             <button
+              type="button"
               onClick={handleNext}
               disabled={!canProceed() || creating}
-              className="flex-1 btn-primary inline-flex items-center justify-center gap-2"
+              className="flex-1 btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] touch-target"
             >
               {creating ? (
                 <>

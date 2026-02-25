@@ -34,6 +34,24 @@ import { conversationMessageQueue } from './conversationMessageQueue.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
+const productImagesDir = join(__dirname, '..', '..', 'uploads', 'products');
+
+/** Load product image buffer from disk (no HTTP fetch to localhost). Returns null if not found or invalid. */
+function loadProductImageBuffer(url) {
+    try {
+        const match = /\/api\/products\/image\/([^/?\s)]+)/.exec(url);
+        if (!match) return null;
+        const filename = match[1].replace(/\.\./g, '');
+        if (!filename) return null;
+        const filepath = join(productImagesDir, filename);
+        if (!existsSync(filepath)) return null;
+        const buf = readFileSync(filepath);
+        if (buf.length === 0 || buf.length > 5 * 1024 * 1024) return null;
+        return buf;
+    } catch {
+        return null;
+    }
+}
 
 // Ensure sessions directory exists
 if (!existsSync(sessionsDir)) {
@@ -1052,7 +1070,13 @@ class WhatsAppManager {
    - Quand tu as demandé au client sa commune/ville, quartier et numéro de téléphone pour finaliser une commande, accepte les réponses partielles ou sur plusieurs messages.
    - Un message contenant UNIQUEMENT un numéro de téléphone (ex: 0758519080, 07 58 51 90 80) est VALIDE si tu attends le téléphone: considère-le comme le numéro de livraison et confirme la commande ou demande l'adresse si elle manque encore.
    - Un message contenant UNIQUEMENT une adresse ou un lieu (ex: Bingerville, Santai) est VALIDE si tu attends l'adresse: enregistre-la et demande le numéro si tu ne l'as pas encore.
-   - Ne dis jamais "Je ne peux pas traiter un numéro de téléphone seul" (ou équivalent) lorsque tu viens de demander ce numéro pour finaliser une commande.`
+   - Ne dis jamais "Je ne peux pas traiter un numéro de téléphone seul" (ou équivalent) lorsque tu viens de demander ce numéro pour finaliser une commande.
+
+6. ENVOI DE PHOTOS PRODUIT:
+   - Si le client demande les photos, images ou visuels d'un produit qui a des images dans le catalogue:
+     * Les URLs qui contiennent "/api/products/image/" sont des photos hébergées: le système les enverra comme vraies photos au client. Tu NE DOIS JAMAIS les écrire dans ton message. Mets UNIQUEMENT en toute première ligne: [ENVOYER_IMAGES:url1,url2,...] (URLs séparées par des virgules), puis à la ligne suivante ton message (ex: Voici les photos du produit.).
+     * Si le produit n'a que des URLs externes (sites web, pas /api/products/image/), tu peux alors les envoyer en format cliquable dans ton message.
+   - Ne jamais coller les URLs /api/products/image/ dans le texte: le client doit recevoir les photos, pas les liens.`
                     }]
                     : [{
                         title: '📦 CATALOGUE PRODUITS',
@@ -1331,7 +1355,104 @@ class WhatsAppManager {
                 }
                 if (!sendResult) {
                     try {
-                        sendResult = await sock.sendMessage(replyToJidForSend, { text: aiResponse.content });
+                        let textToSend = aiResponse.content;
+                        let contentToSave = aiResponse.content;
+                        const sentProductImageUrls = [];
+
+                        const apiBaseUrl = (process.env.API_BASE_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`).replace(/\/$/, '');
+                        const sendOneProductImage = async (url) => {
+                            const resolvedUrl = (typeof url === 'string' && url.startsWith('/')) ? (apiBaseUrl + url) : url;
+                            let buf = loadProductImageBuffer(resolvedUrl);
+                            if (buf) {
+                                try {
+                                    await sock.sendMessage(replyToJidForSend, { image: buf });
+                                    return resolvedUrl;
+                                } catch (sendErr) {
+                                    console.warn('[WhatsApp] Failed to send product image (disk):', resolvedUrl, sendErr?.message);
+                                    return null;
+                                }
+                            }
+                            try {
+                                const res = await fetch(resolvedUrl, { signal: AbortSignal.timeout(10000) });
+                                if (res.ok) {
+                                    const arr = await res.arrayBuffer();
+                                    const buf2 = Buffer.from(arr);
+                                    if (buf2.length > 0 && buf2.length < 5 * 1024 * 1024) {
+                                        try {
+                                            await sock.sendMessage(replyToJidForSend, { image: buf2 });
+                                            return resolvedUrl;
+                                        } catch (sendErr) {
+                                            console.warn('[WhatsApp] Failed to send product image (fetch):', resolvedUrl, sendErr?.message);
+                                            return null;
+                                        }
+                                    }
+                                }
+                            } catch (imgErr) {
+                                console.warn('[WhatsApp] Failed to fetch/send product image:', resolvedUrl, imgErr?.message);
+                            }
+                            return null;
+                        };
+
+                        /** Path utilisable en front (ex: /api/products/image/xxx.png) */
+                        const toMediaPath = (url) => {
+                            const m = /\/api\/products\/image\/[^/?\s)]+/.exec(url);
+                            return m ? (m[0].startsWith('/') ? m[0] : '/' + m[0]) : url;
+                        };
+
+                        // 1) Format explicite [ENVOYER_IMAGES:url1,url2,...] (virgules ou retours à la ligne)
+                        const imageMatch = /^\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(aiResponse.content);
+                        if (imageMatch && imageMatch[1]) {
+                            const urls = imageMatch[1].split(/[,\n]+/).map((u) => u.trim()).filter(Boolean);
+                            for (let i = 0; i < urls.length; i++) {
+                                if (i > 0) await new Promise((r) => setTimeout(r, 400));
+                                const sent = await sendOneProductImage(urls[i]);
+                                if (sent) sentProductImageUrls.push(sent);
+                            }
+                            textToSend = aiResponse.content.slice(imageMatch[0].length).trim();
+                            contentToSave = sentProductImageUrls.length > 0 ? (textToSend || '📷 Photos du produit envoyées.') : aiResponse.content;
+                        } else {
+                            // 2) Fallback: l'IA a collé les URLs dans le texte → extraire /api/products/image/ et envoyer en photos (lecture disque prioritaire)
+                            const productImageUrlRegex = /https?:\/\/[^\s)\]']+\/api\/products\/image\/[^\s)\]']+/g;
+                            const productImageUrls = aiResponse.content.match(productImageUrlRegex);
+                            if (productImageUrls && productImageUrls.length > 0) {
+                                const uniqueUrls = [...new Set(productImageUrls)];
+                                for (let i = 0; i < uniqueUrls.length; i++) {
+                                    if (i > 0) await new Promise((r) => setTimeout(r, 400));
+                                    const sent = await sendOneProductImage(uniqueUrls[i]);
+                                    if (sent) sentProductImageUrls.push(sent);
+                                }
+                                textToSend = aiResponse.content
+                                    .replace(productImageUrlRegex, '')
+                                    .replace(/,(\s*,)+/g, ',')
+                                    .replace(/^\s*,\s*|\s*,\s*$/g, '')
+                                    .replace(/\s*:\s{2,}/g, '. ')
+                                    .replace(/\s{2,}/g, ' ')
+                                    .replace(/\n\s*\n\s*\n/g, '\n\n')
+                                    .trim();
+                                contentToSave = textToSend || (sentProductImageUrls.length > 0 ? '📷 Photos du produit envoyées.' : aiResponse.content);
+                            }
+                        }
+                        if (textToSend) {
+                            sendResult = await sock.sendMessage(replyToJidForSend, { text: textToSend });
+                        } else if (sentProductImageUrls.length > 0) {
+                            sendResult = { key: { id: 'images-sent' } };
+                        }
+                        if (!sendResult && aiResponse.content) {
+                            sendResult = await sock.sendMessage(replyToJidForSend, { text: aiResponse.content });
+                        }
+                        // Enregistrer chaque image envoyée comme message pour affichage dans la conversation (SaaS)
+                        const now = new Date().toISOString();
+                        for (const url of sentProductImageUrls) {
+                            const mediaPath = toMediaPath(url);
+                            await db.run(`
+                                INSERT INTO messages (id, conversation_id, role, content, message_type, media_url, sender_type, created_at)
+                                VALUES (?, ?, 'assistant', '[Image]', 'image', ?, 'ai', ?)
+                            `, uuidv4(), conversation.id, mediaPath, now);
+                        }
+                        // Utiliser le contenu réellement envoyé pour l'enregistrement en base (cohérence SaaS / téléphone)
+                        if (contentToSave !== aiResponse.content) {
+                            aiResponse.content = contentToSave;
+                        }
                     } catch (sendErr) {
                     // #region agent log
                     debugIngest({

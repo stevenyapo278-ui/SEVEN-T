@@ -893,6 +893,19 @@ export async function initDatabase() {
 
         CREATE INDEX IF NOT EXISTS idx_plans_active ON subscription_plans(is_active);
         CREATE INDEX IF NOT EXISTS idx_plans_order ON subscription_plans(sort_order);
+
+        CREATE TABLE IF NOT EXISTS landing_chat_leads (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            language TEXT DEFAULT 'en',
+            message_count INTEGER DEFAULT 0,
+            source TEXT DEFAULT 'landing_chat',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_landing_chat_leads_session ON landing_chat_leads(session_id);
+        CREATE INDEX IF NOT EXISTS idx_landing_chat_leads_created ON landing_chat_leads(created_at);
     `);
 
     // Seed default AI models if needed (PostgreSQL may return count as string/bigint)

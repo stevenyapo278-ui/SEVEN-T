@@ -227,7 +227,14 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
   const tooltipRef = useRef(null)
 
   useEffect(() => {
-    const targetElement = document.querySelector(step.target)
+    // Plusieurs éléments peuvent avoir le même data-tour (sidebar desktop + mobile) : prendre le visible
+    const candidates = document.querySelectorAll(step.target)
+    const targetElement = Array.from(candidates).find((el) => {
+      const rect = el.getBoundingClientRect()
+      const style = window.getComputedStyle(el)
+      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
+    }) || candidates[0]
+
     if (!targetElement) {
       console.warn(`Tour target not found: ${step.target}`)
       return
@@ -284,24 +291,52 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
 
   if (!targetRect) return null
 
+  const padding = 4
+  const ring = {
+    top: targetRect.top - padding,
+    left: targetRect.left - padding,
+    width: targetRect.width + padding * 2,
+    height: targetRect.height + padding * 2,
+  }
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 0
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 0
+
   return createPortal(
     <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
+      {/* Backdrop en 4 panneaux pour laisser la cible visible (texte lisible) */}
+      <div
+        className="fixed left-0 top-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
+        style={{ width: Math.max(0, ring.left), height: vh }}
         onClick={onDismiss}
+        aria-hidden
+      />
+      <div
+        className="fixed top-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
+        style={{ left: ring.left + ring.width, width: Math.max(0, vw - ring.left - ring.width), height: vh }}
+        onClick={onDismiss}
+        aria-hidden
+      />
+      <div
+        className="fixed left-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
+        style={{ top: ring.top + ring.height, width: vw, height: Math.max(0, vh - ring.top - ring.height) }}
+        onClick={onDismiss}
+        aria-hidden
+      />
+      <div
+        className="fixed left-0 top-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
+        style={{ width: vw, height: Math.max(0, ring.top) }}
+        onClick={onDismiss}
+        aria-hidden
       />
 
-      {/* Highlight ring around target */}
+      {/* Bague dorée autour de la cible (aucun fond, le lien reste lisible) */}
       <div
-        className="fixed z-[9999] pointer-events-none"
+        className="fixed z-[9999] pointer-events-none rounded-xl ring-2 ring-gold-400 ring-offset-2 ring-offset-space-950"
         style={{
-          top: targetRect.top - 4,
-          left: targetRect.left - 4,
-          width: targetRect.width + 8,
-          height: targetRect.height + 8,
-          boxShadow: '0 0 0 4px rgba(245, 212, 122, 0.5), 0 0 0 9999px rgba(10, 10, 20, 0.8)',
-          borderRadius: '12px',
+          top: ring.top,
+          left: ring.left,
+          width: ring.width,
+          height: ring.height,
         }}
       />
 

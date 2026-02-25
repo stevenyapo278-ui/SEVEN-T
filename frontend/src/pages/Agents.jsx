@@ -179,6 +179,13 @@ export default function Agents() {
   }
 
   const handleBulkDeactivate = async () => {
+    const ok = await showConfirm({
+      title: 'Désactiver les agents',
+      message: `Êtes-vous sûr de vouloir désactiver ${selectedAgents.length} agent(s) ? Ils ne recevront plus de messages jusqu’à réactivation.`,
+      variant: 'warning',
+      confirmLabel: 'Désactiver'
+    })
+    if (!ok) return
     try {
       await Promise.all(selectedAgents.map(id => 
         api.put(`/agents/${id}`, { is_active: 0 })
@@ -746,6 +753,15 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
   }
 
   const handleToggleActive = async () => {
+    if (agent.is_active) {
+      const ok = await showConfirm({
+        title: 'Désactiver cet agent',
+        message: `Désactiver « ${agent.name} » ? Il ne recevra plus de messages jusqu’à réactivation.`,
+        variant: 'warning',
+        confirmLabel: 'Désactiver'
+      })
+      if (!ok) return
+    }
     setToggling(true)
     try {
       await api.put(`/agents/${agent.id}`, { is_active: agent.is_active ? 0 : 1 })
@@ -1032,6 +1048,15 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
   }
 
   const handleToggleActive = async () => {
+    if (agent.is_active) {
+      const ok = await showConfirm({
+        title: 'Désactiver cet agent',
+        message: `Désactiver « ${agent.name} » ? Il ne recevra plus de messages jusqu’à réactivation.`,
+        variant: 'warning',
+        confirmLabel: 'Désactiver'
+      })
+      if (!ok) return
+    }
     setToggling(true)
     try {
       await api.put(`/agents/${agent.id}`, { is_active: agent.is_active ? 0 : 1 })
@@ -1281,56 +1306,56 @@ function CreateAgentModal({ onClose, onCreated }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-display font-semibold text-gray-100">Créer un agent</h2>
-              <p className="text-sm text-gray-400 mt-1">
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn" style={{ maxHeight: 'calc(90vh - env(safe-area-inset-bottom))' }}>
+        <div className="flex-shrink-0 p-3 sm:p-6 border-b border-space-700">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100 truncate">Créer un agent</h2>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">
                 Étape {step}/2 - {step === 1 ? 'Choisir un type' : 'Personnaliser'}
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${step >= 1 ? 'bg-gold-400' : 'bg-space-700'}`} />
-              <div className={`w-8 h-0.5 ${step >= 2 ? 'bg-gold-400' : 'bg-space-700'}`} />
-              <div className={`w-3 h-3 rounded-full ${step >= 2 ? 'bg-gold-400' : 'bg-space-700'}`} />
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${step >= 1 ? 'bg-gold-400' : 'bg-space-700'}`} />
+              <div className={`w-6 sm:w-8 h-0.5 ${step >= 2 ? 'bg-gold-400' : 'bg-space-700'}`} />
+              <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${step >= 2 ? 'bg-gold-400' : 'bg-space-700'}`} />
             </div>
           </div>
         </div>
 
         {step === 1 ? (
-          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 flex flex-col">
           <div className="p-4 sm:p-6">
-            <p className="text-gray-400 mb-6">
+            <p className="text-sm text-gray-400 mb-4 sm:mb-6">
               Choisissez un type d'agent pour démarrer avec une configuration optimisée :
             </p>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
               {TEMPLATES.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   onClick={() => setTemplate(t.id)}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                  className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 text-left transition-all min-h-[44px] touch-target ${
                     template === t.id
                       ? 'border-gold-400 bg-gold-400/10'
                       : 'border-space-700 hover:border-space-600 bg-space-800/50'
                   }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${t.color} flex items-center justify-center text-2xl shadow-lg`}>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br ${t.color} flex items-center justify-center text-xl sm:text-2xl shadow-lg flex-shrink-0`}>
                       {t.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-100">{t.name}</h3>
+                      <h3 className="font-medium text-gray-100 text-sm sm:text-base truncate">{t.name}</h3>
                       <p className="text-xs text-gray-500 mt-1 line-clamp-2">{t.description}</p>
                     </div>
                   </div>
                   {template === t.id && (
-                    <div className="mt-3 flex items-center gap-1.5 text-gold-400 text-xs">
-                      <CheckCircle className="w-4 h-4" />
+                    <div className="mt-2 sm:mt-3 flex items-center gap-1.5 text-gold-400 text-xs">
+                      <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                       Sélectionné
                     </div>
                   )}
@@ -1338,7 +1363,7 @@ function CreateAgentModal({ onClose, onCreated }) {
               ))}
             </div>
 
-            <div className="flex flex-col-reverse sm:flex-row gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
               <button type="button" onClick={onClose} className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors">
                 Annuler
               </button>
@@ -1354,19 +1379,19 @@ function CreateAgentModal({ onClose, onCreated }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-            <div className="p-4 bg-space-800 rounded-xl flex items-center gap-3 mb-2">
-              <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TEMPLATES.find(t => t.id === template)?.color} flex items-center justify-center text-xl`}>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 p-4 sm:p-6 space-y-4">
+            <div className="p-3 sm:p-4 bg-space-800 rounded-xl flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br ${TEMPLATES.find(t => t.id === template)?.color} flex items-center justify-center text-lg sm:text-xl flex-shrink-0`}>
                 {TEMPLATES.find(t => t.id === template)?.icon}
               </div>
-              <div>
-                <p className="text-sm text-gray-400">Type sélectionné</p>
-                <p className="font-medium text-gray-100">{TEMPLATES.find(t => t.id === template)?.name}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-400">Type sélectionné</p>
+                <p className="font-medium text-gray-100 truncate">{TEMPLATES.find(t => t.id === template)?.name}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="ml-auto text-xs text-gold-400 hover:underline"
+                className="flex-shrink-0 text-xs text-gold-400 hover:underline min-h-[44px] touch-target px-2"
               >
                 Changer
               </button>
@@ -1382,7 +1407,7 @@ function CreateAgentModal({ onClose, onCreated }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ex: Assistant Commercial SEVEN T"
-                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 min-h-[44px] touch-target bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-base"
               />
               <p className="text-xs text-gray-500 mt-1.5">
                 Ce nom sera utilisé dans les conversations et l'interface
@@ -1398,7 +1423,7 @@ function CreateAgentModal({ onClose, onCreated }) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Décrivez le rôle de cet agent pour vous y retrouver..."
                 rows={3}
-                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+                className="w-full px-4 py-3 bg-space-800 border border-space-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-base"
               />
             </div>
 
@@ -1410,18 +1435,18 @@ function CreateAgentModal({ onClose, onCreated }) {
             </div>
 
           </div>
-            <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
+            <div className="flex-shrink-0 p-3 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors"
+                className="flex-1 min-h-[44px] touch-target px-4 sm:px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors"
               >
                 ← Retour
               </button>
               <button
                 type="submit"
                 disabled={loading || !name.trim()}
-                className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 min-h-[44px] touch-target px-4 sm:px-6 py-3 bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Création...' : 'Créer l\'agent'}
               </button>

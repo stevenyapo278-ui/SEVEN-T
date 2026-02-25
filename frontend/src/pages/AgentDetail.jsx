@@ -190,6 +190,17 @@ export default function AgentDetail() {
   }
 
   const handleToggleActive = async () => {
+    if (isActive) {
+      const ok = await showConfirm({
+        title: 'Désactiver cet agent',
+        message: agent?.name
+          ? `Désactiver « ${agent.name} » ? Il ne recevra plus de messages jusqu’à réactivation.`
+          : 'Désactiver cet agent ? Il ne recevra plus de messages jusqu’à réactivation.',
+        variant: 'warning',
+        confirmLabel: 'Désactiver'
+      })
+      if (!ok) return
+    }
     setToggling(true)
     try {
       await api.put(`/agents/${id}`, { is_active: isActive ? 0 : 1 })
@@ -231,7 +242,7 @@ export default function AgentDetail() {
   }
 
   return (
-    <div>
+    <div className="min-w-0">
       {/* Breadcrumbs */}
       <Breadcrumbs items={[
         { label: 'Dashboard', href: '/dashboard' },
@@ -239,17 +250,17 @@ export default function AgentDetail() {
         { label: agent?.name || 'Agent' }
       ]} />
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <button
           onClick={() => navigate('/dashboard/agents')}
-          className="flex items-center gap-2 text-gray-400 hover:text-gray-100 mb-4 transition-colors"
+          className="flex items-center gap-2 text-gray-400 hover:text-gray-100 mb-3 sm:mb-4 transition-colors touch-target min-h-[44px] -ml-2 pl-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour aux agents
+          <span className="text-sm sm:text-base">Retour aux agents</span>
         </button>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-            <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0 ${
               !isActive ? 'bg-gray-500/20' :
               agent.whatsapp_connected ? 'bg-emerald-500/20' : 'bg-space-800'
             }`}>
@@ -258,16 +269,16 @@ export default function AgentDetail() {
                 agent.whatsapp_connected ? 'text-emerald-400' : 'text-gray-500'
               }`} />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <h1 className="text-xl sm:text-2xl font-display font-bold text-gray-100 truncate">{agent.name}</h1>
+                <h1 className="text-lg sm:text-2xl font-display font-bold text-gray-100 truncate">{agent.name}</h1>
                 {!isActive && (
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-500/20 text-gray-400">
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-gray-500/20 text-gray-400 flex-shrink-0">
                     Inactif
                   </span>
                 )}
               </div>
-              <p className="text-gray-400">
+              <p className="text-gray-400 text-sm sm:text-base truncate">
                 {!isActive 
                   ? <span className="text-gray-500">Agent désactivé</span>
                   : agent.whatsapp_connected 
@@ -279,11 +290,11 @@ export default function AgentDetail() {
           </div>
           
           {/* Toggle Active + Supprimer */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex flex-row flex-wrap gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={handleToggleActive}
               disabled={toggling}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl font-medium transition-all min-h-[44px] touch-target ${
                 isActive 
                   ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30' 
                   : 'bg-gray-500/20 text-gray-400 hover:bg-gray-500/30 border border-gray-500/30'
@@ -300,7 +311,7 @@ export default function AgentDetail() {
             </button>
             <button
               onClick={handleDeleteAgent}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl font-medium transition-all border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 min-h-[44px] touch-target"
             >
               <Trash2 className="w-5 h-5" />
               Supprimer l'agent
@@ -316,13 +327,13 @@ export default function AgentDetail() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 pb-3 px-1 sm:px-0 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 touch-target ${
+              className={`flex items-center gap-2 pb-3 pt-1 px-2 sm:px-0 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 min-h-[44px] touch-target text-sm sm:text-base ${
                 activeTab === tab.id
                   ? 'border-gold-400 text-gold-400'
                   : 'border-transparent text-gray-500 hover:text-gray-300'
               }`}
             >
-              <tab.icon className="w-5 h-5" />
+              <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
               {tab.label}
             </button>
           ))}
@@ -691,59 +702,59 @@ function OverviewTab({ agent, onUpdate }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0">
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-blue-400" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="card p-3 sm:p-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-100">{stats?.totalConversations || 0}</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.totalConversations || 0}</p>
               <p className="text-xs text-gray-500">Conversations</p>
             </div>
           </div>
         </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-emerald-400" />
+        <div className="card p-3 sm:p-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-100">{stats?.todayConversations || 0}</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.todayConversations || 0}</p>
               <p className="text-xs text-gray-500">Aujourd'hui</p>
             </div>
           </div>
         </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-              <Send className="w-5 h-5 text-blue-400" />
+        <div className="card p-3 sm:p-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+              <Send className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-100">{stats?.totalMessages || 0}</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.totalMessages || 0}</p>
               <p className="text-xs text-gray-500">Messages</p>
             </div>
           </div>
         </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gold-400/20 flex items-center justify-center">
-              <Users className="w-5 h-5 text-gold-400" />
+        <div className="card p-3 sm:p-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gold-400/20 flex items-center justify-center flex-shrink-0">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gold-400" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-100">{contacts.length || 0}</p>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{contacts.length || 0}</p>
               <p className="text-xs text-gray-500">Contacts</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-4 sm:gap-6 min-w-0">
         {/* Tool Assignment Summary */}
-        <div className="card p-6">
-          <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+        <div className="card p-4 sm:p-6 min-w-0">
+          <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
             <Wrench className="w-5 h-5 text-gold-400" />
             Outil assigné
           </h2>
@@ -783,19 +794,19 @@ function OverviewTab({ agent, onUpdate }) {
         </div>
 
         {/* Recent Conversations */}
-        <div className="card p-6">
-          <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+        <div className="card p-4 sm:p-6 min-w-0">
+          <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-gold-400" />
             Conversations récentes
           </h2>
           
           {stats?.recentConversations?.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {stats.recentConversations.map(conv => (
                 <Link
                   key={conv.id}
                   to={`/dashboard/conversations/${conv.id}`}
-                  className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[52px] touch-target"
                 >
                   <ProfileAvatar 
                     agentId={agent.id}
@@ -809,12 +820,12 @@ function OverviewTab({ agent, onUpdate }) {
                     </p>
                     <p className="text-xs text-gray-500 truncate">{conv.last_message || 'Aucun message'}</p>
                   </div>
-                  <span className="text-xs text-gray-600">{conv.message_count}msg</span>
+                  <span className="text-xs text-gray-600 flex-shrink-0">{conv.message_count} msg</span>
                 </Link>
               ))}
               <Link
                 to={`/dashboard/conversations`}
-                className="block text-center text-sm text-gold-400 hover:text-gold-300 pt-2"
+                className="block text-center text-sm text-gold-400 hover:text-gold-300 pt-2 py-3 touch-target"
               >
                 Voir toutes les conversations →
               </Link>
@@ -829,36 +840,36 @@ function OverviewTab({ agent, onUpdate }) {
       </div>
 
       {/* Quick Actions */}
-      <div className="card p-6">
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Actions rapides</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="card p-4 sm:p-6 min-w-0">
+        <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4">Actions rapides</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Link
             to={`/dashboard/agents/${agent.id}?tab=settings`}
-            className="flex flex-col items-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
+            className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
-            <Settings className="w-6 h-6 text-gray-400" />
-            <span className="text-sm text-gray-300">Paramètres</span>
+            <Settings className="w-6 h-6 text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-300 text-center">Paramètres</span>
           </Link>
           <Link
             to={`/dashboard/agents/${agent.id}?tab=knowledge`}
-            className="flex flex-col items-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
+            className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
-            <BookOpen className="w-6 h-6 text-gray-400" />
-            <span className="text-sm text-gray-300">Connaissances</span>
+            <BookOpen className="w-6 h-6 text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-300 text-center">Connaissances</span>
           </Link>
           <Link
             to={`/dashboard/agents/${agent.id}?tab=playground`}
-            className="flex flex-col items-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
+            className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
-            <Play className="w-6 h-6 text-gray-400" />
-            <span className="text-sm text-gray-300">Tester</span>
+            <Play className="w-6 h-6 text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-300 text-center">Tester</span>
           </Link>
           <button
             onClick={loadStats}
-            className="flex flex-col items-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
+            className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
-            <RefreshCw className="w-6 h-6 text-gray-400" />
-            <span className="text-sm text-gray-300">Actualiser</span>
+            <RefreshCw className="w-6 h-6 text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-300 text-center">Actualiser</span>
           </button>
         </div>
       </div>
@@ -1056,6 +1067,7 @@ function ContactsTab({ agent }) {
 }
 
 function SettingsTab({ agent, onUpdate }) {
+  const { showConfirm } = useConfirm()
   const [formData, setFormData] = useState({
     name: agent.name,
     description: agent.description || '',
@@ -1110,8 +1122,18 @@ function SettingsTab({ agent, onUpdate }) {
     setFormData({ ...formData, availability_days: newDays.join(',') })
   }
 
-  const handleTemplateChange = (value) => {
+  const handleTemplateChange = async (value) => {
     const nextTemplate = value || null
+    const currentTemplate = formData.template || ''
+    if (nextTemplate !== currentTemplate) {
+      const ok = await showConfirm({
+        title: 'Changer le type d\'agent',
+        message: 'Changer le type d\'agent peut modifier le prompt système et le comportement de l\'agent. Continuer ?',
+        variant: 'warning',
+        confirmLabel: 'Changer le type'
+      })
+      if (!ok) return
+    }
     const matchedTemplate = templateOptions.find((template) => template.id === value)
     setFormData((prev) => ({
       ...prev,
@@ -1242,17 +1264,20 @@ function SettingsTab({ agent, onUpdate }) {
 
   return (
     <div className="flex flex-col md:flex-row gap-6 min-w-0">
-      {/* Navigation: horizontal scroll sur mobile, sidebar sur desktop */}
-      <div className="md:w-52 flex-shrink-0">
-        <nav className="flex md:flex-col gap-2 md:gap-1 overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:sticky md:top-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* Navigation: masquée sur mobile, sidebar sur desktop */}
+      <div className="hidden md:block md:w-52 flex-shrink-0">
+        <nav
+          className="settings-section-nav flex md:flex-col gap-2 md:gap-1 overflow-x-auto pb-2 md:pb-0 md:overflow-visible md:sticky md:top-4 px-1 -mx-1 md:mx-0 scrollbar-none"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {SECTIONS.map((section) => (
             <button
               key={section.id}
               type="button"
               onClick={() => scrollToSection(section.id)}
-              className={`flex-shrink-0 md:w-full text-left px-4 py-2.5 md:px-3 md:py-2 rounded-xl md:rounded-lg text-sm font-medium transition-colors whitespace-nowrap touch-target ${
+              className={`settings-section-nav-btn flex-shrink-0 md:w-full text-left px-4 py-2.5 md:px-3 md:py-2 rounded-xl md:rounded-lg text-sm font-medium transition-colors whitespace-nowrap touch-target border border-transparent ${
                 activeSection === section.id
-                  ? 'bg-gold-400/20 text-gold-400'
+                  ? 'settings-section-nav-btn--active bg-gold-400/20 text-gold-400 border-gold-400/30'
                   : 'text-gray-400 hover:text-gray-200 hover:bg-space-800'
               }`}
             >

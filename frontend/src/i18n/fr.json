@@ -52,6 +52,18 @@
     "cta": "Commencer",
     "ctaFree": "Commencer gratuitement"
   },
+  "chatbot": {
+    "open": "Ouvrir le chat",
+    "subtitle": "Assistance · 24/7",
+    "welcome": "Bonjour ! Je suis là pour vous aider à découvrir SEVEN T. Que souhaitez-vous faire ?",
+    "placeholder": "Écrivez votre message...",
+    "send": "Envoyer",
+    "createAccount": "Créer un compte",
+    "requestDemo": "Demander une démo",
+    "seeFeatures": "Voir les fonctionnalités",
+    "contactSupport": "Contacter le support",
+    "error": "Une erreur s'est produite. Réessayez."
+  },
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bienvenue",
@@ -153,7 +165,8 @@
     "total": "Total",
     "noData": "Aucune donnée",
     "noExpenses": "Aucune dépense ce mois-ci",
-    "confirmDelete": "Supprimer cette dépense ?",
+    "confirmDeleteTitle": "Supprimer cette dépense",
+    "confirmDelete": "Cette dépense sera supprimée définitivement. Continuer ?",
     "validationRequired": "Date, catégorie et montant requis.",
     "errorLoad": "Erreur lors du chargement des dépenses",
     "errorSave": "Erreur lors de l'enregistrement",

@@ -46,6 +46,7 @@ import flowRoutes from './routes/flows.js';
 import reportRoutes from './routes/reports.js';
 import userRoutes from './routes/users.js';
 import subscriptionRoutes, { handleStripeWebhook } from './routes/subscription.js';
+import landingChatRoutes from './routes/landingChat.js';
 
 // Database
 import db, { initDatabase } from './database/init.js';
@@ -147,6 +148,7 @@ app.use('/api/flows', flowRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/landing-chat', landingChatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -798,7 +798,8 @@ const pathToTitle = (pathname) => {
   return map[first] || first
 }
 
-export default function DashboardLayout() {
+// Contenu du layout (enfant du Provider) pour pouvoir utiliser useOnboardingTour
+function DashboardLayoutContent() {
   const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(() => new Date())
@@ -806,6 +807,7 @@ export default function DashboardLayout() {
   const { theme, isDark } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
+  const { activeTour } = useOnboardingTour()
   usePageTitle(pathToTitle(location.pathname))
 
   const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
@@ -821,6 +823,14 @@ export default function DashboardLayout() {
     const tick = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(tick)
   }, [])
+
+  // À la première connexion, ouvrir la sidebar mobile pendant le tour pour que les cibles soient visibles
+  useEffect(() => {
+    if (activeTour === 'sidebar') {
+      const mql = window.matchMedia('(max-width: 1023px)')
+      if (mql.matches) setSidebarOpen(true)
+    }
+  }, [activeTour])
 
   // Bloquer le défilement de la page quand la sidebar mobile est ouverte (mobile uniquement)
   useEffect(() => {
@@ -843,7 +853,6 @@ export default function DashboardLayout() {
   }
 
   return (
-    <OnboardingTourProvider userId={user?.id}>
     <div className={`min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}>
@@ -1149,6 +1158,14 @@ export default function DashboardLayout() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DashboardLayout() {
+  const { user } = useAuth()
+  return (
+    <OnboardingTourProvider userId={user?.id}>
+      <DashboardLayoutContent />
     </OnboardingTourProvider>
   )
 }

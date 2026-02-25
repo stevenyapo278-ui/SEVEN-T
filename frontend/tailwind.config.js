@@ -7,25 +7,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Dark Premium backgrounds
+        // Agent-bootstrap dark palette (Tailwind classes use these; .light overrides in CSS)
         space: {
-          700: '#2a2a38',
-          800: '#1a1a24',
-          900: '#12121a',
-          950: '#0a0a0f',
+          600: '#444d56',
+          700: '#30363d',
+          800: '#1c2128',
+          900: '#161b22',
+          950: '#0d1117',
         },
-        // Primary accent - Gold/Amber
+        // Primary accent - Agent-bootstrap (orange/gold)
         gold: {
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
+          300: '#e3b341',
+          400: '#d29922',
+          500: '#d29922',
+          600: '#9a6700',
         },
-        // Secondary accent - Violet
+        // Secondary accent - Violet (kept for compatibility)
         violet: {
           400: '#a78bfa',
           500: '#8b5cf6',
           600: '#7c3aed',
+        },
+        // Agent-bootstrap accents for utility classes
+        accent: {
+          blue: '#58a6ff',
+          green: '#3fb950',
+          orange: '#d29922',
+          yellow: '#e3b341',
         },
         // Semantic colors
         success: '#10b981',
@@ -40,8 +48,12 @@ export default {
         }
       },
       fontFamily: {
-        display: ['Space Grotesk', 'sans-serif'],
-        body: ['Inter', 'system-ui', 'sans-serif'],
+        brand: ['Audiowide', 'monospace'],
+        ui: ['Syne', 'sans-serif'],
+        body: ['Syne', 'sans-serif'],
+        code: ['JetBrains Mono', 'monospace'],
+        display: ['Syne', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       boxShadow: {
         'glow-gold': '0 0 60px rgba(251, 191, 36, 0.3)',

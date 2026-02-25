@@ -181,7 +181,7 @@ export default function Products() {
                   <Package className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
                 </div>
                 <div className="min-w-0 overflow-hidden">
-                  <p className="text-base sm:text-lg md:text-2xl font-bold text-gray-100 truncate" title={String(stats.total)}>{stats.total}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-bold text-gray-100 truncate" title={String(stats.total)}>{stats.total}</p>
                   <p className="text-xs text-gray-500 truncate">Total</p>
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function Products() {
                   <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
                 </div>
                 <div className="min-w-0 overflow-hidden">
-                  <p className="text-base sm:text-lg md:text-2xl font-bold text-gray-100 truncate" title={String(stats.inStock)}>{stats.inStock}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-bold text-gray-100 truncate" title={String(stats.inStock)}>{stats.inStock}</p>
                   <p className="text-xs text-gray-500 truncate">En stock</p>
                 </div>
               </div>
@@ -203,7 +203,7 @@ export default function Products() {
                   <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
                 </div>
                 <div className="min-w-0 overflow-hidden">
-                  <p className="text-base sm:text-lg md:text-2xl font-bold text-gray-100 truncate" title={String(stats.lowStock)}>{stats.lowStock}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-bold text-gray-100 truncate" title={String(stats.lowStock)}>{stats.lowStock}</p>
                   <p className="text-xs text-gray-500 truncate">Faible</p>
                 </div>
               </div>
@@ -214,7 +214,7 @@ export default function Products() {
                   <Archive className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
                 </div>
                 <div className="min-w-0 overflow-hidden">
-                  <p className="text-base sm:text-lg md:text-2xl font-bold text-gray-100 truncate" title={String(stats.outOfStock)}>{stats.outOfStock}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-bold text-gray-100 truncate" title={String(stats.outOfStock)}>{stats.outOfStock}</p>
                   <p className="text-xs text-gray-500 truncate">Rupture</p>
                 </div>
               </div>
@@ -225,7 +225,7 @@ export default function Products() {
                   <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-gold-400" />
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="text-base sm:text-lg md:text-2xl font-bold text-gray-100 truncate" title={formatPrice(stats.totalValue)}>{formatPrice(stats.totalValue)}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-bold text-gray-100 truncate" title={formatPrice(stats.totalValue)}>{formatPrice(stats.totalValue)}</p>
                   <p className="text-xs text-gray-500 truncate">Valeur</p>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export default function Products() {
                   <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
                 </div>
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="text-base sm:text-lg md:text-2xl font-bold text-gray-100 truncate" title={formatPrice(totalMargin)}>{formatPrice(totalMargin)}</p>
+                  <p className="text-sm sm:text-base md:text-lg font-bold text-gray-100 truncate" title={formatPrice(totalMargin)}>{formatPrice(totalMargin)}</p>
                   <p className="text-xs text-gray-500 truncate">Marge</p>
                 </div>
               </div>
@@ -384,11 +384,11 @@ export default function Products() {
                     <span className="text-xs text-gray-500 uppercase tracking-wide">SKU</span>
                     <span className="text-sm font-mono text-gray-400 truncate">{product.sku || '–'}</span>
                   </div>
-                  <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0">
+                  <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0 overflow-hidden">
                     <span className="text-xs text-gray-500 uppercase tracking-wide">Prix</span>
-                    <span className="text-base font-semibold text-gold-400">{formatPrice(product.price)}</span>
+                    <span className="text-sm font-semibold text-gold-400 truncate" title={formatPrice(product.price)}>{formatPrice(product.price)}</span>
                     {typeof product.cost_price === 'number' && product.cost_price > 0 && (
-                      <span className="text-xs text-gray-400 mt-0.5">
+                      <span className="text-xs text-gray-400 mt-0.5 truncate" title={formatPrice((product.price || 0) - (product.cost_price || 0))}>
                         Marge {formatPrice((product.price || 0) - (product.cost_price || 0))}
                       </span>
                     )}
@@ -486,6 +486,7 @@ export default function Products() {
 
 function ProductModal({ product, onClose, onSaved, getSymbol }) {
   const { t } = useTranslation()
+  const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
     name: product?.name || '',
     sku: product?.sku || '',
@@ -496,8 +497,87 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
     description: product?.description || '',
     image_url: product?.image_url || ''
   })
+  const MAX_PRODUCT_IMAGES = 4
+  // Liste des photos: { id? (product_images), url }. La première = image_url du produit.
+  const [productImages, setProductImages] = useState(() => {
+    const u = product?.image_url?.trim()
+    return u ? [{ url: u }] : []
+  })
+  const [imagesLoaded, setImagesLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [imageUploading, setImageUploading] = useState(false)
+  const [newImageUrl, setNewImageUrl] = useState('')
   const currencySymbol = getSymbol ? getSymbol() : 'FCFA'
+
+  // Charger les images supplémentaires (product_images) en édition
+  useEffect(() => {
+    if (!product?.id) {
+      setImagesLoaded(true)
+      return
+    }
+    let cancelled = false
+    api.get(`/products/${product.id}/images`)
+      .then((res) => {
+        if (cancelled) return
+        const extra = (res.data?.images || []).map((img) => ({ id: img.id, url: img.url }))
+        const primary = product.image_url?.trim()
+        let list = primary ? [{ url: primary }, ...extra.filter((e) => e.url !== primary)] : extra
+        list = list.slice(0, MAX_PRODUCT_IMAGES)
+        setProductImages(list.length ? list : [])
+      })
+      .catch(() => { if (!cancelled) setProductImages(product?.image_url ? [{ url: product.image_url }] : []) })
+      .finally(() => { if (!cancelled) setImagesLoaded(true) })
+    return () => { cancelled = true }
+  }, [product?.id])
+
+  const addImageUrl = (url) => {
+    const u = (url ?? newImageUrl)?.trim()
+    if (!u) return
+    if (productImages.length >= MAX_PRODUCT_IMAGES) {
+      toast.error(`Maximum ${MAX_PRODUCT_IMAGES} photos par produit.`)
+      return
+    }
+    setProductImages((prev) => [...prev, { url: u }])
+    setNewImageUrl('')
+  }
+
+  const removeImage = (index) => {
+    setProductImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (productImages.length >= MAX_PRODUCT_IMAGES) {
+      toast.error(`Maximum ${MAX_PRODUCT_IMAGES} photos par produit.`)
+      e.target.value = ''
+      return
+    }
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowed.includes(file.type)) {
+      toast.error('Format non supporté. Utilisez JPEG, PNG, WebP ou GIF.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop volumineuse (max 5 Mo).')
+      return
+    }
+    setImageUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const { data } = await api.post('/products/upload-image', fd)
+      if (data?.url) {
+        setProductImages((prev) => [...prev, { url: data.url }])
+        toast.success('Photo importée')
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors de l\'import de la photo')
+    } finally {
+      setImageUploading(false)
+      e.target.value = ''
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -505,13 +585,31 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
       toast.error(t('messages.productNameRequired'))
       return
     }
+    const primaryUrl = productImages[0]?.url?.trim() || ''
+    const payload = { ...formData, image_url: primaryUrl }
     setLoading(true)
     try {
       if (product) {
-        await api.put(`/products/${product.id}`, formData)
+        await api.put(`/products/${product.id}`, payload)
+        const existingIds = productImages.slice(1).map((i) => i.id).filter(Boolean)
+        const toAdd = productImages.slice(1).filter((i) => !i.id)
+        for (const img of (await api.get(`/products/${product.id}/images`)).data?.images || []) {
+          if (!existingIds.includes(img.id)) {
+            await api.delete(`/products/${product.id}/images/${img.id}`)
+          }
+        }
+        for (const item of toAdd) {
+          await api.post(`/products/${product.id}/images`, { url: item.url, is_primary: false })
+        }
         toast.success(t('messages.productUpdated'))
       } else {
-        await api.post('/products', formData)
+        const { data } = await api.post('/products', payload)
+        const newId = data?.product?.id || data?.id
+        if (newId && productImages.length > 1) {
+          for (let i = 1; i < productImages.length; i++) {
+            await api.post(`/products/${newId}/images`, { url: productImages[i].url, is_primary: false })
+          }
+        }
         toast.success(t('messages.productAdded'))
       }
       onSaved()
@@ -523,23 +621,23 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
-      <div className="relative z-10 w-full max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl min-w-0 animate-fadeIn">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+      <div className="relative z-10 w-full max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl min-w-0 animate-fadeIn max-sm:rounded-b-none">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between gap-2 min-w-0">
             <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100 truncate">
               {product ? 'Modifier le produit' : 'Ajouter un produit'}
             </h2>
-            <button type="button" onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target flex-shrink-0" aria-label="Fermer">
+            <button type="button" onClick={onClose} className="p-2 -m-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-gray-300 touch-target flex-shrink-0 rounded-lg" aria-label="Fermer">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain p-4 sm:p-6 pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-1 md:col-span-2 min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">Nom du produit *</label>
               <input
                 type="text"
@@ -547,30 +645,30 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ex: iPhone 15 Pro"
-                className="input-dark w-full"
+                className="input-dark w-full min-w-0 min-h-[44px] touch-target"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">SKU</label>
               <input
                 type="text"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                 placeholder="Ex: IP15-PRO-256"
-                className="input-dark w-full font-mono"
+                className="input-dark w-full min-w-0 min-h-[44px] touch-target font-mono"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">Catégorie</label>
               <input
                 type="text"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="Ex: Smartphones"
-                className="input-dark w-full"
+                className="input-dark w-full min-w-0 min-h-[44px] touch-target"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">Prix de vente ({currencySymbol})</label>
               <input
                 type="number"
@@ -579,10 +677,10 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 placeholder="0.00"
-                className="input-dark w-full"
+                className="input-dark w-full min-w-0 min-h-[44px] touch-target"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">Prix d'achat ({currencySymbol})</label>
               <input
                 type="number"
@@ -591,10 +689,10 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
                 value={formData.cost_price}
                 onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
                 placeholder="0.00"
-                className="input-dark w-full"
+                className="input-dark w-full min-w-0 min-h-[44px] touch-target"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">Stock</label>
               <input
                 type="number"
@@ -602,28 +700,86 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
                 placeholder="0"
-                className="input-dark w-full"
+                className="input-dark w-full min-w-0 min-h-[44px] touch-target"
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-1 md:col-span-2 min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                URL de l'image
-                {!formData.image_url?.trim() && (
+                Photos du produit
+                {productImages.length === 0 && (
                   <span className="ml-2 text-amber-400/90 text-xs font-normal">(recommandé)</span>
                 )}
               </label>
-              <input
-                type="url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://exemple.com/image.jpg — pour le catalogue et l'agent e-commerce"
-                className="input-dark w-full"
-              />
-              {!formData.image_url?.trim() && (
-                <p className="mt-1 text-xs text-gray-500">Une image aide l'IA à présenter le produit aux clients.</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Maximum {MAX_PRODUCT_IMAGES} photos. Première = image principale. Si un client demande des photos, l&apos;agent pourra les envoyer.
+              </p>
+              {productImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {productImages.map((img, index) => (
+                    <div key={index} className="relative group">
+                      <img src={img.url} alt="" className="w-16 h-16 rounded-lg object-cover border border-space-600" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-1.5 -right-1.5 min-w-[44px] min-h-[44px] w-11 h-11 sm:w-5 sm:h-5 sm:min-w-0 sm:min-h-0 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity touch-target"
+                        aria-label="Supprimer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      {index === 0 && (
+                        <span className="absolute bottom-0 left-0 right-0 text-[10px] bg-gold-400/90 text-space-900 text-center rounded-b-lg">Principale</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-col gap-2">
+                <input
+                  type="url"
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  placeholder="https://exemple.com/image.jpg"
+                  className="input-dark w-full min-w-0 min-h-[44px] touch-target"
+                  disabled={productImages.length >= MAX_PRODUCT_IMAGES}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addImageUrl(newImageUrl)
+                    }
+                  }}
+                />
+                <div className="flex flex-col md:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => productImages.length < MAX_PRODUCT_IMAGES && fileInputRef.current?.click()}
+                    disabled={imageUploading || productImages.length >= MAX_PRODUCT_IMAGES}
+                    className="btn-secondary inline-flex items-center justify-center gap-2 min-h-[44px] touch-target px-4 disabled:opacity-50"
+                  >
+                    {imageUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {imageUploading ? 'Import...' : 'Importer une photo'}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addImageUrl(newImageUrl)}
+                    disabled={productImages.length >= MAX_PRODUCT_IMAGES}
+                    className="btn-secondary min-h-[44px] touch-target px-4 whitespace-nowrap disabled:opacity-50"
+                  >
+                    Ajouter l&apos;URL
+                  </button>
+                </div>
+              </div>
+              {productImages.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">Ajoutez une URL ou importez une photo (JPEG, PNG, WebP, GIF — max 5 Mo).</p>
               )}
             </div>
-            <div className="col-span-2">
+            <div className="col-span-1 md:col-span-2 min-w-0">
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description
                 {!formData.description?.trim() && (
@@ -635,7 +791,7 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Décrivez le produit pour que l'agent e-commerce puisse le présenter correctement aux clients (recommandé)"
                 rows={3}
-                className="input-dark w-full resize-none"
+                className="input-dark w-full min-w-0 resize-none min-h-[88px]"
               />
               {!formData.description?.trim() && (
                 <p className="mt-1 text-xs text-gray-500">Une description améliore les réponses de l'agent sur le catalogue.</p>
@@ -643,11 +799,11 @@ function ProductModal({ product, onClose, onSaved, getSymbol }) {
             </div>
           </div>
           </div>
-          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
+          <div className="flex-shrink-0 p-4 sm:p-6 pt-3 border-t border-space-700 flex flex-col-reverse md:flex-row gap-3" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 md:flex-none min-h-[48px] touch-target">
               Annuler
             </button>
-            <button type="submit" disabled={loading} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target">
+            <button type="submit" disabled={loading} className="btn-primary flex-1 md:flex-none min-h-[48px] touch-target">
               {loading ? 'Enregistrement...' : (product ? 'Mettre à jour' : 'Ajouter')}
             </button>
           </div>

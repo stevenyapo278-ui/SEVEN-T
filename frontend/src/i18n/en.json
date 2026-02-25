@@ -52,6 +52,18 @@
     "cta": "Get started",
     "ctaFree": "Start for free"
   },
+  "chatbot": {
+    "open": "Open chat",
+    "subtitle": "Support · 24/7",
+    "welcome": "Hi! I'm here to help you discover SEVEN T. What would you like to do?",
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "createAccount": "Create account",
+    "requestDemo": "Request a demo",
+    "seeFeatures": "See features",
+    "contactSupport": "Contact support",
+    "error": "Something went wrong. Please try again."
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome",
@@ -153,7 +165,8 @@
     "total": "Total",
     "noData": "No data",
     "noExpenses": "No expenses this month",
-    "confirmDelete": "Delete this expense?",
+    "confirmDeleteTitle": "Delete this expense",
+    "confirmDelete": "This expense will be permanently deleted. Continue?",
     "validationRequired": "Date, category and amount required.",
     "errorLoad": "Error loading expenses",
     "errorSave": "Error saving",

@@ -1,80 +1,148 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for SEVEN T Theme - Dark Mode (Default) */
+/* CSS Variables - Agent-bootstrap theme (Dark = default) */
 :root, .dark {
-  --space-950: #0a0a0f;
-  --space-900: #12121a;
-  --space-800: #1a1a24;
-  --space-700: #2a2a38;
-  --space-600: #3a3a4a;
-  --gold-300: #fcd34d;
-  --gold-400: #fbbf24;
-  --gold-500: #f59e0b;
-  --blue-400: #60a5fa;
-  --blue-500: #3b82f6;
-  --blue-600: #2563eb;
-  
-  /* Semantic colors */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a24;
-  --bg-elevated: #1a1a24;
-  --border-color: #2a2a38;
-  --border-light: #3a3a4a;
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --shadow-color: rgba(0, 0, 0, 0.4);
+  --space-950: #0d1117;
+  --space-900: #161b22;
+  --space-800: #1c2128;
+  --space-700: #30363d;
+  --space-600: #444d56;
+  --gold-300: #e3b341;
+  --gold-400: #d29922;
+  --gold-500: #d29922;
+  --blue-400: #58a6ff;
+  --blue-500: #58a6ff;
+  --blue-600: #58a6ff;
+
+  --bg-primary: #0d1117;
+  --bg-card: #161b22;
+  --bg-card-hover: #1c2128;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2128;
+  --bg-elevated: #1c2128;
+  --border: #30363d;
+  --border-color: #30363d;
+  --border-light: #444d56;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #8b949e;
+  --text-label: #6e7681;
+  --shadow-color: rgba(0, 0, 0, 0.2);
+
+  --accent-blue: #58a6ff;
+  --accent-green: #3fb950;
+  --accent-orange: #d29922;
+  --accent-yellow: #e3b341;
+  --accent-primary: #58a6ff;
+  --accent-secondary: #d29922;
+  --accent-success: #3fb950;
+  --accent-warning: #d29922;
+  --accent-error: #f85149;
+  --accent-info: #58a6ff;
+
+  --tag-green-bg: #1a4721;
+  --tag-green-text: #3fb950;
+  --tag-blue-bg: #1c3557;
+  --tag-blue-text: #58a6ff;
+  --tag-orange-bg: #3d2d0a;
+  --tag-orange-text: #d29922;
+  --step-bg: #1f3a5f;
+
+  /* Font stack — logo, UI, body, code */
+  --font-brand: 'Audiowide', monospace;
+  --font-ui: 'Syne', sans-serif;
+  --font-body: 'Syne', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
 }
 
-/* Light Mode - Arrière-plan un peu sombre (pas trop blanc) */
+/* Agent-bootstrap Light Mode */
 .light {
-  --space-950: #f1f5f9;
-  --space-900: #e2e8f0;
-  --space-800: #e2e8f0;
-  --space-700: #cbd5e1;
-  --space-600: #94a3b8;
-  --gold-300: #fbbf24;
-  --gold-400: #f59e0b;
-  --gold-500: #d97706;
-  --blue-400: #3b82f6;
-  --blue-500: #2563eb;
-  --blue-600: #1d4ed8;
-  
-  /* Semantic colors - Fond légèrement gris */
-  --bg-primary: #f1f5f9;
-  --bg-secondary: #e2e8f0;
-  --bg-tertiary: #cbd5e1;
-  --bg-elevated: #f8fafc;
-  --border-color: #cbd5e1;
-  --border-light: #94a3b8;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --shadow-color: rgba(15, 23, 42, 0.08);
-  
-  /* Couleurs d'accent pour le mode clair */
-  --accent-primary: #2563eb;
-  --accent-secondary: #d97706;
-  --accent-success: #059669;
-  --accent-warning: #d97706;
-  --accent-error: #dc2626;
-  --accent-info: #0284c7;
+  --space-950: #f6f8fa;
+  --space-900: #ffffff;
+  --space-800: #f0f2f5;
+  --space-700: #d0d7de;
+  --space-600: #c8d0d8;
+  --gold-300: #9a6700;
+  --gold-400: #9a6700;
+  --gold-500: #7d4e00;
+  --blue-400: #0969da;
+  --blue-500: #0969da;
+  --blue-600: #0550ae;
+
+  --bg-primary: #f6f8fa;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0f2f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f2f5;
+  --bg-elevated: #ffffff;
+  --border: #d0d7de;
+  --border-color: #d0d7de;
+  --border-light: #c8d0d8;
+  --text-primary: #1f2328;
+  --text-secondary: #57606a;
+  --text-muted: #57606a;
+  --text-label: #6e7781;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+
+  --accent-blue: #0969da;
+  --accent-green: #1a7f37;
+  --accent-orange: #9a6700;
+  --accent-yellow: #7d4e00;
+  --accent-primary: #0969da;
+  --accent-secondary: #9a6700;
+  --accent-success: #1a7f37;
+  --accent-warning: #9a6700;
+  --accent-error: #cf222e;
+  --accent-info: #0969da;
+
+  --tag-green-bg: #dafbe1;
+  --tag-green-text: #1a7f37;
+  --tag-blue-bg: #ddf4ff;
+  --tag-blue-text: #0969da;
+  --tag-orange-bg: #fff8c5;
+  --tag-orange-text: #9a6700;
+  --step-bg: #ddf4ff;
+
+  --font-brand: 'Audiowide', monospace;
+  --font-ui: 'Syne', sans-serif;
+  --font-body: 'Syne', sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.6;
   background-color: var(--bg-primary);
-  color: var(--text-primary);
+  color: var(--text-muted);
   transition: background-color 0.3s ease, color 0.3s ease;
-  /* Safe area for Android notch / gesture bar */
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Typography — uses --font-brand, --font-ui, --font-body, --font-code */
+h1 {
+  font-family: var(--font-ui);
+  font-size: 2rem;
+  color: var(--accent-blue);
+  letter-spacing: 0.02em;
+}
+.label {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.file-title {
+  font-family: var(--font-code);
+  font-weight: 500;
 }
 
 /* Minimum touch target for mobile (Android/iOS) - 44px recommended */
@@ -108,38 +176,38 @@ body {
   color: #6b7280 !important;
 }
 
-/* Light mode text color overrides - Texte assez sombre pour une bonne lisibilité */
-.light .text-gray-100 { color: #0f172a; }
-.light .text-gray-200 { color: #1e293b; }
-.light .text-gray-300 { color: #334155; }
-.light .text-gray-400 { color: #475569; }
-.light .text-gray-500 { color: #64748b; }
-.light .text-gray-600 { color: #475569; }
-.light .text-gray-700 { color: #334155; }
-.light .text-gray-800 { color: #1e293b; }
-.light .text-gray-900 { color: #0f172a; }
+/* Light mode text color overrides - Agent-bootstrap light */
+.light .text-gray-100 { color: #1f2328; }
+.light .text-gray-200 { color: #1f2328; }
+.light .text-gray-300 { color: #57606a; }
+.light .text-gray-400 { color: #57606a; }
+.light .text-gray-500 { color: #57606a; }
+.light .text-gray-600 { color: #57606a; }
+.light .text-gray-700 { color: #1f2328; }
+.light .text-gray-800 { color: #1f2328; }
+.light .text-gray-900 { color: #1f2328; }
 
-/* Light mode background overrides - Arrière-plan un peu sombre */
-.light .bg-space-950 { background-color: #f1f5f9; }
-.light .bg-space-900 { background-color: #e2e8f0; }
-.light .bg-space-800 { background-color: #e2e8f0; }
-.light .bg-space-700 { background-color: #cbd5e1; }
+/* Light mode background overrides - Agent-bootstrap light */
+.light .bg-space-950 { background-color: #f6f8fa; }
+.light .bg-space-900 { background-color: #ffffff; }
+.light .bg-space-800 { background-color: #f0f2f5; }
+.light .bg-space-700 { background-color: #d0d7de; }
 
-/* Light mode border overrides - Bordures plus subtiles */
-.light .border-space-700 { border-color: #e2e8f0; }
-.light .border-space-600 { border-color: #cbd5e1; }
+/* Light mode border overrides */
+.light .border-space-700 { border-color: #d0d7de; }
+.light .border-space-600 { border-color: #d0d7de; }
 
-/* Light mode hover states - Transitions plus douces */
-.light .hover\:bg-space-800:hover { background-color: #e2e8f0; }
-.light .hover\:bg-space-700:hover { background-color: #cbd5e1; }
-.light .hover\:bg-space-600:hover { background-color: #cbd5e1; }
-.light .hover\:border-space-600:hover { border-color: #94a3b8; }
+/* Light mode hover states */
+.light .hover\:bg-space-800:hover { background-color: #f0f2f5; }
+.light .hover\:bg-space-700:hover { background-color: #f0f2f5; }
+.light .hover\:bg-space-600:hover { background-color: #f0f2f5; }
+.light .hover\:border-space-600:hover { border-color: #c8d0d8; }
 
-/* Light mode gradient fixes - hero Catalogue / Commandes / Leads */
-.light .from-space-800 { --tw-gradient-from: #f1f5f9; }
-.light .to-space-800 { --tw-gradient-to: #f1f5f9; }
+/* Light mode gradient fixes */
+.light .from-space-800 { --tw-gradient-from: #f6f8fa; }
+.light .to-space-800 { --tw-gradient-to: #f6f8fa; }
 .light .to-space-950 { --tw-gradient-to: #ffffff; }
-.light .via-space-900 { --tw-gradient-via: #fafbfc; }
+.light .via-space-900 { --tw-gradient-via: #ffffff; }
 
 /* Light mode: masquer le motif SVG sombre sur les hero (Produits, Leads) */
 .light .hero-pattern-overlay {
@@ -148,7 +216,7 @@ body {
 
 /* Light mode specific component styles */
 .light .divide-space-700 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0;
+  border-color: #d0d7de;
 }
 
 /* Light mode shadows - Ombres plus douces et naturelles */
@@ -162,25 +230,25 @@ body {
 
 /* Light mode ring colors */
 .light .ring-space-700\/50 {
-  --tw-ring-color: rgba(226, 232, 240, 0.5);
+  --tw-ring-color: rgba(208, 215, 222, 0.5);
 }
 
-/* Light mode backdrop - Plus opaque pour meilleure lisibilité */
+/* Light mode backdrop - Agent-bootstrap light */
 .light .bg-space-900\/80 {
-  background-color: rgba(250, 251, 252, 0.95);
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .light .bg-space-950\/80 {
-  background-color: rgba(248, 250, 252, 0.92);
+  background-color: rgba(246, 248, 250, 0.92);
 }
 
 .light .bg-space-950\/90 {
   background-color: rgba(255, 255, 255, 0.98);
 }
 
-/* Light mode opacity backgrounds - Couleurs d'accent plus saturées */
+/* Light mode opacity backgrounds */
 .light .bg-space-800\/50 {
-  background-color: rgba(241, 245, 249, 0.9);
+  background-color: rgba(246, 248, 250, 0.9);
 }
 
 .light .bg-blue-500\/20 {
@@ -227,82 +295,81 @@ body {
   background-color: rgba(234, 179, 8, 0.1);
 }
 
-/* Light mode text colors for accent elements */
-.light .text-blue-400 { color: #2563eb; }
-.light .text-gold-400 { color: #d97706; }
-.light .text-emerald-400 { color: #059669; }
-.light .text-amber-400 { color: #d97706; }
-.light .text-red-400 { color: #dc2626; }
-.light .text-blue-400 { color: #0284c7; }
+/* Light mode text colors for accent elements - Agent-bootstrap light */
+.light .text-blue-400 { color: #0969da; }
+.light .text-gold-400 { color: #9a6700; }
+.light .text-emerald-400 { color: #1a7f37; }
+.light .text-amber-400 { color: #9a6700; }
+.light .text-red-400 { color: #cf222e; }
 
-/* Light mode navigation active states - Plus visibles */
+/* Light mode navigation active states */
 .light .border-blue-500\/30 {
-  border-color: rgba(59, 130, 246, 0.35);
+  border-color: rgba(9, 105, 218, 0.35);
 }
 
 .light .border-gold-400\/30 {
-  border-color: rgba(217, 119, 6, 0.35);
+  border-color: rgba(154, 103, 0, 0.35);
 }
 
-/* Light mode text gradient - Couleur unie pour rendu net (pas de dégradé) */
+/* Light mode text gradient */
 .light .text-gradient {
   background: none;
   -webkit-background-clip: unset;
-  -webkit-text-fill-color: #2563eb;
+  -webkit-text-fill-color: #0969da;
   background-clip: unset;
-  color: #2563eb;
+  color: #0969da;
 }
 
-/* Light mode button adjustments - Boutons plus définis */
+/* Light mode button adjustments - Agent-bootstrap light */
 .light .btn-secondary {
-  border-color: #cbd5e1;
-  color: #475569;
+  border-color: #d0d7de;
+  color: #57606a;
   background-color: #ffffff;
 }
 
 .light .btn-secondary:hover {
-  border-color: #2563eb;
-  background: rgba(59, 130, 246, 0.06);
-  color: #2563eb;
+  border-color: #0969da;
+  background: rgba(9, 105, 218, 0.06);
+  color: #0969da;
 }
 
-/* Light mode primary button - Fond uni pour rendu net (pas de dégradé) */
+/* Light mode primary button */
 .light .btn-primary {
-  background: #d97706;
+  background: #9a6700;
   color: #fff !important;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 4px 14px rgba(154, 103, 0, 0.25);
 }
 
 .light .btn-primary:hover {
-  background: #b45309;
+  background: #7d4e00;
   color: #fff !important;
-  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+  box-shadow: 0 6px 20px rgba(154, 103, 0, 0.35);
 }
 
-/* Barre sticky (ex: bouton Sauvegarder paramètres agent) - fond clair en mode light */
+/* Barre sticky - Agent-bootstrap light */
 .light .bg-space-950\/95 {
-  background-color: rgba(241, 245, 249, 0.95);
+  background-color: rgba(246, 248, 250, 0.95);
 }
 
 /* Light mode focus ring */
 .light .focus\:ring-gold-400\/20:focus {
-  --tw-ring-color: rgba(217, 119, 6, 0.2);
+  --tw-ring-color: rgba(154, 103, 0, 0.2);
 }
 
-/* Light mode status badges - Couleurs plus vives */
+/* Light mode status badges - Agent-bootstrap light */
 .light .bg-emerald-500\/20.text-emerald-400 {
-  background-color: rgba(5, 150, 105, 0.12);
-  color: #047857;
+  background-color: rgba(26, 127, 55, 0.12);
+  color: #1a7f37;
 }
 
 .light .bg-amber-500\/20.text-amber-400 {
-  background-color: rgba(217, 119, 6, 0.12);
-  color: #b45309;
+  background-color: rgba(154, 103, 0, 0.12);
+  color: #9a6700;
 }
 
 .light .bg-red-500\/20.text-red-400 {
-  background-color: rgba(220, 38, 38, 0.12);
-  color: #b91c1c;
+  background-color: rgba(207, 34, 46, 0.12);
+  color: #cf222e;
 }
 
 /* Smooth theme transition for all elements */
@@ -317,70 +384,128 @@ body {
   transition-property: none !important;
 }
 
-/* Typography utilities */
+/* Typography utilities - Agent-bootstrap */
 .font-display {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-brand);
 }
 
 .text-gradient {
-  background: linear-gradient(90deg, #fbbf24 0%, #3b82f6 100%);
+  background: linear-gradient(90deg, var(--accent-orange) 0%, var(--accent-blue) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Button styles */
+/* Button styles - Agent-bootstrap (accent colors from theme) */
 .btn-primary {
   @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  color: #0a0a0f;
-  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.25);
+  background: linear-gradient(135deg, var(--accent-orange) 0%, var(--gold-500) 100%);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 14px rgba(210, 153, 34, 0.25);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.35);
+  box-shadow: 0 6px 20px rgba(210, 153, 34, 0.35);
 }
 
 .btn-secondary {
   @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200 border;
   background: transparent;
-  border-color: var(--space-700);
-  color: #f3f4f6;
+  border-color: var(--border);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover {
-  border-color: var(--blue-500);
-  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-blue);
+  background: rgba(88, 166, 255, 0.1);
 }
 
 .btn-ghost {
   @apply px-6 py-3 rounded-xl font-semibold transition-all duration-200;
-  background: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--accent-blue);
 }
 
 .btn-ghost:hover {
-  background: rgba(59, 130, 246, 0.2);
+  background: rgba(88, 166, 255, 0.2);
 }
 
-/* Card styles */
+/* Card styles - Agent-bootstrap */
 .card {
-  @apply rounded-2xl border;
-  background: var(--bg-secondary);
-  border-color: var(--border-color);
-  box-shadow: 0 4px 24px var(--shadow-color);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  transition: border-color 0.2s ease, background-color 0.3s ease;
 }
+.card--green { border-top: 2px solid var(--accent-green); }
+.card--blue  { border-top: 2px solid var(--accent-blue); }
+.card--orange { border-top: 2px solid var(--accent-orange); }
 
 .light .card {
-  background: #ffffff;
-  border-color: #e2e8f0;
-  box-shadow: 0 1px 3px rgba(100, 116, 139, 0.08), 0 1px 2px rgba(100, 116, 139, 0.04);
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.light .card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.light .card:hover {
-  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.12);
+/* Tags / Badges - Agent-bootstrap */
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: var(--font-code);
+  font-weight: 500;
+  margin: 2px;
+}
+.tag--green  { background: var(--tag-green-bg);  color: var(--tag-green-text); }
+.tag--blue   { background: var(--tag-blue-bg);   color: var(--tag-blue-text); }
+.tag--orange { background: var(--tag-orange-bg); color: var(--tag-orange-text); }
+
+/* Tree (Project Structure) - Agent-bootstrap */
+.tree {
+  font-family: var(--font-code);
+  font-size: 0.78rem;
+  line-height: 1.9;
+  color: var(--text-muted);
+}
+.tree .green { color: var(--accent-green); }
+.tree .blue  { color: var(--accent-blue); }
+.tree .orange { color: var(--accent-orange); }
+.tree .dim   { color: #444d56; }
+.light .tree .dim { color: #c8d0d8; }
+
+/* Steps (Session Continuity) - Agent-bootstrap */
+.step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+.step__number {
+  background: var(--step-bg);
+  color: var(--accent-blue);
+  font-family: var(--font-brand);
+  font-size: 0.75rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* CTA text (bas de page) - Agent-bootstrap */
+.cta-text {
+  color: var(--accent-yellow);
+}
+.light .cta-text {
+  color: #9a6700;
 }
 
 /* Legal page — organisation du contenu (titres, espacements, tableaux) */
@@ -391,7 +516,7 @@ body {
   font-size: 1.75rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
-  color: #f3f4f6;
+  color: var(--text-primary);
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color);
 }
@@ -406,7 +531,7 @@ body {
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
-  color: #e5e7eb;
+  color: var(--text-primary);
 }
 .legal-content h2:first-of-type {
   margin-top: 0;
@@ -416,7 +541,7 @@ body {
   font-weight: 600;
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
-  color: #d1d5db;
+  color: var(--text-secondary);
 }
 .legal-content p {
   margin-bottom: 1rem;
@@ -458,12 +583,12 @@ body {
   background: rgba(0, 0, 0, 0.02);
 }
 .legal-content a {
-  color: var(--gold-400);
+  color: var(--accent-orange);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 .legal-content a:hover {
-  color: var(--gold-300);
+  color: var(--accent-yellow);
 }
 .legal-content code {
   font-size: 0.875em;
@@ -500,8 +625,8 @@ input.input-dark {
 .input:focus,
 .input-dark:focus {
   outline: none;
-  border-color: var(--blue-500);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
 }
 
 .input::placeholder,
@@ -519,30 +644,30 @@ select.input option {
 .light .input,
 .light .input-dark {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #1e293b;
+  border-color: #d0d7de;
+  color: #1f2328;
 }
 
 .light .input:hover,
 .light .input-dark:hover {
-  border-color: #cbd5e1;
+  border-color: #c8d0d8;
 }
 
 .light .input:focus,
 .light .input-dark:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
 }
 
 .light .input::placeholder,
 .light .input-dark::placeholder {
-  color: #94a3b8;
+  color: #57606a;
 }
 
 .light .input option,
 .light select.input option {
   background: #ffffff;
-  color: #1e293b;
+  color: #1f2328;
 }
 
 /* Light mode select dropdown */
@@ -567,8 +692,8 @@ select.input option {
 }
 .input-with-icon:focus-within {
   outline: none;
-  border-color: var(--blue-500);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
 }
 .input-with-icon input {
   flex: 1;
@@ -589,18 +714,18 @@ select.input option {
 }
 .light .input-with-icon {
   background: #ffffff;
-  border-color: #e2e8f0;
-  color: #1e293b;
+  border-color: #d0d7de;
+  color: #1f2328;
 }
 .light .input-with-icon:hover {
-  border-color: #cbd5e1;
+  border-color: #c8d0d8;
 }
 .light .input-with-icon:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
 }
 .light .input-with-icon input::placeholder {
-  color: #94a3b8;
+  color: #57606a;
 }
 
 /* Custom scrollbar */
@@ -620,19 +745,19 @@ select.input option {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--blue-500);
+  background: var(--accent-blue);
 }
 
 .light ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f6f8fa;
 }
 
 .light ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d0d7de;
 }
 
 .light ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: #0969da;
 }
 
 /* Hide scrollbar (e.g. horizontal filter pills on mobile) */
@@ -644,19 +769,34 @@ select.input option {
   display: none;
 }
 
-/* Light mode table styles */
+/* Settings section nav (Paramètres agent): tap highlight + lisibilité en mode light */
+.settings-section-nav .settings-section-nav-btn {
+  -webkit-tap-highlight-color: rgba(245, 158, 11, 0.2);
+  tap-highlight-color: rgba(245, 158, 11, 0.2);
+}
+.light .settings-section-nav .settings-section-nav-btn--active {
+  background-color: rgba(154, 103, 0, 0.22);
+  color: #9a6700;
+  border-color: rgba(154, 103, 0, 0.35);
+}
+.light .settings-section-nav .settings-section-nav-btn:not(.settings-section-nav-btn--active):hover {
+  background-color: #f0f2f5;
+  color: #1f2328;
+}
+
+/* Light mode table styles - Agent-bootstrap light */
 .light table th {
-  background: #f8fafc;
-  color: #475569;
-  border-bottom-color: #e2e8f0;
+  background: #f6f8fa;
+  color: #57606a;
+  border-bottom-color: #d0d7de;
 }
 
 .light table td {
-  border-bottom-color: #f1f5f9;
+  border-bottom-color: #d0d7de;
 }
 
 .light table tr:hover td {
-  background: #f8fafc;
+  background: #f6f8fa;
 }
 
 /* Light mode modal backdrop */
@@ -668,10 +808,10 @@ select.input option {
   background-color: rgba(15, 23, 42, 0.6);
 }
 
-/* Light mode navigation sidebar */
+/* Light mode navigation sidebar - Agent-bootstrap light */
 .light .bg-space-900.border-r {
   background-color: #ffffff;
-  border-color: #e2e8f0;
+  border-color: #d0d7de;
 }
 
 /* Light mode header */
@@ -679,13 +819,13 @@ select.input option {
   background-color: rgba(255, 255, 255, 0.9);
 }
 
-/* Light mode hover states for interactive elements */
-.light .hover\:text-gray-100:hover { color: #1e293b; }
-.light .hover\:text-gray-300:hover { color: #475569; }
+/* Light mode hover states */
+.light .hover\:text-gray-100:hover { color: #1f2328; }
+.light .hover\:text-gray-300:hover { color: #57606a; }
 
-/* Light mode disabled states */
-.light .bg-gray-700 { background-color: #e2e8f0; }
-.light .text-gray-500.cursor-not-allowed { color: #94a3b8; }
+/* Light mode disabled states - Agent-bootstrap light */
+.light .bg-gray-700 { background-color: #d0d7de; }
+.light .text-gray-500.cursor-not-allowed { color: #6e7781; }
 
 /* Light mode tooltip/popover */
 .light [data-tooltip] {
@@ -700,7 +840,7 @@ select.input option {
 
 /* Light mode skeleton loading */
 .light .animate-pulse.bg-space-800 {
-  background-color: #e2e8f0;
+  background-color: #f0f2f5;
 }
 
 /* WhatsApp chat bubble styles */
@@ -715,15 +855,15 @@ select.input option {
 }
 
 .light .chat-bubble-bot {
-  background: #f1f5f9;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
+  background: #f6f8fa;
+  color: #1f2328;
+  border: 1px solid #d0d7de;
 }
 
-/* Light mode chat user bubble adjustment */
+/* Light mode chat user bubble */
 .light .chat-bubble-user {
   background: #dcf8c6;
-  color: #1e293b;
+  color: #1f2328;
 }
 
 /* Animation utilities */
@@ -845,38 +985,38 @@ select.input option {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.5);
+  border: 1px solid rgba(208, 215, 222, 0.5);
 }
 
-/* Light mode accent color enhancements */
-.light .from-gold-400 { --tw-gradient-from: #f59e0b; }
-.light .to-gold-400 { --tw-gradient-to: #f59e0b; }
-.light .from-blue-500 { --tw-gradient-from: #2563eb; }
-.light .to-blue-500 { --tw-gradient-to: #2563eb; }
-.light .from-blue-400 { --tw-gradient-from: #3b82f6; }
-.light .to-amber-500 { --tw-gradient-to: #f59e0b; }
+/* Light mode accent color enhancements - Agent-bootstrap light */
+.light .from-gold-400 { --tw-gradient-from: #9a6700; }
+.light .to-gold-400 { --tw-gradient-to: #9a6700; }
+.light .from-blue-500 { --tw-gradient-from: #0969da; }
+.light .to-blue-500 { --tw-gradient-to: #0969da; }
+.light .from-blue-400 { --tw-gradient-from: #0969da; }
+.light .to-amber-500 { --tw-gradient-to: #9a6700; }
 
-/* Light mode gradient backgrounds - Couleurs unies pour rendu net (landing uniquement) */
+/* Light mode gradient backgrounds */
 .light .bg-gradient-to-r.from-gold-400.to-amber-500 {
-  background: #d97706;
+  background: #9a6700;
 }
 
-/* Dégradés or/bleu (cercles avatar, icônes pages) */
+/* Dégradés or/bleu - Agent-bootstrap light */
 .light .bg-gradient-to-br.from-gold-400.to-blue-500 {
-  --tw-gradient-from: #fbbf24;
-  --tw-gradient-to: #3b82f6;
+  --tw-gradient-from: #9a6700;
+  --tw-gradient-to: #0969da;
 }
 .light .bg-gradient-to-br.from-blue-500.to-gold-400 {
-  --tw-gradient-from: #3b82f6;
-  --tw-gradient-to: #fbbf24;
+  --tw-gradient-from: #0969da;
+  --tw-gradient-to: #9a6700;
 }
 .light .bg-gradient-to-br.from-blue-500.to-blue-600 {
-  --tw-gradient-from: #3b82f6;
-  --tw-gradient-to: #2563eb;
+  --tw-gradient-from: #0969da;
+  --tw-gradient-to: #0550ae;
 }
 .light .bg-gradient-to-br.from-emerald-500.to-green-600 {
-  --tw-gradient-from: #10b981;
-  --tw-gradient-to: #16a34a;
+  --tw-gradient-from: #1a7f37;
+  --tw-gradient-to: #1a7f37;
 }
 
 /* Icône sur dégradé : outline sombre, identique en mode clair et sombre */
@@ -887,30 +1027,30 @@ select.input option {
   color: #0f172a !important;
 }
 
-/* Hero - vagues bleues (parallax) */
-.landing-hero-wave-1 { color: rgba(59, 130, 246, 0.18); }
-.landing-hero-wave-2 { color: rgba(59, 130, 246, 0.26); }
-.landing-hero-wave-3 { color: rgba(37, 99, 235, 0.22); }
-:root, .dark { --wave-grid-color: rgba(96, 165, 250, 0.18); }
+/* Hero - vagues bleues (parallax) - Agent-bootstrap */
+.landing-hero-wave-1 { color: rgba(88, 166, 255, 0.18); }
+.landing-hero-wave-2 { color: rgba(88, 166, 255, 0.26); }
+.landing-hero-wave-3 { color: rgba(88, 166, 255, 0.22); }
+:root, .dark { --wave-grid-color: rgba(88, 166, 255, 0.18); }
 
-/* ========== Light mode - Page d'accueil (palette chaude, pas de blanc froid) ========== */
+/* ========== Light mode - Page d'accueil (Agent-bootstrap light) ========== */
 .light .landing-page {
-  --landing-bg: #faf8f5;
-  --landing-bg-alt: #f3f0ea;
-  --landing-bg-card: #fffefb;
-  --landing-border: #e8e4de;
-  --landing-text: #1c1917;
-  --landing-text-muted: #57534e;
-  --landing-text-soft: #78716c;
-  --landing-accent-blue: #1d4ed8;
-  --landing-accent-gold: #b45309;
+  --landing-bg: #f6f8fa;
+  --landing-bg-alt: #ffffff;
+  --landing-bg-card: #ffffff;
+  --landing-border: #d0d7de;
+  --landing-text: #1f2328;
+  --landing-text-muted: #57606a;
+  --landing-text-soft: #6e7781;
+  --landing-accent-blue: #0969da;
+  --landing-accent-gold: #9a6700;
 }
 .light .landing-page,
 .light .landing-page.bg-space-950 {
   background-color: var(--landing-bg) !important;
 }
 .light .landing-page .landing-header {
-  background-color: rgba(250, 248, 245, 0.92) !important;
+  background-color: rgba(246, 248, 250, 0.92) !important;
   border-bottom-color: var(--landing-border) !important;
 }
 .light .landing-page .landing-hero,
@@ -920,12 +1060,12 @@ select.input option {
 .light .landing-page section.bg-space-900 {
   background-color: var(--landing-bg-alt) !important;
 }
-/* Bandeau stats : transparent + glass pour laisser voir le fond / continuité visuelle */
+/* Bandeau stats */
 .light .landing-page .landing-stats-band {
-  background: rgba(250, 248, 245, 0.55) !important;
+  background: rgba(246, 248, 250, 0.55) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-color: rgba(232, 228, 222, 0.7) !important;
+  border-color: rgba(208, 215, 222, 0.7) !important;
 }
 .light .landing-page .landing-stats-band .text-white {
   color: var(--landing-text) !important;
@@ -934,7 +1074,7 @@ select.input option {
   color: var(--landing-text-soft) !important;
 }
 .light .landing-page .landing-stats-band .bg-blue-500\/20 {
-  background-color: rgba(29, 78, 216, 0.12) !important;
+  background-color: rgba(9, 105, 218, 0.12) !important;
 }
 .light .landing-page .landing-stats-band .text-blue-400 {
   color: var(--landing-accent-blue) !important;
@@ -981,16 +1121,16 @@ select.input option {
   color: var(--landing-accent-blue) !important;
 }
 .light .landing-page .bg-blue-500\/20 {
-  background-color: rgba(29, 78, 216, 0.1) !important;
+  background-color: rgba(9, 105, 218, 0.1) !important;
 }
 .light .landing-page .hover\:text-white:hover,
 .light .landing-page .hover\:text-gray-300:hover,
 .light .landing-page a:hover { color: var(--landing-text) !important; }
 .light .landing-page .hover\:border-blue-500\/40:hover {
-  border-color: rgba(29, 78, 216, 0.4) !important;
+  border-color: rgba(9, 105, 218, 0.4) !important;
 }
 .light .landing-page .hover\:bg-blue-500\/10:hover {
-  background-color: rgba(29, 78, 216, 0.06) !important;
+  background-color: rgba(9, 105, 218, 0.06) !important;
 }
 .light .landing-page .text-gradient {
   color: var(--landing-accent-blue) !important;
@@ -1004,32 +1144,31 @@ select.input option {
   color: var(--landing-text-muted) !important;
 }
 .light .landing-page .btn-primary {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  background: linear-gradient(135deg, #9a6700 0%, #7d4e00 100%);
   color: #fff !important;
   border: none;
-  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.25);
+  box-shadow: 0 4px 14px rgba(154, 103, 0, 0.25);
 }
 .light .landing-page .btn-primary:hover {
-  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-  box-shadow: 0 6px 20px rgba(180, 83, 9, 0.35);
+  background: linear-gradient(135deg, #7d4e00 0%, #633a00 100%);
+  box-shadow: 0 6px 20px rgba(154, 103, 0, 0.35);
 }
 .light .landing-page .shadow-gold-400\/20,
 .light .landing-page .shadow-gold-400\/25 {
-  box-shadow: 0 10px 25px -5px rgba(180, 83, 9, 0.2);
+  box-shadow: 0 10px 25px -5px rgba(154, 103, 0, 0.2);
 }
 .light .landing-page .border-2.border-space-700 {
   border-color: var(--landing-border) !important;
 }
 .light .landing-page .border-gold-400 {
-  border-color: rgba(180, 83, 9, 0.5) !important;
+  border-color: rgba(154, 103, 0, 0.5) !important;
 }
 
-/* Light mode - Landing : hero et CTA (vagues et grille plus douces) */
-/* Vagues plus visibles en mode clair (bleu reconnaissable, pas blanc) */
-.light .landing-hero-wave-1 { color: rgba(29, 78, 216, 0.35); }
-.light .landing-hero-wave-2 { color: rgba(37, 99, 235, 0.45); }
-.light .landing-hero-wave-3 { color: rgba(59, 130, 246, 0.38); }
-.light .landing-page { --wave-grid-color: rgba(29, 78, 216, 0.15); }
+/* Light mode - Landing : hero et CTA - Agent-bootstrap light */
+.light .landing-hero-wave-1 { color: rgba(9, 105, 218, 0.35); }
+.light .landing-hero-wave-2 { color: rgba(9, 105, 218, 0.45); }
+.light .landing-hero-wave-3 { color: rgba(9, 105, 218, 0.38); }
+.light .landing-page { --wave-grid-color: rgba(9, 105, 218, 0.15); }
 .light .landing-page .landing-hero-grid {
   opacity: 0.08;
 }
@@ -1052,73 +1191,68 @@ select.input option {
   background: var(--landing-bg) !important;
 }
 
-/* Light mode - Cartes landing (étapes, features) : icônes en dégradé → couleur unie */
+/* Light mode - Cartes landing (étapes, features) - Agent-bootstrap light */
 .light .landing-hero .bg-gradient-to-br.from-gold-400.to-blue-500,
 .light .landing-hero .bg-gradient-to-br.from-blue-500.to-gold-400,
 .light #features .bg-gradient-to-br,
 .light #how-it-works .bg-gradient-to-br.from-gold-400.to-blue-500,
 .light #pricing .bg-gradient-to-br.from-gold-400.to-amber-500,
 .light #pricing .bg-gradient-to-r.from-gold-400.to-amber-500 {
-  background: #2563eb;
+  background: #0969da;
 }
-.light #features .bg-gradient-to-br.from-blue-500 { background: #0284c7; }
-.light #features .bg-gradient-to-br.from-gold-400 { background: #d97706; }
-.light #features .bg-gradient-to-br.from-emerald-500 { background: #059669; }
+.light #features .bg-gradient-to-br.from-blue-500 { background: #0969da; }
+.light #features .bg-gradient-to-br.from-gold-400 { background: #9a6700; }
+.light #features .bg-gradient-to-br.from-emerald-500 { background: #1a7f37; }
 .light .bg-gradient-to-b.from-gold-400\/10.to-transparent {
-  background: rgba(217, 119, 6, 0.08);
+  background: rgba(154, 103, 0, 0.08);
 }
 
 /* Light mode notification badges */
 .light .bg-gold-400 {
-  background-color: #f59e0b;
+  background-color: #9a6700;
 }
 
-/* Light mode tags and badges */
+/* Light mode tags and badges - Agent-bootstrap light */
 .light .px-2.py-0\.5.text-xs.bg-blue-500\/20 {
-  background-color: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
+  background-color: rgba(9, 105, 218, 0.12);
+  color: #0969da;
 }
 
 .light .px-2.py-0\.5.text-xs.bg-emerald-500\/20 {
-  background-color: rgba(5, 150, 105, 0.12);
-  color: #047857;
+  background-color: rgba(26, 127, 55, 0.12);
+  color: #1a7f37;
 }
 
 .light .px-2.py-0\.5.text-xs.bg-amber-500\/20,
 .light .px-2.py-0\.5.text-xs.bg-yellow-500\/20 {
-  background-color: rgba(217, 119, 6, 0.12);
-  color: #b45309;
+  background-color: rgba(154, 103, 0, 0.12);
+  color: #9a6700;
 }
 
 .light .px-2.py-0\.5.text-xs.bg-red-500\/20 {
-  background-color: rgba(220, 38, 38, 0.12);
-  color: #b91c1c;
-}
-
-.light .px-2.py-0\.5.text-xs.bg-blue-500\/20 {
-  background-color: rgba(2, 132, 199, 0.12);
-  color: #0369a1;
+  background-color: rgba(207, 34, 46, 0.12);
+  color: #cf222e;
 }
 
 .light .px-2.py-0\.5.text-xs.bg-gray-500\/20 {
-  background-color: rgba(100, 116, 139, 0.12);
-  color: #475569;
+  background-color: rgba(110, 119, 129, 0.12);
+  color: #57606a;
 }
 
 /* Light mode links */
 .light a.text-blue-400:hover {
-  color: #1d4ed8;
+  color: #0550ae;
 }
 
 .light a.text-gold-400:hover {
-  color: #b45309;
+  color: #7d4e00;
 }
 
 /* Light mode icons in buttons */
 .light .text-space-950 {
-  color: #1e293b;
+  color: #1f2328;
 }
 
 .light .text-space-900 {
-  color: #0f172a;
+  color: #1f2328;
 }

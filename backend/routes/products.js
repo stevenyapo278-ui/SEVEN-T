@@ -2,12 +2,27 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import { parse } from 'csv-parse/sync';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join, extname } from 'path';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { messageAnalyzer } from '../services/messageAnalyzer.js';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (allowed.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Type de fichier non supporté. Utilisez JPEG, PNG, WebP ou GIF.'));
+        }
+    }
+});
 
 // Get all products for user
 router.get('/', authenticateToken, async (req, res) => {
@@ -101,6 +116,52 @@ router.get('/history', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Get product history error:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération de l\'historique' });
+    }
+});
+
+// Serve uploaded product image (public URL for img src)
+router.get('/image/:filename', (req, res) => {
+    try {
+        const { filename } = req.params;
+        if (!filename || filename.includes('..')) {
+            return res.status(400).json({ error: 'Nom de fichier invalide' });
+        }
+        const uploadsDir = join(__dirname, '..', '..', 'uploads', 'products');
+        const filepath = join(uploadsDir, filename);
+        if (!fs.existsSync(filepath)) {
+            return res.status(404).json({ error: 'Image non trouvée' });
+        }
+        const ext = extname(filename).toLowerCase();
+        const mime = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' }[ext] || 'image/jpeg';
+        res.setHeader('Content-Type', mime);
+        res.sendFile(filepath);
+    } catch (error) {
+        console.error('Serve product image error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Upload product image (returns URL to use as image_url)
+router.post('/upload-image', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Fichier image requis' });
+        }
+        const ext = extname(req.file.originalname || '').toLowerCase() || '.jpg';
+        const safeExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext) ? ext : '.jpg';
+        const filename = `${uuidv4()}${safeExt}`;
+        const uploadsDir = join(__dirname, '..', '..', 'uploads', 'products');
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const filepath = join(uploadsDir, filename);
+        fs.writeFileSync(filepath, req.file.buffer);
+        const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '');
+        const url = `${baseUrl}/api/products/image/${filename}`;
+        res.json({ url });
+    } catch (error) {
+        console.error('Upload product image error:', error);
+        res.status(500).json({ error: error.message || 'Erreur lors de l\'upload' });
     }
 });
 
@@ -392,18 +453,26 @@ router.get('/:id/images', authenticateToken, async (req, res) => {
     }
 });
 
+const MAX_PRODUCT_IMAGES = 4;
+
 // Add image to product
 router.post('/:id/images', authenticateToken, async (req, res) => {
     try {
         const { url, alt_text, is_primary } = req.body;
 
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT id, image_url FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
 
         if (!url?.trim()) {
             return res.status(400).json({ error: 'URL requise' });
+        }
+
+        const countRow = await db.get('SELECT COUNT(*) as c FROM product_images WHERE product_id = ?', req.params.id);
+        const totalImages = (product.image_url ? 1 : 0) + (countRow?.c ?? 0);
+        if (totalImages >= MAX_PRODUCT_IMAGES) {
+            return res.status(400).json({ error: `Maximum ${MAX_PRODUCT_IMAGES} photos par produit.` });
         }
 
         const maxPos = await db.get('SELECT MAX(position) as max FROM product_images WHERE product_id = ?', req.params.id);

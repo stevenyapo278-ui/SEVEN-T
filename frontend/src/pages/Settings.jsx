@@ -239,7 +239,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-4xl">
+    <div className="w-full min-w-0">
       <div className="mb-8">
         <h1 className="text-2xl font-display font-bold text-gray-100">Paramètres</h1>
         <p className="text-gray-400">Gérez votre compte et votre abonnement</p>
@@ -340,7 +340,7 @@ export default function Settings() {
             <p className="text-xl font-display font-semibold text-gray-100">{currentPlan.name}</p>
           </div>
           <div className="flex flex-col sm:items-end gap-2">
-            {user?.stripe_customer_id && (
+            {!!user?.stripe_customer_id && (
               <button
                 type="button"
                 onClick={handleManageSubscription}
@@ -354,8 +354,10 @@ export default function Settings() {
             <div className="text-left sm:text-right">
               <p className="text-sm text-gray-500">Messages IA restants</p>
               <p className="text-2xl font-display font-bold text-blue-400 flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : (user?.credits ?? 0)}
+                <Sparkles className="w-5 h-5 flex-shrink-0" />
+                <span className="tabular-nums">
+                  {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : String(user?.credits ?? 0)}
+                </span>
               </p>
             </div>
           </div>
@@ -376,8 +378,8 @@ export default function Settings() {
               <div className="mb-3">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-400">Utilisation ce mois</span>
-                  <span className="text-gray-300">
-                    {used} utilisés / {limit} inclus
+                  <span className="text-gray-300 tabular-nums">
+                    {used === 0 ? 'Aucun utilisé' : `${used} utilisés`} / {limit} inclus
                   </span>
                 </div>
                 <div className="w-full bg-space-700 rounded-full h-2">
@@ -431,7 +433,7 @@ export default function Settings() {
       </div>
 
       {/* Moyens de paiement — affiché uniquement si l'admin a activé le module pour cet utilisateur */}
-      {user?.payment_module_enabled && (
+      {!!user?.payment_module_enabled && (
       <div className="card p-6 mb-6">
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
           <Lock className="w-5 h-5 text-gold-400" />
@@ -500,7 +502,7 @@ export default function Settings() {
       )}
 
       {/* Modal config PaymeTrust */}
-      {user?.payment_module_enabled && paymentProviderModal?.provider === 'paymetrust' && (
+      {!!user?.payment_module_enabled && paymentProviderModal?.provider === 'paymetrust' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
           <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-space-700 bg-space-900 shadow-2xl animate-fadeIn overflow-hidden">
@@ -553,20 +555,6 @@ export default function Settings() {
           </div>
         </div>
       )}
-
-      {/* Intelligence artificielle */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <h3 className="font-medium text-gray-100">Intelligence artificielle incluse</h3>
-            <p className="text-sm text-gray-400 mt-1">
-              Votre abonnement inclut l&apos;accès à <strong className="text-blue-400">Google Gemini</strong> et <strong className="text-gold-400">OpenAI GPT-4</strong>.
-              Aucune configuration requise.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Données et confidentialité */}
       <div className="card p-6 mb-6">

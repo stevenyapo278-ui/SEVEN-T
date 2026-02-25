@@ -47,6 +47,42 @@ function MessageImage({ conversationId, messageId }) {
   )
 }
 
+// Assistant product image: fetch by path (e.g. /api/products/image/xxx.png) with auth
+function AssistantMessageImage({ mediaUrl }) {
+  const [src, setSrc] = useState(null)
+  const [error, setError] = useState(false)
+  const blobUrlRef = useRef(null)
+  const path = mediaUrl?.replace(/^\/api\/?/, '') // baseURL is /api
+  useEffect(() => {
+    if (!path) return
+    setError(false)
+    setSrc(null)
+    api.get(path, { responseType: 'blob' })
+      .then((res) => {
+        if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
+        const url = URL.createObjectURL(res.data)
+        blobUrlRef.current = url
+        setSrc(url)
+      })
+      .catch(() => setError(true))
+    return () => {
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current)
+        blobUrlRef.current = null
+      }
+    }
+  }, [path])
+  if (error) return <span className="text-xs text-gray-500">[Image non disponible]</span>
+  if (!src) return <span className="text-xs text-gray-500">Chargement…</span>
+  return (
+    <img
+      src={src}
+      alt="Photo produit"
+      className="rounded-lg max-w-full max-h-64 object-contain my-1"
+    />
+  )
+}
+
 // Message audio: fetch with auth and play
 function MessageAudio({ conversationId, messageId }) {
   const [src, setSrc] = useState(null)
@@ -868,6 +904,8 @@ export default function ConversationDetail() {
                           ) : message.message_type === 'image' ? (
                             <MessageImage conversationId={id} messageId={message.id} />
                           ) : null
+                        ) : message.role === 'assistant' && message.message_type === 'image' && message.media_url ? (
+                          <AssistantMessageImage mediaUrl={message.media_url} />
                         ) : null}
                         {(message.content && message.content !== '[Image]' && message.content !== '[Audio]') || (!message.media_url && message.content) ? (
                           <p className="text-sm whitespace-pre-wrap">{message.content}</p>

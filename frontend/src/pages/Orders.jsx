@@ -80,6 +80,7 @@ export default function Orders() {
   const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
+  const statusFromUrl = searchParams.get('status')
   const activeTab = ORDERS_TABS.some((t) => t.id === tabFromUrl) ? tabFromUrl : 'orders'
 
   const setActiveTab = (tab) => {
@@ -90,7 +91,10 @@ export default function Orders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({ pending: 0, validated: 0, delivered: 0, rejected: 0, totalRevenue: 0 })
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = statusFromUrl || 'all'
+    return ['all', 'pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled'].includes(s) ? s : 'all'
+  })
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedOrder, setExpandedOrder] = useState(null)
   const [logs, setLogs] = useState([])
@@ -116,6 +120,12 @@ export default function Orders() {
     paymentMethod: 'on_delivery'
   })
   useLockBodyScroll(showNewOrderModal || paymentLinkModal.open)
+
+  useEffect(() => {
+    if (statusFromUrl && ['pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled'].includes(statusFromUrl)) {
+      setStatusFilter(statusFromUrl)
+    }
+  }, [statusFromUrl])
 
   useEffect(() => {
     loadOrders()

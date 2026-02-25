@@ -18,9 +18,11 @@ import {
   RefreshCw,
   Crown,
   WifiOff,
-  CheckCircle2
+  CheckCircle2,
+  UserPlus,
+  ShoppingCart
 } from 'lucide-react'
-import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -30,6 +32,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [agents, setAgents] = useState([])
   const [quotas, setQuotas] = useState(null)
+  const [weeklyActivity, setWeeklyActivity] = useState([])
   const [loading, setLoading] = useState(true)
   const [showWelcome, setShowWelcome] = useState(false)
 
@@ -84,14 +87,16 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [statsRes, agentsRes, quotasRes] = await Promise.all([
+      const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
         api.get('/stats/dashboard'),
         api.get('/agents'),
-        api.get('/agents/quotas').catch(() => ({ data: null }))
+        api.get('/agents/quotas').catch(() => ({ data: null })),
+        api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } }))
       ])
       setStats(statsRes.data.stats)
       setAgents(agentsRes.data.agents)
       setQuotas(quotasRes.data)
+      setWeeklyActivity(weeklyRes.data?.data || [])
     } catch (error) {
       console.error('Error loading dashboard:', error)
     } finally {
@@ -310,30 +315,83 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Charts Row: Analytics CTA + Agent Status */}
+      {/* À suivre : leads et commandes en attente */}
+      {((stats?.leads ?? 0) > 0 || (stats?.pending_orders ?? 0) > 0) && (
+        <div className="card p-4 sm:p-5 border border-space-700">
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">À suivre</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {(stats?.leads ?? 0) > 0 && (
+              <Link
+                to="/dashboard/leads"
+                className="flex items-center gap-3 p-3 rounded-xl bg-space-800/50 hover:bg-space-800 border border-transparent hover:border-space-600 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <UserPlus className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-100">{stats.leads} lead(s)</p>
+                  <p className="text-xs text-gray-500">Voir et gérer les leads</p>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
+              </Link>
+            )}
+            {(stats?.pending_orders ?? 0) > 0 && (
+              <Link
+                to="/dashboard/orders?status=pending"
+                className="flex items-center gap-3 p-3 rounded-xl bg-space-800/50 hover:bg-space-800 border border-transparent hover:border-space-600 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                  <ShoppingCart className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-100">{stats.pending_orders} commande(s) en attente</p>
+                  <p className="text-xs text-gray-500">Traiter les commandes</p>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-500 flex-shrink-0" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Charts Row: Activité 7 jours + Agent Status */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Analytics détaillés - évite doublon avec page Analytics */}
+        {/* Activité des 7 derniers jours */}
         <div className="lg:col-span-2">
-          <Link
-            to="/dashboard/analytics"
-            className="card p-6 block h-full border border-space-700 hover:border-gold-400/40 bg-gradient-to-br from-space-800/80 to-space-800/40 transition-colors"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gold-400/20 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-6 h-6 text-gold-400" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-display font-semibold text-gray-100 mb-1">Analytics détaillés</h2>
-                <p className="text-sm text-gray-400 mb-4">
-                  Messages dans le temps, performances par agent, heures de pointe, tunnel de conversion et top produits.
-                </p>
-                <span className="inline-flex items-center gap-2 text-sm font-medium text-gold-400">
-                  Voir les analytics
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              </div>
+          <div className="card p-6 h-full border border-space-700 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-display font-semibold text-gray-100">Activité des 7 derniers jours</h2>
+              <Link
+                to="/dashboard/analytics"
+                className="text-sm text-gold-400 hover:text-gold-300 font-medium flex items-center gap-1"
+              >
+                Analytics
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
-          </Link>
+            {weeklyActivity.length > 0 ? (
+              <div className="flex-1 min-h-[160px] w-full">
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={weeklyActivity} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-space-600" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={28} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #2d2d44', borderRadius: '8px' }}
+                      formatter={(value, name) => [value, name === 'messages' ? 'Messages' : 'Conversations']}
+                      labelFormatter={(label) => `Jour: ${label}`}
+                    />
+                    <Bar dataKey="messages" fill="#F5D47A" radius={[4, 4, 0, 0]} name="Messages" />
+                    <Bar dataKey="conversations" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Conversations" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="flex-1 min-h-[160px] flex items-center justify-center text-gray-500 text-sm">
+                Aucune activité sur les 7 derniers jours
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Agent Status Pie */}
@@ -415,6 +473,20 @@ export default function Dashboard() {
                 <p className="text-xs text-gray-500">{stats?.conversations?.total || 0} au total</p>
               </div>
             </Link>
+            {(stats?.products ?? 0) > 0 && (
+              <Link 
+                to="/dashboard/products"
+                className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                  <ShoppingCart className="w-5 h-5 text-violet-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-100">Catalogue produits</p>
+                  <p className="text-xs text-gray-500">{stats.products} produit(s)</p>
+                </div>
+              </Link>
+            )}
             <Link 
               to="/dashboard/settings"
               className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
