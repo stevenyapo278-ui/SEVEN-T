@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { 
   BookOpen, 
   Plus, 
@@ -389,6 +390,7 @@ export default function KnowledgeBase() {
 }
 
 function AddKnowledgeModal({ onClose, onAdded }) {
+  useLockBodyScroll(true)
   const [activeType, setActiveType] = useState('text')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -462,15 +464,15 @@ function AddKnowledgeModal({ onClose, onAdded }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-space-900 p-6 border-b border-space-700">
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-semibold text-gray-100">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
               Ajouter à la base de connaissances
             </h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label="Fermer">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -483,7 +485,6 @@ function AddKnowledgeModal({ onClose, onAdded }) {
               const colorClasses = {
                 blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
                 red: isActive ? 'bg-red-500/20 text-red-400 border-red-500/30' : '',
-                blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
               }
               return (
                 <button
@@ -508,7 +509,7 @@ function AddKnowledgeModal({ onClose, onAdded }) {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6">
           {/* Text input */}
           {activeType === 'text' && (
             <form onSubmit={handleTextSubmit} className="space-y-4">
@@ -542,11 +543,11 @@ function AddKnowledgeModal({ onClose, onAdded }) {
                 />
                 <p className="text-xs text-gray-500 mt-1">{content.length.toLocaleString()} caractères</p>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
                   Annuler
                 </button>
-                <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-50">
+                <button type="submit" disabled={loading} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target disabled:opacity-50">
                   {loading ? 'Ajout...' : 'Ajouter'}
                 </button>
               </div>
@@ -589,11 +590,11 @@ function AddKnowledgeModal({ onClose, onAdded }) {
                   <strong>Note :</strong> Seules les vidéos avec sous-titres peuvent être extraites.
                 </p>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
                   Annuler
                 </button>
-                <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-50">
+                <button type="submit" disabled={loading} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target disabled:opacity-50">
                   {loading ? 'Extraction...' : 'Extraire'}
                 </button>
               </div>
@@ -631,11 +632,11 @@ function AddKnowledgeModal({ onClose, onAdded }) {
                   className="input-dark w-full"
                 />
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
                   Annuler
                 </button>
-                <button type="submit" disabled={loading} className="btn-primary flex-1 disabled:opacity-50">
+                <button type="submit" disabled={loading} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target disabled:opacity-50">
                   {loading ? 'Extraction...' : 'Extraire'}
                 </button>
               </div>
@@ -681,8 +682,8 @@ function AddKnowledgeModal({ onClose, onAdded }) {
                 </p>
                 <p className="text-sm text-gray-500">Maximum 10 MB</p>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
                   Annuler
                 </button>
               </div>

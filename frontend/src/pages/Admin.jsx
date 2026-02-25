@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { 
   Users, 
   Bot, 
@@ -85,6 +86,8 @@ export default function Admin() {
   // Confirmation modal for dangerous actions
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null) // { type, data, message, keyword }
+  const anyAdminModalOpen = showUserModal || showCreateModal || showDeleteModal || promoteAdminModal.open || showModelModal || showKeyModal || showPlanModal || showConfirmModal
+  useLockBodyScroll(anyAdminModalOpen)
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -681,8 +684,8 @@ export default function Admin() {
 
       {/* Promote to Admin - validation écrite */}
       {promoteAdminModal.open && promoteAdminModal.user && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="relative z-10 card w-full max-w-md p-6 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-gold-400/20 flex items-center justify-center">
                 <Shield className="w-5 h-5 text-gold-400" />
@@ -890,8 +893,7 @@ function StatCard({ icon: Icon, label, value, subValue, color }) {
   const colors = {
     gold: 'from-gold-400/20 to-gold-400/5 border-gold-400/30 text-gold-400',
     blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
-    emerald: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30 text-emerald-400',
-    blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400'
+    emerald: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30 text-emerald-400'
   }
 
   return (
@@ -1162,8 +1164,8 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="relative z-10 card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
         <div className="flex items-center justify-between p-4 border-b border-space-700">
           <h3 className="text-lg font-display font-semibold text-gray-100">Modifier l'utilisateur</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
@@ -1373,8 +1375,8 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card w-full max-w-md">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="relative z-10 card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
         <div className="flex items-center justify-between p-4 border-b border-space-700">
           <h3 className="text-lg font-display font-semibold text-gray-100">Nouvel utilisateur</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
@@ -1514,9 +1516,9 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="card w-full max-w-lg relative z-10 max-h-[90vh] overflow-y-auto">
+      <div className="card w-full max-w-lg relative z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
         <div className="p-6 border-b border-space-700">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
@@ -2191,8 +2193,8 @@ function AIModelModal({ model, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="relative z-10 card w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
         <div className="flex items-center justify-between p-4 border-b border-space-700">
           <h3 className="text-lg font-display font-semibold text-gray-100">
             {model ? 'Modifier le modèle' : 'Nouveau modèle'}
@@ -2373,8 +2375,8 @@ function APIKeyModal({ keyData, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card w-full max-w-md">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="relative z-10 card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
         <div className="flex items-center justify-between p-4 border-b border-space-700">
           <h3 className="text-lg font-display font-semibold text-gray-100">
             Clé API {getProviderName(keyData?.provider)}
@@ -2717,8 +2719,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
   ]
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="card w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="relative z-10 card w-full max-w-2xl max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-space-700">
           <h3 className="text-lg font-display font-semibold text-gray-100">
             {plan ? 'Modifier le plan' : 'Nouveau plan'}
@@ -2954,8 +2956,8 @@ function ConfirmActionModal({ message, keyword, onConfirm, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
-      <div className="card w-full max-w-md animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
+      <div className="relative z-10 card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
         <div className="p-6">
           {/* Warning Icon */}
           <div className="flex justify-center mb-4">

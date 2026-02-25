@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { 
@@ -112,6 +113,7 @@ function getSteps(t) {
 }
 
 export default function WelcomeModal({ isOpen, onClose, onComplete }) {
+  useLockBodyScroll(isOpen)
   const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(0)
   const navigate = useNavigate()
@@ -138,10 +140,10 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/90 backdrop-blur-sm" />
       
-      <div className="relative w-full max-w-lg bg-space-900 rounded-2xl border border-space-700 overflow-hidden">
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 rounded-t-2xl sm:rounded-2xl border border-space-700 overflow-hidden animate-fadeIn">
         {/* Progress bar */}
         <div className="h-1 bg-space-800">
           <div 
@@ -159,7 +161,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
         </button>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 sm:p-8">
           {/* Step indicator */}
           <div className="flex justify-center gap-2 mb-6">
             {steps.map((_, index) => (
@@ -197,18 +199,18 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex flex-col-reverse sm:flex-row gap-3">
             {currentStep > 0 && (
               <button
                 onClick={() => setCurrentStep(prev => prev - 1)}
-                className="flex-1 btn-secondary"
+                className="flex-1 btn-secondary min-h-[44px] touch-target"
               >
                 {t('onboarding.btnBack')}
               </button>
             )}
             <button
               onClick={handleNext}
-              className="flex-1 btn-primary inline-flex items-center justify-center gap-2"
+              className="flex-1 btn-primary min-h-[44px] touch-target inline-flex items-center justify-center gap-2"
             >
               {isLastStep ? t('onboarding.btnCreateAgent') : t('onboarding.btnContinue')}
               <ArrowRight className="w-4 h-4" />

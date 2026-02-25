@@ -176,17 +176,16 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
       gold: 'from-gold-400/20 to-gold-400/5 border-gold-400/30 text-gold-400',
       blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
       emerald: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30 text-emerald-400',
-      blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
       orange: 'from-orange-400/20 to-orange-400/5 border-orange-400/30 text-orange-400'
     }
     return colors[color] || colors.gold
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/90 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-2xl bg-space-900 rounded-2xl border border-space-700 overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 rounded-t-2xl sm:rounded-2xl border border-space-700 overflow-hidden animate-fadeIn">
         {/* Header */}
         <div className="sticky top-0 bg-space-900 border-b border-space-700 p-4 z-10">
           <div className="flex items-center justify-between">

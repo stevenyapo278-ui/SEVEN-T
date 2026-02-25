@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import api, { syncChats, getSyncStatus, getContacts } from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import Breadcrumbs from '../components/Breadcrumbs'
 import { 
   Bot, 
@@ -34,7 +35,9 @@ import {
   Video,
   Globe,
   Wrench,
-  Check
+  Check,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -1085,6 +1088,8 @@ function SettingsTab({ agent, onUpdate }) {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false)
   const [tools, setTools] = useState([])
   const [toolsLoading, setToolsLoading] = useState(false)
+  const [systemPromptFocusOpen, setSystemPromptFocusOpen] = useState(false)
+  useLockBodyScroll(systemPromptFocusOpen)
 
   const DAYS_OF_WEEK = [
     { id: 0, label: 'Dim' },
@@ -1192,6 +1197,27 @@ function SettingsTab({ agent, onUpdate }) {
   const scrollToSection = (id) => {
     setActiveSection(id)
     document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handleSaveFromModal = async () => {
+    setSaving(true)
+    try {
+      await api.put(`/agents/${agent.id}`, {
+        ...formData,
+        template: formData.template || null,
+        tool_id: formData.tool_id || null,
+        auto_reply: formData.auto_reply ? 1 : 0,
+        availability_enabled: formData.availability_enabled ? 1 : 0,
+        human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0
+      })
+      toast.success('Paramètres sauvegardés')
+      onUpdate()
+      setSystemPromptFocusOpen(false)
+    } catch (error) {
+      toast.error('Erreur lors de la sauvegarde')
+    } finally {
+      setSaving(false)
+    }
   }
 
   useEffect(() => {
@@ -1306,21 +1332,72 @@ function SettingsTab({ agent, onUpdate }) {
         <div id="settings-ai" className="card p-6 scroll-mt-4">
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Configuration IA</h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Instructions système (System Prompt)
-                </label>
+              {/* Zone dédiée pour les instructions système (System Prompt) */}
+              <div className="rounded-xl border border-space-600 bg-space-800/50 p-4 focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <label htmlFor="agent-system-prompt" className="text-sm font-medium text-gray-300">
+                    Instructions système (System Prompt)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setSystemPromptFocusOpen(true)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-colors"
+                    title="Agrandir pour modifier"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                    Agrandir
+                  </button>
+                </div>
                 <textarea
+                  id="agent-system-prompt"
                   value={formData.system_prompt}
                   onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Décrivez le comportement de votre assistant..."
-                  className="input-dark w-full font-mono text-sm"
+                  className="w-full rounded-lg border border-space-600 bg-space-900 px-4 py-3 font-mono text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 min-h-[200px] resize-y"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-2">
                   Ces instructions définissent la personnalité et le comportement de votre assistant.
                 </p>
               </div>
+
+              {/* Modal focus pour éditer le system prompt en grand */}
+              {systemPromptFocusOpen && (
+                <div className="fixed inset-0 z-50 flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-100">Instructions système (System Prompt)</h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveFromModal}
+                        disabled={saving}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white bg-gold-500 hover:bg-gold-400 border border-gold-400/30 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <Save className="w-4 h-4" />
+                        {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSystemPromptFocusOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-space-800 hover:bg-space-700 border border-space-600 transition-colors"
+                      >
+                        <Minimize2 className="w-4 h-4" />
+                        Réduire
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-h-0 rounded-xl border border-space-600 bg-space-900 overflow-hidden flex flex-col">
+                    <textarea
+                      value={formData.system_prompt}
+                      onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
+                      placeholder="Décrivez le comportement de votre assistant..."
+                      className="flex-1 w-full min-h-0 p-4 font-mono text-sm text-gray-100 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none"
+                      autoFocus
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Les modifications sont conservées. Enregistrez l’agent pour appliquer.</p>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Modèle IA</label>
@@ -1705,6 +1782,7 @@ function KnowledgeTab({ agentId }) {
   const [assignedGlobalIds, setAssignedGlobalIds] = useState([])
   const [showGlobalSelector, setShowGlobalSelector] = useState(false)
   const [savingGlobal, setSavingGlobal] = useState(false)
+  useLockBodyScroll(showGlobalSelector || showAddModal)
 
   useEffect(() => {
     loadKnowledge()
@@ -1793,11 +1871,11 @@ function KnowledgeTab({ agentId }) {
   }
 
   return (
-    <div>
+    <div className="min-w-0 px-1 sm:px-0">
       {/* Header with stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <span className="text-gray-400">
               {stats.total_items || 0} éléments
             </span>
@@ -1822,7 +1900,7 @@ function KnowledgeTab({ agentId }) {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary inline-flex items-center gap-2"
+          className="btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] w-full sm:w-auto touch-target"
         >
           <Plus className="w-5 h-5" />
           Ajouter
@@ -1830,13 +1908,13 @@ function KnowledgeTab({ agentId }) {
       </div>
 
       {/* Global Knowledge Section */}
-      <div className="card p-6 mb-6 bg-gradient-to-br from-blue-500/10 to-blue-500/10 border-blue-500/20">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-xl">
+      <div className="card p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-br from-blue-500/10 to-blue-500/10 border-blue-500/20 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="p-2 bg-blue-500/20 rounded-xl flex-shrink-0">
               <Globe className="w-5 h-5 text-blue-400" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h4 className="font-medium text-gray-100 mb-1">
                 Base de connaissance globale
               </h4>
@@ -1851,7 +1929,7 @@ function KnowledgeTab({ agentId }) {
           </div>
           <button
             onClick={() => setShowGlobalSelector(true)}
-            className="btn-secondary inline-flex items-center gap-2"
+            className="btn-secondary inline-flex items-center justify-center gap-2 min-h-[44px] w-full sm:w-auto flex-shrink-0 touch-target"
           >
             <Settings className="w-4 h-4" />
             Gérer
@@ -1860,39 +1938,39 @@ function KnowledgeTab({ agentId }) {
       </div>
 
       {items.length === 0 ? (
-        <div className="card p-12 text-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-space-700 to-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="w-10 h-10 text-gray-500" />
+        <div className="card p-6 sm:p-12 text-center">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-space-700 to-space-800 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+            <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-gray-500" />
           </div>
-          <h3 className="text-lg font-medium text-gray-100 mb-2">Base de connaissances vide</h3>
-          <p className="text-gray-400 mb-6 max-w-md mx-auto">
+          <h3 className="text-base sm:text-lg font-medium text-gray-100 mb-2">Base de connaissances vide</h3>
+          <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto">
             Ajoutez des informations pour que votre assistant puisse répondre précisément aux questions de vos clients
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors touch-target"
             >
               <FileText className="w-4 h-4" />
               Texte
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors touch-target"
             >
               <FileText className="w-4 h-4 text-red-400" />
               PDF
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors touch-target"
             >
               <KnowledgeTypeIcon type="youtube" className="w-4 h-4" />
               YouTube
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors touch-target"
             >
               <KnowledgeTypeIcon type="website" className="w-4 h-4" />
               Site web
@@ -1904,18 +1982,18 @@ function KnowledgeTab({ agentId }) {
           {items.map((item) => (
             <div 
               key={item.id} 
-              className="card p-4 hover:border-space-600 transition-colors cursor-pointer"
+              className="card p-3 sm:p-4 hover:border-space-600 transition-colors cursor-pointer min-w-0"
               onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3 sm:gap-4">
                 <div className="p-2 bg-space-800 rounded-xl flex-shrink-0">
                   <KnowledgeTypeIcon type={item.type} className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <div>
-                      <h3 className="font-medium text-gray-100">{item.title}</h3>
-                      <div className="flex items-center gap-2 mt-1">
+                    <div className="min-w-0">
+                      <h3 className="font-medium text-gray-100 truncate">{item.title}</h3>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="text-xs px-2 py-0.5 bg-space-800 text-gray-400 rounded-full">
                           {getTypeLabel(item.type)}
                         </span>
@@ -1928,7 +2006,7 @@ function KnowledgeTab({ agentId }) {
                             target="_blank" 
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-blue-400 hover:underline truncate max-w-[200px]"
+                            className="text-xs text-blue-400 hover:underline truncate max-w-[120px] sm:max-w-[200px]"
                           >
                             {new URL(item.metadata.sourceUrl).hostname}
                           </a>
@@ -1943,7 +2021,8 @@ function KnowledgeTab({ agentId }) {
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
-                      className="text-gray-500 hover:text-red-400 transition-colors p-1"
+                      className="text-gray-500 hover:text-red-400 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 touch-target sm:min-w-0 sm:min-h-0 sm:p-1"
+                      title="Supprimer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1952,7 +2031,7 @@ function KnowledgeTab({ agentId }) {
                     {item.content}
                   </p>
                   {item.content?.length > 200 && (
-                    <button className="text-xs text-gold-400 mt-2">
+                    <button className="text-xs text-gold-400 mt-2 min-h-[32px] touch-target">
                       {expandedItem === item.id ? 'Réduire' : 'Voir plus...'}
                     </button>
                   )}
@@ -1976,18 +2055,19 @@ function KnowledgeTab({ agentId }) {
 
       {/* Global Knowledge Selector Modal */}
       {showGlobalSelector && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => setShowGlobalSelector(false)} />
-          <div className="relative z-10 w-full max-w-3xl bg-space-900 border border-space-700 rounded-3xl shadow-2xl max-h-[80vh] flex flex-col">
+          <div className="relative z-10 w-full max-w-3xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
             {/* Header */}
-            <div className="p-6 border-b border-space-700">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-semibold text-gray-100">
+            <div className="p-4 sm:p-6 border-b border-space-700 flex-shrink-0">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-100 min-w-0">
                   Attribuer des connaissances globales
                 </h2>
                 <button 
                   onClick={() => setShowGlobalSelector(false)}
-                  className="text-gray-500 hover:text-gray-300"
+                  className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target flex-shrink-0"
+                  aria-label="Fermer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1998,11 +2078,11 @@ function KnowledgeTab({ agentId }) {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
               {globalKnowledge.length === 0 ? (
-                <div className="text-center py-12">
-                  <Globe className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400">Aucune connaissance globale disponible</p>
+                <div className="text-center py-8 sm:py-12">
+                  <Globe className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 text-sm sm:text-base">Aucune connaissance globale disponible</p>
                   <Link 
                     to="/dashboard/knowledge"
                     className="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block"
@@ -2020,13 +2100,13 @@ function KnowledgeTab({ agentId }) {
                       <div 
                         key={item.id}
                         onClick={() => toggleGlobalKnowledge(item.id)}
-                        className={`card p-4 cursor-pointer transition-all ${
+                        className={`card p-3 sm:p-4 cursor-pointer transition-all touch-target min-w-0 ${
                           isSelected 
                             ? 'border-blue-500 bg-blue-500/10' 
                             : 'hover:border-space-600'
                         }`}
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3 sm:gap-4">
                           {/* Checkbox */}
                           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
                             isSelected 
@@ -2043,8 +2123,8 @@ function KnowledgeTab({ agentId }) {
 
                           {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-gray-100 mb-1">{item.title}</h3>
-                            <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-gray-100 mb-1 truncate">{item.title}</h3>
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="text-xs px-2 py-0.5 bg-space-800 text-gray-400 rounded-full">
                                 {getTypeLabel(item.type)}
                               </span>
@@ -2067,26 +2147,26 @@ function KnowledgeTab({ agentId }) {
             </div>
 
             {/* Footer */}
-            <div className="p-6 border-t border-space-700">
-              <div className="flex items-center justify-between gap-4">
-                <p className="text-sm text-gray-400">
-                  {assignedGlobalIds.length} élément(s) sélectionné(s)
-                </p>
-                <div className="flex gap-3">
+            <div className="p-4 sm:p-6 border-t border-space-700 flex-shrink-0 bg-space-900">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                   <button
                     onClick={() => setShowGlobalSelector(false)}
-                    className="btn-secondary"
+                    className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleSaveGlobalAssignments}
                     disabled={savingGlobal}
-                    className="btn-primary disabled:opacity-50"
+                    className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target disabled:opacity-50"
                   >
                     {savingGlobal ? 'Sauvegarde...' : 'Sauvegarder'}
                   </button>
                 </div>
+                <p className="text-sm text-gray-400 text-center sm:text-left">
+                  {assignedGlobalIds.length} élément(s) sélectionné(s)
+                </p>
               </div>
             </div>
           </div>
@@ -2097,6 +2177,7 @@ function KnowledgeTab({ agentId }) {
 }
 
 function AddKnowledgeModal({ agentId, onClose, onAdded }) {
+  useLockBodyScroll(true)
   const [activeType, setActiveType] = useState('text') // text, pdf, youtube, website
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -2176,15 +2257,15 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-space-900 p-6 border-b border-space-700">
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-semibold text-gray-100">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
               Ajouter à la base de connaissances
             </h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label="Fermer">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -2197,7 +2278,6 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               const colorClasses = {
                 blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
                 red: isActive ? 'bg-red-500/20 text-red-400 border-red-500/30' : '',
-                blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
               }
               return (
                 <button
@@ -2692,6 +2772,7 @@ function TemplatesTab({ agentId }) {
 }
 
 function TemplateModal({ template, agentId, onClose, onSaved }) {
+  useLockBodyScroll(true)
   const [formData, setFormData] = useState({
     name: template?.name || '',
     content: template?.content || '',
@@ -2725,15 +2806,15 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="card w-full max-w-lg relative z-10">
-        <div className="p-6 border-b border-space-700">
-          <h2 className="text-xl font-display font-semibold text-gray-100">
+      <div className="relative z-10 card w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
             {template ? 'Modifier le template' : 'Nouveau template'}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
             <input
@@ -2935,6 +3016,7 @@ function BlacklistTab({ agentId }) {
 }
 
 function AddToBlacklistModal({ agentId, onClose, onAdded }) {
+  useLockBodyScroll(true)
   const [contactNumber, setContactNumber] = useState('')
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
@@ -2967,13 +3049,13 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="card w-full max-w-md relative z-10">
-        <div className="p-6 border-b border-space-700">
-          <h2 className="text-xl font-display font-semibold text-gray-100">Bloquer un contact</h2>
+      <div className="relative z-10 card w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">Bloquer un contact</h2>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Numéro de téléphone

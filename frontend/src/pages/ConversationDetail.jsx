@@ -565,45 +565,45 @@ export default function ConversationDetail() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 min-w-0">
       <Breadcrumbs items={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Conversations', href: '/dashboard/conversations' },
         { label: displayName }
       ]} />
       {/* Header */}
-      <div className="card mb-6">
-        <div className="p-4 border-b border-space-700">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
+      <div className="card mb-4 sm:mb-6 overflow-hidden">
+        <div className="p-3 sm:p-4 border-b border-space-700">
+          {/* Ligne 1 mobile: Retour + Supprimer | Desktop: idem + actions à droite */}
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
               <button
                 onClick={() => navigate('/dashboard/conversations')}
-                className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-100 transition-colors touch-target"
+                className="flex items-center justify-center gap-2 min-h-[44px] px-2 py-2 text-gray-400 hover:text-gray-100 transition-colors touch-target flex-shrink-0"
               >
-                <ArrowLeft className="w-4 h-4" />
-                Retour aux conversations
+                <ArrowLeft className="w-5 h-5 sm:w-4 sm:h-4" />
+                <span className="text-sm sm:text-base">Retour</span>
               </button>
               <button
                 onClick={handleDeleteConversation}
                 disabled={deletingConversation}
-                className="flex items-center justify-center gap-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 touch-target"
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 touch-target flex-shrink-0"
                 title="Supprimer la conversation"
               >
-                {deletingConversation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                Supprimer la conversation
+                {deletingConversation ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />}
+                <span className="text-sm sm:inline hidden">Supprimer</span>
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* Human Takeover Toggle */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0 border-t border-space-700 pt-3 sm:pt-0 sm:border-0">
               <button
                 onClick={toggleHumanTakeover}
                 disabled={togglingTakeover}
-                className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg font-medium transition-all touch-target ${
+                className={`flex items-center justify-center gap-1.5 sm:gap-2 min-h-[44px] px-3 py-2 rounded-lg font-medium transition-all touch-target flex-shrink-0 ${
                   humanTakeover
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                 }`}
-                title={humanTakeover ? 'Cliquez pour réactiver l\'IA' : 'Cliquez pour prendre en charge manuellement'}
+                title={humanTakeover ? 'Réactiver l\'IA' : 'Mode manuel'}
               >
                 {togglingTakeover ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -612,65 +612,63 @@ export default function ConversationDetail() {
                 ) : (
                   <Sparkles className="w-4 h-4" />
                 )}
-                <span className="text-sm">
-                  {humanTakeover ? 'Mode Humain' : 'Mode IA'}
-                </span>
+                <span className="text-sm whitespace-nowrap">{humanTakeover ? 'Humain' : 'IA'}</span>
               </button>
-              
               <button
                 onClick={handleSync}
                 disabled={syncing}
-                className="flex items-center justify-center gap-2 text-gold-400 hover:text-gold-300 transition-colors disabled:opacity-50 touch-target"
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-gold-400 hover:text-gold-300 transition-colors disabled:opacity-50 touch-target rounded-lg bg-space-800/50"
+                title="Synchroniser"
               >
                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing ? 'Sync...' : 'Sync'}
+                <span className="text-sm sm:inline hidden">{syncing ? 'Sync...' : 'Sync'}</span>
               </button>
               <button
                 onClick={handleExportPdf}
                 disabled={exportingPdf}
-                className="flex items-center justify-center gap-2 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 touch-target"
-                title="Exporter la conversation en PDF"
+                className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50 touch-target rounded-lg bg-space-800/50"
+                title="Exporter en PDF"
               >
                 <FileDown className={`w-4 h-4 ${exportingPdf ? 'animate-pulse' : ''}`} />
-                {exportingPdf ? 'Export...' : 'Export PDF'}
+                <span className="text-sm sm:inline hidden">PDF</span>
               </button>
               {messages.length > 0 && (
                 <>
                   {!selectionMode ? (
                     <button
                       onClick={() => setSelectionMode(true)}
-                      className="flex items-center justify-center gap-2 text-amber-400 hover:text-amber-300 transition-colors touch-target"
-                      title="Sélectionner des messages à supprimer"
+                      className="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2 text-amber-400 hover:text-amber-300 transition-colors touch-target rounded-lg bg-space-800/50"
+                      title="Sélectionner des messages"
                     >
                       <Square className="w-4 h-4" />
-                      Sélectionner
+                      <span className="text-sm sm:inline hidden">Sélectionner</span>
                     </button>
                   ) : (
                     <>
                       <button
                         onClick={() => { setSelectionMode(false); setSelectedMessageIds(new Set()) }}
-                        className="flex items-center justify-center gap-2 text-gray-400 hover:text-gray-200 transition-colors touch-target"
+                        className="flex items-center justify-center gap-1.5 min-h-[44px] px-2 py-2 text-gray-400 hover:text-gray-200 transition-colors touch-target"
                       >
                         <X className="w-4 h-4" />
-                        Annuler
+                        <span className="text-sm sm:inline hidden">Annuler</span>
                       </button>
                       <button
                         onClick={handleDeleteSelection}
                         disabled={selectedMessageIds.size === 0 || deletingMessages}
-                        className="flex items-center justify-center gap-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 touch-target"
+                        className="flex items-center justify-center gap-1.5 min-h-[44px] px-2 py-2 text-red-400 hover:text-red-300 transition-colors disabled:opacity-50 touch-target"
                         title="Supprimer la sélection"
                       >
                         {deletingMessages ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                        Supprimer ({selectedMessageIds.size})
+                        <span className="text-sm">{selectedMessageIds.size}</span>
                       </button>
                       <button
                         onClick={handleDeleteAllMessages}
                         disabled={deletingMessages}
-                        className="flex items-center justify-center gap-2 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 touch-target"
+                        className="flex items-center justify-center gap-1.5 min-h-[44px] px-2 py-2 text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 touch-target"
                         title="Supprimer tous les messages"
                       >
                         <Trash2 className="w-4 h-4" />
-                        Tout supprimer
+                        <span className="text-sm sm:inline hidden">Tout</span>
                       </button>
                     </>
                   )}
@@ -679,7 +677,7 @@ export default function ConversationDetail() {
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 min-w-0">
             <ProfileAvatar 
               agentId={conversation.agent_id}
               contactJid={conversation.contact_jid}
@@ -687,9 +685,9 @@ export default function ConversationDetail() {
               profilePictureUrl={conversation.profile_picture}
               size="xl"
             />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0 w-full sm:w-auto">
               {editingName ? (
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
                   <input
                     ref={nameInputRef}
                     type="text"
@@ -700,7 +698,7 @@ export default function ConversationDetail() {
                       if (e.key === 'Escape') cancelEditingName()
                     }}
                     placeholder="Nom du contact..."
-                    className="input-dark py-1 px-3 text-lg font-display font-bold w-64"
+                    className="input-dark py-2 px-3 text-base sm:text-lg font-display font-bold w-full max-w-xs sm:w-64 min-w-0"
                     disabled={savingName}
                   />
                   <button
@@ -719,8 +717,8 @@ export default function ConversationDetail() {
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 mb-1 min-w-0">
-                  <h1 className="text-xl font-display font-bold text-gray-100 truncate">
+                <div className="flex flex-wrap items-center gap-2 mb-1 min-w-0">
+                  <h1 className="text-lg sm:text-xl font-display font-bold text-gray-100 truncate max-w-full">
                     {isNameJustNumber(conversation.contact_name, conversation.contact_number)
                       ? formatPhoneNumber(conversation.contact_number)
                       : conversation.contact_name
@@ -738,16 +736,16 @@ export default function ConversationDetail() {
                   )}
                 </div>
               )}
-              <div className="flex items-center gap-4 text-sm text-gray-400">
-                <span className="flex items-center gap-1">
-                  <Phone className="w-4 h-4" />
-                  {formatPhoneNumber(conversation.contact_number)}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400 min-w-0">
+                <span className="flex items-center gap-1 min-w-0 truncate">
+                  <Phone className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{formatPhoneNumber(conversation.contact_number)}</span>
                 </span>
-                <span className="flex items-center gap-1">
-                  <Bot className="w-4 h-4" />
-                  {conversation.agent_name}
+                <span className="flex items-center gap-1 min-w-0 truncate">
+                  <Bot className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{conversation.agent_name}</span>
                 </span>
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 flex-shrink-0">
                   <Calendar className="w-4 h-4" />
                   {formatDate(conversation.created_at)}
                 </span>
@@ -762,7 +760,7 @@ export default function ConversationDetail() {
         </div>
 
         {/* Messages */}
-        <div className="h-[500px] overflow-y-auto bg-space-800 p-4">
+        <div className="min-h-[280px] h-[50vh] sm:h-[500px] max-h-[70vh] overflow-y-auto bg-space-800 p-3 sm:p-4">
           {selectionMode && messages.length > 0 && (
             <div className="flex items-center gap-3 mb-4 pb-3 border-b border-space-600">
               <button
@@ -838,7 +836,7 @@ export default function ConversationDetail() {
                         </button>
                       )}
                       <div
-                        className={`max-w-[70%] px-4 py-2 rounded-lg shadow-sm ${
+                        className={`max-w-[85%] sm:max-w-[70%] px-3 sm:px-4 py-2 rounded-lg shadow-sm ${
                           message.role === 'user'
                             ? 'chat-bubble-user'
                             : isHumanSender
@@ -892,19 +890,19 @@ export default function ConversationDetail() {
         </div>
 
         {/* Message Input */}
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-space-700 flex gap-2">
+        <form onSubmit={handleSendMessage} className="p-3 sm:p-4 border-t border-space-700 flex gap-2 min-w-0">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Tapez un message manuel..."
-            className="input-dark flex-1 rounded-full"
+            placeholder="Message..."
+            className="input-dark flex-1 min-w-0 rounded-full py-3 sm:py-2 text-base"
             disabled={sending}
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="w-10 h-10 bg-gradient-to-br from-gold-400 to-gold-500 text-space-950 rounded-full flex items-center justify-center hover:shadow-lg hover:shadow-gold-400/20 disabled:opacity-50 transition-all"
+            className="w-12 h-12 sm:w-10 sm:h-10 flex-shrink-0 bg-gradient-to-br from-gold-400 to-gold-500 text-space-950 rounded-full flex items-center justify-center hover:shadow-lg hover:shadow-gold-400/20 disabled:opacity-50 transition-all touch-target"
           >
             {sending ? (
               <Loader2 className="w-5 h-5 animate-spin" />

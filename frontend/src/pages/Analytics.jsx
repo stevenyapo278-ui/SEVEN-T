@@ -96,11 +96,6 @@ export default function Analytics() {
         gradient: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30',
         iconBg: 'bg-emerald-400/20',
         iconText: 'text-emerald-400'
-      },
-      blue: {
-        gradient: 'from-blue-400/20 to-blue-400/5 border-blue-400/30',
-        iconBg: 'bg-blue-400/20',
-        iconText: 'text-blue-400'
       }
     }
     const styles = colorStyles[color] || colorStyles.gold

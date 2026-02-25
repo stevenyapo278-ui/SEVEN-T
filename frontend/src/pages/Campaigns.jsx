@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { Link } from 'react-router-dom'
 import {
   Send,
@@ -49,6 +50,7 @@ export default function Campaigns() {
   const [leadsForSection, setLeadsForSection] = useState([])
   const [loadingRecipients, setLoadingRecipients] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
+  useLockBodyScroll(showModal || showRecipientsModal || showHistoryModal)
   const [historyData, setHistoryData] = useState({ campaign: null, recipients: [] })
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [sendingCampaignId, setSendingCampaignId] = useState(null)
@@ -565,12 +567,15 @@ export default function Campaigns() {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6">
-              {selectedCampaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="relative z-10 card w-full max-w-lg max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+              <h2 className="text-lg sm:text-xl font-display font-bold text-gray-100">
+                {selectedCampaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
+              </h2>
+            </div>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Nom de la campagne *
@@ -628,18 +633,19 @@ export default function Campaigns() {
                   className="input"
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-4">
+              </div>
+              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false)
                     setSelectedCampaign(null)
                   }}
-                  className="btn-secondary"
+                  className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target"
                 >
                   Annuler
                 </button>
-                <button type="submit" className="btn-primary">
+                <button type="submit" className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target">
                   {selectedCampaign ? 'Enregistrer' : 'Créer'}
                 </button>
               </div>
@@ -650,14 +656,17 @@ export default function Campaigns() {
 
       {/* Gérer les destinataires (modal) */}
       {showRecipientsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-2">
-              Gérer les destinataires
-            </h2>
-            {recipientsCampaign && (
-              <p className="text-sm text-gray-400 mb-4">{recipientsCampaign.campaign?.name}</p>
-            )}
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="relative z-10 card w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
+            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+              <h2 className="text-lg sm:text-xl font-display font-bold text-gray-100">
+                Gérer les destinataires
+              </h2>
+              {recipientsCampaign && (
+                <p className="text-sm text-gray-400 mt-1">{recipientsCampaign.campaign?.name}</p>
+              )}
+            </div>
+            <div className="flex-1 min-h-0 flex flex-col">
             {loadingRecipients ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-gold-400" />
@@ -742,26 +751,27 @@ export default function Campaigns() {
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-end pt-4 border-t border-gray-700/50 mt-4">
+                <div className="flex-shrink-0 pt-4 border-t border-gray-700/50 flex flex-col-reverse sm:flex-row sm:justify-end">
                   <button
                     type="button"
                     onClick={closeRecipientsModal}
-                    className="btn-secondary"
+                    className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target mt-3 sm:mt-0"
                   >
                     Fermer
                   </button>
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Modal Historique d'exécution */}
       {showHistoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative z-10 bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex flex-col animate-fadeIn">
+            <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-700">
               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
                 <History className="w-5 h-5 text-blue-400" />
                 Historique d'exécution
@@ -777,7 +787,7 @@ export default function Campaigns() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 overflow-auto flex-1">
+            <div className="p-4 overflow-auto flex-1 min-h-0">
               {loadingHistory ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
@@ -831,11 +841,11 @@ export default function Campaigns() {
                 </div>
               )}
             </div>
-            <div className="p-4 border-t border-gray-700 flex justify-end">
+            <div className="flex-shrink-0 p-4 border-t border-gray-700 flex flex-col-reverse sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setShowHistoryModal(false)}
-                className="btn-secondary"
+                className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target"
               >
                 Fermer
               </button>

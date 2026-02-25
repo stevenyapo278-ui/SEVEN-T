@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import toast from 'react-hot-toast'
 import {
   Plus,
@@ -304,6 +305,7 @@ export default function Flows() {
 }
 
 function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
+  useLockBodyScroll(true)
   const navigate = useNavigate()
   const [form, setForm] = useState({
     name: '',
@@ -339,24 +341,25 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       
-      <div className={`relative w-full max-w-lg rounded-2xl border ${
+      <div className={`relative z-10 w-full max-w-lg rounded-t-2xl sm:rounded-2xl border shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
       }`}>
-        <div className={`p-4 border-b flex items-center justify-between ${
+        <div className={`flex-shrink-0 p-4 border-b flex items-center justify-between ${
           isDark ? 'border-space-700' : 'border-gray-200'
         }`}>
           <h2 className={`text-lg font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Nouveau flow
           </h2>
-          <button onClick={onClose} className="text-icon hover:opacity-80">
+          <button onClick={onClose} className="p-2 -m-2 text-icon hover:opacity-80 touch-target" aria-label="Fermer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
           <div>
             <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Nom du flow
@@ -443,11 +446,12 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary">
+          </div>
+          <div className="flex-shrink-0 p-4 border-t flex flex-col-reverse sm:flex-row gap-3 sm:justify-end bg-inherit">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2">
+            <button type="submit" disabled={saving} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Créer
             </button>

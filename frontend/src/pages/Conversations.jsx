@@ -361,9 +361,9 @@ export default function Conversations() {
   const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-3 sm:px-4 min-w-0">
       {/* Hero Header - theme-aware */}
-      <div className={`relative overflow-hidden rounded-3xl border p-4 sm:p-8 mb-8 ${
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div
@@ -461,37 +461,37 @@ export default function Conversations() {
         )}
 
         {/* Stats Row - theme-aware */}
-        <div className="relative grid grid-cols-3 gap-4 mt-8 min-w-0">
-          <div className={`backdrop-blur-sm rounded-2xl p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
-                <MessageCircle className="w-5 h-5 text-emerald-400" />
+        <div className="relative grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-6 sm:mt-8 min-w-0">
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
+                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
               </div>
               <div className="min-w-0">
-                <p className={`text-lg md:text-2xl font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} title={conversations.length}>{conversations.length}</p>
-                <p className={`text-xs sm:text-sm break-words ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Conversations</p>
+                <p className={`text-base sm:text-lg md:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`} title={String(conversations.length)}>{conversations.length}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Conversations</p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-2xl p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-blue-400" />
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className={`text-lg md:text-2xl font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} title={totalMessagesCount.toLocaleString()}>{totalMessagesCount.toLocaleString()}</p>
-                <p className={`text-xs sm:text-sm break-words ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
+                <p className={`text-base sm:text-lg md:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`} title={totalMessagesCount.toLocaleString()}>{totalMessagesCount.toLocaleString()}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-2xl p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-amber-500/10 rounded-lg flex-shrink-0">
-                <Bot className="w-5 h-5 text-amber-400" />
+          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 col-span-2 sm:col-span-1 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="p-1.5 sm:p-2 bg-amber-500/10 rounded-lg flex-shrink-0">
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
               </div>
               <div className="min-w-0">
-                <p className={`text-lg md:text-2xl font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} title={agents.length}>{agents.length}</p>
-                <p className={`text-xs sm:text-sm break-words ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents actifs</p>
+                <p className={`text-base sm:text-lg md:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`} title={String(agents.length)}>{agents.length}</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents actifs</p>
               </div>
             </div>
           </div>
@@ -499,15 +499,15 @@ export default function Conversations() {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+      <div className="flex flex-col sm:flex-row gap-3 mb-4 sm:mb-6">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Rechercher par nom, numéro ou agent..."
+            placeholder="Rechercher..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3.5 bg-space-800 border border-space-700 rounded-2xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400/50 focus:ring-2 focus:ring-gold-400/20 transition-all duration-200"
+            className="w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-3 sm:py-3.5 bg-space-800 border border-space-700 rounded-xl sm:rounded-2xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400/50 focus:ring-2 focus:ring-gold-400/20 transition-all duration-200 text-base"
           />
           {searchQuery && (
             <button
@@ -521,7 +521,7 @@ export default function Conversations() {
         
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`flex items-center gap-2 px-5 py-3.5 rounded-2xl border transition-all duration-200 ${
+          className={`flex items-center justify-center gap-2 min-h-[48px] px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl border transition-all duration-200 touch-target ${
             showFilters || filterAgent 
               ? 'bg-gold-400/10 border-gold-400/30 text-gold-400' 
               : 'bg-space-800 border-space-700 text-gray-400 hover:text-gray-300'
@@ -615,7 +615,7 @@ export default function Conversations() {
                 }
               : {
                   to: `/dashboard/conversations/${conv.id}`,
-                  className: "group block bg-space-800/50 hover:bg-space-800 border border-space-700/50 hover:border-space-600 rounded-2xl p-5 transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50"
+                  className: "group block bg-space-800/50 hover:bg-space-800 border border-space-700/50 hover:border-space-600 rounded-xl sm:rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50"
                 }
             
             return (
@@ -624,7 +624,7 @@ export default function Conversations() {
                 {...cardProps}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                   {/* Checkbox in bulk mode */}
                   {bulkMode && (
                     <div className="flex-shrink-0">

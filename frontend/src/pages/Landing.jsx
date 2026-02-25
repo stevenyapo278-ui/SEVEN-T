@@ -14,9 +14,12 @@ import {
   ChevronRight,
   Loader2,
   CreditCard,
-  ShoppingCart
+  ShoppingCart,
+  Sun,
+  Moon
 } from 'lucide-react'
 import api from '../services/api'
+import { useTheme } from '../contexts/ThemeContext'
 
 /* Style DigitaWeb : Nos métiers / solutions */
 const metiers = [
@@ -158,6 +161,22 @@ const PlanCard = ({ plan, isPopular = false }) => {
   )
 }
 
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme()
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="relative flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 bg-space-800 hover:bg-space-700 text-gold-400 border border-space-600 hover:border-space-500"
+      title={theme === 'dark' ? 'Activer le mode clair' : 'Activer le mode sombre'}
+      aria-label={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+    >
+      <Sun className="absolute w-5 h-5 transition-opacity duration-300" style={{ opacity: theme === 'dark' ? 0 : 1 }} aria-hidden />
+      <Moon className="absolute w-5 h-5 transition-opacity duration-300" style={{ opacity: theme === 'dark' ? 1 : 0 }} aria-hidden />
+    </button>
+  )
+}
+
 export default function Landing() {
   const { t } = useTranslation()
   const [plans, setPlans] = useState(defaultPlans)
@@ -204,9 +223,9 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-space-950">
+    <div className="landing-page min-h-screen bg-space-950">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-space-700/40 bg-space-950/80 backdrop-blur-xl">
+      <header className="landing-header sticky top-0 z-50 border-b border-space-700/40 bg-space-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 md:h-18">
             <Link to="/" className="flex items-center focus:outline-none focus:ring-2 focus:ring-blue-500/50 rounded-lg">
@@ -217,8 +236,9 @@ export default function Landing() {
               <a href="#metiers" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Solutions</a>
               <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Tarifs</a>
             </nav>
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Connexion</Link>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggle />
+              <Link to="/login" className="text-gray-400 hover:text-white transition-colors text-sm font-medium py-2">Connexion</Link>
               <Link to="/register" className="btn-primary text-sm px-5 py-2.5 rounded-xl font-semibold shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 hover:scale-[1.02] transition-all">
                 {t('landing.cta')}
               </Link>
@@ -283,8 +303,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Bandeau stats */}
-      <section className="relative z-10 py-8 md:py-10 bg-space-900/90 border-y border-space-800">
+      {/* Bandeau stats - fond semi-transparent en light pour laisser voir le fond / vagues */}
+      <section className="landing-stats-band relative z-10 py-8 md:py-10 bg-space-900/90 border-y border-space-800">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {stats.map((stat, index) => (

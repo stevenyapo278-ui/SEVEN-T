@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
 import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -42,6 +43,7 @@ export default function Settings() {
   const [paymentProviderModal, setPaymentProviderModal] = useState(null)
   const [paymentProviderForm, setPaymentProviderForm] = useState({ account_id: '', api_key: '' })
   const [paymentProviderSaving, setPaymentProviderSaving] = useState(false)
+  useLockBodyScroll(showDeleteAccountModal || !!paymentProviderModal?.provider)
 
   const [quotas, setQuotas] = useState(null)
 
@@ -499,19 +501,22 @@ export default function Settings() {
 
       {/* Modal config PaymeTrust */}
       {user?.payment_module_enabled && paymentProviderModal?.provider === 'paymetrust' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
-          <div className="relative w-full max-w-md rounded-2xl border border-space-700 bg-space-900 p-6">
+          <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-space-700 bg-space-900 shadow-2xl animate-fadeIn overflow-hidden">
+            <div className="flex-shrink-0 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h3 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">Configurer PaymeTrust</h3>
               <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="flex-shrink-0 touch-target text-gray-400 hover:text-gray-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500">
               Saisissez les identifiants de votre compte PaymeTrust. Ils ne sont jamais affichés en clair après enregistrement.
             </p>
-            <form onSubmit={handleSavePaymentProvider} className="space-y-4">
+            </div>
+            <form onSubmit={handleSavePaymentProvider} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Account ID</label>
                 <input
@@ -534,11 +539,12 @@ export default function Settings() {
                   required
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setPaymentProviderModal(null)} className="px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800">
+              </div>
+              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <button type="button" onClick={() => setPaymentProviderModal(null)} className="min-h-[44px] touch-target px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800 flex-1 sm:flex-none">
                   Annuler
                 </button>
-                <button type="submit" disabled={paymentProviderSaving} className="btn-primary inline-flex items-center gap-2 disabled:opacity-50">
+                <button type="submit" disabled={paymentProviderSaving} className="btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] touch-target flex-1 sm:flex-none disabled:opacity-50">
                   {paymentProviderSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                   Enregistrer
                 </button>
@@ -604,18 +610,18 @@ export default function Settings() {
 
       {/* Modal confirmation suppression compte */}
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !deletingAccount && setShowDeleteAccountModal(false)}>
-          <div className="bg-space-900 border border-space-600 rounded-2xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => !deletingAccount && setShowDeleteAccountModal(false)}>
+          <div className="relative z-10 bg-space-900 border border-space-600 rounded-t-2xl sm:rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-display font-semibold text-gray-100 mb-2">Supprimer définitivement mon compte ?</h3>
             <p className="text-sm text-gray-400 mb-6">
               Toutes vos données seront effacées. Cette action est irréversible.
             </p>
-            <div className="flex gap-3 justify-end">
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
               <button
                 type="button"
                 onClick={() => setShowDeleteAccountModal(false)}
                 disabled={deletingAccount}
-                className="px-4 py-2 rounded-xl font-medium bg-space-700 text-gray-300 hover:bg-space-600 disabled:opacity-50"
+                className="min-h-[44px] touch-target flex-1 sm:flex-none px-4 py-2 rounded-xl font-medium bg-space-700 text-gray-300 hover:bg-space-600 disabled:opacity-50"
               >
                 Annuler
               </button>
@@ -634,7 +640,7 @@ export default function Settings() {
                   }
                 }}
                 disabled={deletingAccount}
-                className="px-4 py-2 rounded-xl font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 inline-flex items-center gap-2"
+                className="min-h-[44px] touch-target flex-1 sm:flex-none px-4 py-2 rounded-xl font-medium bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
                 {deletingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 Supprimer définitivement

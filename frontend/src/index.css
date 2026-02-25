@@ -269,12 +269,19 @@ body {
 /* Light mode primary button - Fond uni pour rendu net (pas de dégradé) */
 .light .btn-primary {
   background: #d97706;
+  color: #fff !important;
   box-shadow: 0 4px 14px rgba(217, 119, 6, 0.25);
 }
 
 .light .btn-primary:hover {
   background: #b45309;
+  color: #fff !important;
   box-shadow: 0 6px 20px rgba(217, 119, 6, 0.35);
+}
+
+/* Barre sticky (ex: bouton Sauvegarder paramètres agent) - fond clair en mode light */
+.light .bg-space-950\/95 {
+  background-color: rgba(241, 245, 249, 0.95);
 }
 
 /* Light mode focus ring */
@@ -886,11 +893,146 @@ select.input option {
 .landing-hero-wave-3 { color: rgba(37, 99, 235, 0.22); }
 :root, .dark { --wave-grid-color: rgba(96, 165, 250, 0.18); }
 
-/* Light mode - Landing : hero et CTA */
-.light .landing-hero-wave-1 { color: rgba(59, 130, 246, 0.14); }
-.light .landing-hero-wave-2 { color: rgba(59, 130, 246, 0.2); }
-.light .landing-hero-wave-3 { color: rgba(29, 78, 216, 0.16); }
-.light { --wave-grid-color: rgba(59, 130, 246, 0.1); }
+/* ========== Light mode - Page d'accueil (palette chaude, pas de blanc froid) ========== */
+.light .landing-page {
+  --landing-bg: #faf8f5;
+  --landing-bg-alt: #f3f0ea;
+  --landing-bg-card: #fffefb;
+  --landing-border: #e8e4de;
+  --landing-text: #1c1917;
+  --landing-text-muted: #57534e;
+  --landing-text-soft: #78716c;
+  --landing-accent-blue: #1d4ed8;
+  --landing-accent-gold: #b45309;
+}
+.light .landing-page,
+.light .landing-page.bg-space-950 {
+  background-color: var(--landing-bg) !important;
+}
+.light .landing-page .landing-header {
+  background-color: rgba(250, 248, 245, 0.92) !important;
+  border-bottom-color: var(--landing-border) !important;
+}
+.light .landing-page .landing-hero,
+.light .landing-page section.bg-space-950 {
+  background-color: var(--landing-bg) !important;
+}
+.light .landing-page section.bg-space-900 {
+  background-color: var(--landing-bg-alt) !important;
+}
+/* Bandeau stats : transparent + glass pour laisser voir le fond / continuité visuelle */
+.light .landing-page .landing-stats-band {
+  background: rgba(250, 248, 245, 0.55) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(232, 228, 222, 0.7) !important;
+}
+.light .landing-page .landing-stats-band .text-white {
+  color: var(--landing-text) !important;
+}
+.light .landing-page .landing-stats-band .text-gray-500 {
+  color: var(--landing-text-soft) !important;
+}
+.light .landing-page .landing-stats-band .bg-blue-500\/20 {
+  background-color: rgba(29, 78, 216, 0.12) !important;
+}
+.light .landing-page .landing-stats-band .text-blue-400 {
+  color: var(--landing-accent-blue) !important;
+}
+.light .landing-page .bg-space-900\/90:not(.landing-stats-band) {
+  background-color: var(--landing-bg-alt) !important;
+}
+.light .landing-page section.bg-space-800,
+.light .landing-page .landing-cta {
+  background-color: var(--landing-bg-alt) !important;
+  border-color: var(--landing-border) !important;
+}
+.light .landing-page footer {
+  background-color: var(--landing-bg-alt) !important;
+  border-top-color: var(--landing-border) !important;
+}
+.light .landing-page .text-white,
+.light .landing-page h1.text-white,
+.light .landing-page h2.text-white,
+.light .landing-page h3.text-white,
+.light .landing-page .text-gray-100 {
+  color: var(--landing-text) !important;
+}
+.light .landing-page .text-gray-400,
+.light .landing-page p.text-gray-400 {
+  color: var(--landing-text-muted) !important;
+}
+.light .landing-page .text-gray-500 {
+  color: var(--landing-text-soft) !important;
+}
+.light .landing-page .border-space-700,
+.light .landing-page .border-space-800,
+.light .landing-page .border-space-600,
+.light .landing-page .border-t.border-space-700 {
+  border-color: var(--landing-border) !important;
+}
+.light .landing-page .bg-space-900.border-space-700,
+.light .landing-page .bg-space-950.border-space-700,
+.light .landing-page .rounded-3xl.bg-space-900 {
+  background-color: var(--landing-bg-card) !important;
+  border-color: var(--landing-border) !important;
+}
+.light .landing-page .text-blue-400 {
+  color: var(--landing-accent-blue) !important;
+}
+.light .landing-page .bg-blue-500\/20 {
+  background-color: rgba(29, 78, 216, 0.1) !important;
+}
+.light .landing-page .hover\:text-white:hover,
+.light .landing-page .hover\:text-gray-300:hover,
+.light .landing-page a:hover { color: var(--landing-text) !important; }
+.light .landing-page .hover\:border-blue-500\/40:hover {
+  border-color: rgba(29, 78, 216, 0.4) !important;
+}
+.light .landing-page .hover\:bg-blue-500\/10:hover {
+  background-color: rgba(29, 78, 216, 0.06) !important;
+}
+.light .landing-page .text-gradient {
+  color: var(--landing-accent-blue) !important;
+  background: none;
+  -webkit-background-clip: unset;
+}
+.light .landing-page .border-space-600 {
+  border-color: var(--landing-border) !important;
+}
+.light .landing-page .text-gray-300 {
+  color: var(--landing-text-muted) !important;
+}
+.light .landing-page .btn-primary {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.25);
+}
+.light .landing-page .btn-primary:hover {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  box-shadow: 0 6px 20px rgba(180, 83, 9, 0.35);
+}
+.light .landing-page .shadow-gold-400\/20,
+.light .landing-page .shadow-gold-400\/25 {
+  box-shadow: 0 10px 25px -5px rgba(180, 83, 9, 0.2);
+}
+.light .landing-page .border-2.border-space-700 {
+  border-color: var(--landing-border) !important;
+}
+.light .landing-page .border-gold-400 {
+  border-color: rgba(180, 83, 9, 0.5) !important;
+}
+
+/* Light mode - Landing : hero et CTA (vagues et grille plus douces) */
+/* Vagues plus visibles en mode clair (bleu reconnaissable, pas blanc) */
+.light .landing-hero-wave-1 { color: rgba(29, 78, 216, 0.35); }
+.light .landing-hero-wave-2 { color: rgba(37, 99, 235, 0.45); }
+.light .landing-hero-wave-3 { color: rgba(59, 130, 246, 0.38); }
+.light .landing-page { --wave-grid-color: rgba(29, 78, 216, 0.15); }
+.light .landing-page .landing-hero-grid {
+  opacity: 0.08;
+}
 .light .landing-hero-bg .bg-gradient-to-b,
 .light .landing-hero-bg .animate-float {
   opacity: 0.06;
@@ -899,16 +1041,15 @@ select.input option {
   opacity: 0.12;
 }
 .light .landing-cta-gradient {
-  background: #f8fafc;
+  background: var(--landing-bg-alt);
 }
 .light .landing-cta-glow {
   opacity: 0.04;
 }
-/* Toute section en dégradé from-space/to-space → fond uni en mode clair (pas de dégradé blanc→gris/noir) */
-.light section.bg-gradient-to-b,
-.light section[class*="bg-gradient-to-b"][class*="from-space"],
-.light section[class*="bg-gradient-to-r"][class*="from-space"] {
-  background: #fafbfc !important;
+.light .landing-page section.bg-gradient-to-b,
+.light .landing-page section[class*="bg-gradient-to-b"][class*="from-space"],
+.light .landing-page section[class*="bg-gradient-to-r"][class*="from-space"] {
+  background: var(--landing-bg) !important;
 }
 
 /* Light mode - Cartes landing (étapes, features) : icônes en dégradé → couleur unie */

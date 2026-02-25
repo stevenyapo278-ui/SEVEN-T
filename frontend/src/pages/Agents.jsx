@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { AgentCreationWizard } from '../components/Onboarding'
 import { 
   Bot, 
@@ -72,6 +73,7 @@ export default function Agents() {
   const [selectedAgents, setSelectedAgents] = useState([])
   const [bulkMode, setBulkMode] = useState(false)
   const [showSortMenu, setShowSortMenu] = useState(false)
+  useLockBodyScroll(showCreateModal || showCreationWizard)
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('seven-t-favorite-agents')
     return saved ? JSON.parse(saved) : []
@@ -1279,10 +1281,10 @@ function CreateAgentModal({ onClose, onCreated }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 z-10 bg-space-900 p-6 border-b border-space-700">
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-display font-semibold text-gray-100">Créer un agent</h2>
@@ -1299,7 +1301,8 @@ function CreateAgentModal({ onClose, onCreated }) {
         </div>
 
         {step === 1 ? (
-          <div className="p-6">
+          <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+          <div className="p-4 sm:p-6">
             <p className="text-gray-400 mb-6">
               Choisissez un type d'agent pour démarrer avec une configuration optimisée :
             </p>
@@ -1335,21 +1338,23 @@ function CreateAgentModal({ onClose, onCreated }) {
               ))}
             </div>
 
-            <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="flex-1 px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors">
+            <div className="flex flex-col-reverse sm:flex-row gap-3">
+              <button type="button" onClick={onClose} className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors">
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 font-semibold rounded-xl hover:shadow-lg transition-all"
+                className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 font-semibold rounded-xl hover:shadow-lg transition-all"
               >
                 Continuer →
               </button>
             </div>
           </div>
+          </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
             <div className="p-4 bg-space-800 rounded-xl flex items-center gap-3 mb-2">
               <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${TEMPLATES.find(t => t.id === template)?.color} flex items-center justify-center text-xl`}>
                 {TEMPLATES.find(t => t.id === template)?.icon}
@@ -1404,18 +1409,19 @@ function CreateAgentModal({ onClose, onCreated }) {
               </p>
             </div>
 
-            <div className="flex gap-3 pt-4">
+          </div>
+            <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="flex-1 px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors"
+                className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-space-800 hover:bg-space-700 text-gray-300 font-medium rounded-xl transition-colors"
               >
                 ← Retour
               </button>
               <button
                 type="submit"
                 disabled={loading || !name.trim()}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 min-h-[44px] touch-target px-6 py-3 bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Création...' : 'Créer l\'agent'}
               </button>

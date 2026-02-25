@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
-import { OnboardingTourProvider } from '../components/Onboarding'
+import { OnboardingTourProvider, useOnboardingTour } from '../components/Onboarding'
 import api from '../services/api'
 import {
   LayoutDashboard,
@@ -101,7 +101,7 @@ const adminNavigation = [
 ]
 
 // Composant pour un groupe de navigation avec sous-menu (ouverture au survol)
-const NavGroup = ({ group, onItemClick, isMobile = false }) => {
+const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false }) => {
   const { t } = useTranslation()
   const { isDark } = useTheme()
   const location = useLocation()
@@ -115,8 +115,13 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
   // Premier groupe (Principal) toujours ouvert
   const isFirstGroup = group.nameKey === 'nav.main'
   
-  // En mobile: clic pour ouvrir. En desktop: survol
-  const shouldBeOpen = isFirstGroup || isGroupActive || (isMobile ? isExpanded : isHovered)
+  // Ouvrir le groupe quand le tour d'onboarding cible un item de ce groupe (sidebar visible)
+  useEffect(() => {
+    if (forceExpand && isMobile) setIsExpanded(true)
+  }, [forceExpand, isMobile])
+  
+  // En mobile: clic pour ouvrir. En desktop: survol. forceExpand pour le tour sidebar.
+  const shouldBeOpen = isFirstGroup || isGroupActive || forceExpand || (isMobile ? isExpanded : isHovered)
 
   // Gestion du survol avec délai pour éviter les fermetures accidentelles
   const handleMouseEnter = () => {
@@ -257,6 +262,25 @@ const NavGroup = ({ group, onItemClick, isMobile = false }) => {
         </div>
       </div>
     </div>
+  )
+}
+
+// Rendu des groupes de nav avec ouverture forcée pour l’étape courante du tour sidebar
+function SidebarNavGroups({ navGroups, onItemClick, isMobile }) {
+  const { activeTour, currentStep } = useOnboardingTour()
+  const expandForStep = activeTour === 'sidebar' ? currentStep?.id : null
+  return (
+    <>
+      {navGroups.map((group) => (
+        <NavGroup
+          key={group.nameKey}
+          group={group}
+          onItemClick={onItemClick}
+          isMobile={isMobile}
+          forceExpand={expandForStep != null && group.items.some(item => item.tourId === expandForStep)}
+        />
+      ))}
+    </>
   )
 }
 
@@ -798,7 +822,7 @@ export default function DashboardLayout() {
     return () => clearInterval(tick)
   }, [])
 
-  // Bloquer le défilement de la page quand la sidebar mobile est ouverte
+  // Bloquer le défilement de la page quand la sidebar mobile est ouverte (mobile uniquement)
   useEffect(() => {
     if (!sidebarOpen) return
     const mql = window.matchMedia('(max-width: 1023px)')
@@ -835,14 +859,11 @@ export default function DashboardLayout() {
             </button>
           </div>
           <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0">
-            {navGroups.map((group) => (
-              <NavGroup
-                key={group.nameKey}
-                group={group}
-                onItemClick={() => setSidebarOpen(false)}
-                isMobile={true}
-              />
-            ))}
+            <SidebarNavGroups
+              navGroups={navGroups}
+              onItemClick={() => setSidebarOpen(false)}
+              isMobile={true}
+            />
             
             {/* Bottom navigation */}
             <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
@@ -942,14 +963,11 @@ export default function DashboardLayout() {
           </div>
           
           <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {navGroups.map((group) => (
-              <NavGroup
-                key={group.nameKey}
-                group={group}
-                onItemClick={() => {}}
-                isMobile={false}
-              />
-            ))}
+            <SidebarNavGroups
+              navGroups={navGroups}
+              onItemClick={() => {}}
+              isMobile={false}
+            />
             
             {/* Bottom navigation */}
             <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>

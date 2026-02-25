@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { 
   ShoppingCart, 
   Package, 
@@ -114,6 +115,7 @@ export default function Orders() {
     currency: 'XOF',
     paymentMethod: 'on_delivery'
   })
+  useLockBodyScroll(showNewOrderModal || paymentLinkModal.open)
 
   useEffect(() => {
     loadOrders()
@@ -1282,7 +1284,16 @@ export default function Orders() {
                             </div>
                           )}
                           <button
-                            onClick={() => handleMarkDelivered(order.id)}
+                            onClick={async () => {
+                              const ok = await showConfirm({
+                                title: 'Marquer comme livrée',
+                                message: 'Confirmer que cette commande a bien été livrée au client (et le paiement reçu) ? Cette action peut être effectuée par erreur ; en cas de doute, annulez.',
+                                variant: 'warning',
+                                confirmLabel: 'Oui, marquer livrée',
+                                cancelLabel: 'Annuler'
+                              })
+                              if (ok) await handleMarkDelivered(order.id)
+                            }}
                             className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors touch-target"
                           >
                             <Package className="w-4 h-4" />
@@ -1385,16 +1396,16 @@ export default function Orders() {
 
       {/* Modal: message pour envoyer le lien de paiement au client */}
       {paymentLinkModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => !paymentLinkModal.loading && setPaymentLinkModal(prev => ({ ...prev, open: false }))} />
-          <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-2xl shadow-2xl">
-            <div className="p-4 border-b border-space-700 flex items-center justify-between">
+          <div className="relative z-10 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
+            <div className="flex-shrink-0 p-4 border-b border-space-700 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-100">Lien de paiement à envoyer au client</h3>
-              <button onClick={() => setPaymentLinkModal(prev => ({ ...prev, open: false }))} className="p-2 text-gray-500 hover:text-gray-300 rounded-lg">
+              <button onClick={() => setPaymentLinkModal(prev => ({ ...prev, open: false }))} className="p-2 -m-2 text-gray-500 hover:text-gray-300 rounded-lg touch-target" aria-label="Fermer">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
               {paymentLinkModal.loading ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="w-8 h-8 text-gold-400 animate-spin" />
@@ -1413,17 +1424,17 @@ export default function Orders() {
                       </a>
                     </div>
                   )}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       onClick={copyPaymentMessage}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
+                      className="flex-1 min-h-[44px] touch-target flex items-center justify-center gap-2 px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
                     >
                       <Copy className="w-4 h-4" />
                       Copier le message
                     </button>
                     <button
                       onClick={openWhatsAppWithPayment}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors"
+                      className="flex-1 min-h-[44px] touch-target flex items-center justify-center gap-2 px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Ouvrir WhatsApp
@@ -1438,16 +1449,17 @@ export default function Orders() {
 
       {/* Modal Nouvelle commande manuelle */}
       {showNewOrderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => !newOrderLoading && setShowNewOrderModal(false)}>
-          <div className="bg-space-800 border border-space-700 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b border-space-700">
-              <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60" onClick={() => !newOrderLoading && setShowNewOrderModal(false)}>
+          <div className="relative z-10 bg-space-800 border border-space-700 rounded-t-2xl sm:rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col animate-fadeIn" onClick={e => e.stopPropagation()}>
+            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-100 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-blue-400" />
                 Nouvelle commande (manuelle)
               </h2>
               <p className="text-sm text-gray-400 mt-1">Créez une commande en attente de validation.</p>
             </div>
-            <form onSubmit={handleCreateOrderSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleCreateOrderSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Nom du client *</label>
                 <input
@@ -1567,11 +1579,12 @@ export default function Orders() {
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 pt-4 border-t border-space-700">
+              </div>
+              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
                 <button
                   type="button"
                   onClick={() => !newOrderLoading && setShowNewOrderModal(false)}
-                  className="flex-1 px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
+                  className="flex-1 sm:flex-none min-h-[44px] touch-target px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
                   disabled={newOrderLoading}
                 >
                   Annuler
@@ -1579,7 +1592,7 @@ export default function Orders() {
                 <button
                   type="submit"
                   disabled={newOrderLoading}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50"
+                  className="flex-1 sm:flex-none min-h-[44px] touch-target flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50"
                 >
                   {newOrderLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                   Créer la commande

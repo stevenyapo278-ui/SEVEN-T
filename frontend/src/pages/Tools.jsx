@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
 import { MessageSquare, Mail, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -24,6 +25,7 @@ export default function Tools() {
   const [qrByTool, setQrByTool] = useState({})
   const [busyToolId, setBusyToolId] = useState(null)
   const [connectingToolId, setConnectingToolId] = useState(null)
+  useLockBodyScroll(!!connectingToolId)
   const [quotas, setQuotas] = useState(null)
   const [editingToolId, setEditingToolId] = useState(null)
   const [editingLabel, setEditingLabel] = useState('')
@@ -578,11 +580,11 @@ export default function Tools() {
       {/* Overlay QR code en premier plan */}
       {connectingToolId && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && cancelConnect(connectingToolId)}
         >
           <div
-            className="relative w-full max-w-md rounded-2xl bg-space-800 border border-space-600 shadow-2xl p-8 flex flex-col items-center"
+            className="relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col items-center max-h-[90vh] sm:max-h-[85vh] overflow-y-auto animate-fadeIn"
             onClick={(e) => e.stopPropagation()}
           >
             <button

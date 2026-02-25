@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import {
   Wallet,
   Plus,
@@ -61,6 +62,7 @@ export default function Expenses() {
   const [editingExpense, setEditingExpense] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(null)
   const [categoryFilter, setCategoryFilter] = useState('')
+  useLockBodyScroll(modalOpen || !!editingExpense)
 
   useEffect(() => {
     loadData()
@@ -192,12 +194,12 @@ export default function Expenses() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6 overflow-visible">
           <h3 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
             <PieChartIcon className="w-5 h-5 text-gold-400" />
             {t('expenses.chartByCategory')}
           </h3>
-          <div className="w-full" style={{ minHeight: 280 }}>
+          <div className="w-full overflow-visible px-1 sm:px-0" style={{ minHeight: 280 }}>
             {(() => {
               const pieData = categoryFilter
                 ? stats.byCategory.filter((c) => c.name === categoryFilter)
@@ -205,53 +207,70 @@ export default function Expenses() {
               return pieData.length === 0 ? (
                 <p className="text-gray-400 text-center py-8">{t('expenses.noData')}</p>
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
+                <ResponsiveContainer width="100%" height={280} className="overflow-visible">
+                  <PieChart margin={{ top: 24, right: 24, left: 24, bottom: 24 }}>
                     <Pie
                       data={pieData}
                       dataKey="value"
                       nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={90}
-                    label={({ name, value }) =>
-                      `${getCategoryLabel(name)}: ${formatAmount(value)}`
-                    }
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: isDark ? '#1F2937' : '#374151',
-                      border: 'none',
-                      borderRadius: '8px'
-                    }}
-                    formatter={(value) => [formatAmount(value), '']}
-                    labelFormatter={(name) => getCategoryLabel(name)}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={({ name, value }) =>
+                        `${getCategoryLabel(name)}: ${formatAmount(value)}`
+                      }
+                    >
+                      {pieData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: isDark ? '#1F2937' : '#374151',
+                        border: 'none',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value) => [formatAmount(value), '']}
+                      labelFormatter={(name) => getCategoryLabel(name)}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               )
             })()}
           </div>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6 overflow-visible">
           <h3 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-gold-400" />
             {t('expenses.chartByMonth')}
           </h3>
-          <div className="w-full" style={{ minHeight: 280 }}>
+          <div className="w-full overflow-visible px-1 sm:px-0" style={{ minHeight: 280 }}>
             {stats.byMonth.length === 0 ? (
               <p className="text-gray-400 text-center py-8">{t('expenses.noData')}</p>
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={stats.byMonth} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+              <ResponsiveContainer width="100%" height={280} className="overflow-visible">
+                <BarChart
+                  data={stats.byMonth}
+                  margin={{ top: 12, right: 12, left: 44, bottom: 32 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9CA3AF" fontSize={11} />
-                  <YAxis stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => v?.toLocaleString?.() ?? v} />
+                  <XAxis
+                    dataKey="month"
+                    stroke="#9CA3AF"
+                    fontSize={11}
+                    tick={{ fill: '#9CA3AF' }}
+                    interval={0}
+                    angle={0}
+                    textAnchor="middle"
+                  />
+                  <YAxis
+                    stroke="#9CA3AF"
+                    fontSize={11}
+                    width={40}
+                    tick={{ fill: '#9CA3AF' }}
+                    tickFormatter={(v) => v?.toLocaleString?.() ?? v}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: isDark ? '#1F2937' : '#374151',
@@ -428,21 +447,23 @@ function ExpenseModal({ expense, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-2xl shadow-2xl p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <h2 className="text-xl font-display font-semibold text-gray-100 min-w-0 truncate">
+      <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
+        <div className="flex-shrink-0 flex flex-wrap items-center justify-between gap-3 p-4 sm:p-6 border-b border-space-700">
+          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100 min-w-0 truncate">
             {isEdit ? t('expenses.editExpense') : t('expenses.addExpense')}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-300 rounded-lg transition-colors flex-shrink-0 touch-target"
+            className="p-2 -m-2 text-gray-500 hover:text-gray-300 rounded-lg transition-colors flex-shrink-0 touch-target"
+            aria-label="Fermer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">{t('expenses.date')}</label>
             <input
@@ -514,18 +535,19 @@ function ExpenseModal({ expense, onClose, onSaved }) {
               placeholder={t('expenses.noteOptional')}
             />
           </div>
-          <div className="flex gap-3 pt-2">
+          </div>
+          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
+              className="flex-1 sm:flex-none min-h-[44px] touch-target px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitLoading}
-              className="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none min-h-[44px] touch-target px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {submitLoading && <Loader2 className="w-5 h-5 animate-spin" />}
               {t('common.save')}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { 
   UserPlus, 
   Plus, 
@@ -675,6 +676,7 @@ export default function Leads() {
 }
 
 function LeadModal({ lead, onClose, onSaved }) {
+  useLockBodyScroll(true)
   const [formData, setFormData] = useState({
     name: lead?.name || '',
     phone: lead?.phone || '',
@@ -712,20 +714,21 @@ function LeadModal({ lead, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-xl bg-space-900 border border-space-700 rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-space-700">
+      <div className="relative z-10 w-full max-w-xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-display font-semibold text-gray-100">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
               {lead ? 'Modifier le lead' : 'Ajouter un lead'}
             </h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label="Fermer">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 flex overflow-hidden">
+          <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-300 mb-2">Nom *</label>
@@ -813,11 +816,12 @@ function LeadModal({ lead, onClose, onSaved }) {
               />
             </div>
           </div>
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+          </div>
+          <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
               Annuler
             </button>
-            <button type="submit" disabled={loading} className="btn-primary flex-1">
+            <button type="submit" disabled={loading} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target">
               {loading ? 'Enregistrement...' : (lead ? 'Mettre à jour' : 'Ajouter')}
             </button>
           </div>
