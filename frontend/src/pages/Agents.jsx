@@ -268,11 +268,11 @@ export default function Agents() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-space-700 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin absolute inset-0"></div>
+      <div className="w-full flex items-center justify-center min-h-[50vh] sm:min-h-[60vh]">
+        <div className="text-center flex flex-col items-center flex-shrink-0">
+          <div className="relative w-16 h-16 flex-shrink-0">
+            <div className="w-16 h-16 border-4 border-space-700 rounded-full absolute inset-0" />
+            <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin absolute inset-0" />
           </div>
           <p className="mt-4 text-gray-400">Chargement des agents...</p>
         </div>

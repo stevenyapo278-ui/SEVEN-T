@@ -1,39 +1,49 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 
-// Pages
+// Public pages (loaded immediately)
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import AuthCallback from './pages/AuthCallback'
-import Dashboard from './pages/Dashboard'
-import Agents from './pages/Agents'
-import AgentDetail from './pages/AgentDetail'
-import Products from './pages/Products'
-import KnowledgeBase from './pages/KnowledgeBase'
-import Leads from './pages/Leads'
-import Orders from './pages/Orders'
-import Conversations from './pages/Conversations'
-import ConversationDetail from './pages/ConversationDetail'
-import Settings from './pages/Settings'
-import Admin from './pages/Admin'
 import Legal from './pages/Legal'
-import Analytics from './pages/Analytics'
-import Campaigns from './pages/Campaigns'
-import Templates from './pages/Templates'
-import Workflows from './pages/Workflows'
-import Payments from './pages/Payments'
-import Expenses from './pages/Expenses'
-import Flows from './pages/Flows'
-import FlowBuilder from './pages/FlowBuilder'
-import Reports from './pages/Reports'
-import Notifications from './pages/Notifications'
-import Tools from './pages/Tools'
+
+// Dashboard pages (lazy)
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Agents = lazy(() => import('./pages/Agents'))
+const AgentDetail = lazy(() => import('./pages/AgentDetail'))
+const Products = lazy(() => import('./pages/Products'))
+const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'))
+const Leads = lazy(() => import('./pages/Leads'))
+const Orders = lazy(() => import('./pages/Orders'))
+const Conversations = lazy(() => import('./pages/Conversations'))
+const ConversationDetail = lazy(() => import('./pages/ConversationDetail'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Admin = lazy(() => import('./pages/Admin'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const Campaigns = lazy(() => import('./pages/Campaigns'))
+const Templates = lazy(() => import('./pages/Templates'))
+const Workflows = lazy(() => import('./pages/Workflows'))
+const Payments = lazy(() => import('./pages/Payments'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const Flows = lazy(() => import('./pages/Flows'))
+const FlowBuilder = lazy(() => import('./pages/FlowBuilder'))
+const Reports = lazy(() => import('./pages/Reports'))
+const Notifications = lazy(() => import('./pages/Notifications'))
+const Tools = lazy(() => import('./pages/Tools'))
+
 import ErrorBoundary from './components/ErrorBoundary'
 import CookieConsentBanner from './components/CookieConsentBanner'
-
-// Layout
 import DashboardLayout from './layouts/DashboardLayout'
+
+function PageFallback() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center" aria-busy="true" aria-label="Chargement">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" />
+    </div>
+  )
+}
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -41,8 +51,8 @@ function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+      <div className="min-h-screen w-full flex items-center justify-center flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
       </div>
     )
   }
@@ -60,8 +70,8 @@ function AdminRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+      <div className="min-h-screen w-full flex items-center justify-center flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
       </div>
     )
   }
@@ -98,30 +108,30 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
-        <Route path="agents" element={<Agents />} />
-        <Route path="agents/:id" element={<AgentDetail />} />
-        <Route path="products" element={<Products />} />
-        <Route path="knowledge" element={<KnowledgeBase />} />
-        <Route path="leads" element={<Leads />} />
-        <Route path="orders" element={<Orders />} />
-        <Route path="conversations" element={<Conversations />} />
-        <Route path="conversations/:id" element={<ConversationDetail />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="campaigns" element={<Campaigns />} />
-        <Route path="templates" element={<Templates />} />
-        <Route path="workflows" element={<Workflows />} />
-        <Route path="payments" element={<Payments />} />
-        <Route path="expenses" element={<Expenses />} />
-        <Route path="tools" element={<Tools />} />
-        <Route path="flows" element={<Flows />} />
-        <Route path="flows/:id" element={<FlowBuilder />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="notifications" element={<Notifications />} />
-        <Route path="settings" element={<Settings />} />
+        <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
+        <Route path="agents" element={<Suspense fallback={<PageFallback />}><Agents /></Suspense>} />
+        <Route path="agents/:id" element={<Suspense fallback={<PageFallback />}><AgentDetail /></Suspense>} />
+        <Route path="products" element={<Suspense fallback={<PageFallback />}><Products /></Suspense>} />
+        <Route path="knowledge" element={<Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense>} />
+        <Route path="leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
+        <Route path="orders" element={<Suspense fallback={<PageFallback />}><Orders /></Suspense>} />
+        <Route path="conversations" element={<Suspense fallback={<PageFallback />}><Conversations /></Suspense>} />
+        <Route path="conversations/:id" element={<Suspense fallback={<PageFallback />}><ConversationDetail /></Suspense>} />
+        <Route path="analytics" element={<Suspense fallback={<PageFallback />}><Analytics /></Suspense>} />
+        <Route path="campaigns" element={<Suspense fallback={<PageFallback />}><Campaigns /></Suspense>} />
+        <Route path="templates" element={<Suspense fallback={<PageFallback />}><Templates /></Suspense>} />
+        <Route path="workflows" element={<Suspense fallback={<PageFallback />}><Workflows /></Suspense>} />
+        <Route path="payments" element={<Suspense fallback={<PageFallback />}><Payments /></Suspense>} />
+        <Route path="expenses" element={<Suspense fallback={<PageFallback />}><Expenses /></Suspense>} />
+        <Route path="tools" element={<Suspense fallback={<PageFallback />}><Tools /></Suspense>} />
+        <Route path="flows" element={<Suspense fallback={<PageFallback />}><Flows /></Suspense>} />
+        <Route path="flows/:id" element={<Suspense fallback={<PageFallback />}><FlowBuilder /></Suspense>} />
+        <Route path="reports" element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
+        <Route path="notifications" element={<Suspense fallback={<PageFallback />}><Notifications /></Suspense>} />
+        <Route path="settings" element={<Suspense fallback={<PageFallback />}><Settings /></Suspense>} />
         <Route path="admin" element={
           <AdminRoute>
-            <Admin />
+            <Suspense fallback={<PageFallback />}><Admin /></Suspense>
           </AdminRoute>
         } />
       </Route>

@@ -156,8 +156,9 @@ export default function Admin() {
         api.get('/admin/plans'),
         api.get('/admin/available-models')
       ])
-      setPlans(plansRes.data.plans || [])
-      setAvailableModels(modelsRes.data.models || [])
+      setPlans(Array.isArray(plansRes.data?.plans) ? plansRes.data.plans : [])
+      const models = modelsRes.data?.models ?? modelsRes.data
+      setAvailableModels(Array.isArray(models) ? models : [])
     } catch (error) {
       console.error('Error loading plans:', error)
       toast.error('Erreur lors du chargement des plans')
@@ -1266,15 +1267,16 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               />
               <span className="text-sm text-gray-300">Réponses vocales activées pour cet utilisateur</span>
             </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={formData.payment_module_enabled}
-              onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
-              className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
-            />
-            <span className="text-sm text-gray-300">Module Moyens de paiement activé (config PaymeTrust, etc.)</span>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.payment_module_enabled}
+                onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
+                className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+              />
+              <span className="text-sm text-gray-300">Module Moyens de paiement activé (config PaymeTrust, etc.)</span>
+            </label>
+            <p className="text-xs text-gray-500 mt-1">Ces options ne sont effectives que si le plan de l&apos;utilisateur inclut les modules correspondants (voir Plans d&apos;abonnement).</p>
           </div>
           {allUsers.length > 0 && (
             <div>
@@ -2472,8 +2474,8 @@ function PlansContent({
           <p className="text-sm text-gray-500 mt-1">Gérez les plans et leurs limites</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={onCreatePlan} className="btn-primary order-first sm:order-last">
-            <Plus className="w-4 h-4 mr-2" />
+          <button onClick={onCreatePlan} className="btn-primary order-first sm:order-last flex items-center whitespace-nowrap">
+            <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
             Nouveau plan
           </button>
           <button onClick={onRefresh} className="btn-secondary touch-target flex items-center justify-center">
@@ -2492,7 +2494,14 @@ function PlansContent({
         {plans.map(plan => (
           <div 
             key={plan.id} 
-            className={`card p-4 relative ${!plan.is_active ? 'opacity-60' : ''} ${plan.is_default ? 'ring-2 ring-blue-500' : ''}`}
+            data-plan-card={!plan.is_active ? 'inactive' : plan.is_default ? 'default' : 'active'}
+            className={`card p-4 relative border-l-4 ${
+              !plan.is_active 
+                ? 'opacity-60 border-l-space-600' 
+                : plan.is_default 
+                  ? 'border-l-blue-500 ring-2 ring-blue-500/30' 
+                  : 'border-l-emerald-500'
+            }`}
           >
             {/* Status badges */}
             <div className="absolute top-3 right-3 flex gap-1">
@@ -2544,17 +2553,14 @@ function PlansContent({
             <div className="space-y-2 mb-4">
               <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Fonctionnalités</h4>
               <div className="flex flex-wrap gap-1">
-                {plan.features?.analytics && (
-                  <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Analytics</span>
+                {plan.features?.availability_hours && (
+                  <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Heures de dispo.</span>
                 )}
-                {plan.features?.human_transfer && (
-                  <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Transfert humain</span>
+                {plan.features?.voice_responses && (
+                  <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Réponses vocales</span>
                 )}
-                {plan.features?.api_access && (
-                  <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">API</span>
-                )}
-                {plan.features?.priority_support && (
-                  <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded">Support prioritaire</span>
+                {plan.features?.payment_module && (
+                  <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">Paiement</span>
                 )}
                 {plan.features?.models?.length > 0 && (
                   <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">
@@ -2643,14 +2649,9 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     },
     features: plan?.features || {
       models: ['gemini-1.5-flash'],
-      auto_reply: true,
       availability_hours: false,
-      human_transfer: false,
-      blacklist: false,
-      analytics: false,
-      priority_support: false,
-      api_access: false,
-      custom_branding: false
+      voice_responses: false,
+      payment_module: false
     }
   })
   const [saving, setSaving] = useState(false)
@@ -2708,14 +2709,9 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
   ]
 
   const featureFields = [
-    { key: 'auto_reply', label: 'Réponse automatique' },
     { key: 'availability_hours', label: 'Heures de disponibilité' },
-    { key: 'human_transfer', label: 'Transfert humain' },
-    { key: 'blacklist', label: 'Liste noire' },
-    { key: 'analytics', label: 'Analytics' },
-    { key: 'priority_support', label: 'Support prioritaire' },
-    { key: 'api_access', label: 'Accès API' },
-    { key: 'custom_branding', label: 'Personnalisation marque' }
+    { key: 'voice_responses', label: 'Réponses vocales (TTS)' },
+    { key: 'payment_module', label: 'Module Moyens de paiement (PaymeTrust, etc.)' }
   ]
 
   return (
@@ -2867,7 +2863,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
             {/* Features Section */}
             {activeSection === 'features' && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">Activez les fonctionnalités disponibles pour ce plan.</p>
+                <p className="text-sm text-gray-500">Heures de disponibilité : réglage dans les paramètres de l’agent (déjà fonctionnel). Modèles IA, Réponses vocales et Module paiement sont appliqués par le plan.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {featureFields.map(field => (
                     <label key={field.key} className="flex items-center gap-3 p-3 bg-space-800 rounded-lg cursor-pointer hover:bg-space-700 transition-colors">
@@ -2887,7 +2883,12 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
             {/* Models Section */}
             {activeSection === 'models' && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">Sélectionnez les modèles IA disponibles pour ce plan.</p>
+                <p className="text-sm text-gray-500">Sélectionnez les modèles IA disponibles pour ce plan. Les modèles listés sont ceux marqués actifs dans l’onglet <strong>Modèles IA</strong>.</p>
+                {(Array.isArray(availableModels) ? availableModels : []).length === 0 ? (
+                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+                    Aucun modèle actif. Ajoutez ou activez des modèles dans l’onglet <strong>Modèles IA</strong> du menu Admin pour les proposer ici.
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 gap-2">
                   {availableModels.map(model => (
                     <label 
@@ -2925,6 +2926,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                     </label>
                   ))}
                 </div>
+                )}
               </div>
             )}
           </div>

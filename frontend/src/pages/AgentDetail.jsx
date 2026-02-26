@@ -235,8 +235,8 @@ export default function AgentDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+      <div className="w-full flex items-center justify-center min-h-64 py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
       </div>
     )
   }

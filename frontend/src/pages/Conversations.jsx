@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
+import { useConversationSocket } from '../hooks/useConversationSocket'
 import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -175,6 +176,10 @@ export default function Conversations() {
   const [bulkLoading, setBulkLoading] = useState(false)
   const [deletingConvId, setDeletingConvId] = useState(null)
   const pollIntervalRef = useRef(null)
+  const loadConversationsRef = useRef(null)
+
+  // Real-time: refetch list when a conversation is updated (new message)
+  useConversationSocket(() => loadConversationsRef.current?.())
 
   // Bulk selection handlers
   const toggleConversationSelection = (convId) => {
@@ -268,6 +273,7 @@ export default function Conversations() {
       setLoading(false)
     }
   }
+  loadConversationsRef.current = loadConversations
 
   const handleDeleteConversation = async (convId, e) => {
     if (e) {
@@ -344,11 +350,11 @@ export default function Conversations() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-space-700 rounded-full"></div>
-            <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin absolute inset-0"></div>
+      <div className="w-full flex items-center justify-center min-h-[50vh] sm:min-h-[60vh]">
+        <div className="text-center flex flex-col items-center flex-shrink-0">
+          <div className="relative w-16 h-16 flex-shrink-0">
+            <div className="w-16 h-16 border-4 border-space-700 rounded-full absolute inset-0" />
+            <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin absolute inset-0" />
           </div>
           <p className="mt-4 text-gray-400">Chargement des conversations...</p>
         </div>

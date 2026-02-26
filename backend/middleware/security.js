@@ -235,6 +235,31 @@ export const orderPaymentLinkSchema = z.object({
     provider: z.enum(['manual', 'paymetrust']).optional().default('manual'),
 });
 
+// Product create (POST /products)
+export const productCreateSchema = z.object({
+    name: z.string().min(1, 'Le nom est requis').max(500, 'Nom trop long'),
+    sku: z.string().max(100, 'SKU trop long').optional().nullable(),
+    price: z.coerce.number().min(0, 'Le prix doit être positif').optional().default(0),
+    cost_price: z.coerce.number().min(0, 'Le prix d\'achat doit être positif').optional().default(0),
+    stock: z.coerce.number().int().min(0, 'Le stock doit être un entier positif').optional().default(0),
+    category: z.string().max(200, 'Catégorie trop longue').optional().nullable(),
+    description: z.string().max(10000, 'Description trop longue').optional().nullable(),
+    image_url: z.string().max(2000, 'URL image trop longue').optional().nullable(),
+});
+
+// Product update (PUT /products/:id) – partial
+export const productUpdateSchema = z.object({
+    name: z.string().min(1).max(500).optional(),
+    sku: z.string().max(100).optional().nullable(),
+    price: z.coerce.number().min(0).optional(),
+    cost_price: z.coerce.number().min(0).optional(),
+    stock: z.coerce.number().int().min(0).optional(),
+    category: z.string().max(200).optional().nullable(),
+    description: z.string().max(10000).optional().nullable(),
+    image_url: z.string().max(2000).optional().nullable(),
+    is_active: z.number().min(0).max(1).optional(),
+});
+
 // ==================== VALIDATION MIDDLEWARE ====================
 
 /**
@@ -331,4 +356,6 @@ export default {
     createToolSchema,
     createPaymentLinkSchema,
     orderPaymentLinkSchema,
+    productCreateSchema,
+    productUpdateSchema,
 };

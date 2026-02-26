@@ -1,7 +1,9 @@
 // Load environment variables FIRST (before any other imports)
 import 'dotenv/config';
 
+import http from 'http';
 import express from 'express';
+import { Server as SocketIOServer } from 'socket.io';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
@@ -53,9 +55,11 @@ import db, { initDatabase } from './database/init.js';
 
 // WhatsApp Manager
 import { whatsappManager } from './services/whatsapp.js';
+import { setIO } from './services/socketEmitter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -263,6 +267,26 @@ process.on('unhandledRejection', (reason, promise) => {
     // Don't exit - keep server running
 });
 
+// Socket.IO (real-time conversation updates)
+const io = new SocketIOServer(server, {
+    cors: { origin: allowedOrigins, credentials: true },
+    path: '/socket.io'
+});
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+    if (!token) return next(new Error('Token requis'));
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) return next(new Error('Token invalide'));
+        socket.userId = String(decoded.id);
+        next();
+    });
+});
+io.on('connection', (socket) => {
+    socket.join(socket.userId);
+    socket.on('disconnect', () => {});
+});
+setIO(io);
+
 // Start server
 async function start() {
     try {
@@ -270,8 +294,8 @@ async function start() {
         await initDatabase();
         console.log('✅ Database initialized');
 
-        // Start server
-        app.listen(PORT, async () => {
+        // Start server (use server from http.createServer for Socket.IO)
+        server.listen(PORT, async () => {
             console.log(`
 ╔═══════════════════════════════════════════╗
 ║                                           ║
@@ -284,7 +308,6 @@ async function start() {
             `);
 
             // Reconnect WhatsApp agents that were previously connected
-            // Do this after server is listening to not block startup
             setTimeout(async () => {
                 try {
                     console.log('🔄 Reconnecting WhatsApp agents...');
@@ -298,7 +321,7 @@ async function start() {
                 } catch (error) {
                     console.error('❌ Error reconnecting WhatsApp agents:', error);
                 }
-            }, 3000); // Wait 3 seconds after server start
+            }, 3000);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

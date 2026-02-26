@@ -4,6 +4,7 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate, createPaymentLinkSchema } from '../middleware/security.js';
 import * as paymentProviders from '../services/paymentProviders.js';
+import { hasFeature } from '../config/plans.js';
 
 const router = Router();
 
@@ -113,11 +114,13 @@ router.post('/webhook/paymetrust', async (req, res) => {
     }
 });
 
-// Get payment providers (list + per-user configured status; no secrets). Only if admin enabled module for this user.
+// Get payment providers (list + per-user configured status). Only if plan includes payment_module and admin enabled for this user.
 router.get('/providers', authenticateToken, async (req, res) => {
     try {
-        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
-        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
+        const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const paymentModuleEnabled = planHasPayment && userFlag;
         const providerIds = paymentProviders.getSupportedProviderIds();
         const providers = { ...PAYMENT_PROVIDERS_DISPLAY };
         const configured = {};
@@ -133,11 +136,13 @@ router.get('/providers', authenticateToken, async (req, res) => {
     }
 });
 
-// Put provider config (save credentials for current user). Only if admin enabled payment module for this user.
+// Put provider config (save credentials for current user). Only if plan + admin enabled payment module for this user.
 router.put('/providers/:provider', authenticateToken, async (req, res) => {
     try {
-        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
-        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
+        const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const paymentModuleEnabled = planHasPayment && userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Le module Moyens de paiement n\'est pas activé pour votre compte. Contactez l\'administrateur.' });
         }
@@ -169,11 +174,13 @@ router.put('/providers/:provider', authenticateToken, async (req, res) => {
     }
 });
 
-// Delete provider config for current user. Only if admin enabled payment module.
+// Delete provider config for current user. Only if plan + admin enabled payment module.
 router.delete('/providers/:provider', authenticateToken, async (req, res) => {
     try {
-        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
-        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
+        const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const paymentModuleEnabled = planHasPayment && userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Le module Moyens de paiement n\'est pas activé pour votre compte.' });
         }
@@ -213,8 +220,10 @@ export async function createPaymentLink(userId, opts = {}) {
     let payment_url_external = null;
     let external_id = null;
 
-    const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', userId);
-    const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+    const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', userId);
+    const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
+    const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+    const paymentModuleEnabled = planHasPayment && userFlag;
 
     if (provider !== 'manual' && paymentModuleEnabled) {
         const returnUrl = `${baseUrl()}/pay/${shortId}/return`;

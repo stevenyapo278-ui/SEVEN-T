@@ -6,6 +6,7 @@ import { orderService, ORDER_STATUSES } from '../services/orders.js';
 import { createPaymentLink } from './payments.js';
 import * as paymentProviders from '../services/paymentProviders.js';
 import { whatsappManager } from '../services/whatsapp.js';
+import { hasFeature } from '../config/plans.js';
 
 const router = express.Router();
 
@@ -194,10 +195,12 @@ router.post('/:id/mark-delivered', authenticateToken, async (req, res) => {
 // Send payment link in WhatsApp conversation (checkout 100% in-app)
 router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (req, res) => {
     try {
-        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
-        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
+        const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const paymentModuleEnabled = planHasPayment && userFlag;
         if (!paymentModuleEnabled) {
-            return res.status(403).json({ error: 'Module paiement désactivé par l\'administrateur' });
+            return res.status(403).json({ error: 'Module paiement non inclus dans votre plan ou désactivé par l\'administrateur' });
         }
         const order = await orderService.getOrderById(req.params.id, req.user.id);
         if (!order) return res.status(404).json({ error: 'Commande non trouvée' });
@@ -292,10 +295,12 @@ router.post('/:id/reject', authenticateToken, async (req, res) => {
 // Create payment link from order (for sending to client - e.g. WhatsApp)
 router.post('/:id/payment-link', authenticateToken, validate(orderPaymentLinkSchema), async (req, res) => {
     try {
-        const userRow = await db.get('SELECT payment_module_enabled FROM users WHERE id = ?', req.user.id);
-        const paymentModuleEnabled = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
+        const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
+        const paymentModuleEnabled = planHasPayment && userFlag;
         if (!paymentModuleEnabled) {
-            return res.status(403).json({ error: 'Module paiement désactivé par l\'administrateur' });
+            return res.status(403).json({ error: 'Module paiement non inclus dans votre plan ou désactivé par l\'administrateur' });
         }
         const order = await orderService.getOrderById(req.params.id, req.user.id);
         if (!order) {

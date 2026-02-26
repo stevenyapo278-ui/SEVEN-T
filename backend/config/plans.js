@@ -82,14 +82,9 @@ export const PLANS = {
         },
         features: {
             models: ['gemini-1.5-flash'],
-            auto_reply: true,
             availability_hours: false,
-            human_transfer: false,
-            blacklist: false,
-            analytics: false,
-            priority_support: false,
-            api_access: false,
-            custom_branding: false
+            voice_responses: false,
+            payment_module: false
         }
     },
     starter: {
@@ -110,14 +105,9 @@ export const PLANS = {
         },
         features: {
             models: ['gemini-1.5-flash', 'gpt-4o-mini'],
-            auto_reply: true,
             availability_hours: true,
-            human_transfer: false,
-            blacklist: true,
-            analytics: true,
-            priority_support: false,
-            api_access: false,
-            custom_branding: false
+            voice_responses: true,
+            payment_module: false
         }
     },
     pro: {
@@ -138,14 +128,9 @@ export const PLANS = {
         },
         features: {
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
-            auto_reply: true,
             availability_hours: true,
-            human_transfer: true,
-            blacklist: true,
-            analytics: true,
-            priority_support: true,
-            api_access: false,
-            custom_branding: false
+            voice_responses: true,
+            payment_module: true
         }
     },
     business: {
@@ -166,14 +151,9 @@ export const PLANS = {
         },
         features: {
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
-            auto_reply: true,
             availability_hours: true,
-            human_transfer: true,
-            blacklist: true,
-            analytics: true,
-            priority_support: true,
-            api_access: true,
-            custom_branding: true
+            voice_responses: true,
+            payment_module: true
         }
     },
     enterprise: {
@@ -194,14 +174,9 @@ export const PLANS = {
         },
         features: {
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
-            auto_reply: true,
             availability_hours: true,
-            human_transfer: true,
-            blacklist: true,
-            analytics: true,
-            priority_support: true,
-            api_access: true,
-            custom_branding: true
+            voice_responses: true,
+            payment_module: true
         }
     }
 };

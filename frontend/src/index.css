@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -143,6 +143,19 @@ h1 {
 .file-title {
   font-family: var(--font-code);
   font-weight: 500;
+}
+
+/* Loading screen — centré sur mobile et desktop */
+.loading-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.loading-screen .loading-spinner {
+  flex-shrink: 0;
 }
 
 /* Minimum touch target for mobile (Android/iOS) - 44px recommended */
@@ -726,6 +739,17 @@ select.input option {
 }
 .light .input-with-icon input::placeholder {
   color: #57606a;
+}
+
+/* Admin plan cards: bordures visibles en mode clair */
+.light [data-plan-card="active"] {
+  border-left-color: #059669 !important;
+}
+.light [data-plan-card="default"] {
+  border-left-color: #2563eb !important;
+}
+.light [data-plan-card="inactive"] {
+  border-left-color: #9ca3af !important;
 }
 
 /* Custom scrollbar */

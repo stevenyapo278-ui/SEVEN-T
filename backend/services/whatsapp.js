@@ -27,10 +27,12 @@ import { messageAiLogService } from './messageAiLog.js';
 import { autoQaService } from './autoQa.js';
 import { notificationService } from './notifications.js';
 import { staticResponses } from '../config/staticResponses.js';
+import { hasFeature } from '../config/plans.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
 import * as ttsService from './tts.js';
 import { conversationMessageQueue } from './conversationMessageQueue.js';
+import { notifyConversationUpdate } from './socketEmitter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
@@ -810,6 +812,7 @@ class WhatsAppManager {
                     VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
                 `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
                 console.log(`[WhatsApp] Message saved: ${context.contactName} -> ${payload.content.substring(0, 30)}...`);
+                void notifyConversationUpdate(context.conversation.id);
                 void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
                     conversationId: context.conversation.id,
                     messageId: payload.inMsgId,
@@ -1340,9 +1343,11 @@ class WhatsAppManager {
                 let sendResult;
                 let sentAsVoice = false;
                 const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
-                const userVoiceRow = await db.get('SELECT voice_responses_enabled FROM users WHERE id = ?', userId);
-                const userVoice = !!(userVoiceRow?.voice_responses_enabled === 1 || userVoiceRow?.voice_responses_enabled === true);
-                if (messageType === 'audio' && platformVoice && userVoice && ttsService.isAvailable()) {
+                const userVoiceRow = await db.get('SELECT plan, voice_responses_enabled FROM users WHERE id = ?', userId);
+                const planHasVoice = await hasFeature(userVoiceRow?.plan || 'free', 'voice_responses');
+                const userFlag = !!(userVoiceRow?.voice_responses_enabled === 1 || userVoiceRow?.voice_responses_enabled === true);
+                const userVoice = platformVoice && planHasVoice && userFlag;
+                if (messageType === 'audio' && userVoice && ttsService.isAvailable()) {
                     const audioBuffer = await ttsService.generate(aiResponse.content, { lang: messageAnalysis?.language || 'fr' });
                     if (audioBuffer && audioBuffer.length > 0) {
                         try {
@@ -1487,6 +1492,7 @@ class WhatsAppManager {
                     INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, created_at)
                     VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?)
                 `, outMsgId, conversation.id, aiResponse.content, aiResponse.tokens || 0, whatsappMsgId, sentAsVoice ? 'audio' : null, new Date().toISOString());
+                void notifyConversationUpdate(conversation.id);
                 if (aiResponse.credits_deducted !== undefined) {
                     console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}. Remaining: ${aiResponse.credits_remaining}`);
                 }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
+import { useFont, FONT_PRESETS } from '../contexts/FontContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
 import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2 } from 'lucide-react'
@@ -12,6 +13,7 @@ export default function Settings() {
   const { user, updateUser, refreshUser, logout } = useAuth()
   const navigate = useNavigate()
   const { currency, setCurrency } = useCurrency()
+  const { fontPreset, setFontPreset } = useFont()
   const [formData, setFormData] = useState({
     name: user?.name || '',
     company: user?.company || '',
@@ -194,10 +196,9 @@ export default function Settings() {
       features.push(`${formatLimit(plan.limits.credits_per_month)} messages IA / mois`)
     }
     if (plan.features) {
-      if (plan.features.analytics) features.push('Analytics')
-      if (plan.features.priority_support) features.push('Support prioritaire')
-      if (plan.features.api_access) features.push('Accès API')
-      if (plan.features.human_transfer) features.push('Transfert humain')
+      if (plan.features.availability_hours) features.push('Heures de disponibilité')
+      if (plan.features.voice_responses) features.push('Réponses vocales')
+      if (plan.features.payment_module) features.push('Module paiement')
     }
     return features
   }
@@ -405,6 +406,29 @@ export default function Settings() {
           Préférences
         </h2>
         <div className="space-y-6">
+          <div>
+            <p className="text-sm font-medium text-gray-300 mb-2">Police de l&apos;interface</p>
+            <p className="text-gray-400 text-sm mb-3">
+              Choisissez la police utilisée pour les textes et titres de l&apos;application
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {Object.entries(FONT_PRESETS).map(([key, preset]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFontPreset(key)}
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${
+                    fontPreset === key
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-space-700 bg-space-800/50 hover:border-space-600'
+                  }`}
+                >
+                  <div className="text-sm font-medium text-gray-100 mb-0.5" style={{ fontFamily: preset.fontUi }}>{preset.label}</div>
+                  <div className="text-xs text-gray-500">{preset.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <p className="text-sm font-medium text-gray-300 mb-2">Devise</p>
             <p className="text-gray-400 text-sm mb-3">

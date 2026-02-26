@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useConfirm } from '../contexts/ConfirmContext'
 import api, { sendToConversation, getNewConversationMessages, syncMessages, getMessagesWithPagination, deleteMessages } from '../services/api'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useConversationSocket } from '../hooks/useConversationSocket'
 import Breadcrumbs from '../components/Breadcrumbs'
 import { ArrowLeft, User, Bot, Phone, Calendar, Send, RefreshCw, Loader2, Edit2, Check, X, UserCircle, UserCheck, Sparkles, FileDown, Trash2, Square, CheckSquare } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -265,6 +266,10 @@ export default function ConversationDetail() {
   const pollIntervalRef = useRef(null)
   const nameInputRef = useRef(null)
   const lastPollTimeRef = useRef(null) // Use ref to avoid stale closure
+  const loadConversationRef = useRef(null)
+
+  // Real-time: refetch messages when this conversation is updated
+  useConversationSocket((convId) => { if (convId === id) loadConversationRef.current?.() })
 
   useEffect(() => {
     loadConversation()
@@ -334,6 +339,7 @@ export default function ConversationDetail() {
       setLoading(false)
     }
   }
+  loadConversationRef.current = loadConversation
 
   const handleLoadOlderMessages = async () => {
     if (loadingMore || !messages.length || !messagesHasMore) return
@@ -594,8 +600,8 @@ export default function ConversationDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+      <div className="w-full flex items-center justify-center min-h-64 py-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
       </div>
     )
   }

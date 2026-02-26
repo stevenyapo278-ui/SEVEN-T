@@ -173,14 +173,9 @@ router.post('/plans', (req, res) => {
 
         const defaultFeatures = {
             models: ['gemini-1.5-flash'],
-            auto_reply: true,
             availability_hours: false,
-            human_transfer: false,
-            blacklist: false,
-            analytics: false,
-            priority_support: false,
-            api_access: false,
-            custom_branding: false
+            voice_responses: false,
+            payment_module: false
         };
 
         db.prepare(`
@@ -514,18 +509,17 @@ router.get('/plans/stats/overview', (req, res) => {
 });
 
 /**
- * Get available AI models for plans
+ * Get available AI models for plans (list used in PlanModal "Modèles IA")
  */
-router.get('/available-models', (req, res) => {
+router.get('/available-models', async (req, res) => {
     try {
-        const models = db.prepare(`
+        const models = await db.all(`
             SELECT id, name, provider, description, is_free
             FROM ai_models
             WHERE is_active = 1
             ORDER BY sort_order ASC
-        `).all();
-
-        res.json({ models });
+        `);
+        res.json({ models: Array.isArray(models) ? models : [] });
     } catch (error) {
         console.error('Get available models error:', error);
         res.status(500).json({ error: 'Erreur serveur' });

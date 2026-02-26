@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, extname } from 'path';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { validate, productCreateSchema, productUpdateSchema } from '../middleware/security.js';
 import { messageAnalyzer } from '../services/messageAnalyzer.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -156,8 +157,8 @@ router.post('/upload-image', authenticateToken, upload.single('image'), async (r
         }
         const filepath = join(uploadsDir, filename);
         fs.writeFileSync(filepath, req.file.buffer);
-        const baseUrl = (req.protocol + '://' + req.get('host')).replace(/\/$/, '');
-        const url = `${baseUrl}/api/products/image/${filename}`;
+        // URL relative pour que les images s'affichent depuis n'importe quel appareil (PC, téléphone sur le même réseau)
+        const url = `/api/products/image/${filename}`;
         res.json({ url });
     } catch (error) {
         console.error('Upload product image error:', error);
@@ -196,25 +197,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create product
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, validate(productCreateSchema), async (req, res) => {
     try {
         const { name, sku, price, cost_price, stock, category, description, image_url } = req.body;
 
-        if (!name?.trim()) {
-            return res.status(400).json({ error: 'Le nom est requis' });
-        }
-
-        const parsedPrice = price !== undefined && price !== null ? parseFloat(price) : 0;
-        const parsedCostPrice = cost_price !== undefined && cost_price !== null ? parseFloat(cost_price) : 0;
-
-        if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-            return res.status(400).json({ error: 'Le prix de vente doit être un nombre positif' });
-        }
-
-        if (Number.isNaN(parsedCostPrice) || parsedCostPrice < 0) {
-            return res.status(400).json({ error: 'Le prix d\'achat doit être un nombre positif' });
-        }
-
+        const parsedPrice = Number(price) ?? 0;
+        const parsedCostPrice = Number(cost_price) ?? 0;
         const id = uuidv4();
         await db.run(`
             INSERT INTO products (id, user_id, name, sku, price, cost_price, stock, category, description, image_url)
@@ -259,7 +247,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update product
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req, res) => {
     try {
         const { name, sku, price, cost_price, stock, category, description, image_url, is_active } = req.body;
 
@@ -268,24 +256,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
 
-        let parsedPrice = null;
-        let parsedCostPrice = null;
-
-        if (price !== undefined) {
-            parsedPrice = parseFloat(price);
-            if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-                return res.status(400).json({ error: 'Le prix de vente doit être un nombre positif' });
-            }
-        }
-
-        if (cost_price !== undefined) {
-            parsedCostPrice = parseFloat(cost_price);
-            if (Number.isNaN(parsedCostPrice) || parsedCostPrice < 0) {
-                return res.status(400).json({ error: 'Le prix d\'achat doit être un nombre positif' });
-            }
-        }
-
-        const newStock = stock !== undefined ? parseInt(stock) : product.stock;
+        const parsedPrice = price !== undefined ? Number(price) : null;
+        const parsedCostPrice = cost_price !== undefined ? Number(cost_price) : null;
+        const newStock = stock !== undefined ? parseInt(stock, 10) : product.stock;
         const stockBefore = Number(product.stock) ?? 0;
         const stockAfter = Number.isInteger(newStock) ? newStock : stockBefore;
         const quantityChange = stockAfter - stockBefore;
