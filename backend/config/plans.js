@@ -13,8 +13,22 @@ let cachedPlans = null;
 let cacheTime = 0;
 const CACHE_TTL = 60000; // 1 minute cache
 
+/** Baseline: all plan-gated features false; models []. DB is the single source of truth so modules not enabled for a plan are never exposed. */
+const FEATURES_BASELINE = {
+    availability_hours: false,
+    voice_responses: false,
+    payment_module: false,
+    next_best_action: false,
+    conversion_score: false,
+    daily_briefing: false,
+    sentiment_routing: false,
+    catalog_import: false,
+    models: []
+};
+
 /**
  * Load plans from database (async)
+ * Features: baseline (all false) then DB only, so admin-unchecked modules stay off.
  */
 async function loadPlansFromDB() {
     try {
@@ -34,6 +48,7 @@ async function loadPlansFromDB() {
             for (const plan of dbPlans) {
                 const defaultLimits = (PLANS[plan.name] && PLANS[plan.name].limits) ? PLANS[plan.name].limits : {};
                 const dbLimits = JSON.parse(plan.limits || '{}');
+                const dbFeatures = JSON.parse(plan.features || '{}');
                 plans[plan.name] = {
                     name: plan.name,
                     displayName: plan.display_name,
@@ -41,7 +56,7 @@ async function loadPlansFromDB() {
                     price: plan.price,
                     priceCurrency: plan.price_currency || 'XOF',
                     limits: { ...defaultLimits, ...dbLimits },
-                    features: { ...(PLANS[plan.name]?.features || {}), ...JSON.parse(plan.features || '{}') }
+                    features: { ...FEATURES_BASELINE, ...dbFeatures }
                 };
             }
             cachedPlans = plans;
@@ -60,6 +75,33 @@ async function loadPlansFromDB() {
 export function clearPlansCache() {
     cachedPlans = null;
     cacheTime = 0;
+}
+
+/**
+ * Get the name of the default active plan (is_default=1 and is_active=1).
+ * Used when a user's plan is inactive so we don't give them the static config of a disabled plan.
+ */
+export function getDefaultPlanName() {
+    try {
+        const row = db.prepare(`
+            SELECT name FROM subscription_plans 
+            WHERE is_active = 1 AND is_default = 1 
+            LIMIT 1
+        `).get();
+        return row?.name || 'free';
+    } catch (e) {
+        return 'free';
+    }
+}
+
+/**
+ * Plan name to show in API: if the given plan is inactive, returns the default plan name.
+ * Use in GET /me etc. so the frontend always sees an active plan.
+ */
+export async function getEffectivePlanName(planName) {
+    const dbPlans = await loadPlansFromDB();
+    if (dbPlans && dbPlans[planName]) return planName;
+    return getDefaultPlanName();
 }
 
 // Default/Fallback plans configuration (aligned with config/defaultPlans.js)
@@ -84,7 +126,12 @@ export const PLANS = {
             models: ['gemini-1.5-flash'],
             availability_hours: false,
             voice_responses: false,
-            payment_module: false
+            payment_module: false,
+            next_best_action: false,
+            conversion_score: false,
+            daily_briefing: false,
+            sentiment_routing: false,
+            catalog_import: false
         }
     },
     starter: {
@@ -107,7 +154,12 @@ export const PLANS = {
             models: ['gemini-1.5-flash', 'gpt-4o-mini'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: false
+            payment_module: false,
+            next_best_action: false,
+            conversion_score: false,
+            daily_briefing: false,
+            sentiment_routing: false,
+            catalog_import: false
         }
     },
     pro: {
@@ -130,7 +182,12 @@ export const PLANS = {
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: true
+            payment_module: true,
+            next_best_action: true,
+            conversion_score: true,
+            daily_briefing: true,
+            sentiment_routing: true,
+            catalog_import: true
         }
     },
     business: {
@@ -153,7 +210,12 @@ export const PLANS = {
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: true
+            payment_module: true,
+            next_best_action: true,
+            conversion_score: true,
+            daily_briefing: true,
+            sentiment_routing: true,
+            catalog_import: true
         }
     },
     enterprise: {
@@ -176,21 +238,44 @@ export const PLANS = {
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: true
+            payment_module: true,
+            next_best_action: true,
+            conversion_score: true,
+            daily_briefing: true,
+            sentiment_routing: true,
+            catalog_import: true
         }
     }
 };
 
+/** Module keys that can be gated by plan */
+export const MODULE_KEYS = ['next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import'];
+
+/**
+ * Check if a plan module is available (async)
+ * @param {string} planName
+ * @param {string} moduleKey - One of: next_best_action, conversion_score, daily_briefing, sentiment_routing, catalog_import
+ * @returns {Promise<boolean>}
+ */
+export async function hasModule(planName, moduleKey) {
+    const plan = await getPlan(planName);
+    return plan.features[moduleKey] === true;
+}
+
 /**
  * Get plan configuration by name (async)
- * First tries to load from database, falls back to static config
+ * Only active plans from DB are used. If the requested plan is inactive or missing,
+ * the default active plan (or free) is returned so users don't keep "pro" benefits when pro is disabled.
  */
 export async function getPlan(planName) {
     const dbPlans = await loadPlansFromDB();
     if (dbPlans && dbPlans[planName]) {
         return dbPlans[planName];
     }
-    return PLANS[planName] || PLANS.free;
+    // Plan désactivé ou inexistant : appliquer le plan par défaut (ou free), pas la config statique du plan désactivé
+    const defaultName = getDefaultPlanName();
+    if (dbPlans && dbPlans[defaultName]) return dbPlans[defaultName];
+    return PLANS[defaultName] || PLANS.free;
 }
 
 /**

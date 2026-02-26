@@ -6,6 +6,7 @@ import { existsSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import db from '../database/init.js';
+import { getPlan, getEffectivePlanName } from '../config/plans.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import { validate, registerSchema, loginSchema } from '../middleware/security.js';
 import { sendWelcomeEmail } from '../services/email.js';
@@ -234,21 +235,17 @@ router.post('/register', validate(registerSchema), async (req, res) => {
             VALUES (?, ?, ?, ?, ?)
         `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null);
 
-        // Get created user
+        // Get created user and attach plan_features (plan effectif si le plan en base est désactivé)
         const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, created_at FROM users WHERE id = ?', userId);
-
-        // Generate token
+        const effectivePlan = await getEffectivePlanName(user.plan);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
         const token = generateToken(user);
-
-        // Send welcome email (async, don't wait)
         sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
-
-        // Create welcome notification
         notificationService.notifyWelcome(userId);
-
         res.status(201).json({
             message: 'Compte créé avec succès',
-            user,
+            user: { ...user, plan: effectivePlan, plan_features },
             token
         });
     } catch (error) {
@@ -283,12 +280,14 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         // Generate token
         const token = generateToken(user);
 
-        // Remove password from response
+        // Remove password from response and attach plan_features (plan effectif si désactivé)
         const { password: _, ...userWithoutPassword } = user;
-
+        const effectivePlan = await getEffectivePlanName(user.plan);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
         res.json({
             message: 'Connexion réussie',
-            user: userWithoutPassword,
+            user: { ...userWithoutPassword, plan: effectivePlan, plan_features },
             token
         });
     } catch (error) {
@@ -305,8 +304,10 @@ router.get('/me', authenticateToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
-
-        res.json({ user });
+        const effectivePlan = await getEffectivePlanName(user.plan);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
+        res.json({ user: { ...user, plan: effectivePlan, plan_features } });
     } catch (error) {
         console.error('Get user error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -347,8 +348,10 @@ router.put('/me', authenticateToken, async (req, res) => {
         }
 
         const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled FROM users WHERE id = ?', req.user.id);
-
-        res.json({ user });
+        const effectivePlan = await getEffectivePlanName(user.plan);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
+        res.json({ user: { ...user, plan: effectivePlan, plan_features } });
     } catch (error) {
         console.error('Update user error:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour' });

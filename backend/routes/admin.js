@@ -245,6 +245,14 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Vous ne pouvez pas désactiver votre propre compte' });
         }
 
+        // Ne pas autoriser d'assigner un plan désactivé
+        if (plan != null && plan !== '') {
+            const planActive = db.prepare('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1').get(plan);
+            if (!planActive) {
+                return res.status(400).json({ error: 'Ce plan n\'est pas actif. Choisissez un plan actif dans la liste.' });
+            }
+        }
+
         // Check if email is taken by another user (only when email is provided and different)
         if (email != null && email !== '') {
             const emailTaken = await db.get('SELECT id FROM users WHERE LOWER(TRIM(email)) = LOWER(TRIM(?)) AND id != ?', String(email).trim(), req.params.id);
@@ -522,6 +530,13 @@ router.post('/users', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Cet email est déjà utilisé' });
         }
 
+        // Ne pas autoriser de créer un utilisateur avec un plan désactivé
+        const planToUse = plan || 'free';
+        const planActive = db.prepare('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1').get(planToUse);
+        if (!planActive) {
+            return res.status(400).json({ error: 'Ce plan n\'est pas actif. Choisissez un plan actif dans la liste.' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = uuidv4();
         const parentId = parent_user_id === '' || parent_user_id === null || parent_user_id === undefined ? null : parent_user_id;
@@ -529,7 +544,7 @@ router.post('/users', authenticateAdmin, async (req, res) => {
         await db.run(`
             INSERT INTO users (id, name, email, password, company, plan, credits, is_admin, parent_user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, userId, name, email, hashedPassword, company || '', plan || 'free', credits ?? 100, is_admin || 0, parentId);
+        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 100, is_admin || 0, parentId);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         const { password: pwd, ...userWithoutPassword } = user;

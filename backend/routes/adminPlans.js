@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
-import { clearPlansCache } from '../config/plans.js';
+import { clearPlansCache, getDefaultPlanName } from '../config/plans.js';
 import { defaultPlans } from '../config/defaultPlans.js';
 
 const router = Router();
@@ -18,15 +18,28 @@ function parsePlanJson(val, fallback = '{}') {
     return val;
 }
 
-/** Merge DB limits/features with default plan so keys like outlook_accounts are always present */
+/** All feature keys (including modules 3–7) so API always returns them */
+const ALL_FEATURE_KEYS = {
+    availability_hours: false,
+    voice_responses: false,
+    payment_module: false,
+    next_best_action: false,
+    conversion_score: false,
+    daily_briefing: false,
+    sentiment_routing: false,
+    catalog_import: false
+};
+
+/** Merge DB limits/features with default plan so keys like modules 3–7 are always present */
 function mergeWithDefaults(plan) {
     const defaultPlan = defaultPlans.find(p => p.name === plan.name);
     const defaultLimits = defaultPlan?.limits ? JSON.parse(defaultPlan.limits) : {};
     const defaultFeatures = defaultPlan?.features ? JSON.parse(defaultPlan.features) : {};
+    const parsedFeatures = plan.features && typeof plan.features === 'object' ? plan.features : JSON.parse(plan.features || '{}');
     return {
         ...plan,
         limits: { ...defaultLimits, ...(plan.limits && typeof plan.limits === 'object' ? plan.limits : JSON.parse(plan.limits || '{}')) },
-        features: { ...defaultFeatures, ...(plan.features && typeof plan.features === 'object' ? plan.features : JSON.parse(plan.features || '{}')) }
+        features: { ...ALL_FEATURE_KEYS, ...defaultFeatures, ...parsedFeatures }
     };
 }
 
@@ -175,7 +188,12 @@ router.post('/plans', (req, res) => {
             models: ['gemini-1.5-flash'],
             availability_hours: false,
             voice_responses: false,
-            payment_module: false
+            payment_module: false,
+            next_best_action: false,
+            conversion_score: false,
+            daily_briefing: false,
+            sentiment_routing: false,
+            catalog_import: false
         };
 
         db.prepare(`
@@ -274,7 +292,10 @@ router.put('/plans/:id', (req, res) => {
         }
         if (features !== undefined) {
             updates.push('features = ?');
-            params.push(JSON.stringify(features));
+            // Toujours enregistrer un objet complet (baseline + reçu) pour que les modules désactivés (false) soient bien persistés
+            const merged = { ...ALL_FEATURE_KEYS, models: [], ...(features && typeof features === 'object' ? features : {}) };
+            if (!Array.isArray(merged.models)) merged.models = features?.models ?? [];
+            params.push(JSON.stringify(merged));
         }
         if (is_active !== undefined) {
             updates.push('is_active = ?');
@@ -293,6 +314,17 @@ router.put('/plans/:id', (req, res) => {
             SET ${updates.join(', ')}
             WHERE id = ?
         `).run(...params);
+
+        // Si le plan vient d'être désactivé : migrer les utilisateurs vers le plan par défaut
+        if (is_active === false || is_active === 0) {
+            const defaultPlanName = getDefaultPlanName();
+            if (defaultPlanName && defaultPlanName !== plan.name) {
+                const result = db.prepare('UPDATE users SET plan = ? WHERE plan = ?').run(defaultPlanName, plan.name);
+                if (result.changes > 0) {
+                    console.log(`[adminPlans] Plan "${plan.name}" désactivé : ${result.changes} utilisateur(s) migré(s) vers "${defaultPlanName}".`);
+                }
+            }
+        }
 
         const updatedPlan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         updatedPlan.limits = JSON.parse(parsePlanJson(updatedPlan.limits, '{}'));

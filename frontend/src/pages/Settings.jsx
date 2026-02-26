@@ -5,7 +5,7 @@ import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
 import { useFont, FONT_PRESETS } from '../contexts/FontContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
-import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2 } from 'lucide-react'
+import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2, Mail, MessageCircle, HelpCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Settings() {
@@ -48,6 +48,10 @@ export default function Settings() {
   useLockBodyScroll(showDeleteAccountModal || !!paymentProviderModal?.provider)
 
   const [quotas, setQuotas] = useState(null)
+  const [dailyBriefing, setDailyBriefing] = useState(null)
+  const [dailyBriefingLoading, setDailyBriefingLoading] = useState(false)
+  const [dailyBriefingSaving, setDailyBriefingSaving] = useState(false)
+  const [dailyBriefingForm, setDailyBriefingForm] = useState({ enabled: false, preferred_hour: 8, channel: 'email', email: '', whatsapp_contact_jid: '' })
 
   // Handle redirect after Stripe Checkout (success or cancel)
   useEffect(() => {
@@ -78,6 +82,29 @@ export default function Settings() {
       setQuotas(null)
     }
   }
+
+  const loadDailyBriefing = async () => {
+    if (!user?.plan_features?.daily_briefing) return
+    setDailyBriefingLoading(true)
+    try {
+      const { data } = await api.get('/settings/daily-briefing')
+      setDailyBriefing(data)
+      setDailyBriefingForm({
+        enabled: data.enabled === true,
+        preferred_hour: data.preferred_hour ?? 8,
+        channel: data.channel || 'email',
+        email: data.email || '',
+        whatsapp_contact_jid: data.whatsapp_contact_jid || ''
+      })
+    } catch {
+      setDailyBriefing(null)
+    } finally {
+      setDailyBriefingLoading(false)
+    }
+  }
+  useEffect(() => {
+    loadDailyBriefing()
+  }, [user?.plan_features?.daily_briefing])
 
   useEffect(() => {
     if (!user?.id) return
@@ -577,6 +604,138 @@ export default function Settings() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Résumé quotidien (Daily briefing) - module daily_briefing */}
+      {user?.plan_features?.daily_briefing && (
+        <div className="card p-6 mb-6">
+          <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-gold-400" />
+            Résumé quotidien
+          </h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Recevez chaque jour un résumé (conversations, messages, commandes, leads) par email ou WhatsApp.
+          </p>
+          <div className="mb-4 p-3 rounded-lg bg-space-800/80 border border-space-600">
+            <p className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-gold-400 shrink-0" />
+              Comment utiliser
+            </p>
+            <ol className="text-sm text-gray-400 list-decimal list-inside space-y-1">
+              <li>Activez l&apos;option « Activer le résumé quotidien ».</li>
+              <li>Choisissez l&apos;heure d&apos;envoi (0–23) et le canal : Email ou WhatsApp.</li>
+              <li>Renseignez l&apos;email ou le numéro WhatsApp qui recevra le résumé.</li>
+              <li>Cliquez sur <strong>Enregistrer</strong>. Un job quotidien enverra le résumé à l&apos;heure choisie.</li>
+            </ol>
+          </div>
+          {dailyBriefingLoading ? (
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Chargement...
+            </div>
+          ) : (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setDailyBriefingSaving(true)
+                try {
+                  const { data } = await api.put('/settings/daily-briefing', dailyBriefingForm)
+                  setDailyBriefing(data)
+                  toast.success('Paramètres enregistrés')
+                } catch (err) {
+                  toast.error(err.response?.data?.error || 'Erreur lors de l\'enregistrement')
+                } finally {
+                  setDailyBriefingSaving(false)
+                }
+              }}
+              className="space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="daily-briefing-enabled"
+                  checked={dailyBriefingForm.enabled}
+                  onChange={(e) => setDailyBriefingForm((f) => ({ ...f, enabled: e.target.checked }))}
+                  className="rounded border-space-600 bg-space-800 text-gold-400 focus:ring-gold-400/50"
+                />
+                <label htmlFor="daily-briefing-enabled" className="text-gray-300">Activer le résumé quotidien</label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Heure d&apos;envoi (0-23)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={dailyBriefingForm.preferred_hour}
+                  onChange={(e) => setDailyBriefingForm((f) => ({ ...f, preferred_hour: parseInt(e.target.value, 10) || 8 }))}
+                  className="w-24 px-3 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Canal</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="briefing-channel"
+                      checked={dailyBriefingForm.channel === 'email'}
+                      onChange={() => setDailyBriefingForm((f) => ({ ...f, channel: 'email' }))}
+                      className="text-gold-400 focus:ring-gold-400/50"
+                    />
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    Email
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="briefing-channel"
+                      checked={dailyBriefingForm.channel === 'whatsapp'}
+                      onChange={() => setDailyBriefingForm((f) => ({ ...f, channel: 'whatsapp' }))}
+                      className="text-gold-400 focus:ring-gold-400/50"
+                    />
+                    <MessageCircle className="w-4 h-4 text-gray-400" />
+                    WhatsApp
+                  </label>
+                </div>
+              </div>
+              {dailyBriefingForm.channel === 'email' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email de réception</label>
+                  <input
+                    type="email"
+                    value={dailyBriefingForm.email}
+                    onChange={(e) => setDailyBriefingForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder={user?.email || 'votre@email.com'}
+                    className="w-full max-w-md px-3 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                  />
+                </div>
+              )}
+              {dailyBriefingForm.channel === 'whatsapp' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Numéro WhatsApp (ex: 2250712345678)</label>
+                  <input
+                    type="text"
+                    value={dailyBriefingForm.whatsapp_contact_jid}
+                    onChange={(e) => setDailyBriefingForm((f) => ({ ...f, whatsapp_contact_jid: e.target.value }))}
+                    placeholder="2250712345678"
+                    className="w-full max-w-md px-3 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                  />
+                </div>
+              )}
+              {dailyBriefing?.last_sent_at && (
+                <p className="text-xs text-gray-500">Dernier envoi : {new Date(dailyBriefing.last_sent_at).toLocaleString('fr-FR')}</p>
+              )}
+              <button
+                type="submit"
+                disabled={dailyBriefingSaving}
+                className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
+              >
+                {dailyBriefingSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+                Enregistrer
+              </button>
+            </form>
+          )}
         </div>
       )}
 

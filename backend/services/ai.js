@@ -451,7 +451,12 @@ class AIService {
             const langLabel = analysis.language === 'fr' ? 'français' : analysis.language === 'en' ? 'anglais' : analysis.language;
             parts.push(`\n🌐 Langue du message client : ${langLabel}. Réponds UNIQUEMENT dans cette langue.`);
         }
-        
+
+        // Sentiment routing hint (hesitant → suggest offer or FAQ)
+        if (analysis.sentiment_hint === 'suggest_offer_or_faq') {
+            parts.push('\n💡 Le client semble hésitant: privilégie une proposition d\'offre ou une FAQ ciblée pour le rassurer.');
+        }
+
         // Intent
         if (analysis.intent) {
             const intentLabels = {

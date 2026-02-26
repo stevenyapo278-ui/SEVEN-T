@@ -7,7 +7,10 @@ const router = express.Router();
 // Get all notifications for user
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const limit = parseInt(req.query.limit) || 50;
+        if (!req.user?.id) {
+            return res.status(401).json({ error: 'Non authentifié' });
+        }
+        const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
         const unreadOnly = req.query.unread === 'true';
 
         const notifications = await notificationService.getForUser(req.user.id, { limit, unreadOnly });
@@ -15,14 +18,15 @@ router.get('/', authenticateToken, async (req, res) => {
         try {
             unreadCount = await notificationService.getUnreadCount(req.user.id);
         } catch (unreadErr) {
-            console.error('Get notifications unread count error:', unreadErr);
+            console.error('Get notifications unread count error:', unreadErr?.message || unreadErr);
         }
         res.json({
-            notifications,
-            unreadCount
+            notifications: Array.isArray(notifications) ? notifications : [],
+            unreadCount: Number(unreadCount) || 0
         });
     } catch (error) {
-        console.error('Get notifications error:', error);
+        console.error('Get notifications error:', error?.message || error);
+        if (error?.stack) console.error(error.stack);
         res.status(500).json({ error: 'Erreur lors de la récupération des notifications' });
     }
 });

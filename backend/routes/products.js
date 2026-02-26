@@ -9,6 +9,8 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate, productCreateSchema, productUpdateSchema } from '../middleware/security.js';
 import { messageAnalyzer } from '../services/messageAnalyzer.js';
+import { requireModule } from '../middleware/requireModule.js';
+import { importFromUrl } from '../services/catalogImport.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
@@ -51,6 +53,35 @@ router.get('/', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Get products error:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des produits' });
+    }
+});
+
+// Import products from a catalog URL (module catalog_import)
+router.post('/import-from-url', authenticateToken, requireModule('catalog_import'), async (req, res) => {
+    try {
+        const { url } = req.body;
+        if (!url || typeof url !== 'string') {
+            return res.status(400).json({ error: 'URL requise' });
+        }
+        const extracted = await importFromUrl(url.trim());
+        const created = [];
+        for (const item of extracted) {
+            const id = uuidv4();
+            const price = item.price != null && !Number.isNaN(item.price) && item.price >= 0 ? item.price : 0;
+            await db.run(`
+                INSERT INTO products (id, user_id, name, sku, price, cost_price, stock, category, description, image_url)
+                VALUES (?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)
+            `, id, req.user.id, item.title || 'Sans nom', null, price, item.description || null, item.imageUrl || null);
+            created.push({ id, name: item.title || 'Sans nom', price, image_url: item.imageUrl || null });
+        }
+        messageAnalyzer.invalidateProductCache(req.user.id);
+        res.json({ imported: created.length, products: created });
+    } catch (error) {
+        const message = error?.message || 'Erreur lors de l\'import';
+        const status = message.includes('invalide') || message.includes('délai') || message.includes('accessible') || message.includes('Aucun produit')
+            ? 400
+            : 500;
+        res.status(status).json({ error: message });
     }
 });
 

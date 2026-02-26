@@ -1064,6 +1064,58 @@ export async function initDatabase() {
         }
     }
 
+    // Migration: conversations - conversion_score, conversion_score_updated_at, suggested_action (Module 4)
+    try {
+        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS conversion_score INTEGER');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('conversations.conversion_score column migration:', e?.message);
+        }
+    }
+    try {
+        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS conversion_score_updated_at TIMESTAMP');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('conversations.conversion_score_updated_at column migration:', e?.message);
+        }
+    }
+    try {
+        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS suggested_action TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('conversations.suggested_action column migration:', e?.message);
+        }
+    }
+
+    // Tables for Module 3 (next-best-action) and Module 5 (daily briefing)
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS proactive_message_log (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            sent_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_proactive_message_log_conv_type ON proactive_message_log(conversation_id, type);
+        CREATE INDEX IF NOT EXISTS idx_proactive_message_log_user ON proactive_message_log(user_id);
+
+        CREATE TABLE IF NOT EXISTS daily_briefing_settings (
+            user_id TEXT PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            preferred_hour INTEGER DEFAULT 8,
+            channel TEXT DEFAULT 'email',
+            email TEXT,
+            whatsapp_contact_jid TEXT,
+            last_sent_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    `);
+
     console.log('PostgreSQL schema initialized successfully');
 }
 

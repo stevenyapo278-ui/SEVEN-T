@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import api, { sendToConversation, getNewConversationMessages, syncMessages, getMessagesWithPagination, deleteMessages } from '../services/api'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -242,7 +243,12 @@ const isNameJustNumber = (name, number) => {
 export default function ConversationDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user, refreshUser } = useAuth()
   const { showConfirm } = useConfirm()
+
+  useEffect(() => {
+    refreshUser()
+  }, [refreshUser])
   const [conversation, setConversation] = useState(null)
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
@@ -287,19 +293,12 @@ export default function ConversationDetail() {
   // Start polling for new messages
   useEffect(() => {
     if (conversation && !loading) {
-      // Start polling interval
-      pollIntervalRef.current = setInterval(async () => {
-        if (!lastPollTimeRef.current) return
-        
+      let pollStopped = false
+      const tick = async () => {
+        if (!lastPollTimeRef.current || pollStopped) return
         try {
-          // #region agent log
-          console.log(`[ConvPolling] Fetching new messages since ${lastPollTimeRef.current}`)
-          // #endregion
           const data = await getNewConversationMessages(id, lastPollTimeRef.current)
           if (data.messages && data.messages.length > 0) {
-            // #region agent log
-            console.log(`[ConvPolling] Got ${data.messages.length} new messages`)
-            // #endregion
             setMessages(prev => {
               const existingIds = new Set(prev.map(m => m.id))
               const newMsgs = data.messages.filter(m => !existingIds.has(m.id))
@@ -311,13 +310,25 @@ export default function ConversationDetail() {
           lastPollTimeRef.current = data.timestamp
           setLastPollTime(data.timestamp)
         } catch (error) {
+          const status = error.response?.status
+          if (status === 404 || status === 500) {
+            pollStopped = true
+            if (pollIntervalRef.current) {
+              clearInterval(pollIntervalRef.current)
+              pollIntervalRef.current = null
+            }
+            if (status === 500) console.error('Polling stopped after server error (500)')
+            return
+          }
           console.error('Polling error:', error)
         }
-      }, 3000)
+      }
+      pollIntervalRef.current = setInterval(tick, 3000)
     }
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
       }
     }
   }, [conversation, loading, id])
@@ -794,6 +805,18 @@ export default function ConversationDetail() {
                 {conversation.is_transferred === 1 && (
                   <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs">
                     Transféré à un humain
+                  </span>
+                )}
+                {user?.plan_features?.conversion_score && conversation.conversion_score != null && (
+                  <span className="badge-conversion-score px-2 py-0.5 bg-space-600 text-gray-300 rounded text-xs" title="Score de conversion">
+                    Score {conversation.conversion_score}
+                  </span>
+                )}
+                {user?.plan_features?.conversion_score && conversation.suggested_action && (
+                  <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded text-xs" title="Action suggérée">
+                    {conversation.suggested_action === 'send_offer' && 'Offre'}
+                    {conversation.suggested_action === 'transfer_human' && '→ Humain'}
+                    {conversation.suggested_action === 'relance_2h' && 'Relance'}
                   </span>
                 )}
               </div>

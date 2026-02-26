@@ -49,6 +49,7 @@ import reportRoutes from './routes/reports.js';
 import userRoutes from './routes/users.js';
 import subscriptionRoutes, { handleStripeWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
+import settingsRoutes from './routes/settings.js';
 
 // Database
 import db, { initDatabase } from './database/init.js';
@@ -56,6 +57,8 @@ import db, { initDatabase } from './database/init.js';
 // WhatsApp Manager
 import { whatsappManager } from './services/whatsapp.js';
 import { setIO } from './services/socketEmitter.js';
+import { runDailyBriefingJob } from './services/dailyBriefing.js';
+import { runNextBestActionJob } from './services/nextBestAction.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -151,6 +154,7 @@ app.use('/api/workflows', workflowRoutes);
 app.use('/api/flows', flowRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/landing-chat', landingChatRoutes);
 
@@ -213,7 +217,12 @@ app.get('/api/users/me', async (req, res) => {
             return res.json({ user: null });
         }
         const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, payment_module_enabled FROM users WHERE id = ?', userId);
-        return res.json({ user: user || null });
+        if (!user) return res.json({ user: null });
+        const { getPlan, getEffectivePlanName } = await import('./config/plans.js');
+        const effectivePlan = await getEffectivePlanName(user.plan);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
+        return res.json({ user: { ...user, plan: effectivePlan, plan_features } });
     } catch (err) {
         console.error('GET /api/users/me error:', err?.message || err);
         if (!res.headersSent) {
@@ -322,6 +331,17 @@ async function start() {
                     console.error('❌ Error reconnecting WhatsApp agents:', error);
                 }
             }, 3000);
+
+            // Daily briefing + next-best-action scheduler (every hour)
+            setInterval(() => {
+                runDailyBriefingJob().catch(err => console.error('[DailyBriefing] Job error:', err?.message));
+                runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
+            }, 60 * 60 * 1000);
+            // Run once shortly after startup
+            setTimeout(() => {
+                runDailyBriefingJob().catch(err => console.error('[DailyBriefing] Job error:', err?.message));
+                runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
+            }, 30 * 1000);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

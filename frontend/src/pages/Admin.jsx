@@ -40,6 +40,7 @@ import {
   Copy
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, getCreditsForPlan } from './Admin/index.js'
 
 export default function Admin() {
   const { showConfirm } = useConfirm()
@@ -631,6 +632,7 @@ export default function Admin() {
       {activeTab === 'users' && (
         <UsersContent 
           users={users}
+          plans={plans}
           loading={loading}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -771,352 +773,6 @@ export default function Admin() {
   )
 }
 
-// Dashboard Content
-function DashboardContent({ stats, loading, anomalyStats }) {
-  if (loading || !stats) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Anomaly Alert Banner */}
-      {anomalyStats.total > 0 && (
-        <div className={`p-4 rounded-xl flex items-center gap-4 ${
-          anomalyStats.bySeverity?.critical > 0 
-            ? 'bg-red-500/20 border border-red-500/30' 
-            : anomalyStats.bySeverity?.high > 0
-            ? 'bg-orange-500/20 border border-orange-500/30'
-            : 'bg-amber-500/20 border border-amber-500/30'
-        }`}>
-          <AlertCircle className={`w-6 h-6 ${
-            anomalyStats.bySeverity?.critical > 0 ? 'text-red-400' :
-            anomalyStats.bySeverity?.high > 0 ? 'text-orange-400' : 'text-amber-400'
-          }`} />
-          <div className="flex-1">
-            <p className="font-medium text-gray-100">
-              {anomalyStats.total} anomalie{anomalyStats.total > 1 ? 's' : ''} détectée{anomalyStats.total > 1 ? 's' : ''}
-            </p>
-            <p className="text-sm text-gray-400">
-              {anomalyStats.bySeverity?.critical > 0 && `${anomalyStats.bySeverity.critical} critique(s) • `}
-              {anomalyStats.bySeverity?.high > 0 && `${anomalyStats.bySeverity.high} haute(s) • `}
-              {anomalyStats.bySeverity?.medium > 0 && `${anomalyStats.bySeverity.medium} moyenne(s)`}
-            </p>
-          </div>
-          <a href="#" onClick={(e) => { e.preventDefault(); }} className="text-sm text-gold-400 hover:underline">
-            Voir les anomalies →
-          </a>
-        </div>
-      )}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          icon={Users} 
-          label="Utilisateurs" 
-          value={stats.stats.users}
-          subValue={`${stats.stats.activeUsers} actifs`}
-          color="gold"
-        />
-        <StatCard 
-          icon={Bot} 
-          label="Agents IA" 
-          value={stats.stats.agents}
-          subValue={`${stats.stats.activeAgents} connectés`}
-          color="blue"
-        />
-        <StatCard 
-          icon={MessageSquare} 
-          label="Conversations" 
-          value={stats.stats.conversations}
-          color="emerald"
-        />
-        <StatCard 
-          icon={Activity} 
-          label="Messages" 
-          value={stats.stats.messages}
-          color="blue"
-        />
-      </div>
-
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Users by Plan */}
-        <div className="card p-6">
-          <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Utilisateurs par plan</h3>
-          <div className="space-y-3">
-            {stats.usersByPlan.map((item) => (
-              <div key={item.plan} className="flex items-center justify-between">
-                <span className="text-gray-300 capitalize">{item.plan}</span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-space-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-gold-400 to-blue-500 rounded-full"
-                      style={{ width: `${(item.count / stats.stats.users) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-gold-400 font-medium w-8 text-right">{item.count}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="card p-6">
-          <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Activité récente</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-space-800 rounded-lg">
-              <div className="flex items-center gap-3">
-                <UserPlus className="w-5 h-5 text-emerald-400" />
-                <span className="text-gray-300">Nouvelles inscriptions (7j)</span>
-              </div>
-              <span className="text-2xl font-bold text-emerald-400">{stats.recentSignups}</span>
-            </div>
-            {stats.messagesPerDay.slice(-5).map((day) => (
-              <div key={day.date} className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">{day.date}</span>
-                <span className="text-gray-300">{day.count} messages</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Stat Card Component
-function StatCard({ icon: Icon, label, value, subValue, color }) {
-  const colors = {
-    gold: 'from-gold-400/20 to-gold-400/5 border-gold-400/30 text-gold-400',
-    blue: 'from-blue-400/20 to-blue-400/5 border-blue-400/30 text-blue-400',
-    emerald: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30 text-emerald-400'
-  }
-
-  return (
-    <div className={`p-6 rounded-xl border bg-gradient-to-br ${colors[color]}`}>
-      <div className="flex items-center justify-between mb-3">
-        <Icon className="w-6 h-6" />
-        {subValue && <span className="text-xs opacity-70">{subValue}</span>}
-      </div>
-      <div className="text-3xl font-bold text-gray-100">{value.toLocaleString()}</div>
-      <div className="text-sm text-gray-400">{label}</div>
-    </div>
-  )
-}
-
-// Users Content
-function UsersContent({ 
-  users, loading, searchQuery, setSearchQuery, 
-  selectedPlan, setSelectedPlan, selectedStatus, setSelectedStatus,
-  pagination, setPagination, onDelete, onToggleAdmin, onToggleActive,
-  onEdit, onCreate, onRefresh, onRestore, formatDate 
-}) {
-  const totalPages = Math.ceil(pagination.total / pagination.limit)
-  const currentPage = Math.floor(pagination.offset / pagination.limit) + 1
-
-  return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex gap-3 flex-wrap">
-          <div className="input-with-icon w-64">
-            <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
-              <Search className="w-5 h-5" />
-            </div>
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setPagination(p => ({...p, offset: 0})); }}
-            />
-          </div>
-          <select
-            value={selectedPlan}
-            onChange={(e) => { setSelectedPlan(e.target.value); setPagination(p => ({...p, offset: 0})); }}
-            className="input-dark"
-          >
-            <option value="">Tous les plans</option>
-            <option value="free">Free</option>
-            <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
-          <select
-            value={selectedStatus}
-            onChange={(e) => { setSelectedStatus(e.target.value); setPagination(p => ({...p, offset: 0})); }}
-            className="input-dark"
-          >
-            <option value="">Tous les statuts</option>
-            <option value="active">Actifs</option>
-            <option value="inactive">Inactifs</option>
-          </select>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={onRefresh} className="p-2 text-gray-400 hover:text-gray-100 transition-colors">
-            <RefreshCw className="w-5 h-5" />
-          </button>
-          <button onClick={onCreate} className="btn-primary inline-flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            Nouvel utilisateur
-          </button>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto table-responsive">
-            <table className="w-full">
-              <thead className="bg-space-800">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Utilisateur</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Plan</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Crédits</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Agents</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Messages</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Inscrit le</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Statut</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-space-700">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-space-800/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          user.is_admin ? 'bg-gold-400/20' : 'bg-space-700'
-                        }`}>
-                          {user.is_admin ? (
-                            <Shield className="w-5 h-5 text-gold-400" />
-                          ) : (
-                            <Users className="w-5 h-5 text-gray-500" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-100">{user.name}</div>
-                          {user.parent_name && (
-                            <div className="text-xs text-gray-500">Sous-compte de {user.parent_name}</div>
-                          )}
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user.plan === 'pro' ? 'bg-blue-500/20 text-blue-400' :
-                        user.plan === 'starter' ? 'bg-blue-500/20 text-blue-400' :
-                        user.plan === 'enterprise' ? 'bg-gold-400/20 text-gold-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {user.plan}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-300">{user.credits}</td>
-                    <td className="px-4 py-3 text-gray-300">{user.agents_count}</td>
-                    <td className="px-4 py-3 text-gray-300">{user.messages_count}</td>
-                    <td className="px-4 py-3 text-gray-400 text-sm">{formatDate(user.created_at)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        user.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        {user.is_active ? 'Actif' : 'Inactif'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => onToggleAdmin(user)}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            user.is_admin 
-                              ? 'text-gold-400 hover:bg-gold-400/10' 
-                              : 'text-gray-500 hover:bg-space-700'
-                          }`}
-                          title={user.is_admin ? 'Retirer admin' : 'Rendre admin'}
-                        >
-                          {user.is_admin ? <Shield className="w-4 h-4" /> : <ShieldOff className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => onEdit(user)}
-                          className="p-1.5 text-gray-500 hover:text-gray-100 hover:bg-space-700 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {user.is_active === 0 && user.email?.includes('_deleted_') ? (
-                          <button
-                            onClick={() => onRestore(user.id)}
-                            className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                            title="Restaurer l'utilisateur"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => onDelete(user.id)}
-                            className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between px-4 py-3 border-t border-space-700">
-            <span className="text-sm text-gray-500">
-              {pagination.offset + 1} - {Math.min(pagination.offset + pagination.limit, pagination.total)} sur {pagination.total}
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPagination(p => ({ ...p, offset: Math.max(0, p.offset - p.limit) }))}
-                disabled={currentPage === 1}
-                className="p-2 text-gray-400 hover:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="text-sm text-gray-400">
-                Page {currentPage} / {totalPages || 1}
-              </span>
-              <button
-                onClick={() => setPagination(p => ({ ...p, offset: p.offset + p.limit }))}
-                disabled={currentPage >= totalPages}
-                className="p-2 text-gray-400 hover:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Fallback default credits per plan when plans list is empty
-const DEFAULT_CREDITS_BY_PLAN = { free: 100, starter: 1500, pro: 5000, enterprise: -1 }
-
-function getCreditsForPlan(plans, planId) {
-  const plan = plans.find(p => p.name === planId || p.id === planId)
-  if (plan?.limits?.credits_per_month != null) return plan.limits.credits_per_month
-  return DEFAULT_CREDITS_BY_PLAN[planId] ?? 100
-}
-
 // Edit User Modal
 function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
   const [formData, setFormData] = useState({
@@ -1136,6 +792,19 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
   const [confirmAdminInput, setConfirmAdminInput] = useState('')
   const isPromotingToAdmin = formData.is_admin === 1 && user.is_admin !== 1
   const canSubmit = !isPromotingToAdmin || confirmAdminInput.trim() === 'CONFIRMER'
+
+  // Plans actifs uniquement pour l’assignation
+  const activePlans = (plans || []).filter(p => p.is_active !== false && p.is_active !== 0)
+  // Si le plan actuel de l’utilisateur est désactivé, basculer sur le plan par défaut ou le premier actif
+  useEffect(() => {
+    if (activePlans.length === 0) return
+    const currentIsActive = activePlans.some(p => (p.name || p.id) === formData.plan)
+    if (!currentIsActive) {
+      const defaultPlan = activePlans.find(p => p.is_default) || activePlans[0]
+      const fallback = defaultPlan?.name || defaultPlan?.id || 'free'
+      setFormData(prev => ({ ...prev, plan: fallback, credits: getCreditsForPlan(plans, fallback) }))
+    }
+  }, [activePlans.length])
 
   const handlePlanChange = (planId) => {
     const defaultCredits = getCreditsForPlan(plans, planId)
@@ -1205,13 +874,13 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Plan</label>
               <select
-                value={formData.plan}
+                value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans[0]?.name || activePlans[0]?.id || 'free')}
                 onChange={(e) => handlePlanChange(e.target.value)}
                 className="input-dark w-full"
               >
-                {plans.length > 0
-                  ? plans.map(p => (
-                      <option key={p.id ?? p.name} value={p.name}>
+                {activePlans.length > 0
+                  ? activePlans.map(p => (
+                      <option key={p.id ?? p.name} value={p.name ?? p.id}>
                         {p.display_name ?? p.name}
                       </option>
                     ))
@@ -1336,6 +1005,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
 
 // Create User Modal
 function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
+  const activePlans = (plans || []).filter(p => p.is_active !== false && p.is_active !== 0)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -1349,11 +1019,13 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
   const [saving, setSaving] = useState(false)
   const initialCreditsSyncedRef = useRef(false)
 
-  // Initialiser les crédits selon le plan quand la liste des plans est disponible (une seule fois)
+  // Initialiser plan et crédits selon un plan actif quand la liste des plans est disponible (une seule fois)
   useEffect(() => {
-    if (plans.length > 0 && !initialCreditsSyncedRef.current) {
+    if (activePlans.length > 0 && !initialCreditsSyncedRef.current) {
       initialCreditsSyncedRef.current = true
-      setFormData(prev => ({ ...prev, credits: getCreditsForPlan(plans, prev.plan) }))
+      const defaultPlan = activePlans.find(p => p.is_default) || activePlans.find(p => p.name === 'free') || activePlans[0]
+      const planName = defaultPlan?.name ?? defaultPlan?.id ?? 'free'
+      setFormData(prev => ({ ...prev, plan: planName, credits: getCreditsForPlan(plans, planName) }))
     }
   }, [plans])
 
@@ -1430,13 +1102,13 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Plan</label>
               <select
-                value={formData.plan}
+                value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans[0]?.name || activePlans[0]?.id || 'free')}
                 onChange={(e) => handlePlanChange(e.target.value)}
                 className="input-dark w-full"
               >
-                {plans.length > 0
-                  ? plans.map(p => (
-                      <option key={p.id ?? p.name} value={p.name}>
+                {activePlans.length > 0
+                  ? activePlans.map(p => (
+                      <option key={p.id ?? p.name} value={p.name ?? p.id}>
                         {p.display_name ?? p.name}
                       </option>
                     ))
@@ -1648,217 +1320,6 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
           </p>
         </div>
       </div>
-    </div>
-  )
-}
-
-// Anomalies Content
-function AnomaliesContent({ anomalies, stats, loading, onResolve, onResolveByType, onHealthCheck, onRefresh }) {
-  const getTypeInfo = (type) => {
-    const types = {
-      credits_zero: { label: 'Crédits épuisés', icon: CreditCard, color: 'amber' },
-      credits_negative: { label: 'Crédits négatifs', icon: CreditCard, color: 'red' },
-      ai_error: { label: 'Erreur IA', icon: Zap, color: 'red' },
-      whatsapp_disconnect: { label: 'WhatsApp déconnecté', icon: WifiOff, color: 'orange' },
-      rate_limit: { label: 'Rate limit', icon: Clock, color: 'amber' },
-      plan_limit_exceeded: { label: 'Limite de plan', icon: AlertTriangle, color: 'amber' },
-      system_error: { label: 'Erreur système', icon: AlertCircle, color: 'red' },
-      low_stock: { label: 'Stock bas', icon: Package, color: 'orange' },
-      order_stuck: { label: 'Commande en attente', icon: ShoppingCart, color: 'amber' },
-    }
-    return types[type] || { label: type, icon: AlertCircle, color: 'gray' }
-  }
-
-  const getSeverityColor = (severity) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-500/20 text-red-400 border-red-500/30'
-      case 'high': return 'bg-orange-500/20 text-orange-400 border-orange-500/30'
-      case 'medium': return 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-    }
-  }
-
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr)
-    const now = new Date()
-    const diffMs = now - date
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-    
-    if (diffMins < 1) return "À l'instant"
-    if (diffMins < 60) return `Il y a ${diffMins} min`
-    if (diffHours < 24) return `Il y a ${diffHours}h`
-    if (diffDays < 7) return `Il y a ${diffDays}j`
-    return date.toLocaleDateString('fr-FR')
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-display font-semibold text-gray-100">Anomalies système</h2>
-          <p className="text-gray-400 text-sm">Surveillez les problèmes et erreurs de la plateforme</p>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={onRefresh} 
-            disabled={loading}
-            className="p-2 text-gray-400 hover:text-gray-100 transition-colors"
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button 
-            onClick={onHealthCheck}
-            disabled={loading}
-            className="btn-secondary inline-flex items-center gap-2"
-          >
-            <Activity className="w-4 h-4" />
-            Vérification système
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="card p-4 text-center">
-          <p className="text-3xl font-bold text-gray-100">{stats.total}</p>
-          <p className="text-sm text-gray-500">Total</p>
-        </div>
-        <div className="card p-4 text-center border-red-500/30">
-          <p className="text-3xl font-bold text-red-400">{stats.bySeverity?.critical || 0}</p>
-          <p className="text-sm text-gray-500">Critiques</p>
-        </div>
-        <div className="card p-4 text-center border-orange-500/30">
-          <p className="text-3xl font-bold text-orange-400">{stats.bySeverity?.high || 0}</p>
-          <p className="text-sm text-gray-500">Hautes</p>
-        </div>
-        <div className="card p-4 text-center border-amber-500/30">
-          <p className="text-3xl font-bold text-amber-400">{stats.bySeverity?.medium || 0}</p>
-          <p className="text-sm text-gray-500">Moyennes</p>
-        </div>
-      </div>
-
-      {/* By Type Quick Actions */}
-      {Object.keys(stats.byType || {}).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(stats.byType).map(([type, count]) => {
-            const info = getTypeInfo(type)
-            return (
-              <button
-                key={type}
-                onClick={() => onResolveByType(type)}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border ${getSeverityColor('medium')} hover:opacity-80 transition-opacity`}
-              >
-                <info.icon className="w-4 h-4" />
-                {info.label} ({count})
-                <CheckCircle className="w-4 h-4 opacity-50" />
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Anomalies List */}
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 text-gold-400 animate-spin" />
-        </div>
-      ) : anomalies.length === 0 ? (
-        <div className="card p-12 text-center">
-          <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-100 mb-2">Tout va bien !</h3>
-          <p className="text-gray-400">Aucune anomalie détectée sur la plateforme.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {anomalies.map((anomaly) => {
-            const typeInfo = getTypeInfo(anomaly.type)
-            const TypeIcon = typeInfo.icon
-            const hasAccount = anomaly.user_id || anomaly.user_email || anomaly.user_name
-            const hasAgent = anomaly.agent_id || anomaly.agent_name
-            const hasMetadata = anomaly.metadata && Object.keys(anomaly.metadata).length > 0
-            return (
-              <div 
-                key={anomaly.id} 
-                className={`card p-4 border ${getSeverityColor(anomaly.severity)}`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${getSeverityColor(anomaly.severity)}`}>
-                    <TypeIcon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h4 className="font-medium text-gray-100">{anomaly.title}</h4>
-                      <span className={`px-2 py-0.5 rounded text-xs ${getSeverityColor(anomaly.severity)}`}>
-                        {anomaly.severity}
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30">
-                        {typeInfo.label}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-400 mb-3">{anomaly.message}</p>
-
-                    {/* Compte concerné */}
-                    {hasAccount && (
-                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
-                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" />
-                          Compte concerné
-                        </p>
-                        <div className="text-sm text-gray-300 space-y-0.5">
-                          {anomaly.user_name && <p><span className="text-gray-500">Nom :</span> {anomaly.user_name}</p>}
-                          {anomaly.user_email && <p><span className="text-gray-500">Email :</span> {anomaly.user_email}</p>}
-                          {anomaly.user_id && <p className="text-xs text-gray-500 font-mono">ID : {anomaly.user_id}</p>}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Agent concerné */}
-                    {hasAgent && (
-                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
-                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                          <Bot className="w-3.5 h-3.5" />
-                          Agent concerné
-                        </p>
-                        <div className="text-sm text-gray-300 space-y-0.5">
-                          {anomaly.agent_name && <p><span className="text-gray-500">Nom :</span> {anomaly.agent_name}</p>}
-                          {anomaly.agent_id && <p className="text-xs text-gray-500 font-mono">ID : {anomaly.agent_id}</p>}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Métadonnées / Détails techniques */}
-                    {hasMetadata && (
-                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
-                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">Détails techniques</p>
-                        <pre className="text-xs text-gray-300 overflow-x-auto whitespace-pre-wrap font-sans">
-                          {JSON.stringify(anomaly.metadata, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
-                      <span title={new Date(anomaly.created_at).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'medium' })}>
-                        {formatDate(anomaly.created_at)}
-                      </span>
-                      <span className="font-mono text-gray-600" title={`ID anomalie: ${anomaly.id}`}>#{anomaly.id?.slice(0, 8)}…</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => onResolve(anomaly.id)}
-                    className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors shrink-0"
-                    title="Marquer comme résolu"
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
@@ -2440,193 +1901,6 @@ function APIKeyModal({ keyData, onClose, onSave }) {
   )
 }
 
-// ==================== PLANS CONTENT ====================
-function PlansContent({ 
-  plans, availableModels, loading,
-  onEditPlan, onCreatePlan, onDeletePlan, onTogglePlan, onDuplicatePlan, onSetDefault, onRestoreDefaults, onRefresh
-}) {
-  const formatPrice = (price) => {
-    if (price === -1) return 'Sur devis'
-    if (price === 0) return 'Gratuit'
-    return `${price.toLocaleString()} FCFA`
-  }
-
-  const formatLimit = (value) => {
-    if (value === -1) return '∞'
-    if (value === undefined || value === null || value === 0) return '–'
-    return value.toLocaleString()
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header - stacked on small screens so "Nouveau plan" is always visible */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-display font-semibold text-gray-100">Plans d'abonnement</h2>
-          <p className="text-sm text-gray-500 mt-1">Gérez les plans et leurs limites</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button onClick={onCreatePlan} className="btn-primary order-first sm:order-last flex items-center whitespace-nowrap">
-            <Plus className="w-4 h-4 mr-2 flex-shrink-0" />
-            Nouveau plan
-          </button>
-          <button onClick={onRefresh} className="btn-secondary touch-target flex items-center justify-center">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          {onRestoreDefaults && (
-            <button onClick={onRestoreDefaults} className="btn-secondary border-amber-500/50 text-amber-400 hover:bg-amber-500/10 text-sm whitespace-nowrap">
-              Restaurer les plans par défaut
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {plans.map(plan => (
-          <div 
-            key={plan.id} 
-            data-plan-card={!plan.is_active ? 'inactive' : plan.is_default ? 'default' : 'active'}
-            className={`card p-4 relative border-l-4 ${
-              !plan.is_active 
-                ? 'opacity-60 border-l-space-600' 
-                : plan.is_default 
-                  ? 'border-l-blue-500 ring-2 ring-blue-500/30' 
-                  : 'border-l-emerald-500'
-            }`}
-          >
-            {/* Status badges */}
-            <div className="absolute top-3 right-3 flex gap-1">
-              {plan.is_default && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">
-                  Défaut
-                </span>
-              )}
-              {!plan.is_active && (
-                <span className="px-2 py-0.5 text-xs font-medium bg-red-500/20 text-red-400 rounded-full">
-                  Inactif
-                </span>
-              )}
-            </div>
-
-            {/* Header */}
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-100">{plan.display_name}</h3>
-              <p className="text-2xl font-bold text-blue-400 mt-1">{formatPrice(plan.price)}</p>
-              {plan.description && (
-                <p className="text-sm text-gray-500 mt-1">{plan.description}</p>
-              )}
-            </div>
-
-            {/* Limits */}
-            <div className="space-y-2 mb-4">
-              <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Limites</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Agents</span>
-                  <span className="text-gray-300">{formatLimit(plan.limits?.agents)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">WhatsApp</span>
-                  <span className="text-gray-300">{formatLimit(plan.limits?.whatsapp_accounts)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Outlook</span>
-                  <span className="text-gray-300">{formatLimit(plan.limits?.outlook_accounts)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Messages IA / mois</span>
-                  <span className="text-gray-300">{formatLimit(plan.limits?.credits_per_month)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Features summary */}
-            <div className="space-y-2 mb-4">
-              <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Fonctionnalités</h4>
-              <div className="flex flex-wrap gap-1">
-                {plan.features?.availability_hours && (
-                  <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Heures de dispo.</span>
-                )}
-                {plan.features?.voice_responses && (
-                  <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Réponses vocales</span>
-                )}
-                {plan.features?.payment_module && (
-                  <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">Paiement</span>
-                )}
-                {plan.features?.models?.length > 0 && (
-                  <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">
-                    {plan.features.models.length} modèle(s) IA
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* User count */}
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-              <Users className="w-4 h-4" />
-              <span>{plan.user_count || 0} utilisateur(s)</span>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2 pt-3 border-t border-space-700">
-              <button
-                onClick={() => onEditPlan(plan)}
-                className="text-xs px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
-              >
-                <Edit className="w-3 h-3 inline mr-1" />
-                Modifier
-              </button>
-              <button
-                onClick={() => onTogglePlan(plan)}
-                className={`text-xs px-2 py-1 rounded transition-colors ${
-                  plan.is_active 
-                    ? 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400' 
-                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400'
-                }`}
-              >
-                {plan.is_active ? 'Désactiver' : 'Activer'}
-              </button>
-              <button
-                onClick={() => onDuplicatePlan(plan)}
-                className="text-xs px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
-              >
-                <Copy className="w-3 h-3 inline mr-1" />
-                Dupliquer
-              </button>
-              {!plan.is_default && (
-                <button
-                  onClick={() => onSetDefault(plan)}
-                  className="text-xs px-2 py-1 bg-gray-500/20 hover:bg-gray-500/30 text-gray-400 rounded transition-colors"
-                >
-                  Définir par défaut
-                </button>
-              )}
-              {!plan.is_default && plan.user_count === 0 && (
-                <button
-                  onClick={() => onDeletePlan(plan)}
-                  className="text-xs px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
-                >
-                  <Trash2 className="w-3 h-3 inline mr-1" />
-                  Supprimer
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ==================== PLAN MODAL ====================
 function PlanModal({ plan, availableModels, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -2647,11 +1921,17 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
       knowledge_items: 10,
       templates: 5
     },
-    features: plan?.features || {
+    features: {
       models: ['gemini-1.5-flash'],
       availability_hours: false,
       voice_responses: false,
-      payment_module: false
+      payment_module: false,
+      next_best_action: false,
+      conversion_score: false,
+      daily_briefing: false,
+      sentiment_routing: false,
+      catalog_import: false,
+      ...(plan?.features || {})
     }
   })
   const [saving, setSaving] = useState(false)
@@ -2711,7 +1991,12 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
   const featureFields = [
     { key: 'availability_hours', label: 'Heures de disponibilité' },
     { key: 'voice_responses', label: 'Réponses vocales (TTS)' },
-    { key: 'payment_module', label: 'Module Moyens de paiement (PaymeTrust, etc.)' }
+    { key: 'payment_module', label: 'Module Moyens de paiement (PaymeTrust, etc.)' },
+    { key: 'next_best_action', label: 'Module 3 — Next Best Action (relances automatiques)' },
+    { key: 'conversion_score', label: 'Module 4 — Score de conversion (priorisation des leads)' },
+    { key: 'daily_briefing', label: 'Module 5 — Daily Briefing (résumé quotidien)' },
+    { key: 'sentiment_routing', label: 'Module 6 — Routage par sentiment (clients frustrés → humain)' },
+    { key: 'catalog_import', label: 'Module 7 — Import catalogue produits (URL / fichiers)' }
   ]
 
   return (

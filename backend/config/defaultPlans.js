@@ -27,7 +27,12 @@ export const defaultPlans = [
             models: ['gemini-1.5-flash'],
             availability_hours: false,
             voice_responses: false,
-            payment_module: false
+            payment_module: false,
+            next_best_action: false,
+            conversion_score: false,
+            daily_briefing: false,
+            sentiment_routing: false,
+            catalog_import: false
         })
     },
     {
@@ -53,7 +58,12 @@ export const defaultPlans = [
             models: ['gemini-1.5-flash', 'gpt-4o-mini'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: false
+            payment_module: false,
+            next_best_action: false,
+            conversion_score: false,
+            daily_briefing: false,
+            sentiment_routing: false,
+            catalog_import: false
         })
     },
     {
@@ -79,7 +89,12 @@ export const defaultPlans = [
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: true
+            payment_module: true,
+            next_best_action: true,
+            conversion_score: true,
+            daily_briefing: true,
+            sentiment_routing: true,
+            catalog_import: true
         })
     },
     {
@@ -105,7 +120,12 @@ export const defaultPlans = [
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: true
+            payment_module: true,
+            next_best_action: true,
+            conversion_score: true,
+            daily_briefing: true,
+            sentiment_routing: true,
+            catalog_import: true
         })
     },
     {
@@ -131,7 +151,12 @@ export const defaultPlans = [
             models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
-            payment_module: true
+            payment_module: true,
+            next_best_action: true,
+            conversion_score: true,
+            daily_briefing: true,
+            sentiment_routing: true,
+            catalog_import: true
         })
     }
 ];

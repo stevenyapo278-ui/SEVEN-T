@@ -27,7 +27,8 @@ import { messageAiLogService } from './messageAiLog.js';
 import { autoQaService } from './autoQa.js';
 import { notificationService } from './notifications.js';
 import { staticResponses } from '../config/staticResponses.js';
-import { hasFeature } from '../config/plans.js';
+import { hasFeature, hasModule } from '../config/plans.js';
+import { updateConversionScore } from './conversionScore.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
 import * as ttsService from './tts.js';
@@ -43,7 +44,7 @@ function loadProductImageBuffer(url) {
     try {
         const match = /\/api\/products\/image\/([^/?\s)]+)/.exec(url);
         if (!match) return null;
-        const filename = match[1].replace(/\.\./g, '');
+        const filename = match[1].replace(/\.\./g, '').replace(/[.,;:!?)]+$/, '');
         if (!filename) return null;
         const filepath = join(productImagesDir, filename);
         if (!existsSync(filepath)) return null;
@@ -977,6 +978,24 @@ class WhatsAppManager {
                 await db.run('UPDATE conversations SET sentiment = ? WHERE id = ?', sentiment, conversation.id);
             }
 
+            // ==================== SENTIMENT ROUTING (Module 6) ====================
+            const userRow = await db.get('SELECT plan FROM users WHERE id = ?', userId);
+            const planName = userRow?.plan || 'free';
+            const sentimentRoutingEnabled = await hasModule(planName, 'sentiment_routing');
+
+            if (sentimentRoutingEnabled && sentiment === 'frustrated') {
+                await db.run('UPDATE conversations SET needs_human = 1 WHERE id = ?', conversation.id);
+                const calmingMessage = agent.sentiment_calm_message || 'Nous sommes désolés pour ce désagrément. Un conseiller va vous prendre en charge rapidement.';
+                await sock.sendMessage(replyToJidForSend, { text: calmingMessage });
+                const outMsgId = uuidv4();
+                await db.run(`
+                    INSERT INTO messages (id, conversation_id, role, content, message_type, created_at)
+                    VALUES (?, ?, 'assistant', ?, 'sentiment_escalation', ?)
+                `, outMsgId, conversation.id, calmingMessage, new Date().toISOString());
+                console.log(`[WhatsApp] Sentiment routing: frustrated → escalation for ${contactName}`);
+                return;
+            }
+
             // Conversation context for AI: last 20 messages (same thread = same conversation_id)
             const historyRows = await db.all(`
                 SELECT role, content FROM messages 
@@ -1077,7 +1096,9 @@ class WhatsAppManager {
 
 6. ENVOI DE PHOTOS PRODUIT:
    - Si le client demande les photos, images ou visuels d'un produit qui a des images dans le catalogue:
-     * Les URLs qui contiennent "/api/products/image/" sont des photos hébergées: le système les enverra comme vraies photos au client. Tu NE DOIS JAMAIS les écrire dans ton message. Mets UNIQUEMENT en toute première ligne: [ENVOYER_IMAGES:url1,url2,...] (URLs séparées par des virgules), puis à la ligne suivante ton message (ex: Voici les photos du produit.).
+     * Les URLs qui contiennent "/api/products/image/" sont des photos hébergées: le système les enverra comme vraies photos au client. Tu NE DOIS JAMAIS écrire ces URLs dans ton message.
+     * OBLIGATOIRE: mets en toute première ligne UNIQUEMENT: [ENVOYER_IMAGES:path1,path2,...] en utilisant les chemins courts du catalogue (ex: /api/products/image/abc.png). Une seule URL par produit si besoin, séparées par des virgules. À la ligne suivante, ton message texte (ex: Voici l'image du produit.).
+     * N'utilise JAMAIS d'URL complète (http://...) dans le tag: utilise uniquement le chemin court comme dans le catalogue (ex: /api/products/image/xyz.jpg).
      * Si le produit n'a que des URLs externes (sites web, pas /api/products/image/), tu peux alors les envoyer en format cliquable dans ton message.
    - Ne jamais coller les URLs /api/products/image/ dans le texte: le client doit recevoir les photos, pas les liens.`
                     }]
@@ -1109,6 +1130,9 @@ class WhatsAppManager {
             }
 
             const messageAnalysis = { ...baseAnalysis, ...templateAnalysis };
+            if (sentimentRoutingEnabled && sentiment === 'hesitant') {
+                messageAnalysis.sentiment_hint = 'suggest_offer_or_faq';
+            }
             console.log(`[WhatsApp] Pre-analysis: Intent=${messageAnalysis.intent_hint ?? messageAnalysis.intent?.primary}, risk=${messageAnalysis.risk_level ?? 'n/a'}, ignore=${messageAnalysis.ignore}, escalate=${messageAnalysis.escalate}`);
             if (isEcommerce && messageAnalysis.products?.stockIssues?.length > 0) {
                 console.log(`[WhatsApp] ⚠️ Stock issues detected: ${messageAnalysis.products.stockIssues.map(i => i.issue).join(', ')}`);
@@ -1371,6 +1395,7 @@ class WhatsAppManager {
                             if (buf) {
                                 try {
                                     await sock.sendMessage(replyToJidForSend, { image: buf });
+                                    console.log('[WhatsApp] Sent product image (disk):', resolvedUrl);
                                     return resolvedUrl;
                                 } catch (sendErr) {
                                     console.warn('[WhatsApp] Failed to send product image (disk):', resolvedUrl, sendErr?.message);
@@ -1385,6 +1410,7 @@ class WhatsAppManager {
                                     if (buf2.length > 0 && buf2.length < 5 * 1024 * 1024) {
                                         try {
                                             await sock.sendMessage(replyToJidForSend, { image: buf2 });
+                                            console.log('[WhatsApp] Sent product image (fetch):', resolvedUrl);
                                             return resolvedUrl;
                                         } catch (sendErr) {
                                             console.warn('[WhatsApp] Failed to send product image (fetch):', resolvedUrl, sendErr?.message);
@@ -1404,8 +1430,8 @@ class WhatsAppManager {
                             return m ? (m[0].startsWith('/') ? m[0] : '/' + m[0]) : url;
                         };
 
-                        // 1) Format explicite [ENVOYER_IMAGES:url1,url2,...] (virgules ou retours à la ligne)
-                        const imageMatch = /^\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(aiResponse.content);
+                        // 1) Format explicite [ENVOYER_IMAGES:url1,url2,...] (virgules ou retours à la ligne ; accepte espaces/newlines au début)
+                        const imageMatch = /^\s*\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(aiResponse.content);
                         if (imageMatch && imageMatch[1]) {
                             const urls = imageMatch[1].split(/[,\n]+/).map((u) => u.trim()).filter(Boolean);
                             for (let i = 0; i < urls.length; i++) {
@@ -1416,18 +1442,29 @@ class WhatsAppManager {
                             textToSend = aiResponse.content.slice(imageMatch[0].length).trim();
                             contentToSave = sentProductImageUrls.length > 0 ? (textToSend || '📷 Photos du produit envoyées.') : aiResponse.content;
                         } else {
-                            // 2) Fallback: l'IA a collé les URLs dans le texte → extraire /api/products/image/ et envoyer en photos (lecture disque prioritaire)
-                            const productImageUrlRegex = /https?:\/\/[^\s)\]']+\/api\/products\/image\/[^\s)\]']+/g;
-                            const productImageUrls = aiResponse.content.match(productImageUrlRegex);
-                            if (productImageUrls && productImageUrls.length > 0) {
-                                const uniqueUrls = [...new Set(productImageUrls)];
-                                for (let i = 0; i < uniqueUrls.length; i++) {
+                            // 2) Fallback: l'IA a collé les URLs dans le texte → extraire /api/products/image/ (absolues ou relatives) et envoyer en photos
+                            const productImageUrlRegexFull = /https?:\/\/[^\s)\]']+\/api\/products\/image\/[^\s)\]']+/g;
+                            const productImageUrlRegexRel = /\/api\/products\/image\/[^\s)\]']+/g;
+                            const fullUrls = aiResponse.content.match(productImageUrlRegexFull) || [];
+                            const relUrls = (aiResponse.content.match(productImageUrlRegexRel) || []).filter((r) => !fullUrls.some((f) => f.endsWith(r)));
+                            let productImageUrls = [...new Set(fullUrls), ...relUrls];
+                            // Normaliser: préférer le chemin relatif pour la lecture disque (évite fetch localhost)
+                            productImageUrls = productImageUrls.map((u) => {
+                                const pathMatch = /\/api\/products\/image\/[^/?\s)\]']+/.exec(u);
+                                const pathOnly = pathMatch ? pathMatch[0].replace(/[.,;:!?)]+$/, '') : u.replace(/[.,;:!?)]+$/, '');
+                                return pathOnly.startsWith('/') ? pathOnly : '/' + pathOnly;
+                            });
+                            productImageUrls = [...new Set(productImageUrls)];
+                            if (productImageUrls.length > 0) {
+                                console.log('[WhatsApp] Fallback: sending product image(s) from text:', productImageUrls.length, productImageUrls[0]);
+                                for (let i = 0; i < productImageUrls.length; i++) {
                                     if (i > 0) await new Promise((r) => setTimeout(r, 400));
-                                    const sent = await sendOneProductImage(uniqueUrls[i]);
+                                    const sent = await sendOneProductImage(productImageUrls[i]);
                                     if (sent) sentProductImageUrls.push(sent);
                                 }
                                 textToSend = aiResponse.content
-                                    .replace(productImageUrlRegex, '')
+                                    .replace(productImageUrlRegexFull, '')
+                                    .replace(productImageUrlRegexRel, '')
                                     .replace(/,(\s*,)+/g, ',')
                                     .replace(/^\s*,\s*|\s*,\s*$/g, '')
                                     .replace(/\s*:\s{2,}/g, '. ')
@@ -1591,6 +1628,17 @@ class WhatsAppManager {
 
         } catch (error) {
             console.error('[WhatsApp] Error handling message:', error);
+        } finally {
+            (async () => {
+                try {
+                    const u = await db.get('SELECT plan FROM users WHERE id = ?', userId);
+                    if (u && await hasModule(u.plan || 'free', 'conversion_score')) {
+                        await updateConversionScore(conversation.id);
+                    }
+                } catch (e) {
+                    console.warn('[WhatsApp] updateConversionScore error', e?.message);
+                }
+            })();
         }
     }
 
@@ -1746,8 +1794,15 @@ class WhatsAppManager {
                     console.log(`[WhatsApp] Skipping - message already exists with whatsapp_id ${whatsappMsgId} (type: ${existingByWaId.sender_type})`);
                     return;
                 }
+                // Race: AI pipeline may not have inserted yet. Give it a moment then re-check so we don't mark as human / duplicate
+                await new Promise((r) => setTimeout(r, 500));
+                const existingAfterWait = await db.get('SELECT id, sender_type FROM messages WHERE whatsapp_id = ?', whatsappMsgId);
+                if (existingAfterWait) {
+                    console.log(`[WhatsApp] Skipping - message exists after wait (type: ${existingAfterWait.sender_type})`);
+                    return;
+                }
             }
-            
+
             // Extract message text
             const messageText = this.extractMessageText(message);
             if (!messageText) {
@@ -1984,18 +2039,25 @@ class WhatsAppManager {
     }
 
     /**
-     * Basic sentiment analysis
+     * Sentiment analysis. Returns 'frustrated' | 'hesitant' | 'positive' | 'neutral'.
+     * Used for sentiment_routing: frustrated → escalate, hesitant → hint for offer/FAQ.
      */
     analyzeSentiment(text) {
         const lowerText = text.toLowerCase();
-        
+
         const negativeWords = [
             'problème', 'problem', 'erreur', 'error', 'bug', 'nul', 'mauvais', 'horrible',
             'déçu', 'mécontent', 'inacceptable', 'scandaleux', 'arnaque', 'voleur',
             'colère', 'furieux', 'énervé', 'frustré', 'plainte', 'remboursement',
             'angry', 'disappointed', 'terrible', 'awful', 'worst', 'hate', 'refund'
         ];
-        
+
+        const hesitantWords = [
+            'peut-être', 'peut etre', 'je réfléchis', 'je reflechis', 'pas sûr', 'pas sur',
+            'hésite', 'hesite', 'hésiter', 'hesiter', 'doute', 'pas certain', 'pas certaine',
+            'maybe', 'not sure', 'thinking', 'considering', 'dunno', 'bof'
+        ];
+
         const positiveWords = [
             'merci', 'super', 'génial', 'excellent', 'parfait', 'bravo', 'content',
             'satisfait', 'recommande', 'top', 'formidable', 'incroyable', 'love',
@@ -2003,11 +2065,16 @@ class WhatsAppManager {
         ];
 
         const negativeCount = negativeWords.filter(word => lowerText.includes(word)).length;
+        const hesitantCount = hesitantWords.filter(word => lowerText.includes(word)).length;
         const positiveCount = positiveWords.filter(word => lowerText.includes(word)).length;
 
         if (negativeCount > positiveCount && negativeCount >= 1) {
-            return 'negative';
-        } else if (positiveCount > negativeCount && positiveCount >= 1) {
+            return 'frustrated';
+        }
+        if (hesitantCount >= 1 && negativeCount === 0) {
+            return 'hesitant';
+        }
+        if (positiveCount > negativeCount && positiveCount >= 1) {
             return 'positive';
         }
         return 'neutral';

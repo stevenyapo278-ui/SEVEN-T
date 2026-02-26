@@ -4,6 +4,7 @@ import { dirname, join, extname } from 'path';
 import { existsSync } from 'fs';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { getPlan, hasModule } from '../config/plans.js';
 import { 
     validate,
     updateConversationStatusSchema,
@@ -47,6 +48,18 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
 // Get all conversations for user (across all agents)
 router.get('/', authenticateToken, async (req, res) => {
     try {
+        const user = await db.get('SELECT id, plan FROM users WHERE id = ?', req.user.id);
+        const planName = user?.plan || 'free';
+        const hasConversionScore = await hasModule(planName, 'conversion_score');
+
+        const score_band = req.query.score_band; // high_potential | at_risk
+        let scoreClause = '';
+        if (hasConversionScore && score_band === 'high_potential') {
+            scoreClause = ' AND c.conversion_score >= 70';
+        } else if (hasConversionScore && score_band === 'at_risk') {
+            scoreClause = ' AND c.conversion_score <= 30 AND c.conversion_score IS NOT NULL';
+        }
+
         const conversations = await db.all(`
             SELECT c.*, a.name as agent_name,
                    (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
@@ -57,6 +70,7 @@ router.get('/', authenticateToken, async (req, res) => {
             AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
             AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+            ${scoreClause}
             ORDER BY c.last_message_at DESC
             LIMIT 100
         `, req.user.id);
@@ -340,6 +354,9 @@ router.put('/:id/contact', authenticateToken, validate(updateConversationContact
 // Get new messages for a conversation since timestamp (for polling)
 router.get('/:id/new-messages', authenticateToken, async (req, res) => {
     try {
+        if (!req.user?.id) {
+            return res.status(401).json({ error: 'Non authentifié' });
+        }
         const { since } = req.query;
 
         const conversation = await db.get(`
@@ -359,12 +376,13 @@ router.get('/:id/new-messages', authenticateToken, async (req, res) => {
             ORDER BY created_at ASC
         `, req.params.id, sinceDate);
 
-        res.json({ 
-            messages,
+        res.json({
+            messages: Array.isArray(messages) ? messages : [],
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Get new messages error:', error);
+        console.error('Get new messages error:', error?.message || error);
+        if (error?.stack) console.error(error.stack);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

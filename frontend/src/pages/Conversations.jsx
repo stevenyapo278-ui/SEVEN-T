@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
@@ -161,12 +162,15 @@ const getTimeAgo = (dateString) => {
 export default function Conversations() {
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()
+  const { user: authUser, refreshUser } = useAuth()
   const isDark = theme === 'dark'
+  const hasConversionScore = authUser?.plan_features?.conversion_score === true
   const [conversations, setConversations] = useState([])
   const [totalMessagesCount, setTotalMessagesCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [scoreBand, setScoreBand] = useState('') // '' | 'high_potential' | 'at_risk'
   const [lastPollTime, setLastPollTime] = useState(null)
   const [newMessageCount, setNewMessageCount] = useState(0)
   const [filterAgent, setFilterAgent] = useState('')
@@ -177,6 +181,11 @@ export default function Conversations() {
   const [deletingConvId, setDeletingConvId] = useState(null)
   const pollIntervalRef = useRef(null)
   const loadConversationsRef = useRef(null)
+
+  // Rafraîchir plan_features à l’affichage de la page (après désactivation d’un module en admin)
+  useEffect(() => {
+    refreshUser()
+  }, [refreshUser])
 
   // Real-time: refetch list when a conversation is updated (new message)
   useConversationSocket(() => loadConversationsRef.current?.())
@@ -236,31 +245,13 @@ export default function Conversations() {
     }
   }
 
-  useEffect(() => {
-    loadConversations()
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!loading && lastPollTime) {
-      startPolling()
-    }
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
-    }
-  }, [loading, lastPollTime])
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     setLoadError(null)
     setLoading(true)
     try {
-      const response = await api.get('/conversations')
+      const params = {}
+      if (hasConversionScore && scoreBand) params.score_band = scoreBand
+      const response = await api.get('/conversations', { params })
       setConversations(response.data.conversations || [])
       setTotalMessagesCount(response.data.totalMessages ?? (response.data.conversations || []).reduce((s, c) => s + (c.message_count || 0), 0))
       setLastPollTime(new Date().toISOString())
@@ -272,8 +263,28 @@ export default function Conversations() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [hasConversionScore, scoreBand])
   loadConversationsRef.current = loadConversations
+
+  useEffect(() => {
+    loadConversations()
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+    }
+  }, [loadConversations])
+
+  useEffect(() => {
+    if (!loading && lastPollTime) {
+      startPolling()
+    }
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+    }
+  }, [loading, lastPollTime])
 
   const handleDeleteConversation = async (convId, e) => {
     if (e) {
@@ -535,7 +546,7 @@ export default function Conversations() {
         >
           <Filter className="w-4 h-4" />
           <span>Filtres</span>
-          {filterAgent && <span className="w-2 h-2 bg-gold-400 rounded-full"></span>}
+          {(filterAgent || scoreBand) && <span className="w-2 h-2 bg-gold-400 rounded-full"></span>}
         </button>
       </div>
 
@@ -566,6 +577,30 @@ export default function Conversations() {
                 {agent}
               </button>
             ))}
+            {hasConversionScore && (
+              <>
+                <button
+                  onClick={() => setScoreBand(scoreBand === 'high_potential' ? '' : 'high_potential')}
+                  className={`px-4 py-2 rounded-xl text-sm transition-all duration-200 ${
+                    scoreBand === 'high_potential'
+                      ? 'bg-gold-400 text-space-900 font-medium'
+                      : 'bg-space-700 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  Fort potentiel
+                </button>
+                <button
+                  onClick={() => setScoreBand(scoreBand === 'at_risk' ? '' : 'at_risk')}
+                  className={`px-4 py-2 rounded-xl text-sm transition-all duration-200 ${
+                    scoreBand === 'at_risk'
+                      ? 'bg-gold-400 text-space-900 font-medium'
+                      : 'bg-space-700 text-gray-400 hover:text-gray-300'
+                  }`}
+                >
+                  À risque
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -667,6 +702,18 @@ export default function Conversations() {
                           <span className="flex-shrink-0 flex items-center gap-1 text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
                             <Zap className="w-3 h-3" />
                             IA
+                          </span>
+                        )}
+                        {hasConversionScore && conv.conversion_score != null && (
+                          <span className="badge-conversion-score flex-shrink-0 text-xs bg-space-600 text-gray-300 px-2 py-0.5 rounded-full font-medium" title="Score de conversion">
+                            Score {conv.conversion_score}
+                          </span>
+                        )}
+                        {hasConversionScore && conv.suggested_action && (
+                          <span className="flex-shrink-0 text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-medium" title="Action suggérée">
+                            {conv.suggested_action === 'send_offer' && 'Offre'}
+                            {conv.suggested_action === 'transfer_human' && '→ Humain'}
+                            {conv.suggested_action === 'relance_2h' && 'Relance'}
                           </span>
                         )}
                         {isFromSavedContacts(conv) && (

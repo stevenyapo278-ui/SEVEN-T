@@ -1263,6 +1263,12 @@ select.input option {
   color: #57606a;
 }
 
+/* Conversion score badge: lisible en mode clair */
+.light .badge-conversion-score {
+  background-color: #d0d7de;
+  color: #1f2328;
+}
+
 /* Light mode links */
 .light a.text-blue-400:hover {
   color: #0550ae;
