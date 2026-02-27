@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { whatsappManager } from '../services/whatsapp.js';
+import { sendCampaign } from '../services/campaigns.js';
 
 const router = Router();
 
@@ -115,11 +116,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
             UPDATE campaigns 
             SET name = COALESCE(?, name),
                 message = COALESCE(?, message),
-                scheduled_at = COALESCE(?, scheduled_at),
+                scheduled_at = COALESCE(?::timestamp, scheduled_at),
                 agent_id = COALESCE(?, agent_id),
-                status = CASE WHEN ? IS NOT NULL THEN 'scheduled' ELSE status END
+                status = CASE WHEN (?::timestamp) IS NOT NULL THEN 'scheduled' ELSE status END
             WHERE id = ?
-        `, name?.trim(), message?.trim(), scheduled_at, agent_id || null, scheduled_at, req.params.id);
+        `, name?.trim() || null, message?.trim() || null, scheduled_at || null, agent_id || null, scheduled_at || null, req.params.id);
 
         const campaign = await db.get('SELECT * FROM campaigns WHERE id = ?', req.params.id);
         res.json({ campaign });
@@ -277,70 +278,14 @@ router.post('/:id/import-conversations', authenticateToken, async (req, res) => 
 // Send campaign
 router.post('/:id/send', authenticateToken, async (req, res) => {
     try {
-        const campaign = await db.get(`
-            SELECT c.*, a.whatsapp_connected, a.tool_id
-            FROM campaigns c
-            JOIN agents a ON c.agent_id = a.id
-            WHERE c.id = ? AND c.user_id = ?
-        `, req.params.id, req.user.id);
-
-        if (!campaign) {
-            return res.status(404).json({ error: 'Campagne non trouvée' });
+        const result = await sendCampaign(req.params.id);
+        if (result.already_sent) {
+            return res.status(400).json({ error: result.message });
         }
-
-        if (!campaign.whatsapp_connected) {
-            return res.status(400).json({ error: 'WhatsApp non connecté pour cet agent' });
-        }
-
-        if (campaign.status === 'sent' || campaign.status === 'sending') {
-            return res.status(400).json({ error: 'Campagne déjà envoyée' });
-        }
-
-        const recipients = await db.all("SELECT * FROM campaign_recipients WHERE campaign_id = ? AND status = 'pending'", req.params.id);
-
-        if (recipients.length === 0) {
-            return res.status(400).json({ error: 'Aucun destinataire à contacter' });
-        }
-
-        await db.run("UPDATE campaigns SET status = 'sending' WHERE id = ?", req.params.id);
-
-        const toolId = campaign.tool_id || campaign.agent_id;
-        let sent = 0;
-        let failed = 0;
-
-        for (const recipient of recipients) {
-            try {
-                let messageText = campaign.message;
-                if (recipient.contact_name) {
-                    messageText = messageText.replace(/\{\{nom\}\}/g, recipient.contact_name).replace(/\{\{name\}\}/g, recipient.contact_name);
-                }
-                messageText = messageText.replace(/\{\{telephone\}\}/g, recipient.contact_number || '').replace(/\{\{phone\}\}/g, recipient.contact_number || '');
-                await whatsappManager.sendMessage(toolId, recipient.contact_number, messageText);
-                await db.run("UPDATE campaign_recipients SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?", recipient.id);
-                sent++;
-                await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
-            } catch (error) {
-                await db.run("UPDATE campaign_recipients SET status = 'failed', error_message = ? WHERE id = ?", error.message || String(error), recipient.id);
-                failed++;
-            }
-        }
-
-        await db.run(`
-            UPDATE campaigns 
-            SET status = 'sent', 
-                sent_at = CURRENT_TIMESTAMP,
-                sent_count = ?,
-                failed_count = ?
-            WHERE id = ?
-        `, sent, failed, req.params.id);
-
-        console.log(`[Campaign] ${campaign.name}: ${sent} sent, ${failed} failed`);
-        res.json({ message: `Campagne envoyée : ${sent} message(s)`, sent, failed });
+        res.json({ message: `Campagne envoyée : ${result.sent} message(s)`, sent: result.sent, failed: result.failed });
     } catch (error) {
         console.error('Send campaign error:', error);
-        if (!res.headersSent) {
-            res.status(500).json({ error: 'Erreur serveur' });
-        }
+        res.status(500).json({ error: error.message || 'Erreur serveur' });
     }
 });
 

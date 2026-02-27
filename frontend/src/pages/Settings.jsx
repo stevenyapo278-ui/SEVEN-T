@@ -166,17 +166,31 @@ export default function Settings() {
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSaveAll = async (e) => {
+    if (e) e.preventDefault()
     setSaving(true)
     try {
-      const response = await api.put('/auth/me', formData)
-      updateUser(response.data.user)
-      toast.success('Profil mis à jour')
+      // Save Profile
+      const profileResponse = await api.put('/auth/me', formData)
+      updateUser(profileResponse.data.user)
+
+      // Save Daily Briefing if enabled and data exists
+      if (user?.plan_features?.daily_briefing && dailyBriefingForm) {
+        setDailyBriefingSaving(true)
+        const briefingResponse = await api.get('/settings/daily-briefing').catch(() => null)
+        // Only update if requested
+        await api.put('/settings/daily-briefing', dailyBriefingForm)
+        if (briefingResponse) setDailyBriefing(briefingResponse.data)
+      }
+
+      toast.success('Tous les paramètres ont été mis à jour')
+      refreshUser()
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
+      console.error('Save all settings error:', error)
+      toast.error(error.response?.data?.error || 'Erreur lors de la sauvegarde')
     } finally {
       setSaving(false)
+      setDailyBriefingSaving(false)
     }
   }
 
@@ -267,14 +281,32 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-full min-w-0">
+    <div className="w-full min-w-0 pb-24">
       <div className="mb-8">
         <h1 className="text-2xl font-display font-bold text-gray-100">Paramètres</h1>
         <p className="text-gray-400">Gérez votre compte et votre abonnement</p>
       </div>
 
+      {/* Floating Save Button */}
+      <div className="fixed bottom-8 right-8 z-[60] animate-fadeIn">
+        <button
+          onClick={handleSaveAll}
+          disabled={saving || dailyBriefingSaving}
+          className="group relative flex items-center justify-center gap-2 p-4 rounded-full bg-blue-500 text-white shadow-2xl shadow-blue-500/20 hover:bg-blue-600 transition-all active:scale-95 disabled:opacity-50 disabled:scale-100"
+        >
+          {saving || dailyBriefingSaving ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            <Save className="w-6 h-6" />
+          )}
+          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 font-medium">
+            Enregistrer les modifications
+          </span>
+        </button>
+      </div>
+
       {/* Profile */}
-      <form onSubmit={handleSubmit} className="card p-6 mb-6">
+      <form onSubmit={handleSaveAll} className="card p-6 mb-6">
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Profil</h2>
         <div className="space-y-4">
           <div>
@@ -335,14 +367,6 @@ export default function Settings() {
               Valeur par défaut pour l&apos;analyse des photos et des notes vocales. Chaque agent peut avoir le sien.
             </p>
           </div>
-          <button
-            type="submit"
-            disabled={saving}
-            className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-          </button>
         </div>
       </form>
 
@@ -635,22 +659,7 @@ export default function Settings() {
               Chargement...
             </div>
           ) : (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault()
-                setDailyBriefingSaving(true)
-                try {
-                  const { data } = await api.put('/settings/daily-briefing', dailyBriefingForm)
-                  setDailyBriefing(data)
-                  toast.success('Paramètres enregistrés')
-                } catch (err) {
-                  toast.error(err.response?.data?.error || 'Erreur lors de l\'enregistrement')
-                } finally {
-                  setDailyBriefingSaving(false)
-                }
-              }}
-              className="space-y-4"
-            >
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
@@ -726,15 +735,7 @@ export default function Settings() {
               {dailyBriefing?.last_sent_at && (
                 <p className="text-xs text-gray-500">Dernier envoi : {new Date(dailyBriefing.last_sent_at).toLocaleString('fr-FR')}</p>
               )}
-              <button
-                type="submit"
-                disabled={dailyBriefingSaving}
-                className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
-              >
-                {dailyBriefingSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Enregistrer
-              </button>
-            </form>
+            </div>
           )}
         </div>
       )}

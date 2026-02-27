@@ -62,7 +62,15 @@
     "requestDemo": "Demander une démo",
     "seeFeatures": "Voir les fonctionnalités",
     "contactSupport": "Contacter le support",
-    "error": "Une erreur s'est produite. Réessayez."
+    "error": "Une erreur s'est produite. Réessayez.",
+    "proactiveBubble": "Besoin d'aide ? Je suis ici ! 👋",
+    "leadTitle": "Laissez vos coordonnées",
+    "leadSubtitle": "Nous vous recontacterons pour une démo personnalisée.",
+    "leadName": "Votre nom",
+    "leadEmail": "Votre email",
+    "leadPhone": "Numéro WhatsApp",
+    "leadSubmit": "Envoyer",
+    "typing": "En train d'écrire..."
   },
   "dashboard": {
     "title": "Tableau de bord",

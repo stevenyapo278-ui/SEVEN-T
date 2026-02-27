@@ -40,7 +40,7 @@ export async function getStatsForDate(userId, dateStr) {
     const convActive = await db.get(
         `SELECT COUNT(DISTINCT c.id) as count FROM conversations c
          WHERE c.agent_id IN (${placeholders})
-         AND c.last_message_at >= ? AND c.last_message_at <= ?
+         AND (c.last_message_at >= ?::timestamp AND c.last_message_at <= ?::timestamp)
          AND c.contact_jid NOT LIKE '%@g.us' AND c.contact_jid NOT LIKE '%broadcast%'`,
         ...agentIds,
         start,
@@ -50,7 +50,7 @@ export async function getStatsForDate(userId, dateStr) {
         `SELECT COUNT(*) as count FROM messages m
          JOIN conversations c ON m.conversation_id = c.id
          WHERE c.agent_id IN (${placeholders})
-         AND m.created_at >= ? AND m.created_at <= ?`,
+         AND (m.created_at >= ?::timestamp AND m.created_at <= ?::timestamp)`,
         ...agentIds,
         start,
         end
@@ -58,13 +58,13 @@ export async function getStatsForDate(userId, dateStr) {
     const orders = await db.get(
         `SELECT COUNT(*) as count, COALESCE(SUM(o.total_amount), 0) as sum
          FROM orders o
-         WHERE o.user_id = ? AND o.created_at >= ? AND o.created_at <= ?`,
+         WHERE o.user_id = ? AND (o.created_at >= ?::timestamp AND o.created_at <= ?::timestamp)`,
         userId,
         start,
         end
     );
     const leads = await db.get(
-        `SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at >= ? AND created_at <= ?`,
+        `SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND (created_at >= ?::timestamp AND created_at <= ?::timestamp)`,
         userId,
         start,
         end
@@ -73,7 +73,7 @@ export async function getStatsForDate(userId, dateStr) {
         `SELECT COUNT(DISTINCT c.id) as count FROM conversations c
          WHERE c.agent_id IN (${placeholders})
          AND c.needs_human = 1
-         AND (c.last_message_at >= ? AND c.last_message_at <= ?)`,
+         AND (c.last_message_at >= ?::timestamp AND c.last_message_at <= ?::timestamp)`,
         ...agentIds,
         start,
         end
@@ -205,7 +205,7 @@ export async function runDailyBriefingJob() {
     const rows = await db.all(
         `SELECT user_id FROM daily_briefing_settings
          WHERE enabled = 1 AND preferred_hour = ?
-         AND (last_sent_at IS NULL OR last_sent_at < ?)`,
+         AND (last_sent_at IS NULL OR last_sent_at < ?::timestamp)`,
         currentHour,
         todayStartStr
     );

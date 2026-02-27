@@ -62,7 +62,15 @@
     "requestDemo": "Request a demo",
     "seeFeatures": "See features",
     "contactSupport": "Contact support",
-    "error": "Something went wrong. Please try again."
+    "error": "Something went wrong. Please try again.",
+    "proactiveBubble": "Need help? I'm here! 👋",
+    "leadTitle": "Leave your details",
+    "leadSubtitle": "We'll get back to you for a personalized demo.",
+    "leadName": "Your name",
+    "leadEmail": "Your email",
+    "leadPhone": "WhatsApp number",
+    "leadSubmit": "Send",
+    "typing": "Typing..."
   },
   "dashboard": {
     "title": "Dashboard",

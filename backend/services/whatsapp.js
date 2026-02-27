@@ -1394,9 +1394,9 @@ class WhatsAppManager {
                             let buf = loadProductImageBuffer(resolvedUrl);
                             if (buf) {
                                 try {
-                                    await sock.sendMessage(replyToJidForSend, { image: buf });
+                                    const sentRes = await sock.sendMessage(replyToJidForSend, { image: buf });
                                     console.log('[WhatsApp] Sent product image (disk):', resolvedUrl);
-                                    return resolvedUrl;
+                                    return { url: resolvedUrl, whatsappId: sentRes?.key?.id };
                                 } catch (sendErr) {
                                     console.warn('[WhatsApp] Failed to send product image (disk):', resolvedUrl, sendErr?.message);
                                     return null;
@@ -1409,9 +1409,9 @@ class WhatsAppManager {
                                     const buf2 = Buffer.from(arr);
                                     if (buf2.length > 0 && buf2.length < 5 * 1024 * 1024) {
                                         try {
-                                            await sock.sendMessage(replyToJidForSend, { image: buf2 });
+                                            const sentRes = await sock.sendMessage(replyToJidForSend, { image: buf2 });
                                             console.log('[WhatsApp] Sent product image (fetch):', resolvedUrl);
-                                            return resolvedUrl;
+                                            return { url: resolvedUrl, whatsappId: sentRes?.key?.id };
                                         } catch (sendErr) {
                                             console.warn('[WhatsApp] Failed to send product image (fetch):', resolvedUrl, sendErr?.message);
                                             return null;
@@ -1437,7 +1437,15 @@ class WhatsAppManager {
                             for (let i = 0; i < urls.length; i++) {
                                 if (i > 0) await new Promise((r) => setTimeout(r, 400));
                                 const sent = await sendOneProductImage(urls[i]);
-                                if (sent) sentProductImageUrls.push(sent);
+                                if (sent) {
+                                    sentProductImageUrls.push(sent);
+                                    // Save image message immediately to prevent human takeover race condition
+                                    const mediaPath = toMediaPath(sent.url);
+                                    await db.run(`
+                                        INSERT INTO messages (id, conversation_id, role, content, message_type, media_url, sender_type, whatsapp_id, created_at)
+                                        VALUES (?, ?, 'assistant', '[Image]', 'image', ?, 'ai', ?, ?)
+                                    `, uuidv4(), conversation.id, mediaPath, sent.whatsappId, new Date().toISOString());
+                                }
                             }
                             textToSend = aiResponse.content.slice(imageMatch[0].length).trim();
                             contentToSave = sentProductImageUrls.length > 0 ? (textToSend || '📷 Photos du produit envoyées.') : aiResponse.content;
@@ -1460,7 +1468,15 @@ class WhatsAppManager {
                                 for (let i = 0; i < productImageUrls.length; i++) {
                                     if (i > 0) await new Promise((r) => setTimeout(r, 400));
                                     const sent = await sendOneProductImage(productImageUrls[i]);
-                                    if (sent) sentProductImageUrls.push(sent);
+                                    if (sent) {
+                                        sentProductImageUrls.push(sent);
+                                        // Save image message immediately to prevent human takeover race condition
+                                        const mediaPath = toMediaPath(sent.url);
+                                        await db.run(`
+                                            INSERT INTO messages (id, conversation_id, role, content, message_type, media_url, sender_type, whatsapp_id, created_at)
+                                            VALUES (?, ?, 'assistant', '[Image]', 'image', ?, 'ai', ?, ?)
+                                        `, uuidv4(), conversation.id, mediaPath, sent.whatsappId, new Date().toISOString());
+                                    }
                                 }
                                 textToSend = aiResponse.content
                                     .replace(productImageUrlRegexFull, '')
@@ -1482,32 +1498,23 @@ class WhatsAppManager {
                         if (!sendResult && aiResponse.content) {
                             sendResult = await sock.sendMessage(replyToJidForSend, { text: aiResponse.content });
                         }
-                        // Enregistrer chaque image envoyée comme message pour affichage dans la conversation (SaaS)
-                        const now = new Date().toISOString();
-                        for (const url of sentProductImageUrls) {
-                            const mediaPath = toMediaPath(url);
-                            await db.run(`
-                                INSERT INTO messages (id, conversation_id, role, content, message_type, media_url, sender_type, created_at)
-                                VALUES (?, ?, 'assistant', '[Image]', 'image', ?, 'ai', ?)
-                            `, uuidv4(), conversation.id, mediaPath, now);
-                        }
                         // Utiliser le contenu réellement envoyé pour l'enregistrement en base (cohérence SaaS / téléphone)
                         if (contentToSave !== aiResponse.content) {
                             aiResponse.content = contentToSave;
                         }
                     } catch (sendErr) {
-                    // #region agent log
-                    debugIngest({
-                        location: 'whatsapp.js:sendError',
-                        message: 'sendMessage threw',
-                        data: { err: sendErr.message },
-                        timestamp: Date.now(),
-                        sessionId: 'debug-session',
-                        hypothesisId: 'H2'
-                    });
-                    // #endregion
-                    throw sendErr;
-                }
+                        // #region agent log
+                        debugIngest({
+                            location: 'whatsapp.js:sendError',
+                            message: 'sendMessage threw',
+                            data: { err: sendErr.message },
+                            timestamp: Date.now(),
+                            sessionId: 'debug-session',
+                            hypothesisId: 'H2'
+                        });
+                        // #endregion
+                        throw sendErr;
+                    }
                 }
                 // #region agent log
                 debugIngest({

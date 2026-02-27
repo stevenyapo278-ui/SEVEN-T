@@ -59,6 +59,7 @@ import { whatsappManager } from './services/whatsapp.js';
 import { setIO } from './services/socketEmitter.js';
 import { runDailyBriefingJob } from './services/dailyBriefing.js';
 import { runNextBestActionJob } from './services/nextBestAction.js';
+import { runCampaignSchedulerJob } from './services/campaigns.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -336,11 +337,19 @@ async function start() {
             setInterval(() => {
                 runDailyBriefingJob().catch(err => console.error('[DailyBriefing] Job error:', err?.message));
                 runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
+                runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
             }, 60 * 60 * 1000);
+            
+            // Frequent check for scheduled campaigns (every 5 minutes)
+            setInterval(() => {
+                runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
+            }, 5 * 60 * 1000);
+
             // Run once shortly after startup
             setTimeout(() => {
                 runDailyBriefingJob().catch(err => console.error('[DailyBriefing] Job error:', err?.message));
                 runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
+                runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
             }, 30 * 1000);
         });
     } catch (error) {
