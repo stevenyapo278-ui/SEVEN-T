@@ -101,20 +101,20 @@ export default function Analytics() {
     const styles = colorStyles[color] || colorStyles.gold
 
     return (
-      <div className={`card p-6 bg-gradient-to-br ${styles.gradient} border`}>
-        <div className="flex items-center justify-between mb-4">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${styles.iconBg}`}>
-            <Icon className={`w-6 h-6 ${styles.iconText}`} />
+      <div className={`card p-4 sm:p-6 bg-gradient-to-br ${styles.gradient} border`}>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center ${styles.iconBg}`}>
+            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${styles.iconText}`} />
           </div>
           {growth !== undefined && (
-            <div className={`flex items-center gap-1 text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            <div className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+              {isPositive ? <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
               <span>{Math.abs(growth)}%</span>
             </div>
           )}
         </div>
-        <p className="text-3xl font-display font-bold text-gray-100">{value?.toLocaleString() || 0}</p>
-        <p className="text-sm text-gray-400 mt-1">{title}</p>
+        <p className="text-xl sm:text-3xl font-display font-bold text-gray-100">{value?.toLocaleString() || 0}</p>
+        <p className="text-[10px] sm:text-sm text-gray-400 mt-1 uppercase tracking-wider font-medium">{title}</p>
       </div>
     )
   }
@@ -163,7 +163,7 @@ export default function Analytics() {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Conversations"
           value={overview?.conversations?.value}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X } from 'lucide-react'
+import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp } from 'lucide-react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../contexts/CurrencyContext'
@@ -46,6 +46,7 @@ export default function Products() {
   const [historyProductId, setHistoryProductId] = useState(null)
   const [historyList, setHistoryList] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [selectedProductView, setSelectedProductView] = useState(null)
 
   const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory
   useLockBodyScroll(anyModalOpen)
@@ -193,6 +194,7 @@ export default function Products() {
           onEdit={setEditingProduct}
           onDelete={handleDelete}
           onHistory={loadHistory}
+          onView={setSelectedProductView}
         />
       ) : null}
 
@@ -257,6 +259,123 @@ export default function Products() {
           onClose={() => { setShowHistory(false); setHistoryProductId(null); setHistoryList([]) }}
         />
       )}
+      {/* Product Detail Zoom View */}
+      {selectedProductView && (
+        <DetailOverlay onClose={() => setSelectedProductView(null)}>
+          <div className="flex flex-col p-2">
+            <div className="flex items-center gap-6 mb-8">
+              <div className="w-24 h-24 bg-space-800 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xl ring-2 ring-white/5">
+                {selectedProductView.image_url ? (
+                  <img src={getProductImageUrl(selectedProductView.image_url)} alt={selectedProductView.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="w-10 h-10 text-gray-600" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-2xl sm:text-3xl font-display font-bold text-gray-100 mb-2 truncate">{selectedProductView.name}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProductView.category && (
+                    <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">
+                      {selectedProductView.category}
+                    </span>
+                  )}
+                  <span className="px-3 py-1 rounded-full bg-gold-400/20 text-gold-400 text-xs font-mono font-semibold">
+                    {selectedProductView.sku || 'SANS-SKU'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Prix de vente</p>
+                <p className="text-2xl font-bold text-emerald-400">{formatPrice(selectedProductView.price)}</p>
+              </div>
+              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Stock actuel</p>
+                <p className={`text-2xl font-bold ${
+                  selectedProductView.stock === 0 ? 'text-red-400' : 
+                  selectedProductView.stock <= 10 ? 'text-amber-400' : 'text-blue-400'
+                }`}>
+                  {selectedProductView.stock} unités
+                </p>
+              </div>
+            </div>
+
+            {selectedProductView.description && (
+              <div className="mb-8 p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-2">Description</p>
+                <p className="text-gray-300 text-sm leading-relaxed">{selectedProductView.description}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="flex items-center gap-3 p-4 bg-space-800/30 rounded-2xl border border-space-700">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                  <ShoppingCart className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Ventes totales</p>
+                  <p className="text-gray-100 font-semibold">{selectedProductView.total_sold || 0} vendus</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-space-800/30 rounded-2xl border border-space-700">
+                <div className="w-10 h-10 rounded-xl bg-gold-400/20 flex items-center justify-center text-gold-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-medium">Marge brute</p>
+                  <p className="text-gray-100 font-semibold">
+                    {formatPrice((selectedProductView.price || 0) - (selectedProductView.cost_price || 0))} / unité
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => {
+                  setSelectedProductView(null)
+                  setEditingProduct(selectedProductView)
+                }}
+                className="btn-primary flex-1"
+              >
+                Modifier le produit
+              </button>
+              <button onClick={() => setSelectedProductView(null)} className="btn-secondary flex-1">Fermer</button>
+            </div>
+          </div>
+        </DetailOverlay>
+      )}
+    </div>
+  )
+}
+
+function getProductImageUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${api.defaults.baseURL}/products/image/${url}`
+}
+
+function DetailOverlay({ children, onClose }) {
+  return (
+    <div 
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
+      <div 
+        className="relative z-10 w-full max-w-lg bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-8 animate-zoom-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors"
+        >
+          <XCircle className="w-6 h-6" />
+        </button>
+        {children}
+      </div>
     </div>
   )
 }

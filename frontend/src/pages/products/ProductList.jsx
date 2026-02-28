@@ -7,7 +7,8 @@ export default function ProductList({
   formatPrice,
   onEdit,
   onDelete,
-  onHistory
+  onHistory,
+  onView
 }) {
   const { t } = useTranslation()
   return (
@@ -22,7 +23,8 @@ export default function ProductList({
       {products.map((product, index) => (
         <div
           key={product.id}
-          className="card p-4 sm:p-5 md:p-6 hover:border-space-600 transition-all min-w-0"
+          onClick={() => onView(product)}
+          className="card p-4 sm:p-5 md:p-6 hover:border-blue-500/50 hover:bg-space-800/80 cursor-pointer transition-all min-w-0 group animate-fadeIn"
           style={{ animationDelay: `${index * 50}ms` }}
         >
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-4 md:items-center">
@@ -81,7 +83,7 @@ export default function ProductList({
             </div>
             <div className="md:col-span-2 flex items-center justify-end gap-1 pt-2 md:pt-0 border-t border-space-700 md:border-t-0">
               <button
-                onClick={() => onHistory(product.id)}
+                onClick={(e) => { e.stopPropagation(); onHistory(product.id) }}
                 className="p-2.5 text-gray-400 hover:text-amber-400 hover:bg-space-700 rounded-lg transition-colors touch-target"
                 title={t('products.actionHistory')}
                 aria-label={t('products.actionHistory')}
@@ -89,7 +91,7 @@ export default function ProductList({
                 <History className="w-5 h-5" />
               </button>
               <button
-                onClick={() => onEdit(product)}
+                onClick={(e) => { e.stopPropagation(); onEdit(product) }}
                 className="p-2.5 text-gray-400 hover:text-blue-400 hover:bg-space-700 rounded-lg transition-colors touch-target"
                 title={t('products.actionEdit')}
                 aria-label={t('products.actionEdit')}
@@ -97,7 +99,7 @@ export default function ProductList({
                 <Edit className="w-5 h-5" />
               </button>
               <button
-                onClick={() => onDelete(product.id)}
+                onClick={(e) => { e.stopPropagation(); onDelete(product.id) }}
                 className="p-2.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors touch-target"
                 title={t('products.actionDelete')}
                 aria-label={t('products.actionDelete')}

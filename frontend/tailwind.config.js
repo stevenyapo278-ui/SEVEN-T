@@ -48,12 +48,13 @@ export default {
         }
       },
       fontFamily: {
-        brand: ['Audiowide', 'monospace'],
-        ui: ['Syne', 'sans-serif'],
-        body: ['Syne', 'sans-serif'],
-        code: ['JetBrains Mono', 'monospace'],
-        display: ['Syne', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['var(--font-body)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        brand: ['var(--font-brand)', 'monospace'],
+        ui: ['var(--font-ui)', 'sans-serif'],
+        body: ['var(--font-body)', 'sans-serif'],
+        code: ['var(--font-code)', 'monospace'],
+        display: ['var(--font-display)', 'sans-serif'],
+        mono: ['var(--font-code)', 'monospace'],
       },
       boxShadow: {
         'glow-gold': '0 0 60px rgba(251, 191, 36, 0.3)',

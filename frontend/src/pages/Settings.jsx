@@ -13,7 +13,8 @@ export default function Settings() {
   const { user, updateUser, refreshUser, logout } = useAuth()
   const navigate = useNavigate()
   const { currency, setCurrency } = useCurrency()
-  const { fontPreset, setFontPreset } = useFont()
+  const { fontPreset, setFontPreset, titleFontPreset, setTitleFontPreset } = useFont()
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     company: user?.company || '',
@@ -457,25 +458,60 @@ export default function Settings() {
           Préférences
         </h2>
         <div className="space-y-6">
-          <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">Police de l&apos;interface</p>
-            <p className="text-gray-400 text-sm mb-3">
-              Choisissez la police utilisée pour les textes et titres de l&apos;application
+          {/* Body Font */}
+          <div className="border-b border-space-800 pb-8">
+            <p className="text-sm font-semibold text-gray-200 mb-2">Police des textes & interface</p>
+            <p className="text-gray-400 text-xs mb-4">
+              La police utilisée pour tous les menus, les messages, les listes et les paragraphes.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {Object.entries(FONT_PRESETS).map(([key, preset]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setFontPreset(key)}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  className={`p-3 rounded-xl border-2 transition-all text-left group ${
                     fontPreset === key
                       ? 'border-blue-500 bg-blue-500/10'
                       : 'border-space-700 bg-space-800/50 hover:border-space-600'
                   }`}
                 >
-                  <div className="text-sm font-medium text-gray-100 mb-0.5" style={{ fontFamily: preset.fontUi }}>{preset.label}</div>
-                  <div className="text-xs text-gray-500">{preset.description}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-bold text-gray-100 truncate" style={{ fontFamily: preset.fontUi }}>
+                      {preset.label.split(' ')[0]}
+                    </div>
+                    {fontPreset === key && (
+                      <Check className="w-3.5 h-3.5 text-blue-500" />
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Title Font */}
+          <div>
+            <p className="text-sm font-semibold text-gray-200 mb-2">Police des grands titres</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {Object.entries(FONT_PRESETS).map(([key, preset]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setTitleFontPreset(key)}
+                  className={`p-3 rounded-xl border-2 transition-all text-left group ${
+                    titleFontPreset === key
+                      ? 'border-gold-400 bg-gold-400/10'
+                      : 'border-space-700 bg-space-800/50 hover:border-space-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-black text-gray-100 uppercase truncate" style={{ fontFamily: preset.fontUi }}>
+                      {preset.label.split(' ')[0]}
+                    </div>
+                    {titleFontPreset === key && (
+                      <Check className="w-3.5 h-3.5 text-gold-400" />
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
@@ -485,21 +521,22 @@ export default function Settings() {
             <p className="text-gray-400 text-sm mb-3">
               Choisissez la devise pour l&apos;affichage des prix de vos produits
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.values(CURRENCIES).map((curr) => (
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+              {Object.values(CURRENCIES)
+                .filter(curr => ['EUR', 'USD', 'XOF'].includes(curr.code))
+                .map((curr) => (
                 <button
                   key={curr.code}
                   type="button"
                   onClick={() => setCurrency(curr.code)}
-                  className={`p-4 rounded-xl border-2 transition-all ${
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
                     currency === curr.code
                       ? 'border-blue-500 bg-blue-500/10'
                       : 'border-space-700 bg-space-800/50 hover:border-space-600'
                   }`}
                 >
-                  <div className="text-2xl font-bold text-gold-400 mb-1">{curr.symbol}</div>
-                  <div className="text-sm font-medium text-gray-100">{curr.code}</div>
-                  <div className="text-xs text-gray-500 truncate">{curr.name}</div>
+                  <div className="text-base font-bold text-gold-400 mb-0.5">{curr.symbol}</div>
+                  <div className="text-xs font-medium text-gray-100">{curr.code}</div>
                 </button>
               ))}
             </div>

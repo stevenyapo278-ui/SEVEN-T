@@ -24,7 +24,8 @@ import {
   Target,
   History,
   CheckCircle,
-  RotateCw
+  RotateCw,
+  XCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -64,8 +65,11 @@ export default function Workflows() {
   const [showContactModal, setShowContactModal] = useState(false)
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
   const [selectedContact, setSelectedContact] = useState(null)
+  const [selectedContactView, setSelectedContactView] = useState(null)
+  const [selectedLogView, setSelectedLogView] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [contactForm, setContactForm] = useState({ name: '', phone_number: '', role: 'livreur', notes: '' })
+  const [focusedContactId, setFocusedContactId] = useState(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -357,41 +361,41 @@ export default function Workflows() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gold-400/20 flex items-center justify-center">
-            <Zap className="w-6 h-6 text-gold-400" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gold-400/20 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-gold-400" />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.total || 0}</p>
-            <p className="text-sm text-gray-400">Workflows</p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-400/20 flex items-center justify-center">
-            <Play className="w-6 h-6 text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.active || 0}</p>
-            <p className="text-sm text-gray-400">Actifs</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.total || 0}</p>
+            <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Workflows</p>
           </div>
         </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-400/20 flex items-center justify-center">
-            <History className="w-6 h-6 text-blue-400" />
+        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
+            <Play className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.totalExecutions || 0}</p>
-            <p className="text-sm text-gray-400">Exécutions totales</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.active || 0}</p>
+            <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Actifs</p>
           </div>
         </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-400/20 flex items-center justify-center">
-            <Clock className="w-6 h-6 text-blue-400" />
+        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-400/20 flex items-center justify-center flex-shrink-0">
+            <History className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.recentExecutions || 0}</p>
-            <p className="text-sm text-gray-400">Cette semaine</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.totalExecutions || 0}</p>
+            <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Totaux</p>
+          </div>
+        </div>
+        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-400/20 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.recentExecutions || 0}</p>
+            <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Semaine</p>
           </div>
         </div>
       </div>
@@ -431,8 +435,16 @@ export default function Workflows() {
               </thead>
               <tbody>
                 {contacts.map((c) => (
-                  <tr key={c.id} className="border-b border-space-700/50 hover:bg-space-800/50">
-                    <td className="py-3 pr-4 font-medium text-gray-100">{c.name}</td>
+                  <tr 
+                    key={c.id} 
+                    onClick={() => setSelectedContactView(c)}
+                    className="border-b border-space-700/50 cursor-pointer hover:bg-space-800/50 transition-colors group"
+                  >
+                    <td className="py-3 pr-4 font-medium">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-100 group-hover:text-gold-400 transition-colors">{c.name}</span>
+                      </div>
+                    </td>
                     <td className="py-3 pr-4 text-gray-300 flex items-center gap-1">
                       <Phone className="w-3.5 h-3.5" />
                       {c.phone_number}
@@ -635,9 +647,13 @@ export default function Workflows() {
                   const isSuccess = status === 'success'
                   const contactLabel = log.trigger_data?.contactName || log.trigger_data?.contactNumber || log.trigger_data?.contactJid
                   return (
-                    <tr key={log.id} className="border-b border-space-700/50 hover:bg-space-800/50">
+                    <tr 
+                      key={log.id} 
+                      onClick={() => setSelectedLogView(log)}
+                      className="border-b border-space-700/50 hover:bg-space-800/50 cursor-pointer group transition-colors"
+                    >
                       <td className="py-3 pr-4">
-                        <div className="font-medium text-gray-100">{log.workflow_name}</div>
+                        <div className="font-medium text-gray-100 group-hover:text-blue-400 transition-colors">{log.workflow_name}</div>
                         <div className="text-xs text-gray-500">{log.agent_name || 'Tous les agents'}</div>
                       </td>
                       <td className="py-3 pr-4 text-gray-300">
@@ -987,6 +1003,143 @@ export default function Workflows() {
           </div>
         </div>
       )}
+      {/* Contact Detail Zoom View */}
+      {selectedContactView && (
+        <DetailOverlay onClose={() => setSelectedContactView(null)}>
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center mb-6 shadow-xl ring-4 ring-gold-400/20">
+              <span className="text-4xl font-bold text-space-950">
+                {selectedContactView.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <h3 className="text-3xl font-display font-bold text-gray-100 mb-2">{selectedContactView.name}</h3>
+            <span className="px-4 py-1.5 rounded-full bg-gold-400/20 text-gold-400 text-sm font-semibold mb-6">
+              {contactRoleLabel(selectedContactView.role)}
+            </span>
+            
+            <div className="w-full space-y-4 max-w-sm mx-auto">
+              <div className="flex items-center gap-4 p-4 bg-space-800/50 rounded-2xl border border-space-700 text-left">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium">Numéro de téléphone</p>
+                  <p className="text-gray-100 font-semibold">{selectedContactView.phone_number}</p>
+                </div>
+              </div>
+
+              {selectedContactView.notes && (
+                <div className="flex items-start gap-4 p-4 bg-space-800/50 rounded-2xl border border-space-700 text-left">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 uppercase font-medium">Notes & Informations</p>
+                    <p className="text-gray-300 text-sm italic">{selectedContactView.notes}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 mt-8">
+              <button 
+                onClick={() => {
+                  setSelectedContactView(null)
+                  openContactModal(selectedContactView)
+                }}
+                className="btn-primary"
+              >
+                Modifier
+              </button>
+              <button 
+                onClick={() => setSelectedContactView(null)}
+                className="btn-secondary"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </DetailOverlay>
+      )}
+
+      {/* Log Detail Zoom View */}
+      {selectedLogView && (
+        <DetailOverlay onClose={() => setSelectedLogView(null)}>
+          <div className="flex flex-col p-2">
+            <div className="flex items-center gap-4 mb-8">
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg ${
+                selectedLogView.success ? 'bg-emerald-400/20' : 'bg-red-400/20'
+              }`}>
+                {selectedLogView.success ? <CheckCircle className="w-8 h-8 text-emerald-400" /> : <XCircle className="w-8 h-8 text-red-400" />}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-2xl font-display font-bold text-gray-100 truncate">{selectedLogView.workflow_name}</h3>
+                <p className="text-gray-400">{formatRelativeTime(selectedLogView.executed_at)}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Déclencheur</p>
+                <p className="text-gray-100 font-semibold">{types.triggerTypes[selectedLogView.trigger_type]?.name || selectedLogView.trigger_type}</p>
+              </div>
+              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Agent Responsable</p>
+                <p className="text-gray-100 font-semibold">{selectedLogView.agent_name || 'Tous les agents'}</p>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <p className="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-gold-400" />
+                Actions exécutées ({Array.isArray(selectedLogView.result) ? selectedLogView.result.length : 0})
+              </p>
+              <div className="space-y-3">
+                {Array.isArray(selectedLogView.result) && selectedLogView.result.map((res, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-space-800 border border-space-700 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${res.success ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+                        {res.success ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
+                      </div>
+                      <span className="text-sm font-medium text-gray-100">{res.action || 'Action'}</span>
+                    </div>
+                    {!res.success && res.error && (
+                      <span className="text-xs text-red-400 max-w-[200px] truncate">{res.error}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center gap-4">
+              <button onClick={() => setSelectedLogView(null)} className="btn-secondary w-full">Fermer</button>
+            </div>
+          </div>
+        </DetailOverlay>
+      )}
+    </div>
+  )
+}
+
+function DetailOverlay({ children, onClose }) {
+  return (
+    <div 
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
+      <div 
+        className="relative z-10 w-full max-w-lg bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-8 animate-zoom-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors"
+        >
+          <XCircle className="w-6 h-6" />
+        </button>
+        {children}
+      </div>
     </div>
   )
 }
