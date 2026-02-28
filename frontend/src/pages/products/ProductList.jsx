@@ -54,23 +54,23 @@ export default function ProductList({
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3 md:contents">
-              <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0">
+            <div className="md:col-span-6 flex flex-wrap items-center justify-between gap-y-4 md:contents">
+              <div className="hidden md:flex flex-col gap-0.5 min-w-0 md:col-span-2">
                 <span className="text-xs text-gray-500 uppercase tracking-wide">{t('products.tableSku')}</span>
                 <span className="text-sm font-mono text-gray-400 truncate">{product.sku || '–'}</span>
               </div>
               <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0 overflow-hidden">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">{t('products.tablePrice')}</span>
-                <span className="text-sm font-semibold text-gold-400 truncate" title={formatPrice(product.price)}>{formatPrice(product.price)}</span>
+                <span className="md:hidden text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{t('products.tablePrice')}</span>
+                <span className="text-base sm:text-lg font-bold text-gold-400 truncate" title={formatPrice(product.price)}>{formatPrice(product.price)}</span>
                 {typeof product.cost_price === 'number' && product.cost_price > 0 && (
-                  <span className="text-xs text-gray-400 mt-0.5 truncate" title={formatPrice((product.price || 0) - (product.cost_price || 0))}>
+                  <span className="hidden md:block text-xs text-gray-400 mt-0.5 truncate" title={formatPrice((product.price || 0) - (product.cost_price || 0))}>
                     {t('products.marginLabel')} {formatPrice((product.price || 0) - (product.cost_price || 0))}
                   </span>
                 )}
               </div>
-              <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">{t('products.tableStock')}</span>
-                <span className={`inline-flex items-center w-fit px-2.5 py-1 rounded-full text-sm font-medium ${
+              <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0 items-end md:items-start ml-auto md:ml-0">
+                <span className="md:hidden text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{t('products.tableStock')}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-sm font-bold uppercase tracking-wider ${
                   product.stock === 0
                     ? 'bg-red-500/20 text-red-400'
                     : product.stock <= 10

@@ -99,7 +99,7 @@ export default function Products() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 px-3 sm:px-0 min-w-0">
+    <div className="max-w-6xl mx-auto w-full space-y-4 sm:space-y-6 px-3 sm:px-0 min-w-0">
       {/* Header Hero */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" aria-hidden="true" />

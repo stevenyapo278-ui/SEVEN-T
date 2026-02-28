@@ -341,7 +341,7 @@ export default function Workflows() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto w-full space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
@@ -422,61 +422,86 @@ export default function Workflows() {
         {contacts.length === 0 ? (
           <p className="text-gray-500 text-sm py-4">Aucun contact. Ajoutez-en pour les utiliser dans vos workflows.</p>
         ) : (
-          <div className="overflow-x-auto table-responsive">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-space-700">
-                  <th className="pb-3 pr-4">Nom</th>
-                  <th className="pb-3 pr-4">Numéro</th>
-                  <th className="pb-3 pr-4">Rôle</th>
-                  <th className="pb-3 pr-4">Notes</th>
-                  <th className="pb-3 w-24"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((c) => (
-                  <tr 
-                    key={c.id} 
-                    onClick={() => setSelectedContactView(c)}
-                    className="border-b border-space-700/50 cursor-pointer hover:bg-space-800/50 transition-colors group"
-                  >
-                    <td className="py-3 pr-4 font-medium">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-100 group-hover:text-gold-400 transition-colors">{c.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 pr-4 text-gray-300 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5" />
-                      {c.phone_number}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span className="px-2 py-0.5 rounded-full bg-gold-400/20 text-gold-400 text-xs">
-                        {contactRoleLabel(c.role)}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 text-gray-500 max-w-[200px] truncate">{c.notes || '—'}</td>
-                    <td className="py-3 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => openContactModal(c)}
-                        className="p-2 text-gray-400 hover:text-gold-400 hover:bg-gold-400/10 rounded-lg"
-                        title="Modifier"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteContact(c)}
-                        className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
+          <div className="space-y-3">
+            {/* Contacts Table - Desktop only */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-400 border-b border-space-700">
+                    <th className="pb-3 pr-4">Nom</th>
+                    <th className="pb-3 pr-4">Numéro</th>
+                    <th className="pb-3 pr-4">Rôle</th>
+                    <th className="pb-3 pr-4">Notes</th>
+                    <th className="pb-3 w-24"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {contacts.map((c) => (
+                    <tr 
+                      key={c.id} 
+                      onClick={() => setSelectedContactView(c)}
+                      className="border-b border-space-700/50 cursor-pointer hover:bg-space-800/50 transition-colors group"
+                    >
+                      <td className="py-3 pr-4 font-medium">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-100 group-hover:text-gold-400 transition-colors">{c.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-300">
+                        <div className="flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5" />
+                          {c.phone_number}
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className="px-2 py-0.5 rounded-full bg-gold-400/20 text-gold-400 text-xs font-semibold">
+                          {contactRoleLabel(c.role)}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-500 max-w-[200px] truncate">{c.notes || '—'}</td>
+                      <td className="py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openContactModal(c); }}
+                            className="p-2 text-gray-400 hover:text-gold-400 hover:bg-gold-400/10 rounded-lg"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteContact(c); }}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Contacts Cards - Mobile only */}
+            <div className="md:hidden grid grid-cols-1 gap-3">
+              {contacts.map((c) => (
+                <div 
+                  key={c.id}
+                  onClick={() => setSelectedContactView(c)}
+                  className="p-4 rounded-2xl bg-space-800/50 border border-space-700 active:scale-[0.98] transition-all"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-bold text-gray-100">{c.name}</h4>
+                    <span className="px-2 py-0.5 rounded-full bg-gold-400/20 text-gold-400 text-[10px] font-bold uppercase">
+                      {contactRoleLabel(c.role)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Phone className="w-3.5 h-3.5" />
+                    {c.phone_number}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -628,79 +653,73 @@ export default function Workflows() {
         ) : logs.length === 0 ? (
           <p className="text-gray-500 text-sm py-4">Aucune exécution pour le moment.</p>
         ) : (
-          <div className="overflow-x-auto table-responsive">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-space-700">
-                  <th className="pb-3 pr-4">Workflow</th>
-                  <th className="pb-3 pr-4">Déclencheur</th>
-                  <th className="pb-3 pr-4">Statut</th>
-                  <th className="pb-3 pr-4">Détails</th>
-                  <th className="pb-3 pr-4">Exécuté</th>
-                  <th className="pb-3 w-24"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => {
-                  const convoId = log.conversation_id || log.trigger_data?.conversationId
-                  const status = log.status || (log.success ? 'success' : 'failed')
-                  const isSuccess = status === 'success'
-                  const contactLabel = log.trigger_data?.contactName || log.trigger_data?.contactNumber || log.trigger_data?.contactJid
-                  return (
-                    <tr 
-                      key={log.id} 
-                      onClick={() => setSelectedLogView(log)}
-                      className="border-b border-space-700/50 hover:bg-space-800/50 cursor-pointer group transition-colors"
-                    >
-                      <td className="py-3 pr-4">
-                        <div className="font-medium text-gray-100 group-hover:text-blue-400 transition-colors">{log.workflow_name}</div>
-                        <div className="text-xs text-gray-500">{log.agent_name || 'Tous les agents'}</div>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-300">
-                        {types.triggerTypes[log.trigger_type]?.name || log.trigger_type}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
-                          isSuccess ? 'bg-emerald-400/20 text-emerald-400' : 'bg-red-400/20 text-red-400'
-                        }`}>
-                          {isSuccess ? 'Succès' : 'Échec'}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4 text-gray-400">
-                        <div>{getExecutionSummary(log)}</div>
-                        {contactLabel && (
-                          <div className="text-xs text-gray-500 mt-1 truncate">Contact: {contactLabel}</div>
-                        )}
-                        {convoId && (
-                          <div className="text-xs text-blue-400 mt-1">
-                            <Link to={`/dashboard/conversations/${convoId}`} className="hover:underline">Voir la conversation</Link>
+          <div className="space-y-3">
+            {/* History Table - Desktop only */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-400 border-b border-space-700">
+                    <th className="pb-3 pr-4">Workflow</th>
+                    <th className="pb-3 pr-4">Statut</th>
+                    <th className="pb-3 pr-4 text-right">Exécuté</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.map((log) => {
+                    const status = log.status || (log.success ? 'success' : 'failed')
+                    const isSuccess = status === 'success'
+                    return (
+                      <tr 
+                        key={log.id} 
+                        onClick={() => setSelectedLogView(log)}
+                        className="border-b border-space-700/50 hover:bg-space-800/50 cursor-pointer group transition-colors"
+                      >
+                        <td className="py-4 pr-4">
+                          <div className="font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{log.workflow_name}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                            {types.triggerTypes[log.trigger_type]?.name || log.trigger_type}
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4 text-gray-400">{formatRelativeTime(log.executed_at)}</td>
-                      <td className="py-3">
-                        {!isSuccess && (
-                          <button
-                            type="button"
-                            onClick={() => handleRetryExecution(log.id)}
-                            disabled={retryingLogId === log.id}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-gold-400 hover:text-gold-300 hover:bg-gold-400/10 rounded-lg transition-colors disabled:opacity-50"
-                            title="Relancer l'exécution"
-                          >
-                            {retryingLogId === log.id ? (
-                              <RotateCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <RotateCw className="w-4 h-4" />
-                            )}
-                            Relancer
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            isSuccess ? 'bg-emerald-400/20 text-emerald-400' : 'bg-red-400/20 text-red-400'
+                          }`}>
+                            {isSuccess ? 'Succès' : 'Échec'}
+                          </span>
+                        </td>
+                        <td className="py-4 text-right text-gray-500 text-xs">
+                          {formatRelativeTime(log.executed_at)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* History Cards - Mobile only */}
+            <div className="lg:hidden grid grid-cols-1 gap-3">
+              {logs.map((log) => {
+                const status = log.status || (log.success ? 'success' : 'failed')
+                const isSuccess = status === 'success'
+                return (
+                  <div
+                    key={log.id}
+                    onClick={() => setSelectedLogView(log)}
+                    className="p-4 rounded-2xl bg-space-800/50 border border-space-700 hover:border-blue-500/30 transition-all cursor-pointer active:scale-[0.98]"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${isSuccess ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                        <h4 className="font-bold text-gray-100 text-sm">{log.workflow_name}</h4>
+                      </div>
+                      <span className="text-[10px] text-gray-500">{formatRelativeTime(log.executed_at)}</span>
+                    </div>
+                    <p className="text-xs text-gray-400 truncate">{getExecutionSummary(log)}</p>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

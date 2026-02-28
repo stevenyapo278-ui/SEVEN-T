@@ -57,6 +57,7 @@
   --font-brand: "Audiowide", monospace;
   --font-ui: "Syne", sans-serif;
   --font-body: "Syne", sans-serif;
+  --font-display: "Syne", sans-serif;
   --font-code: "JetBrains Mono", monospace;
 }
 
@@ -111,6 +112,7 @@
   --font-brand: "Audiowide", monospace;
   --font-ui: "Syne", sans-serif;
   --font-body: "Syne", sans-serif;
+  --font-display: "Syne", sans-serif;
   --font-code: "JetBrains Mono", monospace;
 }
 
@@ -129,11 +131,23 @@ body {
 }
 
 /* Typography — uses --font-brand, --font-ui, --font-body, --font-code */
-h1 {
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-size: 2rem;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
   color: var(--accent-blue);
-  letter-spacing: 0.02em;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 .label {
   font-family: var(--font-ui);

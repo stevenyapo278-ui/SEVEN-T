@@ -96,7 +96,7 @@ export default function Orders() {
     return ['all', 'pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled'].includes(s) ? s : 'all'
   })
   const [searchQuery, setSearchQuery] = useState('')
-  const [expandedOrder, setExpandedOrder] = useState(null)
+  const [selectedOrderView, setSelectedOrderView] = useState(null)
   const [logs, setLogs] = useState([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [showCleanupMenu, setShowCleanupMenu] = useState(false)
@@ -538,7 +538,7 @@ export default function Orders() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto w-full space-y-6">
       {/* Header Hero */}
       <div className="relative overflow-hidden rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
         <div className="relative z-10 space-y-6">
@@ -556,97 +556,96 @@ export default function Orders() {
           </div>
 
           {/* Boutons : rangée dédiée, wrap propre sans recouvrir le texte */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={openNewOrderModal}
-              className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white transition-colors touch-target whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5 flex-shrink-0" />
-              <span>Nouvelle commande</span>
-            </button>
-            <button
-              onClick={handleExportCsv}
-              className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap"
-            >
-              <Download className="w-5 h-5 flex-shrink-0" />
-              <span>{t('orders.exportCsv')}</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('logs'); loadLogs(); }}
-              className={`px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 transition-colors touch-target whitespace-nowrap ${
-                activeTab === 'logs'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-space-800 text-gray-300 hover:bg-space-700'
-              }`}
-            >
-              <History className="w-5 h-5 flex-shrink-0" />
-              <span>Historique</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={openNewOrderModal}
+                className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white transition-colors touch-target whitespace-nowrap text-sm sm:text-base"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span>Nouveau</span>
+              </button>
+              <button
+                onClick={handleExportCsv}
+                className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap text-sm sm:text-base"
+              >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span>Export</span>
+              </button>
+              <button
+                onClick={() => { setActiveTab('logs'); loadLogs(); }}
+                className={`px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 transition-colors touch-target whitespace-nowrap text-sm sm:text-base ${
+                  activeTab === 'logs'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-space-800 text-gray-300 hover:bg-space-700'
+                }`}
+              >
+                <History className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                <span>Logs</span>
+              </button>
 
-            {/* Cleanup Menu */}
-            <div className="relative cleanup-menu-container">
-                <button
-                  onClick={() => setShowCleanupMenu(!showCleanupMenu)}
-                  className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap"
-                >
-                  <Sparkles className="w-5 h-5 flex-shrink-0" />
-                  <span>Nettoyer</span>
-                  <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${showCleanupMenu ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {showCleanupMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-space-800 border border-space-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                    <div className="p-2 border-b border-space-700">
-                      <p className="text-xs text-gray-500 px-2">Supprimer par statut</p>
-                    </div>
-                    <div className="p-1">
-                      <button
-                        onClick={() => handleBulkDelete('rejected')}
-                        disabled={actionLoading}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Supprimer les rejetées ({stats.rejected})
-                      </button>
-                      <button
-                        onClick={() => handleBulkDelete('cancelled')}
-                        disabled={actionLoading}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-space-700 rounded-lg transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                        Supprimer les annulées
-                      </button>
-                    </div>
-                    <div className="p-2 border-t border-space-700">
-                      <p className="text-xs text-gray-500 px-2">Nettoyage automatique</p>
-                    </div>
-                    <div className="p-1">
-                      <button
-                        onClick={() => handleCleanup(7)}
-                        disabled={actionLoading}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        Nettoyer {">"} 7 jours
-                      </button>
-                      <button
-                        onClick={() => handleCleanup(30)}
-                        disabled={actionLoading}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                        Nettoyer {">"} 30 jours
-                      </button>
-                    </div>
-                    {actionLoading && (
-                      <div className="p-3 flex items-center justify-center">
-                        <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+              {/* Cleanup Menu */}
+              <div className="relative cleanup-menu-container">
+                  <button
+                    onClick={() => setShowCleanupMenu(!showCleanupMenu)}
+                    className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap text-sm sm:text-base"
+                  >
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 transition-transform ${showCleanupMenu ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showCleanupMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-space-800 border border-space-700 rounded-xl shadow-xl z-50 overflow-hidden">
+                      <div className="p-2 border-b border-space-700">
+                        <p className="text-xs text-gray-500 px-2">Supprimer par statut</p>
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div className="p-1">
+                        <button
+                          onClick={() => handleBulkDelete('rejected')}
+                          disabled={actionLoading}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Supprimer les rejetées ({stats.rejected})
+                        </button>
+                        <button
+                          onClick={() => handleBulkDelete('cancelled')}
+                          disabled={actionLoading}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-space-700 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                          Supprimer les annulées
+                        </button>
+                      </div>
+                      <div className="p-2 border-t border-space-700">
+                        <p className="text-xs text-gray-500 px-2">Nettoyage automatique</p>
+                      </div>
+                      <div className="p-1">
+                        <button
+                          onClick={() => handleCleanup(7)}
+                          disabled={actionLoading}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Nettoyer {">"} 7 jours
+                        </button>
+                        <button
+                          onClick={() => handleCleanup(30)}
+                          disabled={actionLoading}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Nettoyer {">"} 30 jours
+                        </button>
+                      </div>
+                      {actionLoading && (
+                        <div className="p-3 flex items-center justify-center">
+                          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
           {/* Stats - always visible in header */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 min-w-0">
@@ -1084,318 +1083,49 @@ export default function Orders() {
           {filteredOrders.map((order, index) => {
             const statusInfo = getStatusInfo(order.status)
             const StatusIcon = statusInfo.icon
-            const isExpanded = expandedOrder === order.id
-
             return (
               <div 
                 key={order.id}
-                className={`card overflow-hidden animate-fadeIn ${
-                  order.status === 'pending' ? 'border-l-4 border-l-amber-500' : order.status === 'delivered' ? 'border-l-4 border-l-emerald-500' : ''
+                onClick={() => setSelectedOrderView(order)}
+                className={`card p-4 sm:p-5 hover:bg-space-800/80 cursor-pointer group transition-all animate-fadeIn ${
+                  order.status === 'pending' ? 'border-l-4 border-amber-500' : 
+                  order.status === 'delivered' ? 'border-l-4 border-emerald-500' : 
+                  order.status === 'rejected' ? 'border-l-4 border-red-500' : ''
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                {/* Order Header */}
-                <div 
-                  className="p-4 cursor-pointer"
-                  onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className={`p-3 rounded-xl flex-shrink-0 ${getStatusIconBgClasses(order.status)}`}>
-                        <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className={`p-3 rounded-2xl flex-shrink-0 ${getStatusIconBgClasses(order.status)} group-hover:scale-110 transition-transform`}>
+                      <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="font-bold text-gray-100 text-sm sm:text-base truncate">{order.customer_name}</h3>
+                        <div 
+                          className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${
+                            ['validated', 'delivered'].includes(order.status) ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]' :
+                            order.status === 'pending' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]' :
+                            'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                          }`}
+                          title={t(statusInfo.nameKey)}
+                        />
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-gray-100 truncate">{order.customer_name}</h3>
-                          <span className={`px-2 py-0.5 text-xs rounded-full flex-shrink-0 ${getStatusBadgeClasses(order.status)}`}>
-                            {t(statusInfo.nameKey)}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-1 text-sm text-gray-400">
-                          {order.customer_phone && (
-                            <span className="flex items-center gap-1 truncate min-w-0">
-                              <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">{order.customer_phone}</span>
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1 flex-shrink-0">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {formatDate(order.created_at)}
-                          </span>
-                          <span className="flex items-center gap-1 flex-shrink-0">
-                            <Package className="w-3.5 h-3.5" />
-                            {order.items?.length || 0} article(s)
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 font-medium">
+                        <span className="truncate">{formatDate(order.created_at)}</span>
+                        <span>•</span>
+                        <span className="truncate">{order.items?.length || 0} articles</span>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="text-right flex-shrink-0 min-w-0">
-                      <p className="text-xl font-bold text-gold-400 truncate" title={formatCurrency(order.total_amount, order.currency)}>
-                        {formatCurrency(order.total_amount, order.currency)}
-                      </p>
-                      <p className="text-xs text-gray-500">#{order.id.substring(0, 8)}</p>
-                    </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-base sm:text-lg font-display font-bold text-gold-400 whitespace-nowrap">
+                      {formatCurrency(order.total_amount, order.currency)}
+                    </p>
+                    <p className="text-[10px] text-gray-600 font-mono">#{order.id.substring(0, 8)}</p>
                   </div>
                 </div>
-
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="border-t border-space-700 p-4 bg-space-800/50">
-                    {/* Items */}
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-gray-400 mb-2">Articles</h4>
-                      <div className="space-y-2">
-                        {order.items?.map((item, idx) => (
-                          <div key={idx} className="flex flex-wrap items-center justify-between gap-2 p-3 bg-space-900 rounded-xl min-w-0">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-100 truncate">{item.product_name}</p>
-                              {item.product_sku && (
-                                <p className="text-xs text-gray-500 truncate">SKU: {item.product_sku}</p>
-                              )}
-                            </div>
-                            <div className="text-right flex-shrink-0 min-w-0">
-                              <p className="text-sm text-gray-300 truncate">
-                                {item.quantity} x {formatCurrency(item.unit_price, order.currency)}
-                              </p>
-                              <p className="text-sm font-medium text-gold-400 truncate" title={formatCurrency(item.total_price, order.currency)}>
-                                {formatCurrency(item.total_price, order.currency)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    {order.notes && (
-                      <div className="mb-4 p-3 bg-space-900 rounded-xl">
-                        <p className="text-xs text-gray-500 mb-1">Notes</p>
-                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{order.notes}</p>
-                      </div>
-                    )}
-
-                    {/* Payment method: only when admin has enabled payment module */}
-                    {paymentModuleEnabled && (
-                      <div className="mb-4">
-                        <p className="text-xs text-gray-500 mb-1">Mode de paiement</p>
-                        {(order.status === 'pending' || order.status === 'validated') ? (
-                          <select
-                            value={order.payment_method || 'on_delivery'}
-                            onChange={(e) => { e.stopPropagation(); handlePaymentMethodChange(order.id, e.target.value); }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="input-dark w-full max-w-xs"
-                          >
-                            <option value="on_delivery">{t(PAYMENT_METHODS.on_delivery.nameKey)}</option>
-                            <option value="online">{t(PAYMENT_METHODS.online.nameKey)}</option>
-                          </select>
-                        ) : (
-                          <p className="text-sm text-gray-300">
-                            {t(PAYMENT_METHODS[order.payment_method]?.nameKey || PAYMENT_METHODS.on_delivery.nameKey)}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions: send payment link - only when payment module enabled */}
-                    {paymentModuleEnabled && ['pending', 'validated', 'delivered'].includes(order.status) && (
-                      <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCreatePaymentLink(order); }}
-                          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-gold-400/20 hover:bg-gold-400/30 text-gold-400 rounded-xl transition-colors touch-target"
-                        >
-                          <Link2 className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">Envoyer lien de paiement au client</span>
-                        </button>
-                        {order.conversation_id && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleSendPaymentLinkInConversation(order); }}
-                            disabled={sendingInConversation === order.id}
-                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors disabled:opacity-50 touch-target"
-                          >
-                            {sendingInConversation === order.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <MessageSquare className="w-4 h-4" />
-                            )}
-                            <span className="truncate">Envoyer le lien dans la conversation WhatsApp</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions for pending orders */}
-                    {order.status === 'pending' && (
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
-                          {order.conversation_id && (
-                            <Link
-                              to={`/dashboard/conversations/${order.conversation_id}`}
-                              className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-space-700 hover:bg-space-600 text-gray-300 rounded-xl transition-colors touch-target"
-                            >
-                              <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                              <span className="truncate">Voir la conversation</span>
-                            </Link>
-                          )}
-                          <button
-                            onClick={() => handleValidate(order.id)}
-                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors touch-target"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Valider
-                          </button>
-                          <button
-                            onClick={() => handleReject(order.id)}
-                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors touch-target"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Rejeter
-                          </button>
-                        </div>
-                        
-                        {/* Delete Button for pending */}
-                        {showDeleteConfirm === order.id ? (
-                          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-                            <span className="text-sm text-gray-400">Confirmer ?</span>
-                            <button
-                              onClick={() => handleDelete(order.id)}
-                              className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
-                            >
-                              Oui
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="px-3 py-1.5 bg-space-700 text-gray-300 text-sm rounded-lg hover:bg-space-600 transition-colors"
-                            >
-                              Non
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setShowDeleteConfirm(order.id)}
-                            className="flex items-center justify-center gap-2 px-3 py-2 min-h-[44px] text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors touch-target"
-                            title="Supprimer cette commande"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Validated: show "Marquer comme livré" + validation info */}
-                    {order.status === 'validated' && (
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
-                          {order.validated_at && (
-                            <div className="flex items-center gap-2 text-sm text-green-400">
-                              <CheckCircle className="w-4 h-4" />
-                              Validée le {formatDate(order.validated_at)}
-                              {order.validated_by && ` par ${order.validated_by}`}
-                            </div>
-                          )}
-                          <button
-                            onClick={async () => {
-                              const ok = await showConfirm({
-                                title: 'Marquer comme livrée',
-                                message: 'Confirmer que cette commande a bien été livrée au client (et le paiement reçu) ? Cette action peut être effectuée par erreur ; en cas de doute, annulez.',
-                                variant: 'warning',
-                                confirmLabel: 'Oui, marquer livrée',
-                                cancelLabel: 'Annuler'
-                              })
-                              if (ok) await handleMarkDelivered(order.id)
-                            }}
-                            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-xl transition-colors touch-target"
-                          >
-                            <Package className="w-4 h-4" />
-                            Marquer comme livré
-                          </button>
-                        </div>
-                        {showDeleteConfirm === order.id ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">Confirmer ?</span>
-                            <button
-                              onClick={() => handleDelete(order.id)}
-                              className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
-                            >
-                              Oui
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="px-3 py-1.5 bg-space-700 text-gray-300 text-sm rounded-lg hover:bg-space-600 transition-colors"
-                            >
-                              Non
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setShowDeleteConfirm(order.id)}
-                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Delivered info */}
-                    {order.status === 'delivered' && order.delivered_at && (
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                        <div className="flex items-center gap-2 text-sm text-emerald-400 min-w-0">
-                          <CheckCircle className="w-4 h-4" />
-                          Livrée le {formatDate(order.delivered_at)}
-                        </div>
-                        {showDeleteConfirm === order.id ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">Confirmer ?</span>
-                            <button onClick={() => handleDelete(order.id)} className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600">Oui</button>
-                            <button onClick={() => setShowDeleteConfirm(null)} className="px-3 py-1.5 bg-space-700 text-gray-300 text-sm rounded-lg">Non</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setShowDeleteConfirm(order.id)} className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg" title="Supprimer">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Rejection info */}
-                    {order.status === 'rejected' && (
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                        <div className="flex items-center gap-2 text-sm text-red-400 min-w-0 break-words">
-                          <XCircle className="w-4 h-4 flex-shrink-0" />
-                          <span>Rejetée le {formatDate(order.rejected_at)}
-                          {order.rejection_reason && ` - ${order.rejection_reason}`}</span>
-                        </div>
-                        {showDeleteConfirm === order.id ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-400">Confirmer ?</span>
-                            <button
-                              onClick={() => handleDelete(order.id)}
-                              className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
-                            >
-                              Oui
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="px-3 py-1.5 bg-space-700 text-gray-300 text-sm rounded-lg hover:bg-space-600 transition-colors"
-                            >
-                              Non
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setShowDeleteConfirm(order.id)}
-                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )
           })}
@@ -1404,7 +1134,206 @@ export default function Orders() {
         </div>
       )}
 
-      {/* Modal: message pour envoyer le lien de paiement au client */}
+      {/* Order Detail Zoom View */}
+      {selectedOrderView && (
+        <DetailOverlay onClose={() => setSelectedOrderView(null)}>
+          <div className="flex flex-col h-full max-h-[85vh]">
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`p-4 rounded-3xl ${getStatusIconBgClasses(selectedOrderView.status)} shadow-lg`}>
+                <div className={getStatusIconClasses(selectedOrderView.status)}>
+                  {(() => {
+                    const Icon = getStatusInfo(selectedOrderView.status).icon
+                    return <Icon className="w-8 h-8" />
+                  })()}
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-2xl font-display font-bold text-gray-100 truncate">{selectedOrderView.customer_name}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(selectedOrderView.status)}`}>
+                    {t(getStatusInfo(selectedOrderView.status).nameKey)}
+                  </span>
+                  <p className="text-xs text-gray-500">#{selectedOrderView.id.substring(0, 8)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
+              {/* Customer Info & Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {selectedOrderView.customer_phone && (
+                  <div className="p-3 bg-space-800/50 rounded-2xl border border-space-700">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Téléphone</p>
+                    <p className="text-gray-100 font-medium truncate">{selectedOrderView.customer_phone}</p>
+                  </div>
+                )}
+                <div className="p-3 bg-space-800/50 rounded-2xl border border-space-700">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Date de création</p>
+                  <p className="text-gray-100 font-medium">{formatDate(selectedOrderView.created_at)}</p>
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] text-gray-400 uppercase font-bold px-1 tracking-widest">Articles</h4>
+                <div className="space-y-2">
+                  {selectedOrderView.items?.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-space-900/80 rounded-2xl border border-space-800">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-gray-100 truncate">{item.product_name}</p>
+                        <p className="text-xs text-gray-500">{item.quantity} x {formatCurrency(item.unit_price, selectedOrderView.currency)}</p>
+                      </div>
+                      <p className="text-sm font-bold text-gold-400 ml-4 whitespace-nowrap">
+                        {formatCurrency(item.total_price, selectedOrderView.currency)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between p-4 bg-gold-400/5 rounded-2xl border-2 border-gold-400/20 mt-4">
+                  <p className="text-sm font-bold text-gray-300 uppercase">Total de la commande</p>
+                  <p className="text-xl font-bold text-gold-400">{formatCurrency(selectedOrderView.total_amount, selectedOrderView.currency)}</p>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedOrderView.notes && (
+                <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Notes</p>
+                  <p className="text-sm text-gray-300 leading-relaxed italic">{selectedOrderView.notes}</p>
+                </div>
+              )}
+
+              {/* Payment Method Integration */}
+              {paymentModuleEnabled && (selectedOrderView.status === 'pending' || selectedOrderView.status === 'validated') && (
+                <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Mode de paiement souhaité</p>
+                  <select
+                    value={selectedOrderView.payment_method || 'on_delivery'}
+                    onChange={(e) => handlePaymentMethodChange(selectedOrderView.id, e.target.value)}
+                    className="input-dark w-full"
+                  >
+                    <option value="on_delivery">{t(PAYMENT_METHODS.on_delivery.nameKey)}</option>
+                    <option value="online">{t(PAYMENT_METHODS.online.nameKey)}</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Payment Link Actions */}
+              {paymentModuleEnabled && ['pending', 'validated', 'delivered'].includes(selectedOrderView.status) && (
+                <div className="space-y-2">
+                  <h4 className="text-[10px] text-gray-400 uppercase font-bold px-1 tracking-widest">Paiement & WhatsApp</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    <button
+                      onClick={() => handleCreatePaymentLink(selectedOrderView)}
+                      className="flex items-center justify-center gap-2 px-4 py-3 bg-gold-400/10 hover:bg-gold-400/20 text-gold-400 rounded-2xl transition-all font-medium text-sm"
+                    >
+                      <Link2 className="w-4 h-4" />
+                      Générer un lien de paiement
+                    </button>
+                    {selectedOrderView.conversation_id && (
+                      <button
+                        onClick={() => handleSendPaymentLinkInConversation(selectedOrderView)}
+                        disabled={sendingInConversation === selectedOrderView.id}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-2xl transition-all font-medium text-sm disabled:opacity-50"
+                      >
+                        {sendingInConversation === selectedOrderView.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+                        Envoyer le lien sur WhatsApp
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Status Specific Timeline */}
+              {(selectedOrderView.status === 'validated' || selectedOrderView.status === 'delivered' || selectedOrderView.status === 'rejected') && (
+                <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                  selectedOrderView.status === 'validated' ? 'bg-emerald-500/5 border-emerald-500/10' :
+                  selectedOrderView.status === 'delivered' ? 'bg-emerald-500/5 border-emerald-500/10' :
+                  'bg-red-500/5 border-red-500/10'
+                }`}>
+                  <div className={`p-2 rounded-xl scale-75 ${
+                    selectedOrderView.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+                  }`}>
+                    {selectedOrderView.status === 'rejected' ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-[10px] font-bold uppercase ${selectedOrderView.status === 'rejected' ? 'text-red-400' : 'text-emerald-400'}`}>
+                      {selectedOrderView.status === 'validated' ? 'Commande Validée' : 
+                       selectedOrderView.status === 'delivered' ? 'Commande Livrée' : 'Commande Rejetée'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {formatDate(selectedOrderView.validated_at || selectedOrderView.delivered_at || selectedOrderView.rejected_at)}
+                      {selectedOrderView.validated_by && ` par ${selectedOrderView.validated_by}`}
+                    </p>
+                    {selectedOrderView.rejection_reason && (
+                      <p className="text-xs text-red-400/70 mt-1 italic">Raison: {selectedOrderView.rejection_reason}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Action Footer inside Zoom */}
+            <div className="pt-6 mt-6 border-t border-space-700 space-y-3">
+              <div className="flex gap-3">
+                {selectedOrderView.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => { setSelectedOrderView(null); handleValidate(selectedOrderView.id); }}
+                      className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                    >
+                      Valider
+                    </button>
+                    <button
+                      onClick={() => { setSelectedOrderView(null); handleReject(selectedOrderView.id); }}
+                      className="flex-1 py-3.5 bg-red-500/20 text-red-500 rounded-2xl font-bold hover:bg-red-500/30 transition-all"
+                    >
+                      Rejeter
+                    </button>
+                  </>
+                )}
+                {selectedOrderView.status === 'validated' && (
+                  <button
+                    onClick={() => { setSelectedOrderView(null); handleMarkDelivered(selectedOrderView.id); }}
+                    className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                  >
+                    Marquer comme Livrée
+                  </button>
+                )}
+                {['delivered', 'rejected'].includes(selectedOrderView.status) && (
+                  <button
+                    onClick={() => setSelectedOrderView(null)}
+                    className="w-full py-3.5 bg-space-800 text-gray-400 rounded-2xl font-bold hover:bg-space-700 transition-all"
+                  >
+                    Fermer l'aperçu
+                  </button>
+                )}
+              </div>
+              
+              {selectedOrderView.conversation_id && (
+                <Link
+                  to={`/dashboard/conversations/${selectedOrderView.conversation_id}`}
+                  onClick={() => setSelectedOrderView(null)}
+                  className="flex items-center justify-center gap-2 w-full py-3 bg-space-700 hover:bg-space-600 text-gray-300 rounded-2xl transition-all font-medium text-sm"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Voir la conversation WhatsApp
+                </Link>
+              )}
+              
+              {selectedOrderView.status === 'pending' && (
+                 <button 
+                  onClick={() => setSelectedOrderView(null)}
+                  className="w-full text-sm text-gray-500 hover:text-gray-400 font-medium py-1"
+                >
+                  Annuler
+                </button>
+              )}
+            </div>
+          </div>
+        </DetailOverlay>
+      )}
+
       {paymentLinkModal.open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => !paymentLinkModal.loading && setPaymentLinkModal(prev => ({ ...prev, open: false }))} />
@@ -1612,6 +1541,23 @@ export default function Orders() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function DetailOverlay({ children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
+      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
+      <div 
+        className="relative z-10 w-full max-w-sm sm:max-w-xl bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-6 sm:p-10 animate-zoom-in overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors">
+          <XCircle className="w-6 h-6" />
+        </button>
+        {children}
+      </div>
     </div>
   )
 }

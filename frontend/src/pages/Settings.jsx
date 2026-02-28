@@ -282,7 +282,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="w-full min-w-0 pb-24">
+    <div className="max-w-6xl mx-auto w-full min-w-0 pb-24">
       <div className="mb-8">
         <h1 className="text-2xl font-display font-bold text-gray-100">Paramètres</h1>
         <p className="text-gray-400">Gérez votre compte et votre abonnement</p>

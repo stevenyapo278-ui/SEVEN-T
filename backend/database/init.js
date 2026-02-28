@@ -1116,8 +1116,42 @@ export async function initDatabase() {
         );
     `);
 
+    // Ensure there's a default user or similar? (Admin created by another script)
+
+    // Ensure subscription plans exist and sync their properties (like stripe_price_id)
+    try {
+        const countRow = await db.get('SELECT COUNT(*) as count FROM subscription_plans');
+        if (!countRow || parseInt(countRow.count) === 0) {
+            // Seed all default plans
+            for (const plan of defaultPlans) {
+                await db.run(`
+                    INSERT INTO subscription_plans (
+                        id, name, display_name, description, price, price_currency, 
+                        sort_order, is_default, limits, features, stripe_price_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (name) DO NOTHING
+                `, 
+                    plan.id, plan.name, plan.display_name, plan.description, plan.price, plan.price_currency, 
+                    plan.sort_order, plan.is_default, plan.limits, plan.features, plan.stripe_price_id
+                );
+            }
+        } else {
+            // Update stripe_price_id if it's missing but we have it in default
+            for (const plan of defaultPlans) {
+                if (plan.stripe_price_id) {
+                    await db.run(`
+                        UPDATE subscription_plans 
+                        SET stripe_price_id = ? 
+                        WHERE name = ? AND (stripe_price_id IS NULL OR stripe_price_id = '')
+                    `, plan.stripe_price_id, plan.name);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Failed to seed subscription plans:', e?.message || e);
+    }
+
     console.log('PostgreSQL schema initialized successfully');
 }
 
 export default db;
-

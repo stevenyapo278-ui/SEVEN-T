@@ -36,7 +36,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -70,6 +71,7 @@ export default function Leads() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLead, setEditingLead] = useState(null)
   const [showSuggested, setShowSuggested] = useState(true)
+  const [selectedLeadView, setSelectedLeadView] = useState(null)
 
   // Open create modal from URL param
   useEffect(() => {
@@ -515,140 +517,69 @@ export default function Leads() {
             return (
               <div 
                 key={lead.id}
-                className="card p-4 md:p-6 hover:border-space-600 transition-all overflow-hidden"
+                onClick={() => setSelectedLeadView(lead)}
+                className="card p-3 sm:p-5 hover:border-blue-500/50 hover:bg-space-800/80 transition-all cursor-pointer group animate-fadeIn"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex flex-wrap items-start gap-3 sm:gap-4">
-                  {/* Avatar */}
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {/* Avatar - Smaller on mobile */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
-                      <span className="text-space-950 font-bold text-base sm:text-lg">
+                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
+                      <span className="text-space-950 font-bold text-sm sm:text-lg">
                         {lead.name?.charAt(0)?.toUpperCase() || '?'}
                       </span>
                     </div>
-                    {!!lead.is_favorite && (
-                      <Star className="absolute -top-1 -right-1 w-4 h-4 text-gold-400 fill-gold-400" />
-                    )}
                   </div>
 
-                  {/* Lead Info */}
-                  <div className="flex-1 min-w-0 flex flex-col gap-2">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-gray-100 flex flex-wrap items-center gap-x-2 gap-y-0">
-                          <span className="truncate">{lead.name}</span>
-                          {lead.company && (
-                            <span className="text-sm font-normal text-gray-500 truncate">• {lead.company}</span>
-                          )}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-400">
-                          {lead.phone && (
-                            <span className="flex items-center gap-1 min-w-0">
-                              <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">{lead.phone}</span>
-                            </span>
-                          )}
-                          {lead.email && (
-                            <span className="flex items-center gap-1 min-w-0">
-                              <Mail className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate">{lead.email}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status badge */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap
-                          ${statusInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
-                          ${statusInfo.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : ''}
-                          ${statusInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
-                          ${statusInfo.color === 'orange' ? 'bg-orange-500/20 text-orange-400' : ''}
-                          ${statusInfo.color === 'green' ? 'bg-green-500/20 text-green-400' : ''}
-                          ${statusInfo.color === 'red' ? 'bg-red-500/20 text-red-400' : ''}
-                        `}>
-                          <StatusIcon className="w-3.5 h-3.5 flex-shrink-0" />
-                          {statusInfo.label}
-                        </div>
+                  {/* Lead Info - Focus on name/status */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-gray-100 truncate group-hover:text-gold-400 transition-colors">
+                        {lead.name}
+                      </h3>
+                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0
+                        ${statusInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
+                        ${statusInfo.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : ''}
+                        ${statusInfo.color === 'orange' ? 'bg-orange-500/20 text-orange-400' : ''}
+                        ${statusInfo.color === 'green' ? 'bg-green-500/20 text-green-400' : ''}
+                        ${statusInfo.color === 'red' ? 'bg-red-500/20 text-red-400' : ''}
+                      `}>
+                        {statusInfo.label}
                       </div>
                     </div>
-
-                    {/* Tags & Meta */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {lead.source && (
-                        <span className="text-xs px-2 py-0.5 bg-space-800 text-gray-400 rounded-full">
-                          {LEAD_SOURCES.find(s => s.id === lead.source)?.label || lead.source}
+                    {/* Hide extra info on small mobile, show on SM+ */}
+                    <div className="hidden sm:flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-400">
+                      {lead.phone && (
+                        <span className="flex items-center gap-1 truncate">
+                          <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="truncate">{lead.phone}</span>
                         </span>
                       )}
-                      {lead.tags?.split(',').map(t => t.trim()).filter(Boolean).filter(t => t !== '0').map((tag, i) => (
-                        <span key={i} className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full">
-                          {tag}
+                      {lead.company && (
+                        <span className="truncate flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          {lead.company}
                         </span>
-                      ))}
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        {new Date(lead.created_at).toLocaleDateString('fr-FR')}
-                      </span>
+                      )}
                     </div>
-
-                    {/* Notes preview */}
-                    {lead.notes && (
-                      <p className="text-sm text-gray-500 line-clamp-1">
-                        {lead.notes}
-                      </p>
-                    )}
+                    {/* Mobile minimal subtitle */}
+                    <div className="sm:hidden text-xs text-gray-500 mt-0.5 truncate">
+                      {lead.phone || lead.company || 'Détails...'}
+                    </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <ChevronDown className="w-4 h-4 text-gray-600 sm:hidden" />
+                  <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => handleToggleFavorite(lead)}
-                      className={`p-2 rounded-lg transition-colors touch-target flex items-center justify-center ${
-                        lead.is_favorite 
-                          ? 'text-gold-400 hover:bg-gold-400/10' 
-                          : 'text-gray-500 hover:text-gray-300 hover:bg-space-700'
+                      onClick={(e) => { e.stopPropagation(); handleToggleFavorite(lead); }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        lead.is_favorite ? 'text-gold-400 bg-gold-400/10' : 'text-gray-500 hover:text-gray-300'
                       }`}
-                      title={lead.is_favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                     >
-                      {lead.is_favorite ? <Star className="w-4 h-4 fill-current" /> : <StarOff className="w-4 h-4" />}
+                      <Star className={`w-4 h-4 ${lead.is_favorite ? 'fill-current' : ''}`} />
                     </button>
-                    <button
-                      onClick={() => setEditingLead(lead)}
-                      className="p-2 text-gray-400 hover:text-blue-400 hover:bg-space-700 rounded-lg transition-colors touch-target flex items-center justify-center"
-                      title="Modifier"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(lead.id)}
-                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors touch-target flex items-center justify-center"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <ArrowRight className="w-4 h-4 text-gray-500 group-hover:translate-x-1 transition-transform" />
                   </div>
-                </div>
-
-                {/* Quick status change — wrap on mobile so all 6 visible */}
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-space-700">
-                  {LEAD_STATUSES.map(status => (
-                    <button
-                      key={status.id}
-                      onClick={() => handleStatusChange(lead, status.id)}
-                      className={`min-w-[calc(50%-0.25rem)] sm:flex-1 sm:min-w-0 py-2 text-xs font-medium rounded-lg transition-all ${
-                        lead.status === status.id
-                          ? status.color === 'blue' ? 'bg-blue-500/30 text-blue-400 border border-blue-500/30' :
-                            status.color === 'amber' ? 'bg-amber-500/30 text-amber-400 border border-amber-500/30' :
-                            status.color === 'blue' ? 'bg-blue-500/30 text-blue-400 border border-blue-500/30' :
-                            status.color === 'orange' ? 'bg-orange-500/30 text-orange-400 border border-orange-500/30' :
-                            status.color === 'green' ? 'bg-green-500/30 text-green-400 border border-green-500/30' :
-                            'bg-red-500/30 text-red-400 border border-red-500/30'
-                          : 'bg-space-800 text-gray-500 hover:text-gray-300 border border-transparent hover:border-space-600'
-                      }`}
-                    >
-                      {status.label}
-                    </button>
-                  ))}
                 </div>
               </div>
             )
@@ -670,6 +601,80 @@ export default function Leads() {
             loadLeads()
           }}
         />
+      )}
+
+      {/* Lead Detail Zoom View */}
+      {selectedLeadView && (
+        <DetailOverlay onClose={() => setSelectedLeadView(null)}>
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-500 to-gold-400 flex items-center justify-center mb-6 shadow-xl">
+              <span className="text-3xl font-bold text-space-950">
+                {selectedLeadView.name?.charAt(0)?.toUpperCase()}
+              </span>
+            </div>
+            
+            <h3 className="text-2xl sm:text-3xl font-display font-bold text-gray-100 mb-2 truncate w-full px-2" title={selectedLeadView.name}>{selectedLeadView.name}</h3>
+            {selectedLeadView.company && (
+              <p className="text-gray-400 text-base sm:text-lg mb-4 truncate w-full px-2" title={selectedLeadView.company}>{selectedLeadView.company}</p>
+            )}
+            
+            <div className={`px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold mb-6 sm:mb-8
+              ${getStatusInfo(selectedLeadView.status).color === 'blue' ? 'bg-blue-500/20 text-blue-400' : ''}
+              ${getStatusInfo(selectedLeadView.status).color === 'amber' ? 'bg-amber-500/20 text-amber-400' : ''}
+              ${getStatusInfo(selectedLeadView.status).color === 'orange' ? 'bg-orange-500/20 text-orange-400' : ''}
+              ${getStatusInfo(selectedLeadView.status).color === 'green' ? 'bg-green-500/20 text-green-400' : ''}
+              ${getStatusInfo(selectedLeadView.status).color === 'red' ? 'bg-red-500/20 text-red-400' : ''}
+            `}>
+              {getStatusInfo(selectedLeadView.status).label}
+            </div>
+
+            <div className="w-full space-y-2 sm:space-y-3 mb-6 sm:mb-8 max-h-[40vh] overflow-y-auto pr-1 custom-scrollbar">
+              {selectedLeadView.phone && (
+                <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-space-800/50 rounded-2xl border border-space-700 text-left">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 flex-shrink-0">
+                    <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Téléphone</p>
+                    <p className="text-gray-100 font-semibold truncate text-sm sm:text-base">{selectedLeadView.phone}</p>
+                  </div>
+                </div>
+              )}
+              {selectedLeadView.email && (
+                <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-space-800/50 rounded-2xl border border-space-700 text-left">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                    <Mail className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Email</p>
+                    <p className="text-gray-100 font-semibold truncate text-sm sm:text-base">{selectedLeadView.email}</p>
+                  </div>
+                </div>
+              )}
+              {selectedLeadView.notes && (
+                <div className="p-3 sm:p-4 bg-space-800/50 rounded-2xl border border-space-700 text-left">
+                  <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-2">Notes</p>
+                  <p className="text-gray-300 text-xs sm:text-sm italic leading-relaxed line-clamp-4">{selectedLeadView.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <button 
+                onClick={() => {
+                  setSelectedLeadView(null)
+                  setEditingLead(selectedLeadView)
+                }}
+                className="btn-primary"
+              >
+                Modifier
+              </button>
+              <button onClick={() => setSelectedLeadView(null)} className="btn-secondary">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </DetailOverlay>
       )}
     </div>
   )
@@ -826,6 +831,23 @@ function LeadModal({ lead, onClose, onSaved }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function DetailOverlay({ children, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
+      <div 
+        className="relative z-10 w-full max-w-sm sm:max-w-md bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-6 sm:p-10 animate-zoom-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors">
+          <XCircle className="w-6 h-6" />
+        </button>
+        {children}
       </div>
     </div>
   )

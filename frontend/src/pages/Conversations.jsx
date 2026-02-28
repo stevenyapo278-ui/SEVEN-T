@@ -378,7 +378,7 @@ export default function Conversations() {
   const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 min-w-0">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Hero Header - theme-aware */}
       <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
@@ -645,18 +645,18 @@ export default function Conversations() {
           )}
         </div>
       ) : !loadError ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredConversations.map((conv, index) => {
             const isSelected = selectedConversations.has(conv.id)
             const CardWrapper = bulkMode ? 'div' : Link
             const cardProps = bulkMode 
               ? { 
                   onClick: () => toggleConversationSelection(conv.id),
-                  className: `group block cursor-pointer ${isSelected ? 'bg-gold-400/10 border-gold-400/50' : 'bg-space-800/50 hover:bg-space-800 border-space-700/50 hover:border-space-600'} border rounded-2xl p-5 transition-all duration-300`
+                  className: `group block cursor-pointer ${isSelected ? 'bg-gold-400/10 border-gold-400/50' : 'bg-space-800/50 hover:bg-space-800 border-space-700/50' } border rounded-xl p-3 transition-all duration-300`
                 }
               : {
                   to: `/dashboard/conversations/${conv.id}`,
-                  className: "group block bg-space-800/50 hover:bg-space-800 border border-space-700/50 hover:border-space-600 rounded-xl sm:rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50"
+                  className: "group block bg-space-800/50 hover:bg-space-800 border border-space-700/50 rounded-xl p-3 transition-all duration-300"
                 }
             
             return (
@@ -665,14 +665,14 @@ export default function Conversations() {
                 {...cardProps}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
                   {/* Checkbox in bulk mode */}
                   {bulkMode && (
                     <div className="flex-shrink-0">
                       {isSelected ? (
-                        <CheckSquare className="w-6 h-6 text-gold-400" />
+                        <CheckSquare className="w-5 h-5 text-gold-400" />
                       ) : (
-                        <Square className="w-6 h-6 text-gray-500" />
+                        <Square className="w-5 h-5 text-gray-500" />
                       )}
                     </div>
                   )}
@@ -681,103 +681,70 @@ export default function Conversations() {
                     agentId={conv.agent_id}
                     contactJid={conv.contact_jid}
                     name={getDisplayName(conv)}
-                    size="lg"
+                    size="md"
                     showOnline={new Date() - new Date(conv.last_message_at) < 300000}
                     profilePictureUrl={conv.profile_picture}
                   />
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-1.5">
-                      <div className="flex flex-wrap items-center gap-2 min-w-0">
-                        <h3 className={`font-semibold truncate text-lg transition-colors ${isDark ? 'text-gray-100 group-hover:text-white' : 'text-gray-800 group-hover:text-gray-900'}`} title={getDisplayName(conv)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h3 className={`font-bold truncate text-base transition-colors ${isDark ? 'text-gray-100 group-hover:text-white' : 'text-gray-800 group-hover:text-gray-900'}`} title={getDisplayName(conv)}>
                           {getDisplayName(conv)}
                         </h3>
                         {/* Mode IA/Humain indicator */}
-                        {conv.human_takeover === 1 ? (
-                          <span className="flex-shrink-0 flex items-center gap-1 text-xs bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded-full font-medium">
-                            <User className="w-3 h-3" />
-                            Humain
-                          </span>
-                        ) : (
-                          <span className="flex-shrink-0 flex items-center gap-1 text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-                            <Zap className="w-3 h-3" />
-                            IA
-                          </span>
-                        )}
-                        {hasConversionScore && conv.conversion_score != null && (
-                          <span className="badge-conversion-score flex-shrink-0 text-xs bg-space-600 text-gray-300 px-2 py-0.5 rounded-full font-medium" title="Score de conversion">
-                            Score {conv.conversion_score}
-                          </span>
-                        )}
-                        {hasConversionScore && conv.suggested_action && (
-                          <span className="flex-shrink-0 text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-medium" title="Action suggérée">
-                            {conv.suggested_action === 'send_offer' && 'Offre'}
-                            {conv.suggested_action === 'transfer_human' && '→ Humain'}
-                            {conv.suggested_action === 'relance_2h' && 'Relance'}
-                          </span>
-                        )}
-                        {isFromSavedContacts(conv) && (
-                          <span className="flex-shrink-0 text-xs bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded-full font-medium">
-                            Contact
-                          </span>
-                        )}
-                        {conv.verified_biz_name && (
-                          <span className="flex-shrink-0 text-xs bg-cyan-500/15 text-cyan-400 px-2 py-0.5 rounded-full font-medium">
-                            Business
-                          </span>
-                        )}
-                        {conv.is_transferred === 1 && (
-                          <span className="flex-shrink-0 text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-medium">
-                            Transféré
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {conv.human_takeover === 1 ? (
+                            <>
+                              <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.5)]" title="Mode Humain" />
+                              <span className="hidden sm:inline text-[10px] font-medium text-blue-400">Humain</span>
+                            </>
+                          ) : (
+                            <>
+                              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" title="Mode IA" />
+                              <span className="hidden sm:inline text-[10px] font-medium text-emerald-400">IA</span>
+                            </>
+                          )}
+                          
+                          {/* Conversion Score - Desktop only */}
+                          {hasConversionScore && conv.conversion_score != null && (
+                            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-space-700/50 text-gray-400 text-[10px] font-medium border border-space-600/30">
+                              {conv.conversion_score}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-sm text-gray-500">
-                          {getTimeAgo(conv.last_message_at)}
-                        </span>
-                        {!bulkMode && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteConversation(conv.id, e)}
-                              disabled={deletingConvId === conv.id}
-                              className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                              title="Supprimer la conversation"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-gold-400 group-hover:translate-x-1 transition-all duration-200" />
-                          </>
-                        )}
-                      </div>
+                      <span className="text-[10px] sm:text-xs text-gray-500 flex-shrink-0">
+                        {getTimeAgo(conv.last_message_at)}
+                      </span>
                     </div>
                     
-                    <p className="text-gray-400 truncate mb-2 text-[15px] min-w-0">
+                    <p className="text-gray-400 truncate text-sm min-w-0 mb-1">
                       {conv.last_message || 'Aucun message'}
                     </p>
                     
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 min-w-0">
-                      <div className="flex items-center gap-1.5 text-gray-500 min-w-0">
-                        <Bot className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="text-xs truncate break-words" title={conv.agent_name}>{conv.agent_name}</span>
+                    {/* Compact metadata - Hidden or reduced on mobile */}
+                    <div className="hidden sm:flex flex-wrap items-center gap-x-3 text-[10px] text-gray-600">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Bot className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{conv.agent_name}</span>
                       </div>
-                      <div className="w-1 h-1 bg-gray-600 rounded-full flex-shrink-0"></div>
-                      <div className="flex items-center gap-1.5 text-gray-500 flex-shrink-0">
-                        <MessageCircle className="w-3.5 h-3.5" />
-                        <span className="text-xs">{conv.message_count} messages</span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <MessageCircle className="w-3 h-3" />
+                        <span>{conv.message_count}</span>
                       </div>
                       {getDisplayName(conv) !== formatPhoneNumber(conv.contact_number) && (
-                        <>
-                          <div className="w-1 h-1 bg-gray-600 rounded-full flex-shrink-0"></div>
-                          <div className="flex items-center gap-1.5 text-gray-500 min-w-0 max-w-full">
-                            <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="text-xs truncate break-all" title={formatPhoneNumber(conv.contact_number)}>{formatPhoneNumber(conv.contact_number)}</span>
-                          </div>
-                        </>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Phone className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{formatPhoneNumber(conv.contact_number)}</span>
+                        </div>
                       )}
                     </div>
                   </div>
+
+                  {!bulkMode && (
+                    <ChevronRight className="w-4 h-4 text-gray-700 flex-shrink-0 group-hover:text-gold-400 transition-colors" />
+                  )}
                 </div>
               </CardWrapper>
             )

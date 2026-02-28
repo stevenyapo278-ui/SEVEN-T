@@ -281,7 +281,7 @@ export default function Agents() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto w-full min-w-0">
+    <div className="max-w-6xl mx-auto w-full min-w-0">
       {/* Hero Header - theme-aware */}
       <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
@@ -836,7 +836,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-base sm:text-lg text-gray-100 truncate">{agent.name}</h3>
+                <h3 className="font-bold text-lg sm:text-xl text-gray-100">{agent.name}</h3>
                 {isNew && (
                   <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gold-400/20 text-gold-400 rounded flex-shrink-0">
                     NEW
@@ -936,7 +936,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
           </div>
         </div>
 
-        <p className={`text-sm mb-4 line-clamp-2 min-h-[40px] ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+        <p className={`text-sm mb-4 line-clamp-2 min-h-[40px] hidden sm:block ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
           {agent.description || 'Aucune description'}
         </p>
 
