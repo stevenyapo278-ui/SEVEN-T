@@ -9,6 +9,7 @@ import { notificationService } from './notifications.js';
 import { leadAnalyzer } from './leadAnalyzer.js';
 import { workflowExecutor } from './workflowExecutor.js';
 import { normalizeJid } from '../utils/whatsappUtils.js';
+import { hasModule } from '../config/plans.js';
 
 // Order statuses
 export const ORDER_STATUSES = {
@@ -62,6 +63,33 @@ class OrderService {
                 message: `${customerName} - ${totalAmount.toLocaleString()} ${currency}`,
                 link: '/dashboard/orders'
             });
+
+            // ============================================
+            // WHATSAPP NOTIFICATION MODULE (Module 8)
+            // ============================================
+            (async () => {
+                try {
+                    const user = db.prepare('SELECT plan, notification_number FROM users WHERE id = ?').get(userId);
+                    if (user && user.notification_number) {
+                        const hasAlerts = await hasModule(user.plan || 'free', 'human_handoff_alerts');
+                        if (hasAlerts) {
+                            const { whatsappManager } = await import('./whatsapp.js');
+                            const defaultAgent = db.prepare('SELECT tool_id FROM agents WHERE user_id = ? AND is_active = 1 LIMIT 1').get(userId);
+                            if (defaultAgent && defaultAgent.tool_id) {
+                                let phoneNum = user.notification_number.replace(/\D/g, '');
+                                if (!phoneNum.includes('@s.whatsapp.net')) {
+                                    phoneNum = phoneNum + '@s.whatsapp.net';
+                                }
+                                const messageText = `📦 *Nouvelle Commande* 📦\n\nContact: ${customerName}\nTel: ${customerPhone || 'Non renseigné'}\nMontant: ${totalAmount.toLocaleString()} ${currency}\n\nUn client vient de passer une commande via l'IA. Veuillez vous connecter au tableau de bord pour la valider.`;
+                                await whatsappManager.sendMessage(defaultAgent.tool_id, phoneNum, messageText);
+                                console.log(`[Orders] Sent WhatsApp order alert to ${user.notification_number}`);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('[Orders] Error sending WhatsApp order alert:', err);
+                }
+            })();
 
             return await this.getOrderById(orderId, userId);
         } catch (error) {

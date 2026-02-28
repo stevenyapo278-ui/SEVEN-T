@@ -23,6 +23,7 @@ const FEATURES_BASELINE = {
     daily_briefing: false,
     sentiment_routing: false,
     catalog_import: false,
+    human_handoff_alerts: false,
     models: []
 };
 
@@ -131,7 +132,8 @@ export const PLANS = {
             conversion_score: false,
             daily_briefing: false,
             sentiment_routing: false,
-            catalog_import: false
+            catalog_import: false,
+            human_handoff_alerts: false
         }
     },
     starter: {
@@ -159,7 +161,8 @@ export const PLANS = {
             conversion_score: false,
             daily_briefing: false,
             sentiment_routing: false,
-            catalog_import: false
+            catalog_import: false,
+            human_handoff_alerts: false
         }
     },
     pro: {
@@ -187,7 +190,8 @@ export const PLANS = {
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
-            catalog_import: true
+            catalog_import: true,
+            human_handoff_alerts: true
         }
     },
     business: {
@@ -215,7 +219,8 @@ export const PLANS = {
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
-            catalog_import: true
+            catalog_import: true,
+            human_handoff_alerts: true
         }
     },
     enterprise: {
@@ -243,18 +248,18 @@ export const PLANS = {
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
-            catalog_import: true
+            catalog_import: true,
+            human_handoff_alerts: true
         }
     }
 };
 
-/** Module keys that can be gated by plan */
-export const MODULE_KEYS = ['next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import'];
+export const MODULE_KEYS = ['next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts'];
 
 /**
  * Check if a plan module is available (async)
  * @param {string} planName
- * @param {string} moduleKey - One of: next_best_action, conversion_score, daily_briefing, sentiment_routing, catalog_import
+ * @param {string} moduleKey - One of: next_best_action, conversion_score, daily_briefing, sentiment_routing, catalog_import, human_handoff_alerts
  * @returns {Promise<boolean>}
  */
 export async function hasModule(planName, moduleKey) {

@@ -12,8 +12,15 @@ router.get('/', authenticateToken, async (req, res) => {
         }
         const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
         const unreadOnly = req.query.unread === 'true';
+        const { search, startDate, endDate } = req.query;
 
-        const notifications = await notificationService.getForUser(req.user.id, { limit, unreadOnly });
+        const notifications = await notificationService.getForUser(req.user.id, { 
+            limit, 
+            unreadOnly, 
+            search, 
+            startDate, 
+            endDate 
+        });
         let unreadCount = 0;
         try {
             unreadCount = await notificationService.getUnreadCount(req.user.id);

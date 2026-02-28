@@ -131,7 +131,12 @@ body {
 }
 
 /* Typography — uses --font-brand, --font-ui, --font-body, --font-code */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-display);
   color: var(--text-primary);
   letter-spacing: -0.01em;
@@ -639,73 +644,64 @@ h3 {
   color: #9a6700;
 }
 
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
 /* Legal page — organisation du contenu (titres, espacements, tableaux) */
 .legal-content {
   @apply text-gray-300;
 }
 .legal-content h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin-bottom: 0.75rem;
+  @apply text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 leading-tight pb-3 sm:pb-4 border-b border-space-700;
   color: var(--text-primary);
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
 }
 .legal-content .lead {
-  font-size: 1.05rem;
-  line-height: 1.6;
-  margin-bottom: 2rem;
+  @apply text-sm sm:text-base md:text-lg mb-6 sm:mb-8 leading-relaxed;
   color: var(--text-secondary);
 }
 .legal-content h2 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
+  @apply text-base sm:text-lg md:text-xl font-semibold mt-6 sm:mt-10 mb-3 sm:mb-4;
   color: var(--text-primary);
 }
 .legal-content h2:first-of-type {
   margin-top: 0;
 }
 .legal-content h3 {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin-top: 1.25rem;
-  margin-bottom: 0.5rem;
+  @apply text-sm sm:text-base font-semibold mt-4 sm:mt-6 mb-2 sm:mb-3;
   color: var(--text-secondary);
 }
 .legal-content p {
-  margin-bottom: 1rem;
-  line-height: 1.65;
-  max-width: 65ch;
+  @apply text-xs sm:text-sm md:text-base mb-3 sm:mb-4 leading-relaxed max-w-full;
 }
-.legal-content ul {
-  margin-bottom: 1.25rem;
-  padding-left: 1.5rem;
+.legal-content ul,
+.legal-content ol {
+  @apply text-xs sm:text-sm md:text-base mb-4 sm:mb-6 pl-4 sm:pl-6;
 }
 .legal-content li {
-  margin-bottom: 0.35rem;
+  @apply mb-1.5 sm:mb-2;
+}
+.legal-content .table-wrapper {
+  @apply overflow-x-auto -mx-5 px-5 sm:mx-0 sm:px-0 mb-6 sm:mb-8 scrollbar-hide;
 }
 .legal-content table {
-  width: 100%;
-  max-width: 100%;
-  margin-bottom: 1.25rem;
-  border-collapse: collapse;
-  font-size: 0.9rem;
+  @apply w-full min-w-[500px] sm:min-w-full border-collapse text-xs sm:text-sm;
 }
 .legal-content thead {
   background: var(--bg-tertiary);
 }
 .legal-content th {
-  text-align: left;
-  padding: 0.6rem 0.75rem;
-  font-weight: 600;
+  @apply text-left p-2 sm:p-3 font-semibold border border-space-700;
   color: var(--text-primary);
-  border: 1px solid var(--border-color);
 }
 .legal-content td {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-color);
+  @apply p-2 sm:p-3 border border-space-700;
 }
 .legal-content tbody tr:nth-child(even) {
   background: rgba(255, 255, 255, 0.02);
@@ -722,11 +718,8 @@ h3 {
   color: var(--accent-yellow);
 }
 .legal-content code {
-  font-size: 0.875em;
-  padding: 0.15em 0.4em;
-  border-radius: 0.25rem;
+  @apply text-[10px] sm:text-xs py-0.5 px-1.5 rounded-md border border-space-700;
   background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
 }
 
 /* Glow effects */

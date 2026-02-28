@@ -4,11 +4,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
 import { useFont, FONT_PRESETS } from '../contexts/FontContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2, Mail, MessageCircle, HelpCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Settings() {
+  const { t, i18n } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { user, updateUser, refreshUser, logout } = useAuth()
   const navigate = useNavigate()
@@ -18,7 +20,8 @@ export default function Settings() {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     company: user?.company || '',
-    media_model: user?.media_model || ''
+    media_model: user?.media_model || '',
+    notification_number: user?.notification_number || ''
   })
   const [saving, setSaving] = useState(false)
   const [exportingData, setExportingData] = useState(false)
@@ -32,10 +35,11 @@ export default function Settings() {
         ...prev,
         name: user.name ?? prev.name,
         company: user.company ?? prev.company,
-        media_model: user.media_model ?? prev.media_model ?? ''
+        media_model: user.media_model ?? prev.media_model ?? '',
+        notification_number: user.notification_number ?? prev.notification_number ?? ''
       }))
     }
-  }, [user?.id, user?.name, user?.company, user?.media_model])
+  }, [user?.id, user?.name, user?.company, user?.media_model, user?.notification_number])
   const [plans, setPlans] = useState([])
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState(null)
@@ -284,8 +288,8 @@ export default function Settings() {
   return (
     <div className="max-w-6xl mx-auto w-full min-w-0 pb-24">
       <div className="mb-8">
-        <h1 className="text-2xl font-display font-bold text-gray-100">Paramètres</h1>
-        <p className="text-gray-400">Gérez votre compte et votre abonnement</p>
+        <h1 className="text-2xl font-display font-bold text-gray-100">{t('settings.title')}</h1>
+        <p className="text-gray-400">{t('settings.subtitle')}</p>
       </div>
 
       {/* Floating Save Button */}
@@ -301,14 +305,14 @@ export default function Settings() {
             <Save className="w-6 h-6" />
           )}
           <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 font-medium">
-            Enregistrer les modifications
+            {t('common.save')}
           </span>
         </button>
       </div>
 
       {/* Profile */}
       <form onSubmit={handleSaveAll} className="card p-6 mb-6">
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Profil</h2>
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('settings.profileTitle')}</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -321,7 +325,7 @@ export default function Settings() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Nom complet
+                {t('settings.fullName')}
               </label>
               <div className="input-with-icon">
                 <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
@@ -336,7 +340,7 @@ export default function Settings() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Entreprise
+                {t('settings.company')}
               </label>
               <div className="input-with-icon">
                 <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
@@ -352,7 +356,7 @@ export default function Settings() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Modèle IA pour images et notes vocales
+              {t('settings.iaModel')}
             </label>
             <select
               value={['models/gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(formData.media_model) ? formData.media_model : 'gemini-1.5-flash'}
@@ -365,9 +369,27 @@ export default function Settings() {
             </select>
             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
               <Image className="w-3.5 h-3.5" /><Mic className="w-3.5 h-3.5" />
-              Valeur par défaut pour l&apos;analyse des photos et des notes vocales. Chaque agent peut avoir le sien.
+              {t('settings.iaModelDesc')}
             </p>
           </div>
+          {currentPlan?.features?.human_handoff_alerts && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-blue-400" />
+                {t('settings.whatsappNotification')}
+              </label>
+              <input
+                type="text"
+                value={formData.notification_number}
+                onChange={(e) => setFormData({ ...formData, notification_number: e.target.value })}
+                className="input-dark w-full max-w-md"
+                placeholder="ex: 2250102030405"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {t('settings.whatsappNotificationDesc')}
+              </p>
+            </div>
+          )}
         </div>
       </form>
 
@@ -376,7 +398,7 @@ export default function Settings() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2 min-w-0 truncate">
             <Crown className="w-5 h-5 text-gold-400 flex-shrink-0" />
-            Abonnement et usage
+            {t('settings.subscriptionTitle')}
           </h2>
           <button
             type="button"
@@ -401,7 +423,7 @@ export default function Settings() {
                 className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1.5 disabled:opacity-50"
               >
                 <CreditCard className="w-4 h-4" />
-                {portalLoading ? 'Chargement...' : 'Gérer mon abonnement'}
+                {portalLoading ? t('common.loading') : t('settings.manageSubscription')}
               </button>
             )}
             <div className="text-left sm:text-right">
@@ -421,7 +443,7 @@ export default function Settings() {
           if (limit === -1) {
             return (
               <div className="mb-3">
-                <p className="text-sm text-gray-400">Utilisation ce mois : illimitée</p>
+                <p className="text-sm text-gray-400">{t('settings.usageThisMonth')}: {t('common.none')}</p>
               </div>
             )
           }
@@ -447,7 +469,7 @@ export default function Settings() {
           return null
         })()}
         <p className="text-xs text-gray-500">
-          1 crédit = 1 réponse IA. Les limites de votre plan peuvent être mises à jour par l&apos;administrateur.
+          {t('settings.creditsHint')}
         </p>
       </div>
 
@@ -455,14 +477,14 @@ export default function Settings() {
       <div className="card p-6 mb-6">
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
           <Coins className="w-5 h-5 text-gold-400" />
-          Préférences
+          {t('settings.preferencesTitle')}
         </h2>
         <div className="space-y-6">
           {/* Body Font */}
           <div className="border-b border-space-800 pb-8">
-            <p className="text-sm font-semibold text-gray-200 mb-2">Police des textes & interface</p>
+            <p className="text-sm font-semibold text-gray-200 mb-2">{t('settings.fontBody')}</p>
             <p className="text-gray-400 text-xs mb-4">
-              La police utilisée pour tous les menus, les messages, les listes et les paragraphes.
+              {t('settings.fontBodyDesc')}
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {Object.entries(FONT_PRESETS).map(([key, preset]) => (
@@ -517,9 +539,9 @@ export default function Settings() {
             </div>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">Devise</p>
+            <p className="text-sm font-medium text-gray-300 mb-2">{t('settings.currency')}</p>
             <p className="text-gray-400 text-sm mb-3">
-              Choisissez la devise pour l&apos;affichage des prix de vos produits
+              {t('settings.currencyDesc')}
             </p>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
               {Object.values(CURRENCIES)
@@ -549,15 +571,15 @@ export default function Settings() {
       <div className="card p-6 mb-6">
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
           <Lock className="w-5 h-5 text-gold-400" />
-          Moyens de paiement
+          {t('settings.paymentMethods')}
         </h2>
         <p className="text-sm text-gray-400 mb-4">
-          Configurez les moyens de paiement avec lesquels vous recevez l&apos;argent de vos clients (liens de paiement, commandes).
+          {t('settings.paymentMethodsDesc')}
         </p>
         {paymentProvidersLoading ? (
           <div className="flex items-center gap-2 text-gray-500">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Chargement...
+            {t('common.loading')}
           </div>
         ) : (
           <div className="space-y-3">
@@ -673,21 +695,21 @@ export default function Settings() {
         <div className="card p-6 mb-6">
           <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
             <Mail className="w-5 h-5 text-gold-400" />
-            Résumé quotidien
+            {t('settings.dailyBriefing')}
           </h2>
           <p className="text-sm text-gray-400 mb-4">
-            Recevez chaque jour un résumé (conversations, messages, commandes, leads) par email ou WhatsApp.
+            {t('settings.dailyBriefingDesc')}
           </p>
           <div className="mb-4 p-3 rounded-lg bg-space-800/80 border border-space-600">
             <p className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-gold-400 shrink-0" />
-              Comment utiliser
+              {i18n.language === 'en' ? 'How to use' : 'Comment utiliser'}
             </p>
             <ol className="text-sm text-gray-400 list-decimal list-inside space-y-1">
-              <li>Activez l&apos;option « Activer le résumé quotidien ».</li>
-              <li>Choisissez l&apos;heure d&apos;envoi (0–23) et le canal : Email ou WhatsApp.</li>
-              <li>Renseignez l&apos;email ou le numéro WhatsApp qui recevra le résumé.</li>
-              <li>Cliquez sur <strong>Enregistrer</strong>. Un job quotidien enverra le résumé à l&apos;heure choisie.</li>
+              <li>{i18n.language === 'en' ? 'Enable the "Daily briefing" option.' : 'Activez l\'option « Résumé quotidien ».'}</li>
+              <li>{i18n.language === 'en' ? 'Choose the send time (0-23) and channel: Email or WhatsApp.' : 'Choisissez l\'heure d\'envoi (0–23) et le canal : Email ou WhatsApp.'}</li>
+              <li>{i18n.language === 'en' ? 'Enter the receiving email or WhatsApp number.' : 'Renseignez l\'email ou le numéro WhatsApp qui recevra le résumé.'}</li>
+              <li>{i18n.language === 'en' ? 'Click Save. A daily job will send the summary at the chosen hour.' : 'Cliquez sur Enregistrer. Un job quotidien enverra le résumé à l\'heure choisie.'}</li>
             </ol>
           </div>
           {dailyBriefingLoading ? (
@@ -770,7 +792,7 @@ export default function Settings() {
                 </div>
               )}
               {dailyBriefing?.last_sent_at && (
-                <p className="text-xs text-gray-500">Dernier envoi : {new Date(dailyBriefing.last_sent_at).toLocaleString('fr-FR')}</p>
+                <p className="text-xs text-gray-500">{t('settings.lastSent')} : {new Date(dailyBriefing.last_sent_at).toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')}</p>
               )}
             </div>
           )}
@@ -781,10 +803,10 @@ export default function Settings() {
       <div className="card p-6 mb-6">
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
           <Download className="w-5 h-5 text-blue-400" />
-          Données et confidentialité
+          {t('settings.dataPrivacy')}
         </h2>
         <p className="text-sm text-gray-400 mb-4">
-          Téléchargez une copie complète de vos données (agents, conversations, messages, produits, commandes, etc.).
+          {t('settings.dataPrivacyDesc')}
         </p>
         <button
           type="button"
@@ -793,7 +815,7 @@ export default function Settings() {
           className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
         >
           <Download className="w-4 h-4" />
-          {exportingData ? 'Export en cours...' : 'Exporter mes données'}
+          {exportingData ? t('settings.exporting') : t('settings.exportData')}
         </button>
       </div>
 
@@ -801,10 +823,10 @@ export default function Settings() {
       <div className="card p-6 mb-6 border-red-500/30">
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
           <Trash2 className="w-5 h-5 text-red-400" />
-          Supprimer mon compte
+          {t('settings.deleteAccount')}
         </h2>
         <p className="text-sm text-gray-400 mb-4">
-          Cette action est irréversible. Toutes vos données (compte, agents, conversations, messages, produits, commandes) seront définitivement supprimées. Vous pouvez d&apos;abord exporter vos données ci-dessus.
+          {t('settings.deleteAccountDesc')}
         </p>
         <button
           type="button"
@@ -813,7 +835,7 @@ export default function Settings() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 disabled:opacity-50 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
-          Supprimer définitivement mon compte
+          {t('settings.deleteAccountBtn')}
         </button>
       </div>
 
@@ -861,17 +883,17 @@ export default function Settings() {
 
       {/* Changer de plan */}
       <div className="mb-6">
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2">Changer de plan</h2>
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2">{t('settings.changePlan')}</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Choisissez un plan payant pour débloquer plus d&apos;agents, de crédits et de fonctionnalités. Paiement sécurisé par Stripe.
+          {t('settings.changePlanDesc')}
         </p>
         {loadingPlans ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
-            <span className="ml-2 text-gray-400">Chargement des plans...</span>
+            <span className="ml-2 text-gray-400">{t('common.loading')}</span>
           </div>
         ) : plans.length === 0 ? (
-          <p className="text-gray-500 text-center py-10">Aucun plan disponible</p>
+          <p className="text-gray-500 text-center py-10">{i18n.language === 'en' ? 'No plans available' : 'Aucun plan disponible'}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {plans.map((plan, index) => {
@@ -893,12 +915,12 @@ export default function Settings() {
                 >
                   {isPopular && !isCurrentPlan && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs px-3 py-1 rounded-full">
-                      Populaire
+                      {t('settings.popular')}
                     </span>
                   )}
                   {isCurrentPlan && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold-400 text-space-950 text-xs px-3 py-1 rounded-full font-medium">
-                      Actuel
+                      {t('settings.current')}
                     </span>
                   )}
                   <h3 className="font-display font-semibold text-lg text-gray-100">{plan.name}</h3>
@@ -938,14 +960,14 @@ export default function Settings() {
                     {checkoutLoadingPlanId === plan.id ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Redirection...
+                        {t('settings.redirection')}
                       </>
                     ) : isCurrentPlan ? (
-                      'Plan actuel'
+                      t('settings.current')
                     ) : plan.id === 'free' || plan.price === 0 ? (
-                      'Gratuit'
+                      i18n.language === 'en' ? 'Free' : 'Gratuit'
                     ) : (
-                      'Choisir'
+                      t('common.choose')
                     )}
                   </button>
                 </div>

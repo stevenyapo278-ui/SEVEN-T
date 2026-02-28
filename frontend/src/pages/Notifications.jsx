@@ -1,22 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Check, Trash2, RefreshCw } from 'lucide-react'
+import { Bell, Check, Trash2, RefreshCw, Search, Calendar, X } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 
-const FILTERS = [
-  { id: 'all', label: 'Toutes' },
-  { id: 'unread', label: 'Non lues' }
-]
-
 export default function Notifications() {
+  const { t, i18n } = useTranslation()
   const { isDark } = useTheme()
+  
+  const FILTERS = [
+    { id: 'all', label: t('common.all') },
+    { id: 'unread', label: t('notifications.unreadOnly') }
+  ]
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState('all')
   const [actionLoading, setActionLoading] = useState(false)
+  
+  // New Filter state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const formatRelativeTime = (dateStr) => {
     const date = new Date(dateStr)
@@ -26,31 +33,42 @@ export default function Notifications() {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return 'À l\'instant'
-    if (diffMins < 60) return `Il y a ${diffMins} min`
-    if (diffHours < 24) return `Il y a ${diffHours}h`
-    if (diffDays < 7) return `Il y a ${diffDays}j`
-    return date.toLocaleDateString('fr-FR')
+    const locale = (i18n.resolvedLanguage || i18n.language || 'fr').split('-')[0]
+
+    if (diffMins < 1) return t('common.justNow', 'Just now')
+    if (diffMins < 60) return t('common.minutesAgo', { count: diffMins })
+    if (diffHours < 24) return t('common.hoursAgo', { count: diffHours })
+    if (diffDays < 7) return t('common.daysAgo', { count: diffDays })
+    return date.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')
   }
 
-  const loadNotifications = async (filter = activeFilter) => {
+  const loadNotifications = useCallback(async (filter = activeFilter) => {
     try {
       setLoading(true)
       const unreadOnly = filter === 'unread'
-      const response = await api.get(`/notifications?limit=200${unreadOnly ? '&unread=true' : ''}`)
+      
+      let url = `/notifications?limit=200${unreadOnly ? '&unread=true' : ''}`
+      if (searchTerm) url += `&search=${encodeURIComponent(searchTerm)}`
+      if (startDate) url += `&startDate=${startDate}`
+      if (endDate) url += `&endDate=${endDate}`
+
+      const response = await api.get(url)
       setNotifications(response.data.notifications || [])
       setUnreadCount(response.data.unreadCount || 0)
     } catch (error) {
       console.error('Error loading notifications:', error)
-      toast.error('Erreur lors du chargement des notifications')
+      toast.error(t('notifications.errorLoading'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeFilter, searchTerm, startDate, endDate, t])
 
   useEffect(() => {
-    loadNotifications()
-  }, [activeFilter])
+    const timer = setTimeout(() => {
+        loadNotifications()
+    }, 300) // Debounce search
+    return () => clearTimeout(timer)
+  }, [loadNotifications])
 
   const markAsRead = async (id) => {
     try {
@@ -59,7 +77,7 @@ export default function Notifications() {
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
       console.error('Error marking as read:', error)
-      toast.error('Impossible de marquer comme lu')
+      toast.error(t('messages.errorGeneric'))
     }
   }
 
@@ -69,10 +87,10 @@ export default function Notifications() {
       await api.put('/notifications/read-all')
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })))
       setUnreadCount(0)
-      toast.success('Toutes les notifications sont lues')
+      toast.success(t('notifications.successReadAll'))
     } catch (error) {
       console.error('Error marking all as read:', error)
-      toast.error('Erreur lors de la mise à jour')
+      toast.error(t('common.error'))
     } finally {
       setActionLoading(false)
     }
@@ -90,7 +108,7 @@ export default function Notifications() {
       })
     } catch (error) {
       console.error('Error deleting notification:', error)
-      toast.error('Suppression impossible')
+      toast.error(t('messages.errorDelete'))
     }
   }
 
@@ -108,6 +126,13 @@ export default function Notifications() {
     return styles[type] || styles.info
   }
 
+  const clearFilters = () => {
+    setSearchTerm('')
+    setStartDate('')
+    setEndDate('')
+    setActiveFilter('all')
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -118,9 +143,9 @@ export default function Notifications() {
             <Bell className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <h1 className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h1>
+            <h1 className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('notifications.title')}</h1>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              {unreadCount} non lue(s)
+              {unreadCount} {unreadCount <= 1 ? t('notifications.unread', 'unread') : t('notifications.unread_plural', 'unread')}
             </p>
           </div>
         </div>
@@ -131,8 +156,8 @@ export default function Notifications() {
               isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            <RefreshCw className="w-4 h-4" />
-            Rafraîchir
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            {t('dashboard.refresh')}
           </button>
           <button
             onClick={markAllAsRead}
@@ -146,29 +171,86 @@ export default function Notifications() {
             }`}
           >
             <Check className="w-4 h-4" />
-            Tout marquer comme lu
+            {t('notifications.markAllRead')}
           </button>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.id}
-            onClick={() => setActiveFilter(filter.id)}
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors touch-target ${
-              activeFilter === filter.id
-                ? isDark
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-blue-600 text-white'
-                : isDark
-                  ? 'bg-space-800 text-gray-300 hover:bg-space-700'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
+      {/* Filters Section */}
+      <div className={`p-4 rounded-2xl border ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-white shadow-sm'} space-y-4`}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Search Term */}
+          <div className="relative md:col-span-2">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <input
+              type="text"
+              placeholder={t('notifications.filterSearch')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+              }`}
+            />
+          </div>
+
+          {/* Start Date */}
+          <div className="relative">
+            <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+              }`}
+            />
+          </div>
+
+          {/* End Date */}
+          <div className="relative">
+            <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-space-700">
+          <div className="flex flex-wrap items-center gap-2">
+            {FILTERS.map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setActiveFilter(filter.id)}
+                className={`px-3 py-1.5 rounded-full text-sm transition-colors touch-target ${
+                  activeFilter === filter.id
+                    ? 'bg-blue-600 text-white'
+                    : isDark
+                      ? 'bg-space-700 text-gray-300 hover:bg-space-600'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {(searchTerm || startDate || endDate || activeFilter !== 'all') && (
+            <button
+              onClick={clearFilters}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <X className="w-3.5 h-3.5" />
+              {t('notifications.clearFilters')}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={`rounded-2xl border ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-white'}`}>
@@ -180,7 +262,7 @@ export default function Notifications() {
           <div className="p-8 text-center">
             <Bell className="w-8 h-8 mx-auto mb-2 text-icon" />
             <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-              Aucune notification
+              {t('notifications.noNotifications')}
             </p>
           </div>
         ) : (
@@ -203,7 +285,7 @@ export default function Notifications() {
                       </span>
                       {!notif.is_read && (
                         <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-400">
-                          Non lue
+                          {t('notifications.unread', 'Unread')}
                         </span>
                       )}
                       <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
@@ -244,7 +326,7 @@ export default function Notifications() {
                             isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'
                           }`}
                         >
-                          Ouvrir
+                          {t('common.open', 'Open')}
                         </Link>
                       </div>
                     )}
@@ -256,7 +338,7 @@ export default function Notifications() {
                         className={`p-2 rounded-lg ${
                           isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
                         }`}
-                        title="Marquer comme lu"
+                        title={t('notifications.markRead', 'Mark as read')}
                       >
                         <Check className="w-4 h-4" />
                       </button>
@@ -266,7 +348,7 @@ export default function Notifications() {
                       className={`p-2 rounded-lg ${
                         isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
                       }`}
-                      title="Supprimer"
+                      title={t('common.delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

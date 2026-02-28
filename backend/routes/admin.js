@@ -26,7 +26,18 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
             db.get('SELECT COUNT(*) as count FROM agents WHERE whatsapp_connected = 1'),
             db.get('SELECT COUNT(*) as count FROM conversations'),
             db.get('SELECT COUNT(*) as count FROM messages'),
-            db.get('SELECT SUM(tokens_used) as total FROM messages')
+            db.get('SELECT SUM(tokens_used) as total FROM messages'),
+            db.all(`
+                SELECT u.name, u.email, SUM(m.tokens_used) as total_tokens, COUNT(m.id) as message_count
+                FROM users u
+                JOIN agents a ON u.id = a.user_id
+                JOIN conversations c ON a.id = c.agent_id
+                JOIN messages m ON c.id = m.conversation_id
+                WHERE m.role = 'assistant'
+                GROUP BY u.id, u.name, u.email
+                ORDER BY total_tokens DESC
+                LIMIT 10
+            `)
         ]);
         const stats = {
             users: r[0]?.count ?? 0,
@@ -35,7 +46,8 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
             activeAgents: r[3]?.count ?? 0,
             conversations: r[4]?.count ?? 0,
             messages: r[5]?.count ?? 0,
-            totalCreditsUsed: r[6]?.total ?? 0
+            totalTokens: r[6]?.total ?? 0,
+            topTokenUsers: r[7] || []
         };
 
         const usersByPlan = await db.all(`

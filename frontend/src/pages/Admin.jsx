@@ -1597,20 +1597,24 @@ function AIModelsContent({
             Top utilisateurs IA
           </h3>
           <div className="space-y-2">
-            {stats.topUsers.slice(0, 5).map((user, idx) => (
-              <div key={user.id} className="flex items-center justify-between p-3 bg-space-800 rounded-xl">
+            {stats.topUsers.slice(0, 10).map((user, idx) => (
+              <div key={user.id} className="flex items-center justify-between p-3 bg-space-800/50 hover:bg-space-800 border border-space-700/50 rounded-xl transition-all">
                 <div className="flex items-center gap-3">
-                  <span className="w-6 h-6 bg-gold-400/20 text-gold-400 rounded-full flex items-center justify-center text-xs font-bold">
-                    {idx + 1}
+                  <span className="w-8 h-8 bg-gold-400/10 text-gold-400 rounded-lg flex items-center justify-center text-xs font-bold border border-gold-400/20">
+                    #{idx + 1}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-gray-100">{user.name}</p>
+                    <p className="text-sm font-semibold text-gray-100">{user.name}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-100">{user.requests?.toLocaleString()} requêtes</p>
-                  <p className="text-xs text-gold-400">{user.credits_used?.toLocaleString()} crédits</p>
+                  <p className="text-sm font-bold text-gray-100">{(user.total_tokens || 0).toLocaleString()} tokens</p>
+                  <div className="flex items-center justify-end gap-2 text-[10px] sm:text-xs">
+                    {user.avg_response_time > 0 && <span className="text-emerald-400">{user.avg_response_time}ms</span>}
+                    {user.success_rate !== null && <span className={user.success_rate < 90 ? 'text-amber-400' : 'text-emerald-400'}>{user.success_rate}% success</span>}
+                    <span className="text-gold-400">{(user.credits_used || 0).toLocaleString()} crédits</span>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1931,6 +1935,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
       daily_briefing: false,
       sentiment_routing: false,
       catalog_import: false,
+      human_handoff_alerts: false,
       ...(plan?.features || {})
     }
   })
@@ -1996,7 +2001,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'conversion_score', label: 'Module 4 — Score de conversion (priorisation des leads)' },
     { key: 'daily_briefing', label: 'Module 5 — Daily Briefing (résumé quotidien)' },
     { key: 'sentiment_routing', label: 'Module 6 — Routage par sentiment (clients frustrés → humain)' },
-    { key: 'catalog_import', label: 'Module 7 — Import catalogue produits (URL / fichiers)' }
+    { key: 'catalog_import', label: 'Module 7 — Import catalogue produits (URL / fichiers)' },
+    { key: 'human_handoff_alerts', label: 'Module 8 — Alertes de transfert humain et validation de commande' }
   ]
 
   return (

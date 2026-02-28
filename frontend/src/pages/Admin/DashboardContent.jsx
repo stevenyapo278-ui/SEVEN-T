@@ -1,4 +1,4 @@
-import { Users, Bot, MessageSquare, Activity, UserPlus, AlertCircle } from 'lucide-react'
+import { Users, Bot, MessageSquare, Activity, UserPlus, AlertCircle, Zap, TrendingUp } from 'lucide-react'
 import StatCard from './StatCard'
 
 export default function DashboardContent({ stats, loading, anomalyStats }) {
@@ -45,7 +45,46 @@ export default function DashboardContent({ stats, loading, anomalyStats }) {
         <StatCard icon={Bot} label="Agents IA" value={stats.stats.agents} subValue={`${stats.stats.activeAgents} connectés`} color="blue" />
         <StatCard icon={MessageSquare} label="Conversations" value={stats.stats.conversations} color="emerald" />
         <StatCard icon={Activity} label="Messages" value={stats.stats.messages} color="blue" />
+        <StatCard icon={Zap} label="Tokens totaux" value={stats.stats.totalTokens?.toLocaleString() || 0} color="gold" />
       </div>
+
+      {stats.stats.topTokenUsers?.length > 0 && (
+        <div className="card p-6 border border-gold-400/10 relative overflow-hidden">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-gold-400" />
+              Classement des Consommateurs (Tokens)
+            </h3>
+            <span className="text-xs text-gray-500 uppercase tracking-wider">Top 10</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {stats.stats.topTokenUsers.map((user, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 bg-space-800/40 border border-space-700/50 rounded-xl hover:bg-space-800/80 hover:border-gold-400/20 transition-all group">
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-center justify-center min-w-[70px] px-2 py-1 bg-gold-400/10 rounded-lg border border-gold-400/20">
+                    <span className="text-sm font-display font-bold text-gold-400">
+                      {(user.total_tokens || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-gold-400/60 font-bold uppercase">Tokens</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-100 truncate">{user.name}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="flex items-center justify-end gap-1 text-blue-400">
+                    <MessageSquare className="w-3 h-3" />
+                    <span className="text-xs font-medium">{user.message_count}</span>
+                  </div>
+                  <p className="text-[10px] text-gray-600 uppercase">Messages</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6">

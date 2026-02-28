@@ -33,7 +33,8 @@ export const defaultPlans = [
             conversion_score: false,
             daily_briefing: false,
             sentiment_routing: false,
-            catalog_import: false
+            catalog_import: false,
+            human_handoff_alerts: false
         })
     },
     {
@@ -65,7 +66,8 @@ export const defaultPlans = [
             conversion_score: false,
             daily_briefing: false,
             sentiment_routing: false,
-            catalog_import: false
+            catalog_import: false,
+            human_handoff_alerts: false
         })
     },
     {
@@ -97,7 +99,8 @@ export const defaultPlans = [
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
-            catalog_import: true
+            catalog_import: true,
+            human_handoff_alerts: true
         })
     },
     {
@@ -129,7 +132,8 @@ export const defaultPlans = [
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
-            catalog_import: true
+            catalog_import: true,
+            human_handoff_alerts: true
         })
     },
     {
@@ -161,7 +165,8 @@ export const defaultPlans = [
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
-            catalog_import: true
+            catalog_import: true,
+            human_handoff_alerts: true
         })
     }
 ];

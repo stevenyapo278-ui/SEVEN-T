@@ -299,7 +299,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -317,7 +317,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 // Update user
 router.put('/me', authenticateToken, async (req, res) => {
     try {
-        const { name, company, currency, media_model } = req.body;
+        const { name, company, currency, media_model, notification_number } = req.body;
 
         // Build dynamic update query
         const updates = [];
@@ -339,6 +339,10 @@ router.put('/me', authenticateToken, async (req, res) => {
             updates.push('media_model = ?');
             values.push(media_model === '' ? null : media_model);
         }
+        if (notification_number !== undefined) {
+            updates.push('notification_number = ?');
+            values.push(notification_number === '' ? null : notification_number);
+        }
 
         if (updates.length > 0) {
             updates.push('updated_at = CURRENT_TIMESTAMP');
@@ -347,7 +351,7 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         const effectivePlan = await getEffectivePlanName(user.plan);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};

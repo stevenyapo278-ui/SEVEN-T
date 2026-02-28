@@ -44,6 +44,7 @@ import {
   Globe
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 // Available tags for agents
 const AVAILABLE_TAGS = [
@@ -56,6 +57,7 @@ const AVAILABLE_TAGS = [
 ]
 
 export default function Agents() {
+  const { t } = useTranslation()
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -131,9 +133,9 @@ export default function Agents() {
       const response = await api.get('/agents')
       setAgents(response.data.agents)
     } catch (error) {
-      const message = error.response?.data?.error || error.message || 'Erreur de chargement'
+      const message = error.response?.data?.error || error.message || t('agents.actions.loadError')
       setLoadError(message)
-      toast.error('Erreur lors du chargement des agents')
+      toast.error(t('agents.actions.loadError'))
     } finally {
       setLoading(false)
     }
@@ -169,55 +171,55 @@ export default function Agents() {
       await Promise.all(selectedAgents.map(id => 
         api.put(`/agents/${id}`, { is_active: 1 })
       ))
-      toast.success(`${selectedAgents.length} agent(s) activé(s)`)
+      toast.success(t('agents.actions.activated'))
       setSelectedAgents([])
       setBulkMode(false)
       loadAgents()
     } catch (error) {
-      toast.error('Erreur lors de l\'activation')
+      toast.error(t('agents.actions.activationError'))
     }
   }
 
   const handleBulkDeactivate = async () => {
     const ok = await showConfirm({
-      title: 'Désactiver les agents',
-      message: `Êtes-vous sûr de vouloir désactiver ${selectedAgents.length} agent(s) ? Ils ne recevront plus de messages jusqu’à réactivation.`,
+      title: t('agents.confirm.deactivateTitle'),
+      message: t('agents.confirm.deactivateMessage', { count: selectedAgents.length }),
       variant: 'warning',
-      confirmLabel: 'Désactiver'
+      confirmLabel: t('agents.actions.deactivate')
     })
     if (!ok) return
     try {
       await Promise.all(selectedAgents.map(id => 
         api.put(`/agents/${id}`, { is_active: 0 })
       ))
-      toast.success(`${selectedAgents.length} agent(s) désactivé(s)`)
+      toast.success(t('agents.actions.deactivated'))
       setSelectedAgents([])
       setBulkMode(false)
       loadAgents()
     } catch (error) {
-      toast.error('Erreur lors de la désactivation')
+      toast.error(t('agents.actions.deactivationError'))
     }
   }
 
   const handleBulkDelete = async () => {
     const ok = await showConfirm({
-      title: 'Supprimer les agents',
-      message: `Êtes-vous sûr de vouloir supprimer ${selectedAgents.length} agent(s) ? Cette action est irréversible.`,
+      title: t('agents.confirm.deleteTitle'),
+      message: t('agents.confirm.deleteMessage', { count: selectedAgents.length }),
       variant: 'danger',
-      confirmLabel: 'Supprimer'
+      confirmLabel: t('agents.actions.delete')
     })
     if (!ok) return
     try {
       await Promise.all(selectedAgents.map(id => 
         api.delete(`/agents/${id}`)
       ))
-      toast.success(`${selectedAgents.length} agent(s) supprimé(s)`)
+      toast.success(t('agents.actions.deleted'))
       setSelectedAgents([])
       setBulkMode(false)
       loadAgents()
       loadQuotas()
     } catch (error) {
-      toast.error('Erreur lors de la suppression')
+      toast.error(t('agents.actions.deletionError'))
     }
   }
 
@@ -257,8 +259,8 @@ export default function Agents() {
   const canCreateAgent = quotas && (quotas.remaining.agents === -1 || quotas.remaining.agents > 0)
 
   // Stats calculations
-  const totalMessages = agents.reduce((sum, a) => sum + (a.total_messages || 0), 0)
-  const totalConversations = agents.reduce((sum, a) => sum + (a.total_conversations || 0), 0)
+  const totalMessages = agents.reduce((sum, a) => sum + Number(a.total_messages || 0), 0)
+  const totalConversations = agents.reduce((sum, a) => sum + Number(a.total_conversations || 0), 0)
   const activeAgents = agents.filter(a => a.is_active !== 0).length
   const connectedAgents = agents.filter(a => a.whatsapp_connected).length
   
@@ -274,7 +276,7 @@ export default function Agents() {
             <div className="w-16 h-16 border-4 border-space-700 rounded-full absolute inset-0" />
             <div className="w-16 h-16 border-4 border-gold-400 border-t-transparent rounded-full animate-spin absolute inset-0" />
           </div>
-          <p className="mt-4 text-gray-400">Chargement des agents...</p>
+          <p className="mt-4 text-gray-400">{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -298,7 +300,7 @@ export default function Agents() {
               <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg flex-shrink-0">
                 <Bot className="w-5 h-5 sm:w-6 sm:h-6 icon-on-gradient" />
               </div>
-              <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Mes Agents</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('agents.title')}</h1>
               {quotas && (
                 <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ${
                   quotas.plan.name === 'free' 
@@ -310,7 +312,7 @@ export default function Agents() {
                 </span>
               )}
             </div>
-            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Gérez vos assistants IA WhatsApp intelligents</p>
+            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('agents.subtitle')}</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -332,7 +334,7 @@ export default function Agents() {
               }`}
             >
               <Plus className="w-5 h-5" />
-              <span className="whitespace-nowrap">Créer un agent</span>
+              <span className="whitespace-nowrap">{t('agents.create')}</span>
             </button>
           </div>
         </div>
@@ -346,7 +348,9 @@ export default function Agents() {
               </div>
               <div className="min-w-0">
                 <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Agents ({activeAgents} actifs)</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                  {t('agents.stats.total')} ({activeAgents} {t('agents.stats.active')})
+                </p>
               </div>
             </div>
           </div>
@@ -357,7 +361,7 @@ export default function Agents() {
               </div>
               <div className="min-w-0">
                 <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{connectedAgents}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Connectés</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.connected')}</p>
               </div>
             </div>
           </div>
@@ -368,7 +372,7 @@ export default function Agents() {
               </div>
               <div className="min-w-0">
                 <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalMessages.toLocaleString()}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.messages')}</p>
               </div>
             </div>
           </div>
@@ -379,7 +383,7 @@ export default function Agents() {
               </div>
               <div className="min-w-0">
                 <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{quotas?.credits || 0}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Crédits</p>
+                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.credits')}</p>
               </div>
             </div>
           </div>
@@ -393,11 +397,11 @@ export default function Agents() {
             <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-fadeIn">
               <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-amber-400 font-medium">Limite d'agents atteinte</p>
+                <p className="text-amber-400 font-medium">{t('agents.alerts.limitTitle')}</p>
                 <p className="text-sm text-gray-400">
                   <Link to="/dashboard/settings" className="text-gold-400 hover:underline">
-                    Passez à un plan supérieur
-                  </Link> pour créer plus d'agents.
+                    {t('agents.alerts.limitUpgrade')}
+                  </Link> {t('agents.alerts.limitSuffix')}
                 </p>
               </div>
             </div>
@@ -409,10 +413,10 @@ export default function Agents() {
                 <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
                 <div className="min-w-0 flex-1">
                   <p className="text-orange-400 font-medium">
-                    {disconnectedActiveAgents.length} agent(s) actif(s) non connecté(s)
+                    {t('agents.alerts.disconnected', { count: disconnectedActiveAgents.length })}
                   </p>
                   <p className="text-sm text-gray-400 truncate sm:whitespace-normal" title={disconnectedActiveAgents.map(a => a.name).join(', ')}>
-                    {disconnectedActiveAgents.map(a => a.name).join(', ')} - Connectez WhatsApp pour recevoir des messages.
+                    {disconnectedActiveAgents.map(a => a.name).join(', ')} - {t('agents.alerts.reconnectHint')}
                   </p>
                 </div>
               </div>
@@ -420,7 +424,7 @@ export default function Agents() {
                 to={`/dashboard/agents/${disconnectedActiveAgents[0]?.id}`}
                 className="text-orange-400 hover:text-orange-300 text-sm font-medium whitespace-nowrap flex-shrink-0"
               >
-                Connecter →
+                {t('agents.actions.reconnect')} →
               </Link>
             </div>
           )}
@@ -439,7 +443,7 @@ export default function Agents() {
             ) : (
               <Square className="w-5 h-5 flex-shrink-0" />
             )}
-            <span className="text-sm whitespace-nowrap">{selectedAgents.length} sélectionné(s)</span>
+            <span className="text-sm whitespace-nowrap">{selectedAgents.length} {t('common.selected')}</span>
           </button>
           <div className="flex-1 min-w-2" />
           <div className="flex flex-wrap items-center gap-2">
@@ -449,7 +453,7 @@ export default function Agents() {
               className="flex items-center gap-2 px-3 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] text-sm"
             >
               <Power className="w-4 h-4" />
-              Activer
+              {t('agents.actions.activate')}
             </button>
             <button
               onClick={handleBulkDeactivate}
@@ -457,7 +461,7 @@ export default function Agents() {
               className="flex items-center gap-2 px-3 py-2 bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] text-sm"
             >
               <PowerOff className="w-4 h-4" />
-              Désactiver
+              {t('agents.actions.deactivate')}
             </button>
             <button
               onClick={handleBulkDelete}
@@ -465,13 +469,13 @@ export default function Agents() {
               className="flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] text-sm"
             >
               <Trash2 className="w-4 h-4" />
-              Supprimer
+              {t('agents.actions.delete')}
             </button>
           </div>
           <button
             onClick={() => { setBulkMode(false); setSelectedAgents([]) }}
             className="p-2 text-gray-500 hover:text-white rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Fermer"
+            aria-label={t('common.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -485,7 +489,7 @@ export default function Agents() {
           <Search className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
           <input
             type="text"
-            placeholder="Rechercher un agent..."
+            placeholder={t('agents.filters.search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full pl-10 sm:pl-12 pr-10 sm:pr-4 py-2.5 sm:py-3 border rounded-xl focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base min-h-[44px] ${
@@ -497,7 +501,7 @@ export default function Agents() {
               type="button"
               onClick={() => setSearchQuery('')}
               className={`absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 p-1 min-w-[32px] min-h-[32px] flex items-center justify-center ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'}`}
-              aria-label="Effacer"
+              aria-label={t('notifications.clearFilters')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -507,11 +511,11 @@ export default function Agents() {
         {/* Filter Pills - theme-aware: always visible text in light mode */}
         <div className={`flex items-center gap-1 rounded-xl p-1 overflow-x-auto overflow-y-hidden scrollbar-none w-full sm:w-auto min-w-0 -mx-1 px-1 sm:mx-0 sm:px-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
           {[
-            { id: 'all', label: 'Tous', icon: null },
-            { id: 'favorites', label: 'Favoris', icon: Star },
-            { id: 'active', label: 'Actifs', icon: null },
-            { id: 'connected', label: 'Connectés', icon: null },
-            { id: 'inactive', label: 'Inactifs', icon: null }
+            { id: 'all', label: t('agents.filters.all'), icon: null },
+            { id: 'favorites', label: t('agents.filters.favorites'), icon: Star },
+            { id: 'active', label: t('agents.filters.active'), icon: null },
+            { id: 'connected', label: t('agents.filters.connected'), icon: null },
+            { id: 'inactive', label: t('agents.filters.inactive'), icon: null }
           ].map(f => (
             <button
               key={f.id}
@@ -540,17 +544,17 @@ export default function Agents() {
               }`}
             >
               <ArrowUpDown className="w-4 h-4 flex-shrink-0" />
-              <span>Trier</span>
+              <span>{t('agents.sort.label')}</span>
             </button>
             {showSortMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowSortMenu(false)} />
                 <div className="absolute right-0 top-full mt-2 w-48 bg-space-800 rounded-xl shadow-xl border border-space-700 z-20 overflow-hidden">
                   {[
-                    { id: 'last_activity', label: 'Dernière activité', icon: Clock },
-                    { id: 'messages', label: 'Nombre de messages', icon: MessageSquare },
-                    { id: 'created', label: 'Date de création', icon: Calendar },
-                    { id: 'name', label: 'Nom (A-Z)', icon: ArrowUpDown }
+                    { id: 'last_activity', label: t('agents.sort.lastActivity'), icon: Clock },
+                    { id: 'messages', label: t('agents.sort.messages'), icon: MessageSquare },
+                    { id: 'created', label: t('agents.sort.created'), icon: Calendar },
+                    { id: 'name', label: t('agents.sort.name'), icon: ArrowUpDown }
                   ].map(s => (
                     <button
                       key={s.id}
@@ -618,7 +622,7 @@ export default function Agents() {
             className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-xl font-medium transition-colors"
           >
             <RefreshCw className="w-4 h-4" />
-            Réessayer
+            {t('agents.actions.retry')}
           </button>
         </div>
       )}
@@ -632,12 +636,12 @@ export default function Agents() {
             <Bot className="w-10 h-10 icon-on-gradient" />
           </div>
           <h3 className="text-xl font-semibold text-gray-100 mb-3">
-            {searchQuery || filter !== 'all' ? 'Aucun agent trouvé' : 'Aucun agent créé'}
+            {searchQuery || filter !== 'all' ? t('agents.alerts.searchNoResults') : t('dashboard.agents.none')}
           </h3>
           <p className="text-gray-400 max-w-md mx-auto mb-6">
             {searchQuery || filter !== 'all'
-              ? 'Essayez de modifier vos critères de recherche ou de supprimer les filtres'
-              : 'Créez votre premier assistant IA pour automatiser vos conversations WhatsApp'
+              ? t('agents.alerts.searchHint')
+              : t('dashboard.agents.createFirst')
             }
           </p>
           {!searchQuery && filter === 'all' && canCreateAgent && (
@@ -692,8 +696,8 @@ export default function Agents() {
       {!loadError && filteredAgents.length > 0 && (
         <div className="mt-6 text-center text-sm text-gray-500">
           {filteredAgents.length === agents.length 
-            ? `${agents.length} agent${agents.length > 1 ? 's' : ''}`
-            : `${filteredAgents.length} sur ${agents.length} agents`
+            ? t('agents.results.count', { count: agents.length })
+            : t('agents.results.fraction', { selected: filteredAgents.length, total: agents.length })
           }
         </div>
       )}
@@ -779,10 +783,10 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
     setShowMenu(false)
     try {
       const response = await api.post(`/agents/${agent.id}/duplicate`)
-      toast.success(`Agent dupliqué !`)
+      toast.success(t('agents.actions.duplicated'))
       onUpdate()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de la duplication')
+      toast.error(error.response?.data?.error || t('agents.actions.duplicationError'))
     } finally {
       setDuplicating(false)
     }

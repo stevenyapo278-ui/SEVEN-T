@@ -421,7 +421,7 @@ const UserMenu = ({ user, onLogout }) => {
                   </p>
                   {user?.is_admin === 1 && (
                     <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded">
-                      Admin
+                      {i18n.language === 'en' ? 'Admin' : 'Admin'}
                     </span>
                   )}
                 </div>
@@ -437,7 +437,7 @@ const UserMenu = ({ user, onLogout }) => {
                     to="/dashboard/settings"
                     className={`text-xs mt-1 inline-block ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
                   >
-                    Ajouter mon entreprise
+                    {t('settings.addCompany')}
                   </Link>
                 )}
               </div>

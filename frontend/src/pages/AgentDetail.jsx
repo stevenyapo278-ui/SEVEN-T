@@ -40,6 +40,7 @@ import {
   Minimize2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {
@@ -124,16 +125,16 @@ function ProfileAvatar({ agentId, contactJid, name, size = 'md', className = '' 
 }
 
 // Reorganized tabs - grouped by function
-const TABS = [
-  { id: 'overview', label: 'Aperçu', icon: Bot },
-  { id: 'conversations', label: 'Conversations', icon: MessageSquare },
-  { id: 'knowledge', label: 'Connaissances', icon: BookOpen },
-  { id: 'settings', label: 'Paramètres', icon: Settings },
-  { id: 'playground', label: 'Tester', icon: Play },
+const TABS = (t) => [
+  { id: 'overview', label: t('agents.detail.tabs.overview'), icon: Bot },
+  { id: 'conversations', label: t('agents.detail.tabs.conversations'), icon: MessageSquare },
+  { id: 'knowledge', label: t('agents.detail.tabs.knowledge'), icon: BookOpen },
+  { id: 'settings', label: t('agents.detail.tabs.settings'), icon: Settings },
+  { id: 'playground', label: t('agents.detail.tabs.playground'), icon: Play },
 ]
 
 // Get the best display name for a contact
-const getDisplayName = (conv) => {
+const getDisplayName = (conv, t) => {
   // Priority: saved_contact_name (from WhatsApp contacts) > contact_name > push_name > notify_name > verified_biz_name > phone number
   const isJustNumber = (name) => !name || /^\d+$/.test(name.replace(/\D/g, ''))
   
@@ -146,10 +147,11 @@ const getDisplayName = (conv) => {
   if (conv.push_name) return conv.push_name
   if (conv.notify_name) return conv.notify_name
   if (conv.verified_biz_name) return conv.verified_biz_name
-  return conv.contact_number || 'Inconnu'
+  return conv.contact_number || t('agents.unknown')
 }
 
 export default function AgentDetail() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
@@ -182,7 +184,7 @@ export default function AgentDetail() {
       const response = await api.get(`/agents/${id}`)
       setAgent(response.data.agent)
     } catch (error) {
-      toast.error('Agent non trouvé')
+      toast.error(t('agents.notFound'))
       navigate('/dashboard/agents')
     } finally {
       setLoading(false)
@@ -192,22 +194,20 @@ export default function AgentDetail() {
   const handleToggleActive = async () => {
     if (isActive) {
       const ok = await showConfirm({
-        title: 'Désactiver cet agent',
-        message: agent?.name
-          ? `Désactiver « ${agent.name} » ? Il ne recevra plus de messages jusqu’à réactivation.`
-          : 'Désactiver cet agent ? Il ne recevra plus de messages jusqu’à réactivation.',
+        title: t('agents.confirm.deactivateOneTitle'),
+        message: t('agents.confirm.deactivateOneMessage', { name: agent?.name }),
         variant: 'warning',
-        confirmLabel: 'Désactiver'
+        confirmLabel: t('agents.actions.deactivate')
       })
       if (!ok) return
     }
     setToggling(true)
     try {
       await api.put(`/agents/${id}`, { is_active: isActive ? 0 : 1 })
-      toast.success(isActive ? 'Agent désactivé' : 'Agent activé')
+      toast.success(isActive ? t('agents.actions.deactivated') : t('agents.actions.activated'))
       loadAgent()
     } catch (error) {
-      toast.error('Erreur lors de la mise à jour')
+      toast.error(t('agents.actions.updateError'))
     } finally {
       setToggling(false)
     }
@@ -215,18 +215,18 @@ export default function AgentDetail() {
 
   const handleDeleteAgent = async () => {
     const ok = await showConfirm({
-      title: 'Supprimer cet agent',
-      message: 'Êtes-vous sûr de vouloir supprimer cet agent ? Cette action est irréversible (conversations, connaissances, paramètres).',
+      title: t('agents.confirm.deleteOneTitle'),
+      message: t('agents.confirm.deleteOneMessage'),
       variant: 'danger',
-      confirmLabel: 'Supprimer'
+      confirmLabel: t('agents.actions.delete')
     })
     if (!ok) return
     try {
       await api.delete(`/agents/${id}`)
-      toast.success('Agent supprimé')
+      toast.success(t('agents.actions.deleted'))
       navigate('/dashboard/agents')
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de la suppression')
+      toast.error(error.response?.data?.error || t('agents.actions.deletionError'))
     }
   }
 
@@ -256,7 +256,7 @@ export default function AgentDetail() {
           className="flex items-center gap-2 text-gray-400 hover:text-gray-100 mb-3 sm:mb-4 transition-colors touch-target min-h-[44px] -ml-2 pl-2"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="text-sm sm:text-base">Retour aux agents</span>
+          <span className="text-sm sm:text-base">{t('agents.backToList')}</span>
         </button>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -274,16 +274,16 @@ export default function AgentDetail() {
                 <h1 className="text-lg sm:text-2xl font-display font-bold text-gray-100 truncate">{agent.name}</h1>
                 {!isActive && (
                   <span className="px-2 py-1 rounded text-xs font-medium bg-gray-500/20 text-gray-400 flex-shrink-0">
-                    Inactif
+                    {t('agents.inactive')}
                   </span>
                 )}
               </div>
               <p className="text-gray-400 text-sm sm:text-base truncate">
                 {!isActive 
-                  ? <span className="text-gray-500">Agent désactivé</span>
+                  ? <span className="text-gray-500">{t('dashboard.agents.inactive')}</span>
                   : agent.whatsapp_connected 
-                    ? <span className="text-emerald-400">Connecté - {agent.whatsapp_number}</span>
-                    : 'Non connecté à WhatsApp'
+                    ? <span className="text-emerald-400">{t('common.connected')} - {agent.whatsapp_number}</span>
+                    : t('agents.notConnected')
                 }
               </p>
             </div>
@@ -307,14 +307,14 @@ export default function AgentDetail() {
               ) : (
                 <PowerOff className="w-5 h-5" />
               )}
-              {isActive ? 'Actif' : 'Inactif'}
+              {isActive ? t('common.active') : t('common.inactive')}
             </button>
             <button
               onClick={handleDeleteAgent}
               className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl font-medium transition-all border border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 min-h-[44px] touch-target"
             >
               <Trash2 className="w-5 h-5" />
-              Supprimer l'agent
+              {t('agents.deleteAgent')}
             </button>
           </div>
         </div>
@@ -323,7 +323,7 @@ export default function AgentDetail() {
       {/* Tabs — scroll on small screens */}
       <div className="border-b border-space-700 mb-6 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="flex gap-4 sm:gap-6 min-w-max">
-          {TABS.map((tab) => (
+          {TABS(t).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -352,6 +352,7 @@ export default function AgentDetail() {
 
 // Overview Tab - Dashboard view with connection, stats and quick actions
 function OverviewTab({ agent, onUpdate }) {
+  const { t } = useTranslation()
   const { showConfirm } = useConfirm()
   const [status, setStatus] = useState(null)
   const [qrCode, setQrCode] = useState(null)
@@ -374,7 +375,7 @@ function OverviewTab({ agent, onUpdate }) {
 
   useEffect(() => {
     if (!agent.tool_id) {
-      setStatus({ status: 'disconnected', message: 'Non connecté' })
+      setStatus({ status: 'disconnected', message: t('agents.disconnected') })
     } else {
       checkStatus()
     }
@@ -474,7 +475,7 @@ function OverviewTab({ agent, onUpdate }) {
       // Ignore errors - session might not exist
     }
     
-    toast.success('Connexion annulée')
+    toast.success(t('agents.connection.cancelled'))
   }
 
   const loadQuotas = async () => {
@@ -495,19 +496,21 @@ function OverviewTab({ agent, onUpdate }) {
 
   const loadStats = async (silent = false) => {
     try {
-      const convRes = await api.get(`/conversations/agent/${agent.id}`)
-      const conversations = convRes.data.conversations
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+      const statsRes = await api.get(`/stats/agent/${agent.id}`)
+      const statsData = statsRes.data.stats
       
-      const todayConvs = conversations.filter(c => new Date(c.last_message_at) >= today)
-      const totalMessages = conversations.reduce((sum, c) => sum + (c.message_count || 0), 0)
-      
+      // Load actual recent conversations separately for the list
+      const convRes = await api.get(`/conversations/agent/${agent.id}?limit=3`)
+      const conversations = convRes.data.conversations || []
+
+      const aiMessages = statsData.messages.by_role?.find(r => r.role === 'assistant')?.count || 0
+
       setStats({
-        totalConversations: conversations.length,
-        todayConversations: todayConvs.length,
-        totalMessages,
-        recentConversations: conversations.slice(0, 3)
+        totalConversations: statsData.conversations.total,
+        todayConversations: statsData.conversations.today,
+        totalMessages: statsData.messages.total,
+        aiMessages: aiMessages,
+        recentConversations: conversations
       })
     } catch (error) {
       if (!silent) console.error('Error loading stats:', error)
@@ -540,10 +543,10 @@ function OverviewTab({ agent, onUpdate }) {
     setSyncing(true)
     try {
       await syncChats(agent.id)
-      toast.success('Synchronisation terminée')
+      toast.success(t('agents.connection.syncSuccess'))
       await checkSyncStatus()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de la synchronisation')
+      toast.error(error.response?.data?.error || t('agents.actions.syncError')) // Added syncError later
     } finally {
       setSyncing(false)
     }
@@ -552,11 +555,11 @@ function OverviewTab({ agent, onUpdate }) {
   const handleCleanup = async () => {
     try {
       const response = await api.post(`/whatsapp/cleanup/${agent.id}`)
-      toast.success(response.data.message)
+      toast.success(response.data.message || t('common.success'))
       // Reload stats after cleanup
       loadStats()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors du nettoyage')
+      toast.error(error.response?.data?.error || t('agents.actions.updateError'))
     }
   }
 
@@ -590,7 +593,7 @@ function OverviewTab({ agent, onUpdate }) {
         // Only show success animation and toast if user initiated the connection
         if (isUserConnecting.current) {
           setConnecting(true)
-          toast.success('WhatsApp connecté avec succès !')
+          toast.success(t('agents.connection.success'))
           isUserConnecting.current = false
           
           setTimeout(() => {
@@ -612,7 +615,7 @@ function OverviewTab({ agent, onUpdate }) {
       }
     } catch (error) {
       if (error.response?.status === 404) {
-        setStatus({ status: 'disconnected', message: 'Non connecté' })
+        setStatus({ status: 'disconnected', message: t('agents.disconnected') })
       }
     }
   }
@@ -635,16 +638,16 @@ function OverviewTab({ agent, onUpdate }) {
     try {
       if (forceNew) {
         await api.post(`/whatsapp/reconnect/${agent.id}`)
-        toast.success('Nouvelle session initiée')
+        toast.success(t('agents.connection.sessionInitiated'))
       } else {
         await api.post(`/whatsapp/connect/${agent.id}`)
-        toast.success('Connexion initiée')
+        toast.success(t('dashboard.alerts.reconnect'))
       }
       
       // Poll for QR code (reduced frequency to avoid spam)
       intervalRef.current = setInterval(checkStatus, 3000)
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de la connexion')
+      toast.error(error.response?.data?.error || t('agents.actions.loadError'))
       isUserConnecting.current = false
       setLoading(false)
     }
@@ -653,10 +656,10 @@ function OverviewTab({ agent, onUpdate }) {
 
   const handleForceReconnect = async () => {
     const ok = await showConfirm({
-      title: 'Changer de compte WhatsApp',
-      message: 'Cette action va déconnecter le compte actuel, supprimer toutes les conversations et messages, puis générer un nouveau QR code. Les conversations seront perdues. Voulez-vous continuer ?',
+      title: t('agents.connection.reconnectTitle'),
+      message: t('agents.connection.reconnectWarning'),
       variant: 'warning',
-      confirmLabel: 'Continuer'
+      confirmLabel: t('common.confirm')
     })
     if (!ok) return
     await handleConnect(true)
@@ -664,20 +667,20 @@ function OverviewTab({ agent, onUpdate }) {
 
   const handleDisconnect = async () => {
     const ok = await showConfirm({
-      title: 'Déconnecter WhatsApp',
-      message: 'Êtes-vous sûr de vouloir déconnecter WhatsApp ?',
+      title: t('agents.connection.disconnectTitle'),
+      message: t('agents.connection.disconnectConfirm'),
       variant: 'warning',
-      confirmLabel: 'Déconnecter'
+      confirmLabel: t('agents.actions.deactivate')
     })
     if (!ok) return
     try {
       await api.post(`/whatsapp/disconnect/${agent.id}`)
-      toast.success('Déconnecté')
+      toast.success(t('dashboard.agents.disconnected'))
       setStatus({ status: 'disconnected' })
       setQrCode(null)
       onUpdate()
     } catch (error) {
-      toast.error('Erreur lors de la déconnexion')
+      toast.error(t('agents.actions.deactivationError'))
     }
   }
 
@@ -685,26 +688,26 @@ function OverviewTab({ agent, onUpdate }) {
     let ok = false
     try {
       ok = await showConfirm({
-        title: 'Supprimer toutes les conversations',
-        message: 'Cette action est irréversible et supprimera : toutes les conversations, tous les messages et toute la liste noire. Voulez-vous continuer ?',
+        title: t('agents.connection.clearConvsTitle'),
+        message: t('agents.connection.clearConvsWarning'),
         variant: 'danger',
-        confirmLabel: 'Tout supprimer'
+        confirmLabel: t('common.delete')
       })
     } catch (_) {}
     if (!ok) return
     try {
       const response = await api.post(`/whatsapp/clear-conversations/${agent.id}`)
-      toast.success(response.data.message)
+      toast.success(response.data.message || t('common.success'))
       loadStats()
     } catch (error) {
-      toast.error('Erreur lors de la suppression')
+      toast.error(t('agents.actions.deletionError'))
     }
   }
 
   return (
     <div className="space-y-4 sm:space-y-6 min-w-0">
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="card p-3 sm:p-4 min-w-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
@@ -712,29 +715,40 @@ function OverviewTab({ agent, onUpdate }) {
             </div>
             <div className="min-w-0">
               <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.totalConversations || 0}</p>
-              <p className="text-xs text-gray-500">Conversations</p>
+              <p className="text-xs text-gray-500">{t('agents.detail.stats.conversations')}</p>
             </div>
           </div>
         </div>
         <div className="card p-3 sm:p-4 min-w-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
             </div>
             <div className="min-w-0">
               <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.todayConversations || 0}</p>
-              <p className="text-xs text-gray-500">Aujourd'hui</p>
+              <p className="text-xs text-gray-500">{t('agents.detail.stats.today')}</p>
+            </div>
+          </div>
+        </div>
+        <div className="card p-3 sm:p-4 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
+              <Send className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.aiMessages || 0}</p>
+              <p className="text-xs text-gray-500">{t('agents.detail.stats.aiSent', 'AI Sent')}</p>
             </div>
           </div>
         </div>
         <div className="card p-3 sm:p-4 min-w-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <Send className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
             </div>
             <div className="min-w-0">
               <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{stats?.totalMessages || 0}</p>
-              <p className="text-xs text-gray-500">Messages</p>
+              <p className="text-xs text-gray-500">{t('agents.detail.stats.messages')}</p>
             </div>
           </div>
         </div>
@@ -745,7 +759,7 @@ function OverviewTab({ agent, onUpdate }) {
             </div>
             <div className="min-w-0">
               <p className="text-lg sm:text-2xl font-bold text-gray-100 truncate">{contacts.length || 0}</p>
-              <p className="text-xs text-gray-500">Contacts</p>
+              <p className="text-xs text-gray-500">{t('agents.detail.stats.contacts')}</p>
             </div>
           </div>
         </div>
@@ -756,7 +770,7 @@ function OverviewTab({ agent, onUpdate }) {
         <div className="card p-4 sm:p-6 min-w-0">
           <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
             <Wrench className="w-5 h-5 text-gold-400" />
-            Outil assigné
+            {t('agents.detail.tool.title')}
           </h2>
           {agent.tool_id ? (
             <div className="p-4 bg-space-800 rounded-xl border border-space-700">
@@ -782,13 +796,13 @@ function OverviewTab({ agent, onUpdate }) {
               className="btn-primary inline-flex items-center gap-2"
             >
               <Wrench className="w-4 h-4" />
-              {agent.tool_id ? 'Changer l’outil' : 'Assigner un outil'}
+              {agent.tool_id ? t('agents.detail.tool.change') : t('agents.detail.tool.assign')}
             </Link>
             <Link
               to="/dashboard/tools"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-space-700 hover:bg-space-600 text-gray-200 transition-colors"
             >
-              Gérer dans Outils
+              {t('agents.detail.tool.manage')}
             </Link>
           </div>
         </div>
@@ -797,43 +811,43 @@ function OverviewTab({ agent, onUpdate }) {
         <div className="card p-4 sm:p-6 min-w-0">
           <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-gold-400" />
-            Conversations récentes
+            {t('agents.detail.summary.recentConversations', 'Recent Conversations')}
           </h2>
           
           {stats?.recentConversations?.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
-              {stats.recentConversations.map(conv => (
+              {stats.recentConversations.map((conv, idx) => (
                 <Link
-                  key={conv.id}
+                  key={conv.id || conv.contact_jid || idx}
                   to={`/dashboard/conversations/${conv.id}`}
                   className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[52px] touch-target"
                 >
                   <ProfileAvatar 
                     agentId={agent.id}
                     contactJid={conv.contact_jid}
-                    name={getDisplayName(conv)}
+                    name={getDisplayName(conv, t)}
                     size="sm"
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-100 truncate">
-                      {getDisplayName(conv)}
+                      {getDisplayName(conv, t)}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{conv.last_message || 'Aucun message'}</p>
+                    <p className="text-xs text-gray-500 truncate">{conv.last_message || t('agents.detail.summary.noMessage', 'No message')}</p>
                   </div>
-                  <span className="text-xs text-gray-600 flex-shrink-0">{conv.message_count} msg</span>
+                  <span className="text-xs text-gray-600 flex-shrink-0">{conv.message_count} {t('agents.detail.stats.messagesCount', 'msg')}</span>
                 </Link>
               ))}
               <Link
                 to={`/dashboard/conversations`}
                 className="block text-center text-sm text-gold-400 hover:text-gold-300 pt-2 py-3 touch-target"
               >
-                Voir toutes les conversations →
+                {t('agents.detail.summary.viewAll', 'View all conversations')} →
               </Link>
             </div>
           ) : (
             <div className="text-center py-6">
               <MessageSquare className="w-10 h-10 text-gray-600 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Aucune conversation</p>
+              <p className="text-sm text-gray-500">{t('agents.detail.summary.noConversations', 'No conversations')}</p>
             </div>
           )}
         </div>
@@ -841,35 +855,35 @@ function OverviewTab({ agent, onUpdate }) {
 
       {/* Quick Actions */}
       <div className="card p-4 sm:p-6 min-w-0">
-        <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4">Actions rapides</h2>
+        <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4">{t('agents.detail.summary.quickActions', 'Quick Actions')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Link
             to={`/dashboard/agents/${agent.id}?tab=settings`}
             className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
             <Settings className="w-6 h-6 text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-300 text-center">Paramètres</span>
+            <span className="text-sm text-gray-300 text-center">{t('agents.detail.summary.settings', 'Settings')}</span>
           </Link>
           <Link
             to={`/dashboard/agents/${agent.id}?tab=knowledge`}
             className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
             <BookOpen className="w-6 h-6 text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-300 text-center">Connaissances</span>
+            <span className="text-sm text-gray-300 text-center">{t('agents.detail.summary.knowledge', 'Knowledge')}</span>
           </Link>
           <Link
             to={`/dashboard/agents/${agent.id}?tab=playground`}
             className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
             <Play className="w-6 h-6 text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-300 text-center">Tester</span>
+            <span className="text-sm text-gray-300 text-center">{t('agents.detail.summary.test', 'Test')}</span>
           </Link>
           <button
             onClick={loadStats}
             className="flex flex-col items-center justify-center gap-2 p-4 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors min-h-[88px] sm:min-h-0 touch-target"
           >
             <RefreshCw className="w-6 h-6 text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-300 text-center">Actualiser</span>
+            <span className="text-sm text-gray-300 text-center">{t('agents.detail.summary.refresh', 'Refresh')}</span>
           </button>
         </div>
       </div>
@@ -879,6 +893,7 @@ function OverviewTab({ agent, onUpdate }) {
 
 // Conversations Tab
 function ConversationsTab({ agent }) {
+  const { t, i18n } = useTranslation()
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(true)
   const pollIntervalRef = useRef(null)
@@ -920,10 +935,10 @@ function ConversationsTab({ agent }) {
     const now = new Date()
     const diff = now - date
     
-    if (diff < 60000) return 'À l\'instant'
+    if (diff < 60000) return t('agents.detail.summary.updateAt', 'Just now')
     if (diff < 3600000) return `${Math.floor(diff / 60000)}min`
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`
-    return date.toLocaleDateString('fr-FR')
+    return date.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')
   }
 
   if (loading) {
@@ -933,45 +948,45 @@ function ConversationsTab({ agent }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-gray-400">{conversations.length} conversation(s)</p>
+        <p className="text-gray-400">{conversations.length} {t('agents.detail.stats.conversations', 'conversations')}</p>
         <button onClick={loadConversations} className="text-gold-400 hover:text-gold-300 text-sm">
           <RefreshCw className="w-4 h-4 inline mr-1" />
-          Actualiser
+          {t('agents.detail.summary.refresh', 'Refresh')}
         </button>
       </div>
 
       {conversations.length === 0 ? (
         <div className="card p-12 text-center">
           <MessageSquare className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucune conversation pour cet agent</p>
+          <p className="text-gray-400">{t('agents.detail.summary.noConversations', 'No conversations')}</p>
           <p className="text-sm text-gray-500 mt-2">
-            Les conversations apparaîtront ici lorsque des utilisateurs enverront des messages.
+            {t('agents.detail.summary.noConversationsDesc', 'Conversations will appear here when users send messages.')}
           </p>
         </div>
       ) : (
         <div className="card divide-y divide-space-700">
-          {conversations.map((conv) => (
+          {conversations.map((conv, idx) => (
             <Link
-              key={conv.id}
+              key={conv.id || conv.contact_jid || idx}
               to={`/dashboard/conversations/${conv.id}`}
               className="flex items-center gap-4 p-4 hover:bg-space-800 transition-colors"
             >
               <ProfileAvatar 
                 agentId={agent.id}
                 contactJid={conv.contact_jid}
-                name={getDisplayName(conv)}
+                name={getDisplayName(conv, t)}
                 size="lg"
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="font-medium text-gray-100 truncate">{getDisplayName(conv)}</h3>
+                  <h3 className="font-medium text-gray-100 truncate">{getDisplayName(conv, t)}</h3>
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {formatDate(conv.last_message_at)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-400 truncate">{conv.last_message || 'Aucun message'}</p>
-                <span className="text-xs text-gray-500">{conv.message_count || 0} messages</span>
+                <span className="text-xs text-gray-500">{conv.message_count || 0} {t('agents.detail.stats.messages', 'messages')}</span>
               </div>
             </Link>
           ))}
@@ -983,6 +998,7 @@ function ConversationsTab({ agent }) {
 
 // Contacts Tab
 function ContactsTab({ agent }) {
+  const { t } = useTranslation()
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -1009,9 +1025,9 @@ function ContactsTab({ agent }) {
     return (
       <div className="card p-12 text-center">
         <WifiOff className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-        <p className="text-gray-400">WhatsApp non connecté</p>
+        <p className="text-gray-400">{t('dashboard.agents.disconnected', 'Disconnected')}</p>
         <p className="text-sm text-gray-500 mt-2">
-          Connectez WhatsApp pour voir vos contacts.
+          {t('agents.detail.blacklist.modal.numberHint', 'Connect WhatsApp to see your contacts.')}
         </p>
       </div>
     )
@@ -1024,19 +1040,19 @@ function ContactsTab({ agent }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-gray-400">{contacts.length} contact(s)</p>
+        <p className="text-gray-400">{contacts.length} {t('agents.detail.stats.contacts', 'contacts')}</p>
         <button onClick={loadContacts} className="text-gold-400 hover:text-gold-300 text-sm">
           <RefreshCw className="w-4 h-4 inline mr-1" />
-          Actualiser
+          {t('agents.detail.summary.refresh', 'Refresh')}
         </button>
       </div>
 
       {contacts.length === 0 ? (
         <div className="card p-12 text-center">
           <Users className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">Aucun contact trouvé</p>
+          <p className="text-gray-400">{t('agents.detail.knowledge.noGlobalAvailable', 'No contact found')}</p>
           <p className="text-sm text-gray-500 mt-2">
-            Synchronisez vos contacts depuis l'onglet Connexion.
+            {t('agents.detail.knowledge.assignedGlobalDesc', 'Synchronize your contacts from the Connection tab.')}
           </p>
         </div>
       ) : (
@@ -1067,6 +1083,7 @@ function ContactsTab({ agent }) {
 }
 
 function SettingsTab({ agent, onUpdate }) {
+  const { t } = useTranslation()
   const { showConfirm } = useConfirm()
   const [formData, setFormData] = useState({
     name: agent.name,
@@ -1086,11 +1103,11 @@ function SettingsTab({ agent, onUpdate }) {
     availability_end: agent.availability_end || '18:00',
     availability_days: agent.availability_days || '1,2,3,4,5',
     availability_timezone: agent.availability_timezone || 'Europe/Paris',
-    absence_message: agent.absence_message || 'Merci pour votre message ! Nous sommes actuellement indisponibles. Nous vous répondrons dès que possible.',
+    absence_message: agent.absence_message || t('agents.detail.settings.absenceMessagePlaceholder', 'Thank you for your message! We are currently unavailable. We will get back to you as soon as possible.'),
     // Human transfer settings
     human_transfer_enabled: agent.human_transfer_enabled === 1,
-    human_transfer_keywords: agent.human_transfer_keywords || 'humain,agent,parler à quelqu\'un,assistance',
-    human_transfer_message: agent.human_transfer_message || 'Je vous transfère vers un conseiller. Veuillez patienter.',
+    human_transfer_keywords: agent.human_transfer_keywords || t('agents.detail.settings.keywordsHint', 'human,agent,support,speak to someone'),
+    human_transfer_message: agent.human_transfer_message || t('agents.detail.settings.transferMessageHint', 'I am transferring you to an advisor. Please wait.'),
     // Rate limiting
     max_messages_per_day: agent.max_messages_per_day || 0
   })
@@ -1127,10 +1144,10 @@ function SettingsTab({ agent, onUpdate }) {
     const currentTemplate = formData.template || ''
     if (nextTemplate !== currentTemplate) {
       const ok = await showConfirm({
-        title: 'Changer le type d\'agent',
-        message: 'Changer le type d\'agent peut modifier le prompt système et le comportement de l\'agent. Continuer ?',
+        title: t('agents.detail.settings.type', 'Change Agent Type'),
+        message: t('agents.detail.settings.typeHint', 'Changing the agent type can modify the system prompt and agent behavior. Continue?'),
         variant: 'warning',
-        confirmLabel: 'Changer le type'
+        confirmLabel: t('agents.detail.settings.type', 'Change Type')
       })
       if (!ok) return
     }
@@ -1198,22 +1215,22 @@ function SettingsTab({ agent, onUpdate }) {
         availability_enabled: formData.availability_enabled ? 1 : 0,
         human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0
       })
-      toast.success('Paramètres sauvegardés')
+      toast.success(t('agents.detail.settings.success', 'Settings saved'))
       onUpdate()
     } catch (error) {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t('agents.detail.settings.error', 'Error during saving'))
     } finally {
       setSaving(false)
     }
   }
 
   const SECTIONS = [
-    { id: 'general', label: 'Général' },
-    { id: 'ai', label: 'Configuration IA' },
-    { id: 'auto_reply', label: 'Réponse auto' },
-    { id: 'availability', label: 'Disponibilité' },
-    { id: 'transfer', label: 'Transfert humain' },
-    { id: 'limits', label: 'Limites' }
+    { id: 'general', label: t('agents.detail.settings.general', 'General') },
+    { id: 'ai', label: t('agents.detail.settings.ai', 'AI Configuration') },
+    { id: 'auto_reply', label: t('agents.detail.settings.autoReply', 'Auto Reply') },
+    { id: 'availability', label: t('agents.detail.settings.availability', 'Availability') },
+    { id: 'transfer', label: t('agents.detail.settings.transfer', 'Human Transfer') },
+    { id: 'limits', label: t('agents.detail.settings.limits', 'Limits') }
   ]
 
   const scrollToSection = (id) => {
@@ -1291,10 +1308,10 @@ function SettingsTab({ agent, onUpdate }) {
       <form onSubmit={handleSubmit} className="flex-1 min-w-0 max-w-2xl space-y-6">
         {/* General Section */}
         <div id="settings-general" className="card p-6 scroll-mt-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Informations générales</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.info', 'General Information')}</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.name', 'Name')}</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -1303,14 +1320,14 @@ function SettingsTab({ agent, onUpdate }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Type d'agent</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.type', 'Agent Type')}</label>
                 <select
                   value={formData.template || ''}
                   onChange={(e) => handleTemplateChange(e.target.value)}
                   className="input-dark w-full"
                   disabled={isLoadingTemplates}
                 >
-                  <option value="">Générique (support, FAQ, RDV…)</option>
+                  <option value="">{t('agents.detail.settings.generic', 'Generic (support, FAQ, appointments...)')}</option>
                   {templateOptions.map((template) => (
                     <option key={template.id} value={template.id}>
                       {template.name}
@@ -1318,18 +1335,18 @@ function SettingsTab({ agent, onUpdate }) {
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  E-commerce : injection du catalogue et détection/création de commandes. Les autres types restent des assistants sans logique commandes.
+                  {t('agents.detail.settings.typeHint', 'E-commerce: injection of catalog and detection/creation of orders. Other types remain assistants without order logic.')}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Outil assigné</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.tool', 'Assigned Tool')}</label>
                 <select
                   value={formData.tool_id || ''}
                   onChange={(e) => setFormData({ ...formData, tool_id: e.target.value })}
                   className="input-dark w-full"
                   disabled={toolsLoading}
                 >
-                  <option value="">Aucun outil</option>
+                  <option value="">{t('agents.detail.settings.noTool', 'No tool')}</option>
                   {tools.map((tool) => (
                     <option key={tool.id} value={tool.id}>
                       {[tool.label || tool.type, tool.type, tool.type === 'whatsapp' && tool.meta?.phone ? tool.meta.phone : null].filter(Boolean).join(' — ')}
@@ -1337,12 +1354,12 @@ function SettingsTab({ agent, onUpdate }) {
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  La connexion des outils se gère dans la page{' '}
-                  <Link to="/dashboard/tools" className="text-gold-400 hover:text-gold-300">Outils</Link>.
+                  {t('agents.detail.settings.toolHint', 'Tool connections are managed in the Tools page.')}{' '}
+                  <Link to="/dashboard/tools" className="text-gold-400 hover:text-gold-300">{t('common.tabs.tools', 'Tools')}</Link>.
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.description', 'Description')}</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -1355,22 +1372,22 @@ function SettingsTab({ agent, onUpdate }) {
 
         {/* AI Configuration Section */}
         <div id="settings-ai" className="card p-6 scroll-mt-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Configuration IA</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.ai', 'AI Configuration')}</h2>
             <div className="space-y-4">
               {/* Zone dédiée pour les instructions système (System Prompt) */}
               <div className="rounded-xl border border-space-600 bg-space-800/50 p-4 focus-within:border-blue-500/50 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <label htmlFor="agent-system-prompt" className="text-sm font-medium text-gray-300">
-                    Instructions système (System Prompt)
+                    {t('agents.detail.settings.systemPrompt', 'System Prompt')}
                   </label>
                   <button
                     type="button"
                     onClick={() => setSystemPromptFocusOpen(true)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-colors"
-                    title="Agrandir pour modifier"
+                    title={t('agents.detail.settings.expand', 'Expand')}
                   >
                     <Maximize2 className="w-4 h-4" />
-                    Agrandir
+                    {t('agents.detail.settings.expand', 'Expand')}
                   </button>
                 </div>
                 <textarea
@@ -1378,11 +1395,11 @@ function SettingsTab({ agent, onUpdate }) {
                   value={formData.system_prompt}
                   onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
                   rows={12}
-                  placeholder="Décrivez le comportement de votre assistant..."
+                  placeholder={t('agents.detail.knowledge.modal.contentPlaceholder', 'Describe your assistant\'s behavior...')}
                   className="w-full rounded-lg border border-space-600 bg-space-900 px-4 py-3 font-mono text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 min-h-[200px] resize-y"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Ces instructions définissent la personnalité et le comportement de votre assistant.
+                  {t('agents.detail.settings.systemPromptHint', 'These instructions define the personality and behavior of your assistant.')}
                 </p>
               </div>
 
@@ -1390,7 +1407,7 @@ function SettingsTab({ agent, onUpdate }) {
               {systemPromptFocusOpen && (
                 <div className="fixed inset-0 z-50 flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-100">Instructions système (System Prompt)</h3>
+                    <h3 className="text-lg font-semibold text-gray-100">{t('agents.detail.settings.systemPrompt', 'System Prompt')}</h3>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -1399,7 +1416,7 @@ function SettingsTab({ agent, onUpdate }) {
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white bg-gold-500 hover:bg-gold-400 border border-gold-400/30 transition-colors disabled:opacity-50 disabled:pointer-events-none"
                       >
                         <Save className="w-4 h-4" />
-                        {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+                        {saving ? t('agents.detail.actions.saving', 'Saving...') : t('agents.detail.actions.save', 'Save')}
                       </button>
                       <button
                         type="button"
@@ -1407,7 +1424,7 @@ function SettingsTab({ agent, onUpdate }) {
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-space-800 hover:bg-space-700 border border-space-600 transition-colors"
                       >
                         <Minimize2 className="w-4 h-4" />
-                        Réduire
+                        {t('agents.detail.settings.minimize', 'Minimize')}
                       </button>
                     </div>
                   </div>
@@ -1415,17 +1432,17 @@ function SettingsTab({ agent, onUpdate }) {
                     <textarea
                       value={formData.system_prompt}
                       onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
-                      placeholder="Décrivez le comportement de votre assistant..."
+                      placeholder={t('agents.detail.knowledge.modal.contentPlaceholder', 'Describe your assistant\'s behavior...')}
                       className="flex-1 w-full min-h-0 p-4 font-mono text-sm text-gray-100 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none"
                       autoFocus
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Les modifications sont conservées. Enregistrez l’agent pour appliquer.</p>
+                  <p className="text-xs text-gray-500 mt-2">{t('agents.detail.settings.systemPromptHint', 'Changes are saved temporarily. Save agent to apply.')}</p>
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Modèle IA</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.aiModel', 'AI Model')}</label>
                   <select
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
@@ -1465,25 +1482,25 @@ function SettingsTab({ agent, onUpdate }) {
                     </optgroup>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Les modèles gratuits sont limités. Les crédits sont déduits selon le modèle choisi.
+                    {t('agents.detail.settings.aiModelHint', 'Free models are limited. Credits are deducted according to the chosen model.')}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Langue</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.language', 'Language')}</label>
                   <select
                     value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                     className="input-dark w-full"
                   >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
+                    <option value="fr">{t('common.languages.fr', 'French')}</option>
+                    <option value="en">{t('common.languages.en', 'English')}</option>
+                    <option value="es">{t('common.languages.es', 'Spanish')}</option>
                   </select>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Température: <span className="text-gold-400">{formData.temperature}</span>
+                  {t('agents.detail.settings.temperature', 'Temperature')}: <span className="text-gold-400">{formData.temperature}</span>
                 </label>
                 <input
                   type="range"
@@ -1495,7 +1512,7 @@ function SettingsTab({ agent, onUpdate }) {
                   className="w-full accent-gold-400"
                 />
                 <p className="text-xs text-gray-500">
-                  Plus bas = réponses plus prévisibles, plus haut = plus créatives
+                  {t('agents.detail.settings.temperatureHint', 'Lower = more predictable responses, higher = more creative')}
                 </p>
               </div>
             </div>
@@ -1503,12 +1520,12 @@ function SettingsTab({ agent, onUpdate }) {
 
         {/* Auto Reply Section */}
         <div id="settings-auto_reply" className="card p-6 scroll-mt-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Réponse automatique</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.autoReply', 'Auto Reply')}</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Activer les réponses automatiques</label>
-                  <p className="text-xs text-gray-500">L'agent répond automatiquement aux messages entrants</p>
+                  <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableAutoReply', 'Enable auto-replies')}</label>
+                  <p className="text-xs text-gray-500">{t('agents.detail.settings.autoReplyHint', 'The agent responds automatically to incoming messages')}</p>
                 </div>
                 <button
                   type="button"
@@ -1528,7 +1545,7 @@ function SettingsTab({ agent, onUpdate }) {
               {formData.auto_reply && (
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Délai de réponse: <span className="text-gold-400">{Number(formData.response_delay)} seconde{Number(formData.response_delay) !== 1 ? 's' : ''}</span>
+                    {t('agents.detail.settings.responseDelay', 'Response delay')}: <span className="text-gold-400">{Number(formData.response_delay)} {t(`agents.detail.settings.seconds${Number(formData.response_delay) !== 1 ? '_plural' : ''}`, 'seconds')}</span>
                   </label>
                   <input
                     type="range"
@@ -1546,7 +1563,7 @@ function SettingsTab({ agent, onUpdate }) {
                     <span>30 s</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Délai avant que l'agent réponde. Simule une frappe naturelle et permet d'intervenir manuellement.
+                    {t('agents.detail.settings.responseDelayHint', 'Delay before the agent responds. Simulates natural typing and allows for manual intervention.')}
                   </p>
                 </div>
               )}
@@ -1555,12 +1572,12 @@ function SettingsTab({ agent, onUpdate }) {
 
         {/* Availability Section */}
         <div id="settings-availability" className="card p-6 scroll-mt-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Horaires de disponibilité</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.availability', 'Availability')}</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Activer les horaires</label>
-                  <p className="text-xs text-gray-500">L'agent ne répond que pendant les heures définies</p>
+                  <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableAvailability', 'Enable schedules')}</label>
+                  <p className="text-xs text-gray-500">{t('agents.detail.settings.availabilityHint', 'The agent only responds during defined hours')}</p>
                 </div>
                 <button
                   type="button"
@@ -1581,7 +1598,7 @@ function SettingsTab({ agent, onUpdate }) {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Heure de début</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.startTime', 'Start time')}</label>
                       <input
                         type="time"
                         value={formData.availability_start}
@@ -1590,7 +1607,7 @@ function SettingsTab({ agent, onUpdate }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Heure de fin</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.endTime', 'End time')}</label>
                       <input
                         type="time"
                         value={formData.availability_end}
@@ -1601,7 +1618,7 @@ function SettingsTab({ agent, onUpdate }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Jours de disponibilité</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.settings.days', 'Availability days')}</label>
                     <div className="flex gap-2">
                       {DAYS_OF_WEEK.map((day) => (
                         <button
@@ -1621,7 +1638,7 @@ function SettingsTab({ agent, onUpdate }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Fuseau horaire</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.timezone', 'Timezone')}</label>
                     <select
                       value={formData.availability_timezone}
                       onChange={(e) => setFormData({ ...formData, availability_timezone: e.target.value })}
@@ -1637,16 +1654,16 @@ function SettingsTab({ agent, onUpdate }) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Message d'absence</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.absenceMessage', 'Absence message')}</label>
                     <textarea
                       value={formData.absence_message}
                       onChange={(e) => setFormData({ ...formData, absence_message: e.target.value })}
                       rows={3}
-                      placeholder="Message envoyé en dehors des heures de disponibilité..."
+                      placeholder={t('agents.detail.settings.absenceMessagePlaceholder', 'Message sent outside of availability hours...')}
                       className="input-dark w-full"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Ce message est envoyé une fois par conversation en dehors des horaires.
+                      {t('agents.detail.settings.absenceMessageHint', 'This message is sent once per conversation outside of hours.')}
                     </p>
                   </div>
                 </>
@@ -1656,12 +1673,12 @@ function SettingsTab({ agent, onUpdate }) {
 
         {/* Human Transfer Section */}
         <div id="settings-transfer" className="card p-6 scroll-mt-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Transfert vers un humain</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.transfer', 'Human Transfer')}</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Activer le transfert</label>
-                  <p className="text-xs text-gray-500">Permet aux clients de demander à parler à un humain</p>
+                  <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableTransfer', 'Enable transfer')}</label>
+                  <p className="text-xs text-gray-500">{t('agents.detail.settings.transferHint', 'Allows customers to ask to speak to a human')}</p>
                 </div>
                 <button
                   type="button"
@@ -1681,37 +1698,36 @@ function SettingsTab({ agent, onUpdate }) {
               {formData.human_transfer_enabled && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Mots-clés de déclenchement</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.keywords', 'Trigger keywords')}</label>
                     <input
                       type="text"
                       value={formData.human_transfer_keywords}
                       onChange={(e) => setFormData({ ...formData, human_transfer_keywords: e.target.value })}
-                      placeholder="humain, agent, parler à quelqu'un"
+                      placeholder={t('agents.detail.settings.keywordsHint', 'human, agent, speak to someone')}
                       className="input-dark w-full"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Séparez les mots-clés par des virgules. Le transfert est déclenché si un de ces mots est détecté.
+                      {t('agents.detail.settings.keywordsHint', 'Separate keywords with commas. Transfer is triggered if one of these words is detected.')}
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Message de transfert</label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.transferMessage', 'Transfer message')}</label>
                     <textarea
                       value={formData.human_transfer_message}
                       onChange={(e) => setFormData({ ...formData, human_transfer_message: e.target.value })}
                       rows={2}
-                      placeholder="Je vous transfère vers un conseiller..."
+                      placeholder={t('agents.detail.settings.transferMessageHint', 'I am transferring you to an advisor...')}
                       className="input-dark w-full"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Message envoyé au client lors du transfert. L'agent arrête ensuite de répondre automatiquement.
+                      {t('agents.detail.settings.transferMessageHint', 'Message sent to the customer during transfer. The agent then stops responding automatically.')}
                     </p>
                   </div>
 
                   <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                     <p className="text-sm text-amber-400">
-                      💡 Lorsqu'une conversation est transférée, l'agent arrête de répondre automatiquement.
-                      Vous pouvez reprendre le contrôle dans la page Conversations.
+                      {t('agents.detail.settings.transferNote', 'When a conversation is transferred, the agent stops responding automatically. You can take back control in the Conversations page.')}
                     </p>
                   </div>
                 </>
@@ -1721,11 +1737,11 @@ function SettingsTab({ agent, onUpdate }) {
 
         {/* Limits Section */}
         <div id="settings-limits" className="card p-6 scroll-mt-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">Limites et restrictions</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.limits', 'Limits')}</h2>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Messages max par jour par contact: <span className="text-gold-400">{formData.max_messages_per_day || 'Illimité'}</span>
+                  {t('agents.detail.settings.maxMessages', 'Max messages per day per contact')}: <span className="text-gold-400">{formData.max_messages_per_day || t('agents.detail.settings.unlimited', 'Unlimited')}</span>
                 </label>
                 <input
                   type="range"
@@ -1756,7 +1772,7 @@ function SettingsTab({ agent, onUpdate }) {
             className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
           >
             <Save className="w-5 h-5" />
-            {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+            {saving ? t('agents.detail.actions.saving', 'Saving...') : t('agents.detail.actions.save', 'Save')}
           </button>
         </div>
       </form>
@@ -1795,6 +1811,7 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5" }) => {
 }
 
 function KnowledgeTab({ agentId }) {
+  const { t } = useTranslation()
   const { showConfirm } = useConfirm()
   const [items, setItems] = useState([])
   const [stats, setStats] = useState({})
@@ -1846,10 +1863,10 @@ function KnowledgeTab({ agentId }) {
       await api.post(`/agents/${agentId}/global-knowledge`, {
         knowledgeIds: assignedGlobalIds
       })
-      toast.success('Attributions sauvegardées')
+      toast.success(t('agents.detail.knowledge.successSave', 'Assignments saved'))
       setShowGlobalSelector(false)
     } catch (error) {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t('agents.detail.settings.error', 'Error during saving'))
     } finally {
       setSavingGlobal(false)
     }
@@ -1865,27 +1882,27 @@ function KnowledgeTab({ agentId }) {
 
   const handleDelete = async (itemId) => {
     const ok = await showConfirm({
-      title: 'Supprimer l\'élément',
-      message: 'Supprimer définitivement cet élément de la base de connaissances ?',
+      title: t('agents.detail.knowledge.delete', 'Delete item'),
+      message: t('agents.detail.knowledge.deleteConfirm', 'Permanently delete this element from the knowledge base?'),
       variant: 'danger',
-      confirmLabel: 'Supprimer'
+      confirmLabel: t('agents.detail.actions.delete', 'Delete')
     })
     if (!ok) return
     try {
       await api.delete(`/knowledge/${itemId}`)
-      toast.success('Supprimé')
+      toast.success(t('agents.detail.knowledge.successDelete', 'Deleted'))
       loadKnowledge()
     } catch (error) {
-      toast.error('Erreur')
+      toast.error(t('agents.detail.settings.error', 'Error'))
     }
   }
 
   const getTypeLabel = (type) => {
     const labels = {
-      'text': 'Texte',
+      'text': t('agents.detail.knowledge.types.text', 'Text'),
       'pdf': 'PDF',
       'youtube': 'YouTube',
-      'website': 'Site web',
+      'website': t('agents.detail.knowledge.types.website', 'Website'),
       'markdown': 'Markdown'
     }
     return labels[type] || type
@@ -1902,11 +1919,11 @@ function KnowledgeTab({ agentId }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <span className="text-gray-400">
-              {stats.total_items || 0} éléments
+              {stats.total_items || 0} {t('agents.detail.knowledge.items', 'items')}
             </span>
             <span className="text-gray-600">•</span>
             <span className="text-gray-400">
-              {(stats.total_characters || 0).toLocaleString()} caractères
+              {(stats.total_characters || 0).toLocaleString()} {t('agents.detail.knowledge.characters', 'characters')}
             </span>
             {stats.by_type && Object.keys(stats.by_type).length > 0 && (
               <>
@@ -1928,7 +1945,7 @@ function KnowledgeTab({ agentId }) {
           className="btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] w-full sm:w-auto touch-target"
         >
           <Plus className="w-5 h-5" />
-          Ajouter
+          {t('agents.detail.actions.add', 'Add')}
         </button>
       </div>
 
@@ -1941,13 +1958,13 @@ function KnowledgeTab({ agentId }) {
             </div>
             <div className="min-w-0">
               <h4 className="font-medium text-gray-100 mb-1">
-                Base de connaissance globale
+                {t('agents.detail.knowledge.global', 'Global Knowledge Base')}
               </h4>
               <p className="text-sm text-gray-400">
                 {assignedGlobalIds.length === 0 ? (
-                  'Aucune connaissance globale attribuée'
+                  t('agents.detail.knowledge.noGlobal', 'No global knowledge assigned')
                 ) : (
-                  `${assignedGlobalIds.length} élément(s) de la base globale attribué(s)`
+                  t('agents.detail.knowledge.globalAssigned', { count: assignedGlobalIds.length })
                 )}
               </p>
             </div>
@@ -1957,7 +1974,7 @@ function KnowledgeTab({ agentId }) {
             className="btn-secondary inline-flex items-center justify-center gap-2 min-h-[44px] w-full sm:w-auto flex-shrink-0 touch-target"
           >
             <Settings className="w-4 h-4" />
-            Gérer
+            {t('agents.detail.knowledge.manage', 'Manage')}
           </button>
         </div>
       </div>
@@ -1967,9 +1984,9 @@ function KnowledgeTab({ agentId }) {
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-space-700 to-space-800 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
             <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-gray-500" />
           </div>
-          <h3 className="text-base sm:text-lg font-medium text-gray-100 mb-2">Base de connaissances vide</h3>
+          <h3 className="text-base sm:text-lg font-medium text-gray-100 mb-2">{t('agents.detail.knowledge.empty', 'Knowledge base empty')}</h3>
           <p className="text-sm sm:text-base text-gray-400 mb-4 sm:mb-6 max-w-md mx-auto">
-            Ajoutez des informations pour que votre assistant puisse répondre précisément aux questions de vos clients
+            {t('agents.detail.knowledge.emptyDesc', 'Add information so your assistant can accurately answer your customers\' questions')}
           </p>
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
             <button
@@ -1977,7 +1994,7 @@ function KnowledgeTab({ agentId }) {
               className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors touch-target"
             >
               <FileText className="w-4 h-4" />
-              Texte
+              {t('agents.detail.knowledge.types.text', 'Text')}
             </button>
             <button
               onClick={() => setShowAddModal(true)}
@@ -1998,15 +2015,15 @@ function KnowledgeTab({ agentId }) {
               className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 bg-space-800 hover:bg-space-700 text-gray-300 rounded-xl transition-colors touch-target"
             >
               <KnowledgeTypeIcon type="website" className="w-4 h-4" />
-              Site web
+              {t('agents.detail.knowledge.types.website', 'Website')}
             </button>
           </div>
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <div 
-              key={item.id} 
+              key={item.id || idx} 
               className="card p-3 sm:p-4 hover:border-space-600 transition-colors cursor-pointer min-w-0"
               onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
             >
@@ -2023,7 +2040,7 @@ function KnowledgeTab({ agentId }) {
                           {getTypeLabel(item.type)}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {item.content?.length?.toLocaleString()} caractères
+                          {item.content?.length?.toLocaleString()} {t('agents.detail.knowledge.characters', 'characters')}
                         </span>
                         {item.metadata?.sourceUrl && (
                           <a 
@@ -2047,7 +2064,7 @@ function KnowledgeTab({ agentId }) {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
                       className="text-gray-500 hover:text-red-400 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0 touch-target sm:min-w-0 sm:min-h-0 sm:p-1"
-                      title="Supprimer"
+                      title={t('agents.detail.actions.delete', 'Delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -2057,7 +2074,7 @@ function KnowledgeTab({ agentId }) {
                   </p>
                   {item.content?.length > 200 && (
                     <button className="text-xs text-gold-400 mt-2 min-h-[32px] touch-target">
-                      {expandedItem === item.id ? 'Réduire' : 'Voir plus...'}
+                      {expandedItem === item.id ? t('agents.detail.settings.minimize', 'Minimize') : t('agents.detail.buttons.seeMore', 'See more...')}
                     </button>
                   )}
                 </div>
@@ -2087,18 +2104,18 @@ function KnowledgeTab({ agentId }) {
             <div className="p-4 sm:p-6 border-b border-space-700 flex-shrink-0">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-100 min-w-0">
-                  Attribuer des connaissances globales
+                  {t('agents.detail.knowledge.assignedGlobal', 'Assign Global Knowledge')}
                 </h2>
                 <button 
                   onClick={() => setShowGlobalSelector(false)}
                   className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target flex-shrink-0"
-                  aria-label="Fermer"
+                  aria-label={t('agents.detail.actions.cancel', 'Close')}
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <p className="text-sm text-gray-400">
-                Sélectionnez les éléments de la base de connaissance globale que cet agent doit utiliser
+                {t('agents.detail.knowledge.assignedGlobalDesc', 'Select the elements from the global knowledge base that this agent should use')}
               </p>
             </div>
 
@@ -2107,12 +2124,12 @@ function KnowledgeTab({ agentId }) {
               {globalKnowledge.length === 0 ? (
                 <div className="text-center py-8 sm:py-12">
                   <Globe className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600 mx-auto mb-4" />
-                  <p className="text-gray-400 text-sm sm:text-base">Aucune connaissance globale disponible</p>
+                  <p className="text-gray-400 text-sm sm:text-base">{t('agents.detail.knowledge.noGlobalAvailable', 'No global knowledge available')}</p>
                   <Link 
                     to="/dashboard/knowledge"
                     className="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block"
                   >
-                    Ajouter des connaissances globales →
+                    {t('agents.detail.knowledge.addGlobalLink', 'Add global knowledge')} →
                   </Link>
                 </div>
               ) : (
@@ -2154,7 +2171,7 @@ function KnowledgeTab({ agentId }) {
                                 {getTypeLabel(item.type)}
                               </span>
                               <span className="text-xs text-gray-500">
-                                {item.content?.length?.toLocaleString()} caractères
+                                {item.content?.length?.toLocaleString()} {t('agents.detail.knowledge.characters', 'characters')}
                               </span>
                             </div>
                             {item.content && (
@@ -2179,18 +2196,18 @@ function KnowledgeTab({ agentId }) {
                     onClick={() => setShowGlobalSelector(false)}
                     className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target"
                   >
-                    Annuler
+                    {t('agents.detail.actions.cancel', 'Cancel')}
                   </button>
                   <button
                     onClick={handleSaveGlobalAssignments}
                     disabled={savingGlobal}
                     className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target disabled:opacity-50"
                   >
-                    {savingGlobal ? 'Sauvegarde...' : 'Sauvegarder'}
+                    {savingGlobal ? t('agents.detail.actions.saving', 'Saving...') : t('agents.detail.actions.save', 'Save')}
                   </button>
                 </div>
                 <p className="text-sm text-gray-400 text-center sm:text-left">
-                  {assignedGlobalIds.length} élément(s) sélectionné(s)
+                  {t('agents.detail.knowledge.selected', { count: assignedGlobalIds.length })}
                 </p>
               </div>
             </div>
@@ -2202,6 +2219,7 @@ function KnowledgeTab({ agentId }) {
 }
 
 function AddKnowledgeModal({ agentId, onClose, onAdded }) {
+  const { t } = useTranslation()
   useLockBodyScroll(true)
   const [activeType, setActiveType] = useState('text') // text, pdf, youtube, website
   const [title, setTitle] = useState('')
@@ -2212,25 +2230,25 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
   const fileInputRef = useRef(null)
 
   const typeOptions = [
-    { id: 'text', label: 'Texte', icon: FileText, color: 'blue' },
+    { id: 'text', label: t('agents.detail.knowledge.types.text', 'Text'), icon: FileText, color: 'blue' },
     { id: 'pdf', label: 'PDF', icon: FileText, color: 'red' },
     { id: 'youtube', label: 'YouTube', icon: Video, color: 'red' },
-    { id: 'website', label: 'Site web', icon: Globe, color: 'blue' },
+    { id: 'website', label: t('agents.detail.knowledge.types.website', 'Website'), icon: Globe, color: 'blue' },
   ]
 
   const handleTextSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
-      toast.error('Titre et contenu requis')
+      toast.error(t('agents.detail.knowledge.modal.required', 'Title and content required'))
       return
     }
     setLoading(true)
     try {
       await api.post(`/knowledge/agent/${agentId}`, { title, content, type: 'text' })
-      toast.success('Ajouté à la base de connaissances')
+      toast.success(t('agents.detail.knowledge.successAdd', 'Added to knowledge base'))
       onAdded()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur')
+      toast.error(error.response?.data?.error || t('agents.detail.settings.error', 'Error'))
     } finally {
       setLoading(false)
     }
@@ -2239,7 +2257,7 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
   const handleUrlSubmit = async (e) => {
     e.preventDefault()
     if (!url.trim()) {
-      toast.error('URL requise')
+      toast.error(t('agents.detail.knowledge.modal.urlRequired', 'URL required'))
       return
     }
     setLoading(true)
@@ -2247,13 +2265,13 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
       const response = await api.post(`/knowledge/agent/${agentId}/extract-url`, { url, title: title || undefined })
       // Check if we got metadata fallback instead of full transcript
       if (response.data?.metadata?.fallback) {
-        toast.success('Métadonnées de la vidéo ajoutées (transcription non disponible)', { duration: 5000 })
+        toast.success(t('agents.detail.knowledge.modal.videoMetadataAdded', 'Video metadata added (transcript not available)'), { duration: 5000 })
       } else {
-        toast.success('Contenu extrait et ajouté')
+        toast.success(t('agents.detail.knowledge.modal.contentExtracted', 'Content extracted and added'))
       }
       onAdded()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'extraction')
+      toast.error(error.response?.data?.error || t('agents.detail.knowledge.modal.extractError', 'Error during extraction'))
     } finally {
       setLoading(false)
     }
@@ -2272,10 +2290,10 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
       await api.post(`/knowledge/agent/${agentId}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      toast.success('Fichier ajouté à la base de connaissances')
+      toast.success(t('agents.detail.knowledge.modal.fileAdded', 'File added to knowledge base'))
       onAdded()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'upload')
+      toast.error(error.response?.data?.error || t('agents.detail.knowledge.modal.uploadError', 'Error during upload'))
     } finally {
       setLoading(false)
     }
@@ -2288,9 +2306,9 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
         <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
-              Ajouter à la base de connaissances
+              {t('agents.detail.knowledge.modal.title', 'Add to knowledge base')}
             </h2>
-            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label="Fermer">
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label={t('agents.detail.actions.cancel', 'Close')}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -2334,43 +2352,43 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
                 <FileText className="w-6 h-6 text-blue-400" />
                 <div>
-                  <p className="text-sm font-medium text-blue-400">Texte personnalisé</p>
-                  <p className="text-xs text-gray-400">Ajoutez des informations que votre agent doit connaître</p>
+                  <p className="text-sm font-medium text-blue-400">{t('agents.detail.knowledge.types.text', 'Custom Text')}</p>
+                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.textDesc', 'Add information that your agent should know')}</p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Titre *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')} *</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Horaires d'ouverture"
+                  placeholder={t('agents.detail.knowledge.modal.titlePlaceholder', 'Ex: Opening hours')}
                   className="input-dark w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Contenu *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.contentLabel', 'Content')} *</label>
                 <textarea
                   required
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Informations que l'assistant doit connaître..."
+                  placeholder={t('agents.detail.knowledge.modal.contentPlaceholder', 'Information that the assistant should know...')}
                   rows={8}
                   className="input-dark w-full resize-none"
                 />
-                <p className="text-xs text-gray-500 mt-1">{content.length.toLocaleString()} caractères</p>
+                <p className="text-xs text-gray-500 mt-1">{content.length.toLocaleString()} {t('agents.detail.knowledge.characters', 'characters')}</p>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  Annuler
+                  {t('agents.detail.actions.cancel', 'Cancel')}
                 </button>
                 <button 
                   type="submit" 
                   disabled={loading || !title.trim() || !content.trim()} 
                   className="btn-primary flex-1 disabled:opacity-50"
                 >
-                  {loading ? 'Ajout...' : 'Ajouter'}
+                  {loading ? t('agents.detail.actions.adding', 'Adding...') : t('agents.detail.actions.add', 'Add')}
                 </button>
               </div>
             </form>
@@ -2382,18 +2400,18 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
                 <Video className="w-6 h-6 text-red-500" />
                 <div>
-                  <p className="text-sm font-medium text-red-400">Vidéo YouTube</p>
-                  <p className="text-xs text-gray-400">La transcription de la vidéo sera automatiquement extraite</p>
+                  <p className="text-sm font-medium text-red-400">{t('agents.detail.knowledge.modal.youtubeTitle', 'YouTube Video')}</p>
+                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.youtubeDesc', 'The video transcript will be automatically extracted')}</p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">URL YouTube *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.youtubeUrlLabel', 'YouTube URL')} *</label>
                 <input
                   type="url"
                   required
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=... ou https://youtu.be/..."
+                  placeholder={t('agents.detail.knowledge.modal.youtubeUrlPlaceholder', 'https://youtube.com/watch?v=... or https://youtu.be/...')}
                   className="input-dark w-full"
                 />
               </div>
@@ -2411,21 +2429,20 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               {/* Note about YouTube transcripts */}
               <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                 <p className="text-xs text-amber-400">
-                  <strong>Note :</strong> Seules les vidéos avec sous-titres (automatiques ou manuels) peuvent être extraites. 
-                  Les vidéos sans sous-titres ou avec sous-titres désactivés ne sont pas supportées.
+                  <strong>Note:</strong> {t('agents.detail.knowledge.modal.youtubeNote', 'Only videos with subtitles (automatic or manual) can be extracted. Videos without subtitles or with disabled subtitles are not supported.')}
                 </p>
               </div>
               
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  Annuler
+                  {t('agents.detail.actions.cancel', 'Cancel')}
                 </button>
                 <button 
                   type="submit" 
                   disabled={loading || !url.trim()} 
                   className="btn-primary flex-1 disabled:opacity-50"
                 >
-                  {loading ? 'Extraction...' : 'Extraire'}
+                  {loading ? t('agents.detail.knowledge.modal.extracting', 'Extracting...') : t('agents.detail.knowledge.modal.extract', 'Extract')}
                 </button>
               </div>
             </form>
@@ -2437,41 +2454,41 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
                 <Globe className="w-6 h-6 text-blue-500" />
                 <div>
-                  <p className="text-sm font-medium text-blue-400">Page web</p>
-                  <p className="text-xs text-gray-400">Le contenu textuel de la page sera automatiquement extrait</p>
+                  <p className="text-sm font-medium text-blue-400">{t('agents.detail.knowledge.modal.websiteTitle', 'Web Page')}</p>
+                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.websiteDesc', 'The textual content of the page will be automatically extracted')}</p>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">URL du site *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.websiteUrlLabel', 'Site URL')} *</label>
                 <input
                   type="url"
                   required
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://example.com/page-a-extraire"
+                  placeholder={t('agents.detail.knowledge.modal.websiteUrlPlaceholder', 'https://example.com/page-to-extract')}
                   className="input-dark w-full"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Titre (optionnel)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')} {t('agents.detail.knowledge.modal.optional', '(optional)')}</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Sera extrait automatiquement si non fourni"
+                  placeholder={t('agents.detail.knowledge.modal.autoTitleHint', 'Will be automatically extracted if not provided')}
                   className="input-dark w-full"
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  Annuler
+                  {t('agents.detail.actions.cancel', 'Cancel')}
                 </button>
                 <button 
                   type="submit" 
                   disabled={loading || !url.trim()} 
                   className="btn-primary flex-1 disabled:opacity-50"
                 >
-                  {loading ? 'Extraction...' : 'Extraire'}
+                  {loading ? t('agents.detail.knowledge.modal.extracting', 'Extracting...') : t('agents.detail.knowledge.modal.extract', 'Extract')}
                 </button>
               </div>
             </form>
@@ -2483,18 +2500,18 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
               <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
                 <FileText className="w-6 h-6 text-red-400" />
                 <div>
-                  <p className="text-sm font-medium text-red-400">Document PDF</p>
-                  <p className="text-xs text-gray-400">Le texte du PDF sera extrait automatiquement</p>
+                  <p className="text-sm font-medium text-red-400">{t('agents.detail.knowledge.modal.pdfTitle', 'PDF Document')}</p>
+                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.pdfDesc', 'PDF text will be automatically extracted')}</p>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Titre (optionnel)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')} {t('agents.detail.knowledge.modal.optional', '(optional)')}</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Sera extrait du nom de fichier si non fourni"
+                  placeholder={t('agents.detail.knowledge.modal.pdfTitlePlaceholder', 'Will be extracted from filename if not provided')}
                   className="input-dark w-full"
                 />
               </div>
@@ -2514,16 +2531,16 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
                   <FileText className="w-8 h-8 text-red-400" />
                 </div>
                 <p className="text-gray-300 font-medium mb-2">
-                  {loading ? 'Extraction en cours...' : 'Cliquez pour sélectionner un PDF'}
+                  {loading ? t('agents.detail.knowledge.modal.extracting', 'Extracting...') : t('agents.detail.knowledge.modal.pdfClick', 'Click to select a PDF')}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Format PDF • Maximum 10 MB
+                  {t('agents.detail.knowledge.modal.pdfMax', 'PDF Format • Maximum 10 MB')}
                 </p>
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  Annuler
+                  {t('agents.detail.actions.cancel', 'Cancel')}
                 </button>
               </div>
             </div>
@@ -2535,6 +2552,7 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
 }
 
 function PlaygroundTab({ agent }) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -2571,7 +2589,7 @@ function PlaygroundTab({ agent }) {
       }])
     } catch (error) {
       console.error('Playground error:', error)
-      toast.error(error.response?.data?.error || 'Erreur lors de la génération')
+      toast.error(error.response?.data?.error || t('agents.detail.playground.generateError', 'Error during generation'))
       // Remove the user message if there was an error
       setMessages(prev => prev.slice(0, -1))
     } finally {
@@ -2585,8 +2603,8 @@ function PlaygroundTab({ agent }) {
         <div className="p-4 border-b border-space-700 bg-space-800">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-display font-semibold text-gray-100">Testez votre assistant</h2>
-              <p className="text-sm text-gray-400">Testez les réponses IA en temps réel</p>
+              <h2 className="font-display font-semibold text-gray-100">{t('agents.detail.playground.title', 'Test your assistant')}</h2>
+              <p className="text-sm text-gray-400">{t('agents.detail.playground.subtitle', 'Test AI responses in real-time')}</p>
             </div>
             <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
               {agent.model || 'gemini-1.5-flash'}
@@ -2598,7 +2616,7 @@ function PlaygroundTab({ agent }) {
           {messages.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>Envoyez un message pour tester votre assistant</p>
+              <p>{t('agents.detail.playground.empty', 'Send a message to test your assistant')}</p>
             </div>
           ) : (
             messages.map((msg, idx) => (
@@ -2637,7 +2655,7 @@ function PlaygroundTab({ agent }) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Tapez un message..."
+            placeholder={t('agents.detail.playground.placeholder', 'Type a message...')}
             className="input-dark flex-1 rounded-full"
           />
           <button
@@ -2655,6 +2673,7 @@ function PlaygroundTab({ agent }) {
 
 // ==================== TEMPLATES TAB ====================
 function TemplatesTab({ agentId }) {
+  const { t } = useTranslation()
   const { showConfirm } = useConfirm()
   const [templates, setTemplates] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2670,7 +2689,7 @@ function TemplatesTab({ agentId }) {
       const response = await api.get(`/agents/${agentId}/templates`)
       setTemplates(response.data.templates)
     } catch (error) {
-      toast.error('Erreur lors du chargement des templates')
+      toast.error(t('agents.detail.templates.loadError', 'Error loading templates'))
     } finally {
       setLoading(false)
     }
@@ -2678,32 +2697,32 @@ function TemplatesTab({ agentId }) {
 
   const handleDelete = async (templateId) => {
     const ok = await showConfirm({
-      title: 'Supprimer le template',
-      message: 'Supprimer définitivement ce template ? Cette action est irréversible.',
+      title: t('agents.detail.templates.delete', 'Delete template'),
+      message: t('agents.detail.templates.deleteConfirm', 'Permanently delete this template? This action is irreversible.'),
       variant: 'danger',
-      confirmLabel: 'Supprimer'
+      confirmLabel: t('agents.detail.actions.delete', 'Delete')
     })
     if (!ok) return
     try {
       await api.delete(`/agents/${agentId}/templates/${templateId}`)
-      toast.success('Template supprimé')
+      toast.success(t('agents.detail.templates.successDelete', 'Template deleted'))
       loadTemplates()
     } catch (error) {
-      toast.error('Erreur lors de la suppression')
+      toast.error(t('agents.detail.settings.error', 'Error during deletion'))
     }
   }
 
   const handleCopy = (content) => {
     navigator.clipboard.writeText(content)
-    toast.success('Copié dans le presse-papier')
+    toast.success(t('agents.detail.templates.copied', 'Copied to clipboard'))
   }
 
   const CATEGORIES = {
-    general: { label: 'Général', color: 'bg-gray-500' },
-    greeting: { label: 'Salutation', color: 'bg-emerald-500' },
-    closing: { label: 'Clôture', color: 'bg-blue-500' },
-    faq: { label: 'FAQ', color: 'bg-blue-500' },
-    promotion: { label: 'Promotion', color: 'bg-amber-500' }
+    general: { label: t('agents.detail.templates.categories.general', 'General'), color: 'bg-gray-500' },
+    greeting: { label: t('agents.detail.templates.categories.greeting', 'Greeting'), color: 'bg-emerald-500' },
+    closing: { label: t('agents.detail.templates.categories.closing', 'Closing'), color: 'bg-blue-500' },
+    faq: { label: t('agents.detail.templates.categories.faq', 'FAQ'), color: 'bg-blue-500' },
+    promotion: { label: t('agents.detail.templates.categories.promotion', 'Promotion'), color: 'bg-amber-500' }
   }
 
   if (loading) {
@@ -2721,7 +2740,7 @@ function TemplatesTab({ agentId }) {
           className="btn-primary inline-flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Créer un template
+          {t('agents.detail.templates.create', 'Create template')}
         </button>
       </div>
 
@@ -2729,14 +2748,14 @@ function TemplatesTab({ agentId }) {
         <div className="card p-12 text-center">
           <FileText className="w-12 h-12 text-gray-500 mx-auto mb-4" />
           <p className="text-gray-400 mb-4">
-            Créez des templates de réponses rapides pour gagner du temps
+            {t('agents.detail.templates.emptyDesc', 'Create quick response templates to save time')}
           </p>
           <button
             onClick={() => setShowModal(true)}
             className="btn-primary inline-flex items-center gap-2"
           >
             <Plus className="w-5 h-5" />
-            Créer un template
+            {t('agents.detail.templates.create', 'Create template')}
           </button>
         </div>
       ) : (
@@ -2754,21 +2773,21 @@ function TemplatesTab({ agentId }) {
                   <button
                     onClick={() => handleCopy(template.content)}
                     className="p-1.5 hover:bg-space-700 rounded-lg transition-colors"
-                    title="Copier"
+                    title={t('common.actions.copy', 'Copy')}
                   >
                     <Copy className="w-4 h-4 text-gray-500" />
                   </button>
                   <button
                     onClick={() => { setEditingTemplate(template); setShowModal(true) }}
                     className="p-1.5 hover:bg-space-700 rounded-lg transition-colors"
-                    title="Modifier"
+                    title={t('agents.detail.actions.edit', 'Edit')}
                   >
                     <Edit className="w-4 h-4 text-gray-500" />
                   </button>
                   <button
                     onClick={() => handleDelete(template.id)}
                     className="p-1.5 hover:bg-red-500/10 rounded-lg transition-colors"
-                    title="Supprimer"
+                    title={t('agents.detail.actions.delete', 'Delete')}
                   >
                     <Trash2 className="w-4 h-4 text-red-400" />
                   </button>
@@ -2778,7 +2797,7 @@ function TemplatesTab({ agentId }) {
                 <p className="text-xs text-gold-400 mb-2 font-mono">/{template.shortcut}</p>
               )}
               <p className="text-sm text-gray-400 line-clamp-3">{template.content}</p>
-              <p className="text-xs text-gray-600 mt-2">Utilisé {template.usage_count} fois</p>
+              <p className="text-xs text-gray-600 mt-2">{t('agents.detail.templates.usedCount', { count: template.usage_count })}</p>
             </div>
           ))}
         </div>
@@ -2797,6 +2816,7 @@ function TemplatesTab({ agentId }) {
 }
 
 function TemplateModal({ template, agentId, onClose, onSaved }) {
+  const { t } = useTranslation()
   useLockBodyScroll(true)
   const [formData, setFormData] = useState({
     name: template?.name || '',
@@ -2809,7 +2829,7 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.name || !formData.content) {
-      toast.error('Nom et contenu requis')
+      toast.error(t('agents.detail.templates.modal.required', 'Name and content required'))
       return
     }
 
@@ -2817,14 +2837,14 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
     try {
       if (template) {
         await api.put(`/agents/${agentId}/templates/${template.id}`, formData)
-        toast.success('Template mis à jour')
+        toast.success(t('agents.detail.templates.successUpdate', 'Template updated'))
       } else {
         await api.post(`/agents/${agentId}/templates`, formData)
-        toast.success('Template créé')
+        toast.success(t('agents.detail.templates.successCreate', 'Template created'))
       }
       onSaved()
     } catch (error) {
-      toast.error('Erreur lors de la sauvegarde')
+      toast.error(t('agents.detail.settings.error', 'Error during saving'))
     } finally {
       setSaving(false)
     }
@@ -2836,24 +2856,24 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
       <div className="relative z-10 card w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
         <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
-            {template ? 'Modifier le template' : 'Nouveau template'}
+            {template ? t('agents.detail.templates.modal.edit', 'Edit template') : t('agents.detail.templates.modal.new', 'New template')}
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.name', 'Name')}</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Ex: Salutation client"
+              placeholder={t('agents.detail.templates.modal.namePlaceholder', 'Ex: Client greeting')}
               className="input-dark w-full"
               required
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Raccourci</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.templates.modal.shortcut', 'Shortcut')}</label>
               <div className="input-with-icon">
                 <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">/</div>
                 <input
@@ -2865,37 +2885,37 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Catégorie</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.type', 'Category')}</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="input-dark w-full"
               >
-                <option value="general">Général</option>
-                <option value="greeting">Salutation</option>
-                <option value="closing">Clôture</option>
-                <option value="faq">FAQ</option>
-                <option value="promotion">Promotion</option>
+                <option value="general">{t('agents.detail.templates.categories.general', 'General')}</option>
+                <option value="greeting">{t('agents.detail.templates.categories.greeting', 'Greeting')}</option>
+                <option value="closing">{t('agents.detail.templates.categories.closing', 'Closing')}</option>
+                <option value="faq">{t('agents.detail.templates.categories.faq', 'FAQ')}</option>
+                <option value="promotion">{t('agents.detail.templates.categories.promotion', 'Promotion')}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Contenu</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.knowledge.modal.contentLabel', 'Content')}</label>
             <textarea
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               rows={5}
-              placeholder="Le texte du message..."
+              placeholder={t('agents.detail.playground.placeholder', 'Message text...')}
               className="input-dark w-full"
               required
             />
           </div>
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
-              Annuler
+              {t('agents.detail.actions.cancel', 'Cancel')}
             </button>
             <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
-              {saving ? 'Sauvegarde...' : template ? 'Mettre à jour' : 'Créer'}
+              {saving ? t('agents.detail.actions.saving', 'Saving...') : template ? t('agents.detail.actions.save', 'Update') : t('agents.detail.actions.add', 'Create')}
             </button>
           </div>
         </form>
@@ -2906,6 +2926,7 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
 
 // ==================== BLACKLIST TAB ====================
 function BlacklistTab({ agentId }) {
+  const { t, i18n } = useTranslation()
   const { showConfirm } = useConfirm()
   const [blacklist, setBlacklist] = useState([])
   const [loading, setLoading] = useState(true)
@@ -2928,18 +2949,18 @@ function BlacklistTab({ agentId }) {
 
   const handleRemove = async (entryId) => {
     const ok = await showConfirm({
-      title: 'Retirer de la liste noire',
-      message: 'Retirer ce contact de la liste noire ? Il pourra à nouveau envoyer des messages.',
+      title: t('agents.detail.blacklist.remove', 'Remove from blacklist'),
+      message: t('agents.detail.blacklist.removeConfirm', 'Remove this contact from the blacklist? They will be able to send messages again.'),
       variant: 'warning',
-      confirmLabel: 'Retirer'
+      confirmLabel: t('agents.detail.actions.remove', 'Remove')
     })
     if (!ok) return
     try {
       await api.delete(`/agents/${agentId}/blacklist/${entryId}`)
-      toast.success('Contact retiré de la liste noire')
+      toast.success(t('agents.detail.blacklist.successRemove', 'Contact removed from blacklist'))
       loadBlacklist()
     } catch (error) {
-      toast.error('Erreur lors de la suppression')
+      toast.error(t('agents.detail.settings.error', 'Error during deletion'))
     }
   }
 
@@ -2958,16 +2979,16 @@ function BlacklistTab({ agentId }) {
           className="btn-primary inline-flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
-          Bloquer un contact
+          {t('agents.detail.blacklist.add', 'Block a contact')}
         </button>
       </div>
 
       {blacklist.length === 0 ? (
         <div className="card p-12 text-center">
           <Ban className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400 mb-2">Aucun contact bloqué</p>
+          <p className="text-gray-400 mb-2">{t('agents.detail.blacklist.empty', 'No blocked contacts')}</p>
           <p className="text-sm text-gray-500">
-            Les contacts dans la liste noire ne recevront plus de réponses automatiques
+            {t('agents.detail.blacklist.emptyDesc', 'Contacts in the blacklist will no longer receive automatic responses')}
           </p>
         </div>
       ) : (
@@ -2975,16 +2996,16 @@ function BlacklistTab({ agentId }) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-space-700 text-left">
-                <th className="p-4 text-sm font-medium text-gray-400">Contact</th>
-                <th className="p-4 text-sm font-medium text-gray-400">Numéro</th>
-                <th className="p-4 text-sm font-medium text-gray-400">Raison</th>
-                <th className="p-4 text-sm font-medium text-gray-400">Date</th>
+                <th className="p-4 text-sm font-medium text-gray-400">{t('contacts.list.name', 'Contact')}</th>
+                <th className="p-4 text-sm font-medium text-gray-400">{t('contacts.list.number', 'Number')}</th>
+                <th className="p-4 text-sm font-medium text-gray-400">{t('agents.detail.blacklist.reason', 'Reason')}</th>
+                <th className="p-4 text-sm font-medium text-gray-400">{t('common.date', 'Date')}</th>
                 <th className="p-4"></th>
               </tr>
             </thead>
             <tbody>
-              {blacklist.map((entry) => (
-                <tr key={entry.id} className="border-b border-space-700/50 last:border-0">
+              {blacklist.map((entry, idx) => (
+                <tr key={entry.id || idx} className="border-b border-space-700/50 last:border-0">
                   <td className="p-4">
                     <span className="font-medium text-gray-100">
                       {entry.contact_name || 'Inconnu'}
@@ -2997,13 +3018,13 @@ function BlacklistTab({ agentId }) {
                     {entry.reason || '-'}
                   </td>
                   <td className="p-4 text-gray-500 text-sm">
-                    {new Date(entry.created_at).toLocaleDateString('fr-FR')}
+                    {new Date(entry.created_at).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')}
                   </td>
                   <td className="p-4">
                     <button
                       onClick={() => handleRemove(entry.id)}
                       className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
-                      title="Retirer de la liste noire"
+                      title={t('agents.detail.blacklist.remove', 'Remove from blacklist')}
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -3019,11 +3040,9 @@ function BlacklistTab({ agentId }) {
         <div className="flex gap-3">
           <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-amber-400 font-medium">Comment ça fonctionne</p>
+            <p className="text-sm text-amber-400 font-medium">{t('agents.detail.blacklist.howItWorks', 'How it works')}</p>
             <p className="text-sm text-gray-400 mt-1">
-              Les contacts dans la liste noire peuvent toujours vous envoyer des messages,
-              mais l'agent ne répondra pas automatiquement. Leurs messages seront toujours
-              enregistrés dans les conversations.
+              {t('agents.detail.blacklist.howItWorksDesc', 'Contacts in the blacklist can still send you messages, but the agent will not respond automatically. Their messages will still be recorded in the conversations.')}
             </p>
           </div>
         </div>
@@ -3041,6 +3060,7 @@ function BlacklistTab({ agentId }) {
 }
 
 function AddToBlacklistModal({ agentId, onClose, onAdded }) {
+  const { t } = useTranslation()
   useLockBodyScroll(true)
   const [contactNumber, setContactNumber] = useState('')
   const [reason, setReason] = useState('')
@@ -3049,7 +3069,7 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!contactNumber) {
-      toast.error('Numéro de téléphone requis')
+      toast.error(t('agents.detail.blacklist.modal.numberRequired', 'Phone number required'))
       return
     }
 
@@ -3064,10 +3084,10 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
         contact_name: contactNumber,
         reason
       })
-      toast.success('Contact ajouté à la liste noire')
+      toast.success(t('agents.detail.blacklist.successAdd', 'Contact added to blacklist'))
       onAdded()
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'ajout')
+      toast.error(error.response?.data?.error || t('agents.detail.settings.error', 'Error during addition'))
     } finally {
       setSaving(false)
     }
@@ -3078,12 +3098,12 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 card w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
         <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">Bloquer un contact</h2>
+          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">{t('agents.detail.blacklist.add', 'Block a contact')}</h2>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Numéro de téléphone
+              {t('contacts.list.number', 'Phone number')}
             </label>
             <input
               type="tel"
@@ -3094,12 +3114,12 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
               required
             />
             <p className="text-xs text-gray-500 mt-1">
-              Entrez le numéro avec l'indicatif pays, sans + ni espaces
+              {t('agents.detail.blacklist.modal.numberHint', 'Enter the number with the country code, without + or spaces')}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Raison (optionnel)
+              {t('agents.detail.blacklist.reason', 'Reason')} {t('agents.detail.knowledge.modal.optional', '(optional)')}
             </label>
             <input
               type="text"
@@ -3111,10 +3131,10 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
           </div>
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
-              Annuler
+              {t('agents.detail.actions.cancel', 'Cancel')}
             </button>
             <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
-              {saving ? 'Ajout...' : 'Bloquer'}
+              {saving ? t('agents.detail.actions.adding', 'Adding...') : t('agents.detail.actions.add', 'Block')}
             </button>
           </div>
         </form>

@@ -17,6 +17,9 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             SELECT COUNT(*) as count FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.user.id);
         const conversationsCount = conversationsCountRow?.count ?? 0;
 
@@ -25,6 +28,9 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.user.id);
         const messagesCount = messagesCountRow?.count ?? 0;
 
@@ -32,7 +38,11 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             SELECT COUNT(*) as count FROM messages m
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
-            WHERE a.user_id = ? AND (m.created_at AT TIME ZONE 'UTC')::date = CURRENT_DATE
+            WHERE a.user_id = ? 
+            AND (m.created_at AT TIME ZONE 'UTC')::date = CURRENT_DATE
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.user.id);
         const todayMessages = todayMessagesRow?.count ?? 0;
 
@@ -42,6 +52,9 @@ router.get('/dashboard', authenticateToken, async (req, res) => {
             SELECT COUNT(*) as count FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND c.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.user.id, weekAgo.toISOString());
         const weekConversations = weekConversationsRow?.count ?? 0;
 
@@ -109,6 +122,9 @@ router.get('/weekly-activity', authenticateToken, async (req, res) => {
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND m.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
             GROUP BY (m.created_at AT TIME ZONE 'UTC')::date
             ORDER BY date ASC
         `, req.user.id, sixDaysAgoStr);
@@ -120,6 +136,9 @@ router.get('/weekly-activity', authenticateToken, async (req, res) => {
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND c.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
             GROUP BY (c.created_at AT TIME ZONE 'UTC')::date
             ORDER BY date ASC
         `, req.user.id, sixDaysAgoStr);
@@ -139,8 +158,8 @@ router.get('/weekly-activity', authenticateToken, async (req, res) => {
             data.push({
                 name: dayName,
                 date: dateStr,
-                messages: msgData?.messages || 0,
-                conversations: convData?.conversations || 0
+                messages: Number(msgData?.messages || 0),
+                conversations: Number(convData?.conversations || 0)
             });
         }
 
@@ -159,7 +178,13 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
 
-        const totalConversationsRow = await db.get('SELECT COUNT(*) as count FROM conversations WHERE agent_id = ?', req.params.agentId);
+        const totalConversationsRow = await db.get(`
+            SELECT COUNT(*) as count FROM conversations 
+            WHERE agent_id = ?
+            AND contact_jid NOT LIKE '%@g.us'
+            AND contact_jid NOT LIKE '%broadcast%'
+            AND (contact_jid LIKE '%@s.whatsapp.net' OR contact_jid LIKE '%@lid')
+        `, req.params.agentId);
         const totalConversations = totalConversationsRow?.count ?? 0;
 
         const activeConversationsRow = await db.get("SELECT COUNT(*) as count FROM conversations WHERE agent_id = ? AND status = 'active'", req.params.agentId);
@@ -169,6 +194,9 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
             SELECT COUNT(*) as count FROM messages m
             JOIN conversations c ON m.conversation_id = c.id
             WHERE c.agent_id = ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.params.agentId);
         const totalMessages = totalMessagesRow?.count ?? 0;
 
@@ -176,8 +204,34 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
             SELECT role, COUNT(*) as count FROM messages m
             JOIN conversations c ON m.conversation_id = c.id
             WHERE c.agent_id = ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
             GROUP BY role
         `, req.params.agentId);
+        
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayStartStr = todayStart.toISOString();
+
+        const todayMessagesRow = await db.get(`
+            SELECT COUNT(*) as count FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            WHERE c.agent_id = ? AND m.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+        `, req.params.agentId, todayStartStr);
+        const todayMessages = todayMessagesRow?.count ?? 0;
+
+        const todayConversationsRow = await db.get(`
+            SELECT COUNT(*) as count FROM conversations 
+            WHERE agent_id = ? AND last_message_at >= ?
+            AND contact_jid NOT LIKE '%@g.us'
+            AND contact_jid NOT LIKE '%broadcast%'
+            AND (contact_jid LIKE '%@s.whatsapp.net' OR contact_jid LIKE '%@lid')
+        `, req.params.agentId, todayStartStr);
+        const todayConversations = todayConversationsRow?.count ?? 0;
 
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -186,6 +240,9 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
             FROM messages m
             JOIN conversations c ON m.conversation_id = c.id
             WHERE c.agent_id = ? AND m.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
             GROUP BY (m.created_at AT TIME ZONE 'UTC')::date
             ORDER BY date ASC
         `, req.params.agentId, sevenDaysAgo.toISOString());
@@ -198,10 +255,12 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
             stats: {
                 conversations: {
                     total: Number(totalConversations),
-                    active: Number(activeConversations)
+                    active: Number(activeConversations),
+                    today: Number(todayConversations)
                 },
                 messages: {
                     total: Number(totalMessages),
+                    today: Number(todayMessages),
                     by_role: messagesByRole,
                     per_day: messagesPerDay
                 },

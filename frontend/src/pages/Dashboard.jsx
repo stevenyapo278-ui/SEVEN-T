@@ -115,14 +115,14 @@ export default function Dashboard() {
     alerts.push({ 
       type: 'error', 
       message: quotas.credit_warning.warning,
-      action: 'Upgrader',
+      action: t('dashboard.alerts.upgrade'),
       link: '/dashboard/settings'
     })
   } else if (quotas?.credit_warning?.level === 'warning') {
     alerts.push({ 
       type: 'warning', 
       message: quotas.credit_warning.warning,
-      action: 'Voir',
+      action: t('dashboard.alerts.view'),
       link: '/dashboard/settings'
     })
   }
@@ -131,8 +131,8 @@ export default function Dashboard() {
   if (disconnectedAgents.length > 0) {
     alerts.push({
       type: 'warning',
-      message: `${disconnectedAgents.length} agent(s) déconnecté(s) de WhatsApp`,
-      action: 'Reconnecter',
+      message: t('dashboard.alerts.disconnectedAgents', { count: disconnectedAgents.length }),
+      action: t('dashboard.alerts.reconnect'),
       link: `/dashboard/agents/${disconnectedAgents[0].id}`
     })
   }
@@ -141,17 +141,17 @@ export default function Dashboard() {
   if (inactiveAgents.length > 0 && agents.length > 1) {
     alerts.push({
       type: 'info',
-      message: `${inactiveAgents.length} agent(s) désactivé(s)`,
-      action: 'Gérer',
+      message: t('dashboard.alerts.inactiveAgents', { count: inactiveAgents.length }),
+      action: t('dashboard.alerts.manage'),
       link: '/dashboard/agents'
     })
   }
 
   // Stats for pie chart
   const agentStatusData = [
-    { name: 'Connectés', value: agents.filter(a => a.whatsapp_connected).length, color: '#22c55e' },
-    { name: 'Déconnectés', value: agents.filter(a => !a.whatsapp_connected && a.is_active).length, color: '#f59e0b' },
-    { name: 'Inactifs', value: agents.filter(a => !a.is_active).length, color: '#6b7280' },
+    { name: t('common.connected'), value: agents.filter(a => a.whatsapp_connected).length, color: '#22c55e' },
+    { name: t('common.disconnected'), value: agents.filter(a => !a.whatsapp_connected && a.is_active).length, color: '#f59e0b' },
+    { name: t('common.inactive'), value: agents.filter(a => !a.is_active).length, color: '#6b7280' },
   ].filter(d => d.value > 0)
 
   if (loading) {
@@ -237,7 +237,7 @@ export default function Dashboard() {
                     ? 'bg-amber-500/20 text-amber-400'
                     : 'bg-blue-500/20 text-blue-400'
               }`}>
-                Détails
+                {t('common.details')}
               </div>
             </div>
           ))}
@@ -254,11 +254,11 @@ export default function Dashboard() {
             <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium truncate ${
               stats?.agents?.active > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
             }`}>
-              {stats?.agents?.active || 0} actifs
+              {stats?.agents?.active || 0} {t('dashboard.stats.active')}
             </span>
           </div>
           <h3 className="text-xl sm:text-3xl font-display font-bold text-gray-100">{stats?.agents?.total || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">Agents IA</p>
+          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.agents')}</p>
         </div>
 
         <div className="card p-3 sm:p-5">
@@ -273,7 +273,7 @@ export default function Dashboard() {
             )}
           </div>
           <h3 className="text-xl sm:text-3xl font-display font-bold text-gray-100">{stats?.conversations?.total || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">Conversations</p>
+          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.conversations')}</p>
         </div>
 
         <div className="card p-3 sm:p-5">
@@ -288,7 +288,7 @@ export default function Dashboard() {
             )}
           </div>
           <h3 className="text-xl sm:text-3xl font-display font-bold text-gray-100">{stats?.messages?.total || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">Messages</p>
+          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.messages')}</p>
         </div>
 
         <div className="card p-3 sm:p-5">
@@ -298,7 +298,7 @@ export default function Dashboard() {
             </div>
           </div>
           <h3 className="text-xl sm:text-3xl font-display font-bold text-gold-400">{stats?.credits || quotas?.credits || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">Crédits</p>
+          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.credits')}</p>
         </div>
       </div>
 
@@ -306,12 +306,12 @@ export default function Dashboard() {
         {/* Agents Section */}
         <div className="lg:col-span-2 card" data-tour="agents-list">
           <div className="p-6 border-b border-space-700 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">Mes Agents</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">{t('dashboard.agents.title')}</h2>
             <Link
               to="/dashboard/agents"
               className="text-gold-400 hover:text-gold-300 text-sm font-medium flex items-center justify-center gap-1 transition-colors touch-target flex-shrink-0"
             >
-              Voir tout
+              {t('dashboard.agents.viewAll')}
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -322,17 +322,17 @@ export default function Dashboard() {
                 <Bot className="w-8 h-8 text-gray-500" />
               </div>
               <h3 className="text-lg font-medium text-gray-100 mb-2">
-                Aucun agent créé
+                {t('dashboard.agents.none')}
               </h3>
               <p className="text-gray-400 mb-4">
-                Créez votre premier assistant IA
+                {t('dashboard.agents.createFirst')}
               </p>
               <Link
                 to="/dashboard/agents"
                 className="btn-primary inline-flex items-center gap-2"
               >
                 <Plus className="w-5 h-5" />
-                Créer un agent
+                {t('dashboard.agents.create')}
               </Link>
             </div>
           ) : (
@@ -364,12 +364,12 @@ export default function Dashboard() {
                         <h3 className="font-medium text-gray-100 truncate group-hover:text-gold-400 transition-colors">{agent.name}</h3>
                         {!agent.is_active && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400">
-                            Inactif
+                            {t('dashboard.agents.inactive')}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-gray-500">
-                        {agent.total_conversations || 0} conv.
+                        {agent.total_conversations || 0} {t('dashboard.agents.conv')}
                       </p>
                     </div>
                   </div>
@@ -402,8 +402,8 @@ export default function Dashboard() {
                   <MessageSquare className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-100">Conversations</p>
-                  <p className="text-xs text-gray-500">Gérer les messages</p>
+                  <p className="font-medium text-gray-100">{t('nav.conversations')}</p>
+                  <p className="text-xs text-gray-500">{t('dashboard.agents.manage')}</p>
                 </div>
               </Link>
               <Link 
@@ -414,8 +414,8 @@ export default function Dashboard() {
                   <Crown className="w-5 h-5 text-gold-400" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-100">Gérer mon plan</p>
-                  <p className="text-xs text-gray-500">{quotas?.plan?.displayName || 'Gratuit'}</p>
+                  <p className="font-medium text-gray-100">{t('nav.settings')}</p>
+                  <p className="text-xs text-gray-500">{quotas?.plan?.displayName || t('settings.free')}</p>
                 </div>
               </Link>
             </div>
@@ -427,26 +427,26 @@ export default function Dashboard() {
       {quotas && quotas.usage && (
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100">Utilisation ce mois</h2>
+            <h2 className="text-lg font-display font-semibold text-gray-100">{t('dashboard.usage.title')}</h2>
             <Link to="/dashboard/settings" className="text-gold-400 hover:text-gold-300 text-sm">
-              Détails →
+              {t('common.details')} →
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">Messages IA</p>
+              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.aiMessages')}</p>
               <p className="text-2xl font-bold text-gray-100">{quotas.usage.ai_messages_this_month || 0}</p>
             </div>
             <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">Crédits utilisés</p>
+              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.creditsUsed')}</p>
               <p className="text-2xl font-bold text-gray-100">{quotas.usage.credits_used_this_month || 0}</p>
             </div>
             <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">Conversations</p>
+              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.conversations')}</p>
               <p className="text-2xl font-bold text-gray-100">{quotas.usage.conversations_this_month || 0}</p>
             </div>
             <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">Messages total</p>
+              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.totalMessages')}</p>
               <p className="text-2xl font-bold text-gray-100">{quotas.usage.messages_this_month || 0}</p>
             </div>
           </div>
@@ -480,7 +480,7 @@ export default function Dashboard() {
                 </Link>
               )}
               <button onClick={() => setSelectedAlertView(null)} className="btn-secondary w-full">
-                Fermer
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -522,10 +522,10 @@ export default function Dashboard() {
                 to={`/dashboard/agents/${selectedAgentView.id}`}
                 className="btn-primary w-full text-center"
               >
-                Gérer l'agent
+                {t('dashboard.agents.create')}
               </Link>
               <button onClick={() => setSelectedAgentView(null)} className="btn-secondary w-full">
-                Fermer
+                {t('common.close')}
               </button>
             </div>
           </div>

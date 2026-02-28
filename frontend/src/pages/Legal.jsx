@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Shield, FileText, Scale, Cookie, Mail } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { useTheme } from '../contexts/ThemeContext'
 
 // Company info - Update these for your business
 const COMPANY_INFO = {
@@ -19,12 +21,12 @@ const COMPANY_INFO = {
 }
 
 const TABS = [
-  { id: 'terms', label: 'Conditions d\'utilisation', icon: FileText },
-  { id: 'privacy', label: 'Politique de confidentialité', icon: Shield },
-  { id: 'dpa', label: 'Accord de traitement des données (DPA)', icon: FileText },
-  { id: 'cookies', label: 'Cookies et stockage local', icon: Cookie },
-  { id: 'rgpd', label: 'Conformité RGPD', icon: Shield },
-  { id: 'legal', label: 'Mentions Légales', icon: Scale },
+  { id: 'terms', label: 'legal.terms', icon: FileText },
+  { id: 'privacy', label: 'legal.privacy', icon: Shield },
+  { id: 'dpa', label: 'legal.dpa', icon: FileText },
+  { id: 'cookies', label: 'legal.cookies', icon: Cookie },
+  { id: 'rgpd', label: 'legal.rgpd', icon: Shield },
+  { id: 'legal', label: 'legal.mentions', icon: Scale },
 ]
 
 // Logo du SaaS (fichier public/logo.svg)
@@ -33,6 +35,8 @@ const Logo = () => (
 )
 
 export default function Legal() {
+  const { t } = useTranslation()
+  const { isDark } = useTheme()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'terms'
 
@@ -45,55 +49,57 @@ export default function Legal() {
       {/* Header */}
       <header className="border-b border-space-700 sticky top-0 z-50 bg-space-950/80 backdrop-blur-md">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center gap-3">
+          <div className="flex justify-between items-center h-16 sm:h-20">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 transition-transform hover:scale-105">
               <Logo />
             </Link>
             <Link 
               to="/"
-              className="flex items-center gap-2 text-gray-400 hover:text-gray-100 transition-colors"
+              className="group flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-400 hover:text-gold-400 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Retour
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:-translate-x-1 transition-transform" />
+              {t('legal.backToHome')}
             </Link>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        {/* Tabs - Scrollable on mobile with hidden scrollbar */}
+        <div className="flex flex-nowrap overflow-x-auto gap-2.5 mb-8 sm:mb-12 pb-4 sm:pb-0 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => setTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 touch-target ${
                 activeTab === tab.id
-                  ? 'bg-gold-400 text-space-950'
-                  : 'bg-space-800 text-gray-400 hover:text-gray-100'
+                  ? 'bg-gold-400 text-space-950 shadow-xl shadow-gold-400/25 scale-105 z-10'
+                  : 'bg-space-800/80 text-gray-400 hover:text-gray-100 border border-space-700/50 hover:border-space-600'
               }`}
             >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <tab.icon className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${activeTab === tab.id ? 'text-space-950' : 'text-gray-500'}`} />
+              {t(tab.label)}
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="card p-6 sm:p-8 md:p-10 legal-content max-w-none">
-          {activeTab === 'terms' && <TermsContent />}
-          {activeTab === 'privacy' && <PrivacyContent />}
-          {activeTab === 'dpa' && <DPAContent />}
-          {activeTab === 'cookies' && <CookiesContent />}
-          {activeTab === 'rgpd' && <RgpdContent />}
-          {activeTab === 'legal' && <LegalMentionsContent />}
+        <div className={`rounded-[2rem] overflow-hidden border shadow-2xl ${isDark ? 'bg-space-900/50 border-space-700/50 backdrop-blur-sm' : 'bg-white border-gray-100 shadow-xl shadow-gray-200/50'}`}>
+          <div className={`p-6 sm:p-12 md:p-16 legal-content max-w-none prose ${isDark ? 'prose-invert prose-gold' : 'prose-slate'} prose-sm sm:prose-base md:prose-lg !max-w-full leading-relaxed`}>
+            {activeTab === 'terms' && <TermsContent />}
+            {activeTab === 'privacy' && <PrivacyContent />}
+            {activeTab === 'dpa' && <DPAContent />}
+            {activeTab === 'cookies' && <CookiesContent />}
+            {activeTab === 'rgpd' && <RgpdContent />}
+            {activeTab === 'legal' && <LegalMentionsContent />}
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Dernière mise à jour : {COMPANY_INFO.lastUpdate}</p>
+        <div className="mt-8 sm:mt-10 text-center text-xs sm:text-sm text-gray-500 pb-8">
+          <p>{t('legal.lastUpdate')} : {COMPANY_INFO.lastUpdate}</p>
           <p className="mt-2">
-            Des questions ? Contactez-nous à{' '}
+            {t('legal.questions')}{' '}
             <a href={`mailto:${COMPANY_INFO.email}`} className="text-gold-400 hover:underline">
               {COMPANY_INFO.email}
             </a>
@@ -257,36 +263,38 @@ function PrivacyContent() {
       </ul>
 
       <h2>3. Finalités du traitement</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Finalité</th>
-            <th>Base légale</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Fourniture du service</td>
-            <td>Exécution du contrat</td>
-          </tr>
-          <tr>
-            <td>Amélioration du service</td>
-            <td>Intérêt légitime</td>
-          </tr>
-          <tr>
-            <td>Communication marketing</td>
-            <td>Consentement</td>
-          </tr>
-          <tr>
-            <td>Facturation</td>
-            <td>Obligation légale</td>
-          </tr>
-          <tr>
-            <td>Sécurité</td>
-            <td>Intérêt légitime</td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Finalité</th>
+              <th>Base légale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Fourniture du service</td>
+              <td>Exécution du contrat</td>
+            </tr>
+            <tr>
+              <td>Amélioration du service</td>
+              <td>Intérêt légitime</td>
+            </tr>
+            <tr>
+              <td>Communication marketing</td>
+              <td>Consentement</td>
+            </tr>
+            <tr>
+              <td>Facturation</td>
+              <td>Obligation légale</td>
+            </tr>
+            <tr>
+              <td>Sécurité</td>
+              <td>Intérêt légitime</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>4. Partage des données</h2>
       <p>Vos données peuvent être partagées avec :</p>
@@ -299,32 +307,34 @@ function PrivacyContent() {
       <p>Nous ne vendons jamais vos données à des tiers.</p>
 
       <h2>5. Durée de conservation</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Type de données</th>
-            <th>Durée</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Compte utilisateur</td>
-            <td>Durée du compte + 3 ans</td>
-          </tr>
-          <tr>
-            <td>Conversations</td>
-            <td>12 mois glissants</td>
-          </tr>
-          <tr>
-            <td>Factures</td>
-            <td>10 ans (obligation légale)</td>
-          </tr>
-          <tr>
-            <td>Logs de sécurité</td>
-            <td>1 an</td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Type de données</th>
+              <th>Durée</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Compte utilisateur</td>
+              <td>Durée du compte + 3 ans</td>
+            </tr>
+            <tr>
+              <td>Conversations</td>
+              <td>12 mois glissants</td>
+            </tr>
+            <tr>
+              <td>Factures</td>
+              <td>10 ans (obligation légale)</td>
+            </tr>
+            <tr>
+              <td>Logs de sécurité</td>
+              <td>1 an</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>6. Vos droits</h2>
       <p>Conformément au RGPD, vous disposez des droits suivants :</p>
@@ -447,28 +457,30 @@ function RgpdContent() {
       </p>
 
       <h2>1. Ce qui est en place (conforme)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Exigence RGPD</th>
-            <th>Détail</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Information des personnes</td><td>Politique de confidentialité (finalités, bases légales, durées, droits, DPO).</td></tr>
-          <tr><td>Droit d&apos;accès</td><td>Export des données (Paramètres → « Exporter mes données ») : JSON complet (compte, agents, conversations, messages, produits, commandes, leads, bases de connaissances).</td></tr>
-          <tr><td>Droit de rectification</td><td>Modification du profil (nom, entreprise) dans Paramètres.</td></tr>
-          <tr><td>Droit à l&apos;effacement</td><td>Suppression du compte par l&apos;utilisateur (Paramètres → « Supprimer mon compte »). Route DELETE /api/auth/me.</td></tr>
-          <tr><td>Exercice des droits</td><td>Contact DPO par email indiqué dans la politique et le DPA.</td></tr>
-          <tr><td>Sous-traitants / transferts</td><td>Liste dans la politique ; DPA et clauses contractuelles types pour transferts hors UE.</td></tr>
-          <tr><td>Sécurité</td><td>HTTPS, mots de passe hashés (bcrypt), accès restreint, sauvegardes.</td></tr>
-          <tr><td>Durées de conservation</td><td>Tableau en politique (compte, conversations, factures, logs).</td></tr>
-          <tr><td>DPA (B2B)</td><td>Accord de traitement des données pour clients professionnels.</td></tr>
-          <tr><td>Réclamation CNIL</td><td>Lien CNIL et contact DPO dans la politique.</td></tr>
-          <tr><td>Consentement explicite</td><td>Case à cocher obligatoire à l&apos;inscription (CGU et politique de confidentialité).</td></tr>
-          <tr><td>Cookies / stockage local</td><td>Politique dédiée ; bandeau d&apos;information ; pas de cookies de suivi.</td></tr>
-        </tbody>
-      </table>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Exigence RGPD</th>
+              <th>Détail</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Information des personnes</td><td>Politique de confidentialité (finalités, bases légales, durées, droits, DPO).</td></tr>
+            <tr><td>Droit d&apos;accès</td><td>Export des données (Paramètres → « Exporter mes données ») : JSON complet (compte, agents, conversations, messages, produits, commandes, leads, bases de connaissances).</td></tr>
+            <tr><td>Droit de rectification</td><td>Modification du profil (nom, entreprise) dans Paramètres.</td></tr>
+            <tr><td>Droit à l&apos;effacement</td><td>Suppression du compte par l&apos;utilisateur (Paramètres → « Supprimer mon compte »). Route DELETE /api/auth/me.</td></tr>
+            <tr><td>Exercice des droits</td><td>Contact DPO par email indiqué dans la politique et le DPA.</td></tr>
+            <tr><td>Sous-traitants / transferts</td><td>Liste dans la politique ; DPA et clauses contractuelles types pour transferts hors UE.</td></tr>
+            <tr><td>Sécurité</td><td>HTTPS, mots de passe hashés (bcrypt), accès restreint, sauvegardes.</td></tr>
+            <tr><td>Durées de conservation</td><td>Tableau en politique (compte, conversations, factures, logs).</td></tr>
+            <tr><td>DPA (B2B)</td><td>Accord de traitement des données pour clients professionnels.</td></tr>
+            <tr><td>Réclamation CNIL</td><td>Lien CNIL et contact DPO dans la politique.</td></tr>
+            <tr><td>Consentement explicite</td><td>Case à cocher obligatoire à l&apos;inscription (CGU et politique de confidentialité).</td></tr>
+            <tr><td>Cookies / stockage local</td><td>Politique dédiée ; bandeau d&apos;information ; pas de cookies de suivi.</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>2. Synthèse</h2>
       <p>
@@ -499,47 +511,49 @@ function CookiesContent() {
 
       <h2>2. Données enregistrées dans le navigateur</h2>
       <p className="text-sm text-gray-500 mb-3">Clés utilisées par l’application et finalités.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Clé (localStorage)</th>
-            <th>Finalité</th>
-            <th>Durée</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>token</td>
-            <td>Authentification (session utilisateur)</td>
-            <td>Jusqu’à déconnexion / expiration</td>
-          </tr>
-          <tr>
-            <td>locale</td>
-            <td>Langue de l’interface (fr, en)</td>
-            <td>Jusqu’à suppression</td>
-          </tr>
-          <tr>
-            <td>seven-t-theme</td>
-            <td>Thème d’affichage (clair / sombre)</td>
-            <td>Jusqu’à suppression</td>
-          </tr>
-          <tr>
-            <td>currency</td>
-            <td>Devise préférée (après connexion)</td>
-            <td>Jusqu’à suppression</td>
-          </tr>
-          <tr>
-            <td>cookie_consent</td>
-            <td>Enregistrement de votre choix sur le bandeau d’information</td>
-            <td>1 an</td>
-          </tr>
-          <tr>
-            <td>Autres clés (onboarding, favoris, etc.)</td>
-            <td>Préférences d’utilisation de l’application</td>
-            <td>Jusqu’à suppression</td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Clé (localStorage)</th>
+              <th>Finalité</th>
+              <th>Durée</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>token</td>
+              <td>Authentification (session utilisateur)</td>
+              <td>Jusqu’à déconnexion / expiration</td>
+            </tr>
+            <tr>
+              <td>locale</td>
+              <td>Langue de l’interface (fr, en)</td>
+              <td>Jusqu’à suppression</td>
+            </tr>
+            <tr>
+              <td>seven-t-theme</td>
+              <td>Thème d’affichage (clair / sombre)</td>
+              <td>Jusqu’à suppression</td>
+            </tr>
+            <tr>
+              <td>currency</td>
+              <td>Devise préférée (après connexion)</td>
+              <td>Jusqu’à suppression</td>
+            </tr>
+            <tr>
+              <td>cookie_consent</td>
+              <td>Enregistrement de votre choix sur le bandeau d’information</td>
+              <td>1 an</td>
+            </tr>
+            <tr>
+              <td>Autres clés (onboarding, favoris, etc.)</td>
+              <td>Préférences d’utilisation de l’application</td>
+              <td>Jusqu’à suppression</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <h2>3. Bandeau d’information et consentement</h2>
       <p>

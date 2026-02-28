@@ -76,6 +76,9 @@ router.get('/quotas', authenticateToken, async (req, res) => {
             SELECT COUNT(*) as count FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND c.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.user.id, monthStart);
         const conversationsThisMonth = convRow?.count ?? 0;
 
@@ -84,6 +87,9 @@ router.get('/quotas', authenticateToken, async (req, res) => {
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND m.created_at >= ?
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `, req.user.id, monthStart);
         const messagesThisMonth = msgRow?.count ?? 0;
 
@@ -149,10 +155,19 @@ router.get('/', authenticateToken, async (req, res) => {
     try {
         const rows = await db.all(`
             SELECT a.*, 
-                   (SELECT COUNT(*) FROM conversations WHERE agent_id = a.id) as total_conversations,
+                   (SELECT COUNT(*) FROM conversations 
+                    WHERE agent_id = a.id 
+                    AND contact_jid NOT LIKE '%@g.us' 
+                    AND contact_jid NOT LIKE '%broadcast%'
+                    AND (contact_jid LIKE '%@s.whatsapp.net' OR contact_jid LIKE '%@lid')
+                   ) as total_conversations,
                    (SELECT COUNT(*) FROM messages m 
                     JOIN conversations c ON m.conversation_id = c.id 
-                    WHERE c.agent_id = a.id) as total_messages,
+                    WHERE c.agent_id = a.id
+                    AND c.contact_jid NOT LIKE '%@g.us'
+                    AND c.contact_jid NOT LIKE '%broadcast%'
+                    AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+                   ) as total_messages,
                    (SELECT status FROM tools WHERE id = a.tool_id AND user_id = a.user_id LIMIT 1) as tool_status
             FROM agents a 
             WHERE a.user_id = ?

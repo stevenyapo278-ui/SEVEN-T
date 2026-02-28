@@ -5,6 +5,7 @@
 
 import db from '../database/init.js';
 import { notificationService } from './notifications.js';
+import { hasModule } from '../config/plans.js';
 
 // Keywords/phrases that trigger human intervention
 const INTERVENTION_TRIGGERS = {
@@ -134,6 +135,34 @@ class HumanInterventionService {
             });
 
             console.log(`[HumanIntervention] Flagged conversation ${conversationId}: ${reason}`);
+
+            // ============================================
+            // WHATSAPP NOTIFICATION MODULE (Module 8)
+            // ============================================
+            (async () => {
+                try {
+                    const user = db.prepare('SELECT plan, notification_number FROM users WHERE id = ?').get(userId);
+                    if (user && user.notification_number) {
+                        const hasAlerts = await hasModule(user.plan || 'free', 'human_handoff_alerts');
+                        if (hasAlerts) {
+                            const { whatsappManager } = await import('./whatsapp.js');
+                            // Let's use the first available active agent for this user to send the WhatsApp
+                            const defaultAgent = db.prepare('SELECT tool_id FROM agents WHERE user_id = ? AND is_active = 1 LIMIT 1').get(userId);
+                            if (defaultAgent && defaultAgent.tool_id) {
+                                let phoneNum = user.notification_number.replace(/\D/g, '');
+                                if (!phoneNum.includes('@s.whatsapp.net')) {
+                                    phoneNum = phoneNum + '@s.whatsapp.net';
+                                }
+                                const messageText = `🚨 *Intervention Requise* 🚨\n\nContact: ${contactName}\nRaison: ${reason}\n\nUn client demande de l'aide sur votre agent IA. Veuillez vous connecter au tableau de bord pour prendre le relais.`;
+                                await whatsappManager.sendMessage(defaultAgent.tool_id, phoneNum, messageText);
+                                console.log(`[HumanIntervention] Sent WhatsApp alert to ${user.notification_number}`);
+                            }
+                        }
+                    }
+                } catch (waErr) {
+                    console.error('[HumanIntervention] Error sending WhatsApp alert:', waErr);
+                }
+            })();
 
             return true;
         } catch (error) {

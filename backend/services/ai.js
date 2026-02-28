@@ -1,9 +1,11 @@
 import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { hasEnoughCredits, deductCredits, CREDIT_COSTS } from './credits.js';
 import { adminAnomaliesService } from './adminAnomalies.js';
 import { debugIngest } from '../utils/debugIngest.js';
+import db from '../database/init.js';
 import { AI_CONFIG, getModelName, getHistoryLimit, getGenerationConfig } from '../config/ai.config.js';
 import { aiLogger } from '../utils/logger.js';
 import { geminiCircuitBreaker, openaiCircuitBreaker, openrouterCircuitBreaker } from '../utils/circuitBreaker.js';
@@ -202,6 +204,20 @@ class AIService {
                 response.credits_remaining = deduction.credits_remaining;
                 if (!deduction.success) {
                     console.warn(`[AI] Credit deduction failed: ${deduction.error ?? 'unknown'}`);
+                }
+
+                // Log detailed usage for admin statistics
+                try {
+                    const modelId = agent.model || 'unknown';
+                    const success = (response?.content && !response.content.startsWith('Désolé')) ? 1 : 0;
+                    const responseTime = response?.response_time || 0;
+                    
+                    db.run(`
+                        INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    `, uuidv4(), modelId, userId, agent.id, tokensUsed, deduction.cost || 0, success, responseTime);
+                } catch (logErr) {
+                    console.error('[AI] Error logging to ai_model_usage:', logErr.message);
                 }
             }
 

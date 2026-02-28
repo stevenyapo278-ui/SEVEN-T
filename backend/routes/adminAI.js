@@ -471,16 +471,28 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
         `);
 
         const topUsers = await db.all(`
-            SELECT 
-                u.id,
-                u.name,
-                u.email,
-                COUNT(*) as requests,
-                SUM(mu.credits_used) as credits_used
-            FROM ai_model_usage mu
-            JOIN users u ON mu.user_id = u.id
-            GROUP BY u.id
-            ORDER BY requests DESC
+            SELECT * FROM (
+                SELECT 
+                    u.id,
+                    u.name,
+                    u.email,
+                    COALESCE(SUM(mu.tokens_used), 0) + (
+                        SELECT COALESCE(SUM(m.tokens_used), 0)
+                        FROM messages m
+                        JOIN conversations c ON m.conversation_id = c.id
+                        JOIN agents a ON c.agent_id = a.id
+                        WHERE a.user_id = u.id AND m.role = 'assistant'
+                    ) as total_tokens,
+                    COUNT(mu.id) as requests,
+                    COALESCE(SUM(mu.credits_used), 0) as credits_used,
+                    ROUND(AVG(NULLIF(mu.response_time_ms, 0)), 0) as avg_response_time,
+                    ROUND(SUM(CASE WHEN mu.success = 1 THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(mu.id), 0), 1) as success_rate
+                FROM users u
+                LEFT JOIN ai_model_usage mu ON u.id = mu.user_id
+                GROUP BY u.id, u.name, u.email
+            ) as user_stats
+            WHERE total_tokens > 0
+            ORDER BY total_tokens DESC
             LIMIT 10
         `);
 

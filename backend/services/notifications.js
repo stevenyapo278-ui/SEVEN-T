@@ -67,15 +67,35 @@ class NotificationService {
      * @param {string} userId - User ID
      * @param {Object} options - Query options
      */
-    async getForUser(userId, { limit = 50, unreadOnly = false } = {}) {
+    async getForUser(userId, { limit = 50, unreadOnly = false, startDate = null, endDate = null, search = '' } = {}) {
         try {
             let query = 'SELECT * FROM notifications WHERE user_id = ?';
+            const params = [userId];
+
             if (unreadOnly) {
                 query += ' AND is_read = 0';
             }
-            query += ' ORDER BY created_at DESC LIMIT ?';
 
-            const notifications = await db.all(query, userId, limit);
+            if (startDate) {
+                query += ' AND created_at >= ?';
+                params.push(startDate);
+            }
+
+            if (endDate) {
+                query += ' AND created_at <= ?';
+                params.push(endDate);
+            }
+
+            if (search && search.trim() !== '') {
+                const searchPat = `%${search.trim().toLowerCase()}%`;
+                query += ' AND (LOWER(title) LIKE ? OR LOWER(message) LIKE ? OR LOWER(metadata) LIKE ?)';
+                params.push(searchPat, searchPat, searchPat);
+            }
+
+            query += ' ORDER BY created_at DESC LIMIT ?';
+            params.push(limit);
+
+            const notifications = await db.all(query, ...params);
             const list = Array.isArray(notifications) ? notifications : [];
             return list.map(n => {
                 let meta = null;

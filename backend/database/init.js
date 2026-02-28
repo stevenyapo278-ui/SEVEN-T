@@ -188,6 +188,7 @@ export async function initDatabase() {
             currency TEXT DEFAULT 'XOF',
             media_model TEXT,
             google_id TEXT,
+            notification_number TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -1084,6 +1085,15 @@ export async function initDatabase() {
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('conversations.suggested_action column migration:', e?.message);
+        }
+    }
+
+    // Migration: users.notification_number (Module alertes transfert humain)
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_number TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.notification_number column migration:', e?.message);
         }
     }
 
