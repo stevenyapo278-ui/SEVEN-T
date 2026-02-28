@@ -10,6 +10,16 @@ if (isProduction && !process.env.JWT_SECRET) {
     process.exit(1);
 }
 
+// Reject known weak/placeholder secrets in production
+const WEAK_SECRETS = ['wazzap-clone-secret-key-2024', 'change-me', 'secret', 'jwt-secret', ''];
+if (process.env.JWT_SECRET && WEAK_SECRETS.includes(process.env.JWT_SECRET) && isProduction) {
+    console.error('❌ JWT_SECRET is set to an insecure placeholder value. Please set a strong random secret in .env before going to production.');
+    process.exit(1);
+}
+if (process.env.JWT_SECRET && WEAK_SECRETS.includes(process.env.JWT_SECRET) && !isProduction) {
+    console.warn('⚠️  JWT_SECRET is using a weak placeholder. This is fine for development but MUST be changed before production!');
+}
+
 // In development, generate a consistent secret per process (warning will be shown)
 const devSecret = crypto.randomBytes(64).toString('hex');
 export const JWT_SECRET = process.env.JWT_SECRET || devSecret;

@@ -91,9 +91,9 @@ router.get('/plans', async (req, res) => {
 /**
  * Restore default plans (delete all and re-insert from config)
  */
-router.post('/plans/restore-defaults', (req, res) => {
+router.post('/plans/restore-defaults', async (req, res) => {
     try {
-        db.prepare('DELETE FROM subscription_plans').run();
+        await db.prepare('DELETE FROM subscription_plans').run();
 
         const insertPlan = db.prepare(`
             INSERT INTO subscription_plans (id, name, display_name, description, price, sort_order, is_default, limits, features)
@@ -101,7 +101,7 @@ router.post('/plans/restore-defaults', (req, res) => {
         `);
 
         for (const plan of defaultPlans) {
-            insertPlan.run(plan.id, plan.name, plan.display_name, plan.description, plan.price, plan.sort_order, plan.is_default || 0, plan.limits, plan.features);
+            await insertPlan.run(plan.id, plan.name, plan.display_name, plan.description, plan.price, plan.sort_order, plan.is_default || 0, plan.limits, plan.features);
         }
 
         clearPlansCache();
@@ -116,9 +116,9 @@ router.post('/plans/restore-defaults', (req, res) => {
 /**
  * Get a single plan by ID
  */
-router.get('/plans/:id', (req, res) => {
+router.get('/plans/:id', async (req, res) => {
     try {
-        const plan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
+        const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
         if (!plan) {
             return res.status(404).json({ error: 'Plan non trouvé' });
@@ -132,7 +132,7 @@ router.get('/plans/:id', (req, res) => {
         plan.features = merged.features;
 
         // Get user count for this plan
-        const userCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get(plan.name);
+        const userCount = await db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get(plan.name);
         plan.user_count = userCount?.count || 0;
 
         res.json({ plan });
@@ -145,7 +145,7 @@ router.get('/plans/:id', (req, res) => {
 /**
  * Create a new plan
  */
-router.post('/plans', (req, res) => {
+router.post('/plans', async (req, res) => {
     try {
         const { 
             name, 
@@ -166,7 +166,7 @@ router.post('/plans', (req, res) => {
         }
 
         // Check if plan name already exists
-        const existing = db.prepare('SELECT id FROM subscription_plans WHERE name = ?').get(name);
+        const existing = await db.prepare('SELECT id FROM subscription_plans WHERE name = ?').get(name);
         if (existing) {
             return res.status(400).json({ error: 'Un plan avec ce nom existe déjà' });
         }
@@ -196,7 +196,7 @@ router.post('/plans', (req, res) => {
             catalog_import: false
         };
 
-        db.prepare(`
+        await db.prepare(`
             INSERT INTO subscription_plans (
                 id, name, display_name, description, price, price_currency, 
                 billing_period, stripe_price_id, limits, features, is_active, sort_order
@@ -217,7 +217,7 @@ router.post('/plans', (req, res) => {
             sort_order || 99
         );
 
-        const plan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(planId);
+        const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(planId);
         plan.limits = JSON.parse(parsePlanJson(plan.limits, '{}'));
         plan.features = JSON.parse(parsePlanJson(plan.features, '[]'));
 
@@ -237,9 +237,9 @@ router.post('/plans', (req, res) => {
 /**
  * Update a plan
  */
-router.put('/plans/:id', (req, res) => {
+router.put('/plans/:id', async (req, res) => {
     try {
-        const plan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
+        const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
         if (!plan) {
             return res.status(404).json({ error: 'Plan non trouvé' });
@@ -309,7 +309,7 @@ router.put('/plans/:id', (req, res) => {
         updates.push('updated_at = CURRENT_TIMESTAMP');
         params.push(req.params.id);
 
-        db.prepare(`
+        await db.prepare(`
             UPDATE subscription_plans 
             SET ${updates.join(', ')}
             WHERE id = ?
@@ -317,16 +317,16 @@ router.put('/plans/:id', (req, res) => {
 
         // Si le plan vient d'être désactivé : migrer les utilisateurs vers le plan par défaut
         if (is_active === false || is_active === 0) {
-            const defaultPlanName = getDefaultPlanName();
+            const defaultPlanName = await getDefaultPlanName();
             if (defaultPlanName && defaultPlanName !== plan.name) {
-                const result = db.prepare('UPDATE users SET plan = ? WHERE plan = ?').run(defaultPlanName, plan.name);
-                if (result.changes > 0) {
-                    console.log(`[adminPlans] Plan "${plan.name}" désactivé : ${result.changes} utilisateur(s) migré(s) vers "${defaultPlanName}".`);
+                const result = await db.prepare('UPDATE users SET plan = ? WHERE plan = ?').run(defaultPlanName, plan.name);
+                if (result.rowCount > 0) {
+                    console.log(`[adminPlans] Plan "${plan.name}" désactivé : ${result.rowCount} utilisateur(s) migré(s) vers "${defaultPlanName}".`);
                 }
             }
         }
 
-        const updatedPlan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
+        const updatedPlan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         updatedPlan.limits = JSON.parse(parsePlanJson(updatedPlan.limits, '{}'));
         updatedPlan.features = JSON.parse(parsePlanJson(updatedPlan.features, '[]'));
 
@@ -346,16 +346,16 @@ router.put('/plans/:id', (req, res) => {
 /**
  * Delete a plan
  */
-router.delete('/plans/:id', (req, res) => {
+router.delete('/plans/:id', async (req, res) => {
     try {
-        const plan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
+        const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
         if (!plan) {
             return res.status(404).json({ error: 'Plan non trouvé' });
         }
 
         // Check if users are using this plan
-        const userCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get(plan.name);
+        const userCount = await db.prepare('SELECT COUNT(*) as count FROM users WHERE plan = ?').get(plan.name);
         
         if (userCount.count > 0) {
             return res.status(400).json({ 
@@ -371,7 +371,7 @@ router.delete('/plans/:id', (req, res) => {
             });
         }
 
-        db.prepare('DELETE FROM subscription_plans WHERE id = ?').run(req.params.id);
+        await db.prepare('DELETE FROM subscription_plans WHERE id = ?').run(req.params.id);
 
         // Invalidate cache immediately
         clearPlansCache();
@@ -386,19 +386,19 @@ router.delete('/plans/:id', (req, res) => {
 /**
  * Set default plan
  */
-router.post('/plans/:id/set-default', (req, res) => {
+router.post('/plans/:id/set-default', async (req, res) => {
     try {
-        const plan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
+        const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
         if (!plan) {
             return res.status(404).json({ error: 'Plan non trouvé' });
         }
 
         // Remove default from all plans
-        db.prepare('UPDATE subscription_plans SET is_default = 0').run();
+        await db.prepare('UPDATE subscription_plans SET is_default = 0').run();
         
         // Set this plan as default
-        db.prepare('UPDATE subscription_plans SET is_default = 1 WHERE id = ?').run(req.params.id);
+        await db.prepare('UPDATE subscription_plans SET is_default = 1 WHERE id = ?').run(req.params.id);
 
         // Invalidate cache immediately
         clearPlansCache();
@@ -413,9 +413,9 @@ router.post('/plans/:id/set-default', (req, res) => {
 /**
  * Duplicate a plan
  */
-router.post('/plans/:id/duplicate', (req, res) => {
+router.post('/plans/:id/duplicate', async (req, res) => {
     try {
-        const plan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
+        const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
         if (!plan) {
             return res.status(404).json({ error: 'Plan non trouvé' });
@@ -424,7 +424,7 @@ router.post('/plans/:id/duplicate', (req, res) => {
         const newId = uuidv4();
         const newName = `${plan.name}_copy_${Date.now()}`;
         
-        db.prepare(`
+        await db.prepare(`
             INSERT INTO subscription_plans (
                 id, name, display_name, description, price, price_currency,
                 billing_period, limits, features, is_active, is_default, sort_order
@@ -438,13 +438,13 @@ router.post('/plans/:id/duplicate', (req, res) => {
             plan.price,
             plan.price_currency,
             plan.billing_period,
-            plan.limits,
-            plan.features,
+            JSON.stringify(plan.limits),
+            JSON.stringify(plan.features),
             0, // Start as inactive
-            plan.sort_order + 1
+            (plan.sort_order || 0) + 1
         );
 
-        const newPlan = db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(newId);
+        const newPlan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(newId);
         newPlan.limits = JSON.parse(parsePlanJson(newPlan.limits, '{}'));
         newPlan.features = JSON.parse(parsePlanJson(newPlan.features, '[]'));
 
@@ -464,7 +464,7 @@ router.post('/plans/:id/duplicate', (req, res) => {
 /**
  * Reorder plans
  */
-router.post('/plans/reorder', (req, res) => {
+router.post('/plans/reorder', async (req, res) => {
     try {
         const { order } = req.body; // Array of { id, sort_order }
         
@@ -475,7 +475,7 @@ router.post('/plans/reorder', (req, res) => {
         const updateOrder = db.prepare('UPDATE subscription_plans SET sort_order = ? WHERE id = ?');
         
         for (const item of order) {
-            updateOrder.run(item.sort_order, item.id);
+            await updateOrder.run(item.sort_order, item.id);
         }
 
         // Invalidate cache immediately
@@ -491,10 +491,10 @@ router.post('/plans/reorder', (req, res) => {
 /**
  * Get plan statistics
  */
-router.get('/plans/stats/overview', (req, res) => {
+router.get('/plans/stats/overview', async (req, res) => {
     try {
         // Total revenue by plan
-        const revenue = db.prepare(`
+        const revenue = await db.prepare(`
             SELECT 
                 u.plan,
                 COUNT(*) as user_count,
@@ -503,11 +503,11 @@ router.get('/plans/stats/overview', (req, res) => {
             FROM users u
             LEFT JOIN subscription_plans p ON p.name = u.plan
             WHERE u.plan != 'free'
-            GROUP BY u.plan
+            GROUP BY u.plan, p.price, p.display_name
         `).all();
 
         // User distribution
-        const distribution = db.prepare(`
+        const distribution = await db.prepare(`
             SELECT 
                 plan,
                 COUNT(*) as count
@@ -516,7 +516,7 @@ router.get('/plans/stats/overview', (req, res) => {
         `).all();
 
         // Recent plan changes
-        const recentChanges = db.prepare(`
+        const recentChanges = await db.prepare(`
             SELECT 
                 u.id,
                 u.email,
@@ -527,12 +527,15 @@ router.get('/plans/stats/overview', (req, res) => {
             LIMIT 10
         `).all();
 
+        const totalPlans = await db.prepare('SELECT COUNT(*) as count FROM subscription_plans').get();
+        const activePlans = await db.prepare('SELECT COUNT(*) as count FROM subscription_plans WHERE is_active = 1').get();
+
         res.json({
-            revenue,
-            distribution,
-            recentChanges,
-            total_plans: db.prepare('SELECT COUNT(*) as count FROM subscription_plans').get().count,
-            active_plans: db.prepare('SELECT COUNT(*) as count FROM subscription_plans WHERE is_active = 1').get().count
+            revenue: Array.isArray(revenue) ? revenue : [],
+            distribution: Array.isArray(distribution) ? distribution : [],
+            recentChanges: Array.isArray(recentChanges) ? recentChanges : [],
+            total_plans: totalPlans?.count || 0,
+            active_plans: activePlans?.count || 0
         });
     } catch (error) {
         console.error('Get plan stats error:', error);

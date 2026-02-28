@@ -99,58 +99,48 @@ class OrderDetector {
         const lowerMessage = message.toLowerCase();
         const lowerProductName = productName.toLowerCase();
         
-        // FIRST: Try French number words (deux, trois, etc.)
-        for (const pattern of FRENCH_QUANTITY_PATTERNS) {
-            const match = lowerMessage.match(pattern);
-            if (match && match[1]) {
-                const frenchWord = match[1].toLowerCase();
-                if (FRENCH_NUMBERS[frenchWord]) {
-                    return FRENCH_NUMBERS[frenchWord];
+        const productWords = lowerProductName.split(/\s+/).filter(w => w.length > 2);
+        const searchWord = productWords.length > 0 ? productWords[0] : lowerProductName;
+        
+        let productIndex = lowerMessage.lastIndexOf(searchWord);
+        if (productIndex === -1) {
+            // Check for numeric quantity patterns as fallback
+            const match = lowerMessage.match(/(?:je\s+(?:veux|prends|voudrais|commande|souhaite))\s+(\d+)/i);
+            if (match && match[1]) return Math.min(Math.max(parseInt(match[1]), 1), 100);
+            return 1;
+        }
+
+        // Check text AFTER the product first (e.g., "Savon x 3", "Savon (3)")
+        const textAfter = lowerMessage.substring(productIndex + searchWord.length, Math.min(lowerMessage.length, productIndex + searchWord.length + 20));
+        const afterMatch = textAfter.match(/^[\sx:\-()]*(\d+)\b/i);
+        if (afterMatch && afterMatch[1]) {
+            const qty = parseInt(afterMatch[1]);
+            if (qty >= 1 && qty <= 100 && !lowerProductName.includes(afterMatch[1])) {
+                return qty;
+            }
+        }
+
+        // Check text BEFORE the product
+        const textBefore = lowerMessage.substring(Math.max(0, productIndex - 60), productIndex).trim();
+        const tokens = textBefore.split(/[\s,.'"]+/);
+        let lastQty = null;
+
+        for (let i = 0; i < tokens.length; i++) {
+            const token = tokens[i];
+            if (/^\d+$/.test(token)) {
+                if (!lowerProductName.includes(token)) {
+                    lastQty = parseInt(token);
                 }
+            } else if (FRENCH_NUMBERS[token]) {
+                lastQty = FRENCH_NUMBERS[token];
             }
         }
         
-        // SECOND: Try numeric quantity patterns
-        for (const pattern of QUANTITY_PATTERNS) {
-            const match = message.match(pattern);
-            if (match && match[1]) {
-                const qty = parseInt(match[1]);
-                // Make sure this number is not part of the product name
-                if (!lowerProductName.includes(match[1])) {
-                    return Math.min(Math.max(qty, 1), 100); // Cap between 1 and 100
-                }
-            }
+        if (lastQty !== null && lastQty >= 1 && lastQty <= 100) {
+            return lastQty;
         }
-        
-        // THIRD: Look for quantity BEFORE product mention (numbers or words)
-        const productWords = lowerProductName.split(/\s+/);
-        const firstProductWord = productWords.find(w => w.length > 2) || productWords[0];
-        const productIndex = lowerMessage.indexOf(firstProductWord);
-        
-        if (productIndex > 0) {
-            const textBefore = lowerMessage.substring(0, productIndex).trim();
-            
-            // Check for French number word at end
-            const frenchWordMatch = textBefore.match(/(un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt|trente)\s*$/i);
-            if (frenchWordMatch) {
-                const frenchWord = frenchWordMatch[1].toLowerCase();
-                if (FRENCH_NUMBERS[frenchWord]) {
-                    return FRENCH_NUMBERS[frenchWord];
-                }
-            }
-            
-            // Check for numeric at end
-            const numbersBeforeProduct = textBefore.match(/(\d+)\s*$/);
-            if (numbersBeforeProduct) {
-                const qty = parseInt(numbersBeforeProduct[1]);
-                // Validate it's a reasonable quantity (1-99) and not a model number
-                if (qty >= 1 && qty <= 99) {
-                    return qty;
-                }
-            }
-        }
-        
-        return 1; // Default quantity
+
+        return 1;
     }
 
     /**
@@ -166,11 +156,29 @@ class OrderDetector {
             return { matched: true, score: 10 };
         }
         
-        // Word-based matching (at least 2 significant words must match)
-        const productWords = productNameLower.split(/\s+/).filter(w => w.length > 2);
-        const matchedWords = productWords.filter(word => lowerMessage.includes(word));
+        // Singular/Plural handling (Pluralized in text or singular in DB/text)
+        if (lowerMessage.includes(productNameLower + 's') || lowerMessage.includes(productNameLower.replace(/s$/, ''))) {
+             return { matched: true, score: 9 };
+        }
+
+        // Word-based matching
+        const stopwords = ['pour', 'avec', 'les', 'des', 'une', 'aux', 'sur'];
+        const productWords = productNameLower.split(/\s+/).filter(w => w.length > 2 && !stopwords.includes(w));
         
-        if (matchedWords.length >= Math.min(2, productWords.length)) {
+        // Helper to check if a single word is inside the message
+        const wordInMessage = (word) => {
+            if (lowerMessage.includes(word)) return true;
+            if (!word.endsWith('s') && lowerMessage.includes(word + 's')) return true; // match plural
+            if (word.endsWith('s') && lowerMessage.includes(word.slice(0, -1))) return true; // match singular
+            return false;
+        };
+
+        const matchedWords = productWords.filter(wordInMessage);
+        
+        // Dynamic formula: at least half of the significant words must match
+        const requiredWords = Math.max(1, Math.ceil(productWords.length / 2));
+        
+        if (matchedWords.length >= requiredWords) {
             return { matched: true, score: matchedWords.length };
         }
         

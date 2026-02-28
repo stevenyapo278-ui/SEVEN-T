@@ -69,12 +69,12 @@ class OrderService {
             // ============================================
             (async () => {
                 try {
-                    const user = db.prepare('SELECT plan, notification_number FROM users WHERE id = ?').get(userId);
+                    const user = await db.prepare('SELECT plan, notification_number FROM users WHERE id = ?').get(userId);
                     if (user && user.notification_number) {
                         const hasAlerts = await hasModule(user.plan || 'free', 'human_handoff_alerts');
                         if (hasAlerts) {
                             const { whatsappManager } = await import('./whatsapp.js');
-                            const defaultAgent = db.prepare('SELECT tool_id FROM agents WHERE user_id = ? AND is_active = 1 LIMIT 1').get(userId);
+                            const defaultAgent = await db.prepare('SELECT tool_id FROM agents WHERE user_id = ? AND is_active = 1 LIMIT 1').get(userId);
                             if (defaultAgent && defaultAgent.tool_id) {
                                 let phoneNum = user.notification_number.replace(/\D/g, '');
                                 if (!phoneNum.includes('@s.whatsapp.net')) {

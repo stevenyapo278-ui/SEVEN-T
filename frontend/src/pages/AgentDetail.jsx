@@ -1441,50 +1441,52 @@ function SettingsTab({ agent, onUpdate }) {
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.aiModel', 'AI Model')}</label>
-                  <select
-                    value={formData.model}
-                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    className="input-dark w-full"
-                  >
-                    <optgroup label="⚡ Google Gemini">
-                      <option value="models/gemini-2.5-flash">Gemini 2.5 Flash - Dernier modèle ⭐ (1 crédit)</option>
-                      <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide (1 crédit)</option>
-                      <option value="gemini-1.5-pro">Gemini 1.5 Pro - Intelligent (2 crédits)</option>
-                    </optgroup>
-                    <optgroup label="🤖 OpenAI">
-                      <option value="gpt-4o-mini">GPT-4o Mini - Rapide (2 crédits)</option>
-                      <option value="gpt-4o">GPT-4o - Très intelligent (5 crédits)</option>
-                    </optgroup>
-                    <optgroup label="🆓 OpenRouter Gratuit">
-                      <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 Next 80B - Gratuit ⭐ (puissant)</option>
-                      <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B - Gratuit (recommandé)</option>
-                      <option value="tngtech/deepseek-r1t-chimera:free">DeepSeek R1T Chimera - Gratuit</option>
-                      <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B - Gratuit</option>
-                      <option value="google/gemma-2-9b-it:free">Gemma 2 9B - Gratuit</option>
-                      <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B - Gratuit</option>
-                      <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini - Gratuit</option>
-                    </optgroup>
-                    <optgroup label="🦙 Meta Llama (via OpenRouter)">
-                      <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B - Puissant (1 crédit)</option>
-                      <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B - Ultra (3 crédits)</option>
-                    </optgroup>
-                    <optgroup label="🌟 Mistral (via OpenRouter)">
-                      <option value="mistralai/mistral-7b-instruct">Mistral 7B - Rapide (1 crédit)</option>
-                      <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B - Équilibré (1 crédit)</option>
-                      <option value="mistralai/mistral-large">Mistral Large - Puissant (2 crédits)</option>
-                    </optgroup>
-                    <optgroup label="🧠 Anthropic Claude (via OpenRouter)">
-                      <option value="anthropic/claude-3-haiku">Claude 3 Haiku - Rapide (1 crédit)</option>
-                      <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet - Intelligent (3 crédits)</option>
-                      <option value="anthropic/claude-3-opus">Claude 3 Opus - Ultra (8 crédits)</option>
-                    </optgroup>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {t('agents.detail.settings.aiModelHint', 'Free models are limited. Credits are deducted according to the chosen model.')}
-                  </p>
-                </div>
+                {user?.is_admin && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.aiModel', 'AI Model')}</label>
+                    <select
+                      value={formData.model}
+                      onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                      className="input-dark w-full"
+                    >
+                      <optgroup label="⚡ Google Gemini">
+                        <option value="models/gemini-2.5-flash">Gemini 2.5 Flash - Dernier modèle ⭐ (1 crédit)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide (1 crédit)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro - Intelligent (2 crédits)</option>
+                      </optgroup>
+                      <optgroup label="🤖 OpenAI">
+                        <option value="gpt-4o-mini">GPT-4o Mini - Rapide (2 crédits)</option>
+                        <option value="gpt-4o">GPT-4o - Très intelligent (5 crédits)</option>
+                      </optgroup>
+                      <optgroup label="🆓 OpenRouter Gratuit">
+                        <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 Next 80B - Gratuit ⭐ (puissant)</option>
+                        <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B - Gratuit (recommandé)</option>
+                        <option value="tngtech/deepseek-r1t-chimera:free">DeepSeek R1T Chimera - Gratuit</option>
+                        <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B - Gratuit</option>
+                        <option value="google/gemma-2-9b-it:free">Gemma 2 9B - Gratuit</option>
+                        <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B - Gratuit</option>
+                        <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini - Gratuit</option>
+                      </optgroup>
+                      <optgroup label="🦙 Meta Llama (via OpenRouter)">
+                        <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B - Puissant (1 crédit)</option>
+                        <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B - Ultra (3 crédits)</option>
+                      </optgroup>
+                      <optgroup label="🌟 Mistral (via OpenRouter)">
+                        <option value="mistralai/mistral-7b-instruct">Mistral 7B - Rapide (1 crédit)</option>
+                        <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B - Équilibré (1 crédit)</option>
+                        <option value="mistralai/mistral-large">Mistral Large - Puissant (2 crédits)</option>
+                      </optgroup>
+                      <optgroup label="🧠 Anthropic Claude (via OpenRouter)">
+                        <option value="anthropic/claude-3-haiku">Claude 3 Haiku - Rapide (1 crédit)</option>
+                        <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet - Intelligent (3 crédits)</option>
+                        <option value="anthropic/claude-3-opus">Claude 3 Opus - Ultra (8 crédits)</option>
+                      </optgroup>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {t('agents.detail.settings.aiModelHint', 'Free models are limited. Credits are deducted according to the chosen model.')}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.language', 'Language')}</label>
                   <select
@@ -2606,9 +2608,11 @@ function PlaygroundTab({ agent }) {
               <h2 className="font-display font-semibold text-gray-100">{t('agents.detail.playground.title', 'Test your assistant')}</h2>
               <p className="text-sm text-gray-400">{t('agents.detail.playground.subtitle', 'Test AI responses in real-time')}</p>
             </div>
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-              {agent.model || 'gemini-1.5-flash'}
-            </span>
+            {user?.is_admin && (
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                {agent.model || 'gemini-1.5-flash'}
+              </span>
+            )}
           </div>
         </div>
 

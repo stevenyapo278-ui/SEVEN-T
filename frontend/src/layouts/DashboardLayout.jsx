@@ -354,6 +354,7 @@ const UserMenu = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
   const { isDark } = useTheme()
+  const { t, i18n } = useTranslation()
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -493,10 +494,9 @@ const UserMenu = ({ user, onLogout }) => {
               <Settings className="w-4 h-4 text-icon" />
               Paramètres
             </Link>
-            <a
-              href="https://docs.seven-t.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/dashboard/help"
+              onClick={() => setIsOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                 isDark 
                   ? 'text-gray-300 hover:bg-space-700' 
@@ -505,8 +505,7 @@ const UserMenu = ({ user, onLogout }) => {
             >
               <HelpCircle className="w-4 h-4 text-icon" />
               Aide
-              <ExternalLink className="w-3 h-3 ml-auto opacity-50 text-icon" />
-            </a>
+            </Link>
           </div>
 
           {/* Logout */}
@@ -790,6 +789,7 @@ const pathToTitle = (pathname) => {
     products: 'Produits',
     reports: 'Rapports',
     settings: 'Paramètres',
+    help: 'Aide',
     templates: 'Templates',
     tools: 'Outils',
     workflows: 'Workflows',

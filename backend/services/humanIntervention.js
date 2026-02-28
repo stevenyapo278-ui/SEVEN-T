@@ -46,7 +46,7 @@ class HumanInterventionService {
      * @param {string} userId - User ID (owner)
      * @returns {boolean} - True if intervention is needed
      */
-    checkForIntervention(userMessage, aiResponse, conversation, userId) {
+    async checkForIntervention(userMessage, aiResponse, conversation, userId) {
         const lowerMessage = userMessage.toLowerCase();
         const lowerResponse = aiResponse.toLowerCase();
         
@@ -96,16 +96,16 @@ class HumanInterventionService {
     /**
      * Flag a conversation as needing human intervention
      */
-    flagConversation(conversationId, userId, reason) {
+    async flagConversation(conversationId, userId, reason) {
         try {
             // Check if already flagged
-            const conv = db.prepare('SELECT needs_human FROM conversations WHERE id = ?').get(conversationId);
+            const conv = await db.prepare('SELECT needs_human FROM conversations WHERE id = ?').get(conversationId);
             if (conv?.needs_human === 1) {
                 return; // Already flagged
             }
 
             // Update conversation
-            db.prepare(`
+            await db.prepare(`
                 UPDATE conversations SET 
                     needs_human = 1,
                     needs_human_reason = ?,
@@ -114,7 +114,7 @@ class HumanInterventionService {
             `).run(reason, conversationId);
 
             // Get conversation details for notification
-            const conversation = db.prepare(`
+            const conversation = await db.prepare(`
                 SELECT c.*, a.name as agent_name 
                 FROM conversations c
                 LEFT JOIN agents a ON c.agent_id = a.id
@@ -141,13 +141,13 @@ class HumanInterventionService {
             // ============================================
             (async () => {
                 try {
-                    const user = db.prepare('SELECT plan, notification_number FROM users WHERE id = ?').get(userId);
+                    const user = await db.prepare('SELECT plan, notification_number FROM users WHERE id = ?').get(userId);
                     if (user && user.notification_number) {
                         const hasAlerts = await hasModule(user.plan || 'free', 'human_handoff_alerts');
                         if (hasAlerts) {
                             const { whatsappManager } = await import('./whatsapp.js');
                             // Let's use the first available active agent for this user to send the WhatsApp
-                            const defaultAgent = db.prepare('SELECT tool_id FROM agents WHERE user_id = ? AND is_active = 1 LIMIT 1').get(userId);
+                            const defaultAgent = await db.prepare('SELECT tool_id FROM agents WHERE user_id = ? AND is_active = 1 LIMIT 1').get(userId);
                             if (defaultAgent && defaultAgent.tool_id) {
                                 let phoneNum = user.notification_number.replace(/\D/g, '');
                                 if (!phoneNum.includes('@s.whatsapp.net')) {
@@ -174,9 +174,9 @@ class HumanInterventionService {
     /**
      * Mark conversation as handled (human has responded)
      */
-    markAsHandled(conversationId) {
+    async markAsHandled(conversationId) {
         try {
-            db.prepare(`
+            await db.prepare(`
                 UPDATE conversations SET 
                     needs_human = 0,
                     needs_human_reason = NULL
@@ -191,8 +191,8 @@ class HumanInterventionService {
     /**
      * Get all conversations needing human intervention
      */
-    getConversationsNeedingHelp(userId) {
-        return db.prepare(`
+    async getConversationsNeedingHelp(userId) {
+        return await db.prepare(`
             SELECT c.*, a.name as agent_name
             FROM conversations c
             LEFT JOIN agents a ON c.agent_id = a.id
@@ -204,8 +204,8 @@ class HumanInterventionService {
     /**
      * Get count of conversations needing help
      */
-    getHelpNeededCount(userId) {
-        const result = db.prepare(`
+    async getHelpNeededCount(userId) {
+        const result = await db.prepare(`
             SELECT COUNT(*) as count
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id

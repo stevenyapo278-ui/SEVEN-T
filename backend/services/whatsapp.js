@@ -13,6 +13,7 @@ import { dirname, join } from 'path';
 import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from 'fs';
 import db from '../database/init.js';
 import { aiService } from './ai.js';
+import { hasEnoughCredits, deductCredits } from './credits.js';
 import { leadAnalyzer } from './leadAnalyzer.js';
 import { orderDetector } from './orderDetector.js';
 import { humanInterventionService } from './humanIntervention.js';
@@ -327,6 +328,49 @@ class WhatsAppManager {
                 markOnlineOnConnect: true,
                 syncFullHistory: false,
             });
+
+            // Wrap sendMessage to check and deduct credits
+            const originalSendMessage = sock.sendMessage.bind(sock);
+            sock.sendMessage = async (jid, content, options) => {
+                let userId = null;
+                const isActualMessage = content && (content.text || content.image || content.audio || content.video || content.document || content.template || content.interactive || content.contacts);
+
+                if (isActualMessage) {
+                    try {
+                        const agent = await db.get('SELECT user_id FROM agents WHERE tool_id = ?', toolId);
+                        userId = agent?.user_id;
+                        if (!userId) {
+                            const tool = await db.get('SELECT user_id FROM tools WHERE id = ?', toolId);
+                            userId = tool?.user_id;
+                        }
+
+                        if (userId) {
+                            const hasCredits = await hasEnoughCredits(userId, 'whatsapp_message_sent');
+                            if (!hasCredits) {
+                                console.warn(`[WhatsApp] Blocked outgoing message to ${jid} (User ${userId}): Insufficient credits`);
+                                throw new Error('Crédits insuffisants pour envoyer un message WhatsApp');
+                            }
+                        }
+                    } catch (e) {
+                        if (e.message.includes('Crédits insuffisants')) throw e;
+                        console.error('[WhatsApp] Checking credits error:', e);
+                    }
+                }
+
+                // Send the actual message
+                const result = await originalSendMessage(jid, content, options);
+
+                // Deduct credits asynchronously if successful
+                if (isActualMessage && result?.key?.id && userId) {
+                    deductCredits(userId, 'whatsapp_message_sent', 1, {
+                        whatsapp_id: result.key.id,
+                        jid: jid,
+                        type: content.text ? 'text' : (content.image ? 'image' : 'media')
+                    }).catch(err => console.error('[WhatsApp] Deducting credit error:', err));
+                }
+
+                return result;
+            };
 
             this.stores.set(toolId, store);
             this.connections.set(toolId, sock);

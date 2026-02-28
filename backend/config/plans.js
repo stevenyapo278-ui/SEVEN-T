@@ -82,9 +82,9 @@ export function clearPlansCache() {
  * Get the name of the default active plan (is_default=1 and is_active=1).
  * Used when a user's plan is inactive so we don't give them the static config of a disabled plan.
  */
-export function getDefaultPlanName() {
+export async function getDefaultPlanName() {
     try {
-        const row = db.prepare(`
+        const row = await db.prepare(`
             SELECT name FROM subscription_plans 
             WHERE is_active = 1 AND is_default = 1 
             LIMIT 1
@@ -102,7 +102,7 @@ export function getDefaultPlanName() {
 export async function getEffectivePlanName(planName) {
     const dbPlans = await loadPlansFromDB();
     if (dbPlans && dbPlans[planName]) return planName;
-    return getDefaultPlanName();
+    return await getDefaultPlanName();
 }
 
 // Default/Fallback plans configuration (aligned with config/defaultPlans.js)
@@ -278,7 +278,7 @@ export async function getPlan(planName) {
         return dbPlans[planName];
     }
     // Plan désactivé ou inexistant : appliquer le plan par défaut (ou free), pas la config statique du plan désactivé
-    const defaultName = getDefaultPlanName();
+    const defaultName = await getDefaultPlanName();
     if (dbPlans && dbPlans[defaultName]) return dbPlans[defaultName];
     return PLANS[defaultName] || PLANS.free;
 }

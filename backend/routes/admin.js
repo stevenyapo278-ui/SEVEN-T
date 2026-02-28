@@ -259,7 +259,7 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
 
         // Ne pas autoriser d'assigner un plan désactivé
         if (plan != null && plan !== '') {
-            const planActive = db.prepare('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1').get(plan);
+            const planActive = await db.get('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1', plan);
             if (!planActive) {
                 return res.status(400).json({ error: 'Ce plan n\'est pas actif. Choisissez un plan actif dans la liste.' });
             }
@@ -311,13 +311,13 @@ router.post('/users/:id/reset-password', authenticateAdmin, async (req, res) => 
             return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
         }
 
-        const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
+        const existing = await db.get('SELECT id FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
         const hashedPassword = await bcrypt.hash(new_password, 10);
-        db.prepare('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(hashedPassword, req.params.id);
+        await db.run('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', hashedPassword, req.params.id);
 
         res.json({ message: 'Mot de passe réinitialisé avec succès' });
     } catch (error) {
@@ -327,7 +327,7 @@ router.post('/users/:id/reset-password', authenticateAdmin, async (req, res) => 
 });
 
 // Add credits to user
-router.post('/users/:id/add-credits', authenticateAdmin, (req, res) => {
+router.post('/users/:id/add-credits', authenticateAdmin, async (req, res) => {
     try {
         const { amount } = req.body;
 
@@ -335,14 +335,14 @@ router.post('/users/:id/add-credits', authenticateAdmin, (req, res) => {
             return res.status(400).json({ error: 'Montant invalide' });
         }
 
-        const existing = db.prepare('SELECT id, credits FROM users WHERE id = ?').get(req.params.id);
+        const existing = await db.get('SELECT id, credits FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
-        db.prepare('UPDATE users SET credits = credits + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(amount, req.params.id);
+        await db.run('UPDATE users SET credits = credits + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', amount, req.params.id);
 
-        const user = db.prepare('SELECT credits FROM users WHERE id = ?').get(req.params.id);
+        const user = await db.get('SELECT credits FROM users WHERE id = ?', req.params.id);
         res.json({ message: 'Crédits ajoutés', credits: user.credits });
     } catch (error) {
         console.error('Add credits error:', error);
@@ -351,15 +351,15 @@ router.post('/users/:id/add-credits', authenticateAdmin, (req, res) => {
 });
 
 // Get deletion preview (what will be deleted)
-router.get('/users/:id/deletion-preview', authenticateAdmin, (req, res) => {
+router.get('/users/:id/deletion-preview', authenticateAdmin, async (req, res) => {
     try {
-        const user = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(req.params.id);
+        const user = await db.get('SELECT id, name, email FROM users WHERE id = ?', req.params.id);
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
         // Get counts of all related data
-        const agents = db.prepare('SELECT id, name, whatsapp_connected FROM agents WHERE user_id = ?').all(req.params.id);
+        const agents = await db.all('SELECT id, name, whatsapp_connected FROM agents WHERE user_id = ?', req.params.id);
         const agentIds = agents.map(a => a.id);
         
         let stats = {
@@ -375,27 +375,20 @@ router.get('/users/:id/deletion-preview', authenticateAdmin, (req, res) => {
         if (agentIds.length > 0) {
             const placeholders = agentIds.map(() => '?').join(',');
             
-            stats.conversations = db.prepare(`
-                SELECT COUNT(*) as count FROM conversations WHERE agent_id IN (${placeholders})
-            `).get(...agentIds).count;
+            const convRow = await db.get(`SELECT COUNT(*) as count FROM conversations WHERE agent_id IN (${placeholders})`, ...agentIds);
+            stats.conversations = convRow?.count || 0;
             
-            stats.messages = db.prepare(`
-                SELECT COUNT(*) as count FROM messages m
-                JOIN conversations c ON m.conversation_id = c.id
-                WHERE c.agent_id IN (${placeholders})
-            `).get(...agentIds).count;
+            const msgRow = await db.get(`SELECT COUNT(*) as count FROM messages m JOIN conversations c ON m.conversation_id = c.id WHERE c.agent_id IN (${placeholders})`, ...agentIds);
+            stats.messages = msgRow?.count || 0;
             
-            stats.knowledgeItems = db.prepare(`
-                SELECT COUNT(*) as count FROM knowledge_base WHERE agent_id IN (${placeholders})
-            `).get(...agentIds).count;
+            const kbRow = await db.get(`SELECT COUNT(*) as count FROM knowledge_base WHERE agent_id IN (${placeholders})`, ...agentIds);
+            stats.knowledgeItems = kbRow?.count || 0;
             
-            stats.templates = db.prepare(`
-                SELECT COUNT(*) as count FROM templates WHERE agent_id IN (${placeholders})
-            `).get(...agentIds).count;
+            const tplRow = await db.get(`SELECT COUNT(*) as count FROM templates WHERE agent_id IN (${placeholders})`, ...agentIds);
+            stats.templates = tplRow?.count || 0;
             
-            stats.blacklistEntries = db.prepare(`
-                SELECT COUNT(*) as count FROM blacklist WHERE agent_id IN (${placeholders})
-            `).get(...agentIds).count;
+            const blRow = await db.get(`SELECT COUNT(*) as count FROM blacklist WHERE agent_id IN (${placeholders})`, ...agentIds);
+            stats.blacklistEntries = blRow?.count || 0;
         }
 
         res.json({ 
@@ -422,25 +415,22 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
         }
 
-        const existing = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(req.params.id);
+        const existing = await db.get('SELECT id, name, email FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
         // Get all agents for this user
-        const agents = db.prepare('SELECT id, whatsapp_connected FROM agents WHERE user_id = ?').all(req.params.id);
+        const agents = await db.all('SELECT id, whatsapp_connected FROM agents WHERE user_id = ?', req.params.id);
         
         // Disconnect all WhatsApp sessions and clean up session files
         const cleanupResults = [];
         for (const agent of agents) {
             try {
-                // Disconnect WhatsApp if connected
                 if (whatsappManager.isConnected(agent.id)) {
                     await whatsappManager.disconnect(agent.id, false);
                     cleanupResults.push({ agentId: agent.id, action: 'disconnected' });
                 }
-                
-                // Remove session files from disk
                 const sessionPath = join(sessionsDir, agent.id);
                 if (existsSync(sessionPath)) {
                     rmSync(sessionPath, { recursive: true, force: true });
@@ -452,37 +442,13 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
             }
         }
 
-        // Soft delete: just deactivate the user
         if (soft_delete === 'true') {
-            db.prepare(`
-                UPDATE users SET 
-                    is_active = 0, 
-                    email = email || '_deleted_' || ?,
-                    updated_at = CURRENT_TIMESTAMP 
-                WHERE id = ?
-            `).run(Date.now(), req.params.id);
-            
-            // Also deactivate all their agents
-            db.prepare('UPDATE agents SET is_active = 0, whatsapp_connected = 0 WHERE user_id = ?').run(req.params.id);
-
-            res.json({ 
-                message: 'Utilisateur désactivé avec succès',
-                soft_deleted: true,
-                cleanup: cleanupResults
-            });
+            await db.run(`UPDATE users SET is_active = 0, email = email || '_deleted_' || ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, Date.now(), req.params.id);
+            await db.run('UPDATE agents SET is_active = 0, whatsapp_connected = 0 WHERE user_id = ?', req.params.id);
+            res.json({ message: 'Utilisateur désactivé avec succès', soft_deleted: true, cleanup: cleanupResults });
         } else {
-            // Hard delete: permanently remove user and all data
-            db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
-
-            res.json({ 
-                message: 'Utilisateur et toutes ses données supprimés définitivement',
-                soft_deleted: false,
-                cleanup: cleanupResults,
-                deleted: {
-                    agents: agents.length,
-                    sessions_cleaned: cleanupResults.filter(r => r.action === 'session_deleted').length
-                }
-            });
+            await db.run('DELETE FROM users WHERE id = ?', req.params.id);
+            res.json({ message: 'Utilisateur et toutes ses données supprimés définitivement', soft_deleted: false, cleanup: cleanupResults, deleted: { agents: agents.length, sessions_cleaned: cleanupResults.filter(r => r.action === 'session_deleted').length } });
         }
     } catch (error) {
         console.error('Delete user error:', error);
@@ -491,18 +457,16 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Restore soft-deleted user
-router.post('/users/:id/restore', authenticateAdmin, (req, res) => {
+router.post('/users/:id/restore', authenticateAdmin, async (req, res) => {
     try {
-        const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(req.params.id);
+        const user = await db.get('SELECT id, email FROM users WHERE id = ?', req.params.id);
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
-        // Remove the _deleted_ suffix from email
         const originalEmail = user.email.replace(/_deleted_\d+$/, '');
         
-        // Check if original email is now taken
-        const emailTaken = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(originalEmail, req.params.id);
+        const emailTaken = await db.get('SELECT id FROM users WHERE email = ? AND id != ?', originalEmail, req.params.id);
         if (emailTaken) {
             return res.status(400).json({ 
                 error: 'L\'email original est maintenant utilisé par un autre compte',
@@ -510,16 +474,8 @@ router.post('/users/:id/restore', authenticateAdmin, (req, res) => {
             });
         }
 
-        db.prepare(`
-            UPDATE users SET 
-                is_active = 1,
-                email = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `).run(originalEmail, req.params.id);
-
-        // Reactivate agents (but keep WhatsApp disconnected)
-        db.prepare('UPDATE agents SET is_active = 1 WHERE user_id = ?').run(req.params.id);
+        await db.run(`UPDATE users SET is_active = 1, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, originalEmail, req.params.id);
+        await db.run('UPDATE agents SET is_active = 1 WHERE user_id = ?', req.params.id);
 
         res.json({ message: 'Utilisateur restauré avec succès', email: originalEmail });
     } catch (error) {
@@ -544,7 +500,7 @@ router.post('/users', authenticateAdmin, async (req, res) => {
 
         // Ne pas autoriser de créer un utilisateur avec un plan désactivé
         const planToUse = plan || 'free';
-        const planActive = db.prepare('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1').get(planToUse);
+        const planActive = await db.get('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1', planToUse);
         if (!planActive) {
             return res.status(400).json({ error: 'Ce plan n\'est pas actif. Choisissez un plan actif dans la liste.' });
         }
@@ -571,9 +527,9 @@ router.post('/users', authenticateAdmin, async (req, res) => {
 // ==================== AGENTS MANAGEMENT ====================
 
 // Get all agents
-router.get('/agents', authenticateAdmin, (req, res) => {
+router.get('/agents', authenticateAdmin, async (req, res) => {
     try {
-        const agents = db.prepare(`
+        const agents = await db.all(`
             SELECT a.*, u.name as user_name, u.email as user_email,
                    (SELECT COUNT(*) FROM conversations WHERE agent_id = a.id) as conversations_count,
                    (SELECT COUNT(*) FROM messages m 
@@ -582,9 +538,9 @@ router.get('/agents', authenticateAdmin, (req, res) => {
             FROM agents a
             JOIN users u ON a.user_id = u.id
             ORDER BY a.created_at DESC
-        `).all();
+        `);
 
-        res.json({ agents });
+        res.json({ agents: Array.isArray(agents) ? agents : [] });
     } catch (error) {
         console.error('Get agents error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -594,31 +550,29 @@ router.get('/agents', authenticateAdmin, (req, res) => {
 // ==================== SYSTEM LOGS ====================
 
 // Get recent activity logs
-router.get('/activity', authenticateAdmin, (req, res) => {
+router.get('/activity', authenticateAdmin, async (req, res) => {
     try {
         const { limit = 50 } = req.query;
 
-        // Get recent conversations
-        const recentConversations = db.prepare(`
+        const recentConversations = await db.all(`
             SELECT c.*, a.name as agent_name, u.name as user_name
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             JOIN users u ON a.user_id = u.id
             ORDER BY c.last_message_at DESC
             LIMIT ?
-        `).all(parseInt(limit));
+        `, parseInt(limit));
 
-        // Get recent messages
-        const recentMessages = db.prepare(`
+        const recentMessages = await db.all(`
             SELECT m.*, c.contact_name, a.name as agent_name
             FROM messages m
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             ORDER BY m.created_at DESC
             LIMIT ?
-        `).all(parseInt(limit));
+        `, parseInt(limit));
 
-        res.json({ recentConversations, recentMessages });
+        res.json({ recentConversations: Array.isArray(recentConversations) ? recentConversations : [], recentMessages: Array.isArray(recentMessages) ? recentMessages : [] });
     } catch (error) {
         console.error('Get activity error:', error);
         res.status(500).json({ error: 'Erreur serveur' });

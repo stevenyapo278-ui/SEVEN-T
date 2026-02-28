@@ -125,7 +125,7 @@ export async function deductCredits(userId, action, quantity = 1, metadata = {})
         return { success: true, credits_remaining: -1, cost: 0 };
     }
     
-    const cost = Math.ceil(getCreditCost(action) * quantity);
+    const cost = Number((getCreditCost(action) * quantity).toFixed(3));
     
     const result = await db.run(
         'UPDATE users SET credits = credits - ? WHERE id = ? AND credits >= ?',

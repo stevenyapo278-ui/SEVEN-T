@@ -354,24 +354,7 @@ export default function Settings() {
               </div>
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              {t('settings.iaModel')}
-            </label>
-            <select
-              value={['models/gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(formData.media_model) ? formData.media_model : 'gemini-1.5-flash'}
-              onChange={(e) => setFormData({ ...formData, media_model: e.target.value })}
-              className="input-dark w-full max-w-md"
-            >
-              <option value="models/gemini-2.5-flash">Gemini 2.5 Flash - Dernier modèle ⭐</option>
-              <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide</option>
-              <option value="gemini-1.5-pro">Gemini 1.5 Pro - Plus précis</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-              <Image className="w-3.5 h-3.5" /><Mic className="w-3.5 h-3.5" />
-              {t('settings.iaModelDesc')}
-            </p>
-          </div>
+
           {currentPlan?.features?.human_handoff_alerts && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
