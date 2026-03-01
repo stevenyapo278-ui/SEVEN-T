@@ -134,50 +134,56 @@ export default function Notifications() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
-            isDark ? 'bg-space-800 text-blue-400' : 'bg-blue-50 text-blue-600'
-          }`}>
-            <Bell className="w-5 h-5" />
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-12">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <Bell className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('notifications.title')}</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                {unreadCount} {unreadCount <= 1 ? t('notifications.unread', 'unread') : t('notifications.unread_plural', 'unread')}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                onClick={() => loadNotifications(activeFilter)}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{t('dashboard.refresh')}</span>
+              </button>
+              <button
+                onClick={markAllAsRead}
+                disabled={actionLoading || unreadCount === 0}
+                className="btn-primary flex items-center gap-2 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Check className="w-5 h-5" />
+                <span>{t('notifications.markAllRead')}</span>
+              </button>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('notifications.title')}</h1>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              {unreadCount} {unreadCount <= 1 ? t('notifications.unread', 'unread') : t('notifications.unread_plural', 'unread')}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => loadNotifications(activeFilter)}
-            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm touch-target ${
-              isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            {t('dashboard.refresh')}
-          </button>
-          <button
-            onClick={markAllAsRead}
-            disabled={actionLoading || unreadCount === 0}
-            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm touch-target ${
-              actionLoading || unreadCount === 0
-                ? 'opacity-50 cursor-not-allowed'
-                : isDark
-                  ? 'bg-blue-500/10 text-blue-300 hover:bg-blue-500/20'
-                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-            }`}
-          >
-            <Check className="w-4 h-4" />
-            {t('notifications.markAllRead')}
-          </button>
         </div>
       </div>
 
       {/* Filters Section */}
-      <div className={`p-4 rounded-2xl border ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-white shadow-sm'} space-y-4`}>
+      <div className={`p-6 rounded-2xl border transition-all duration-300 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      } space-y-4`}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search Term */}
           <div className="relative md:col-span-2">
@@ -253,7 +259,9 @@ export default function Notifications() {
         </div>
       </div>
 
-      <div className={`rounded-2xl border ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-white'}`}>
+      <div className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>

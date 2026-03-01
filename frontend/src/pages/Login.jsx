@@ -149,6 +149,14 @@ export default function Login() {
                   className="min-h-[44px] touch-target"
                 />
               </div>
+              <div className="flex justify-end mt-2">
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm font-medium text-gold-400 hover:text-gold-300 transition-colors"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
             </div>
 
             <button

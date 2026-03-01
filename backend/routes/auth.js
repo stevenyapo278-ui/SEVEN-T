@@ -9,7 +9,7 @@ import db from '../database/init.js';
 import { getPlan, getEffectivePlanName } from '../config/plans.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import { validate, registerSchema, loginSchema } from '../middleware/security.js';
-import { sendWelcomeEmail } from '../services/email.js';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
 import { notificationService } from '../services/notifications.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { whatsappManager } from '../services/whatsapp.js';
@@ -388,6 +388,70 @@ router.delete('/me', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Delete account error:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression du compte' });
+    }
+});
+
+// Forgot password - Generate token and send email
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: 'Email requis' });
+        }
+
+        const user = await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', email);
+        
+        // Even if user doesn't exist, we return success to prevent email enumeration
+        if (user && user.is_active !== 0) {
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            const tokenExpires = new Date(Date.now() + 3600000); // 1 hour
+
+            await db.run(
+                'UPDATE users SET reset_token = ?, reset_token_expires = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                resetToken,
+                tokenExpires,
+                user.id
+            );
+
+            await sendPasswordResetEmail(user, resetToken);
+        }
+
+        res.json({ message: 'Si un compte correspond à cet email, vous recevrez un lien de réinitialisation.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Erreur lors de la demande de réinitialisation' });
+    }
+});
+
+// Reset password - Verify token and update password
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        if (!token || !password) {
+            return res.status(400).json({ error: 'Token et mot de passe requis' });
+        }
+
+        const user = await db.get(
+            'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > CURRENT_TIMESTAMP',
+            token
+        );
+
+        if (!user) {
+            return res.status(400).json({ error: 'Lien de réinitialisation invalide ou expiré' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        await db.run(
+            'UPDATE users SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            hashedPassword,
+            user.id
+        );
+
+        res.json({ message: 'Votre mot de passe a été réinitialisé avec succès.' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Erreur lors de la réinitialisation du mot de passe' });
     }
 });
 

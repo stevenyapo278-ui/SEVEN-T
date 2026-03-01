@@ -304,66 +304,104 @@ export default function Campaigns() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-display font-bold text-gray-100">Campagnes</h1>
-          <p className="text-gray-400 text-sm sm:text-base">Envoyez des messages en masse à vos contacts</p>
-        </div>
-        <button
-          onClick={() => {
-            setSelectedCampaign(null)
-            setForm({ name: '', message: '', agent_id: '', scheduled_at: '' })
-            setShowModal(true)
-          }}
-          className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
-        >
-          <Plus className="w-5 h-5" />
-          Nouvelle campagne
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <Send className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Campagnes</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                Envoyez des messages en masse à vos contacts
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                type="button"
+                onClick={() => loadData()}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedCampaign(null)
+                  setForm({ name: '', message: '', agent_id: '', scheduled_at: '' })
+                  setShowModal(true)
+                }}
+                className="btn-primary flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Nouvelle campagne</span>
+              </button>
+            </div>
+          </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gold-400/20 flex items-center justify-center">
-            <Target className="w-6 h-6 text-gold-400" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.total || 0}</p>
-            <p className="text-sm text-gray-400">Campagnes</p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-400/20 flex items-center justify-center">
-            <Send className="w-6 h-6 text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.sent || 0}</p>
-            <p className="text-sm text-gray-400">Envoyées</p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-400/20 flex items-center justify-center">
-            <MessageSquare className="w-6 h-6 text-blue-400" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">{stats?.totalMessages ?? stats?.totalSent ?? 0}</p>
-            <p className="text-sm text-gray-400">Messages envoyés</p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-400/20 flex items-center justify-center">
-            <BarChart2 className="w-6 h-6 text-blue-400" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-100">
-              {stats?.totalRecipients > 0 && (stats?.totalMessages ?? stats?.totalSent ?? 0) >= 0
-                ? Math.round(((stats.totalMessages ?? stats.totalSent ?? 0) / stats.totalRecipients) * 100)
-                : 0}%
-            </p>
-            <p className="text-sm text-gray-400">Taux de succès</p>
+          {/* Stats grid within hero */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                  <Target className="w-5 h-5 text-gold-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.total || 0}</p>
+                  <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Campagnes</p>
+                </div>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
+                  <Send className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.sent || 0}</p>
+                  <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Envoyées</p>
+                </div>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <MessageSquare className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.totalMessages ?? stats?.totalSent ?? 0}</p>
+                  <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Messages</p>
+                </div>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <BarChart2 className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {stats?.totalRecipients > 0 && (stats?.totalMessages ?? stats?.totalSent ?? 0) >= 0
+                      ? Math.round(((stats.totalMessages ?? stats.totalSent ?? 0) / stats.totalRecipients) * 100)
+                      : 0}%
+                  </p>
+                  <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Taux de succès</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -422,15 +460,16 @@ export default function Campaigns() {
       </div>
 
       {/* Search */}
-      <div className="input-with-icon max-w-md">
-        <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-400">
-          <Search className="w-5 h-5" />
-        </div>
+      <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 max-w-md ${
+        isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+      }`}>
+        <Search className="w-5 h-5 text-gray-400" />
         <input
           type="text"
           placeholder="Rechercher une campagne..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
         />
       </div>
 

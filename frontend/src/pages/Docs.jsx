@@ -148,19 +148,52 @@ RÈGLES STRICTES :
   }
 ]
 
+import { useTheme } from '../contexts/ThemeContext'
+
 export default function Docs() {
   const { t } = useTranslation()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   usePageTitle('Documentation Technique')
   const [activeSection, setActiveSection] = useState(DOCS_SECTIONS[0].id)
 
   const currentContent = DOCS_SECTIONS.find(s => s.id === activeSection)?.content
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 max-w-7xl mx-auto pb-10 min-h-[calc(100vh-8rem)]">
+    <div className="max-w-7xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-12">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <BookOpen className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Documentation SEVEN T</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                Tout ce qu'il faut savoir pour maîtriser l'IA SEVEN T
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6 min-h-[calc(100vh-12rem)]">
       
       {/* Sidebar Navigation */}
       <div className="w-full md:w-64 flex-shrink-0">
-        <div className="card p-4 sticky top-6">
+        <div className={`p-4 sticky top-6 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        }`}>
           <div className="flex items-center gap-2 mb-6 px-2">
             <MessageSquareCode className="w-5 h-5 text-blue-400" />
             <span className="font-display font-bold text-gray-100 text-lg">Docs Developer</span>
@@ -186,13 +219,17 @@ export default function Docs() {
 
       {/* Main Content Area */}
       <div className="flex-1">
-        <div className="card p-6 sm:p-10 min-h-[600px] border-space-700">
+        <div className={`p-6 sm:p-10 min-h-[600px] rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        }`}>
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             {currentContent}
           </div>
         </div>
         
-        <div className="mt-6 flex items-center justify-between p-4 rounded-xl border border-space-700 bg-space-800/30">
+        <div className={`mt-6 flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-blue-50 border-blue-100 shadow-sm'
+        }`}>
           <p className="text-sm text-gray-400">
             Besoin d'aide technique supplémentaire ?
           </p>
@@ -205,6 +242,7 @@ export default function Docs() {
         </div>
       </div>
 
+      </div>
     </div>
   )
 }

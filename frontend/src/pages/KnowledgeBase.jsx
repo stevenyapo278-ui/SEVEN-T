@@ -118,10 +118,10 @@ export default function KnowledgeBase() {
   const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero - theme-aware */}
-      <div className={`relative rounded-3xl border p-4 sm:p-8 ${
-        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-950 border-space-700' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" aria-hidden="true">
           <div
@@ -132,10 +132,15 @@ export default function KnowledgeBase() {
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
-              <h1 className={`text-3xl font-display font-bold mb-2 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                Base de Connaissances
-              </h1>
-              <p className={isDark ? 'text-gray-400' : 'text-gray-700'}>
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                  <BookOpen className="w-6 h-6 text-gold-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Base de Connaissances
+                </h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
                 Centralisez les informations partagées par tous vos agents
               </p>
             </div>
@@ -148,71 +153,38 @@ export default function KnowledgeBase() {
             </button>
           </div>
 
-          {/* Stats - theme-aware */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
-            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
+          {/* Stats grid within hero */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-8">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <Database className="w-5 h-5 text-blue-400" />
                 </div>
-                <div>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Total</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Total</p>
                 </div>
               </div>
             </div>
-            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <FileText className="w-5 h-5 text-blue-400" />
                 </div>
-                <div>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.text}</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Texte</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.text}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Texte</p>
                 </div>
               </div>
             </div>
-            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/20 rounded-xl">
+                <div className="p-2 bg-red-500/10 rounded-xl flex-shrink-0">
                   <FileText className="w-5 h-5 text-red-400" />
                 </div>
-                <div>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.pdf}</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>PDF</p>
-                </div>
-              </div>
-            </div>
-            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/20 rounded-xl">
-                  <Video className="w-5 h-5 text-red-500" />
-                </div>
-                <div>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.youtube}</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>YouTube</p>
-                </div>
-              </div>
-            </div>
-            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
-                  <Globe className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.website}</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Sites web</p>
-                </div>
-              </div>
-            </div>
-            <div className={`backdrop-blur-sm rounded-2xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-white/80 border-gray-200'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gold-400/20 rounded-xl">
-                  <BookOpen className="w-5 h-5 text-gold-400" />
-                </div>
-                <div>
-                  <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{(stats.totalChars / 1000).toFixed(0)}k</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Caractères</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.pdf}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>PDF</p>
                 </div>
               </div>
             </div>
@@ -220,25 +192,25 @@ export default function KnowledgeBase() {
         </div>
       </div>
 
-      {/* Filters - theme-aware */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-icon" />
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 min-w-0 mb-6">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+        }`}>
+          <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher dans la base de connaissances..."
+            placeholder="Rechercher dans la base..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pl-12 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 ${
-              isDark ? 'input-dark bg-space-800 border-space-700' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-            }`}
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
           />
         </div>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className={`min-w-[150px] py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-            isDark ? 'input-dark bg-space-800 border-space-700' : 'bg-white border-gray-300 text-gray-900'
+          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[150px] transition-all duration-300 ${
+            isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
           }`}
         >
           <option value="all">Tous types</option>
@@ -293,14 +265,14 @@ export default function KnowledgeBase() {
           )}
         </div>
       ) : !loadError ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredItems.map((item, index) => {
             const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {})
             return (
               <div 
                 key={item.id} 
-                className={`p-4 rounded-2xl border transition-colors animate-fadeIn ${
-                  isDark ? 'card hover:border-space-600 bg-space-800/30 border-space-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn ${
+                  isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >

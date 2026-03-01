@@ -14,9 +14,12 @@ import {
   TrendingUp,
   MessageSquare
 } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext'
 import toast from 'react-hot-toast'
 
 export default function Templates() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { showConfirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [templates, setTemplates] = useState([])
@@ -150,23 +153,53 @@ export default function Templates() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-display font-bold text-gray-100">Modèles de messages</h1>
-          <p className="text-gray-400 text-sm sm:text-base">Réponses rapides et templates personnalisés</p>
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <FileText className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Modèles de messages</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                Réponses rapides et templates personnalisés
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                type="button"
+                onClick={() => loadData()}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
+              <button
+                onClick={() => {
+                  resetForm()
+                  setShowModal(true)
+                }}
+                className="btn-primary flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Nouveau template</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            resetForm()
-            setShowModal(true)
-          }}
-          className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
-        >
-          <Plus className="w-5 h-5" />
-          Nouveau template
-        </button>
       </div>
 
       {/* Popular Templates */}
@@ -195,23 +228,26 @@ export default function Templates() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="input-with-icon flex-1 max-w-md">
-          <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-400">
-            <Search className="w-5 h-5" />
-          </div>
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 min-w-0 mb-6">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+        }`}>
+          <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Rechercher un template..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
           />
         </div>
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className="input max-w-[200px]"
+          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[150px] transition-all duration-300 ${
+            isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
+          }`}
         >
           <option value="">Toutes les catégories</option>
           {categories.map((cat) => (

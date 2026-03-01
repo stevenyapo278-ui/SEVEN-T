@@ -4,6 +4,7 @@ import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, T
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../contexts/CurrencyContext'
+import { useTheme } from '../contexts/ThemeContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import { useProducts } from './products/useProducts'
@@ -16,6 +17,8 @@ import HistoryModal from './products/HistoryModal'
 
 export default function Products() {
   const { t } = useTranslation()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { user } = useAuth()
   const { formatPrice, getSymbol } = useCurrency()
   const hasCatalogImport = user?.plan_features?.catalog_import === true
@@ -99,39 +102,51 @@ export default function Products() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-4 sm:space-y-6 px-3 sm:px-0 min-w-0">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" aria-hidden="true" />
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
         <div className="relative z-10">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
-              <h1 className="text-xl sm:text-3xl font-display font-bold text-gray-100 mb-1 sm:mb-2 flex flex-wrap items-center gap-2 sm:gap-3 truncate">
-                <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl sm:rounded-2xl flex-shrink-0">
-                  <Package className="w-6 h-6 sm:w-8 sm:h-8 icon-on-gradient" aria-hidden />
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <Package className="w-6 h-6 text-blue-400" />
                 </div>
-                {t('products.title')}
-              </h1>
-              <p className="text-sm sm:text-base text-gray-400">{t('products.subtitle')}</p>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('products.title')}</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('products.subtitle')}</p>
             </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3 flex-shrink-0">
-              <button type="button" onClick={() => loadHistory(null)} className="btn-secondary inline-flex items-center justify-center gap-2 min-h-[44px] px-3 sm:px-4 touch-target text-sm sm:text-base">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button type="button" onClick={() => loadHistory(null)} className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}>
                 <History className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">{t('products.btnHistory')}</span>
               </button>
-              <button type="button" onClick={() => setShowImportModal(true)} className="btn-secondary inline-flex items-center justify-center gap-2 min-h-[44px] px-3 sm:px-4 touch-target text-sm sm:text-base">
+              <button type="button" onClick={() => setShowImportModal(true)} className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}>
                 <Upload className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">{t('products.btnImportCsv')}</span>
               </button>
               {hasCatalogImport && (
-                <button type="button" onClick={() => setShowImportUrlModal(true)} className="btn-secondary inline-flex items-center justify-center gap-2 min-h-[44px] px-3 sm:px-4 touch-target text-sm sm:text-base">
+                <button type="button" onClick={() => setShowImportUrlModal(true)} className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}>
                   <Link className="w-4 h-4" aria-hidden />
-                  <span className="hidden sm:inline">Importer depuis une URL</span>
+                  <span className="hidden sm:inline">Importer URL</span>
                 </button>
               )}
-              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] px-4 sm:px-5 touch-target text-sm sm:text-base">
+              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2 min-h-[44px]">
                 <Plus className="w-5 h-5" aria-hidden />
-                {t('products.btnAdd')}
+                <span>{t('products.btnAdd')}</span>
               </button>
             </div>
           </div>

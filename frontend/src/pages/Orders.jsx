@@ -5,6 +5,7 @@ import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useTheme } from '../contexts/ThemeContext'
 import { 
   ShoppingCart, 
   Package, 
@@ -75,6 +76,8 @@ const ORDERS_TABS = [
 
 export default function Orders() {
   const { t } = useTranslation()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { user } = useAuth()
   const { showConfirm } = useConfirm()
   const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
@@ -538,50 +541,57 @@ export default function Orders() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero */}
-      <div className="relative z-30 rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="space-y-6">
-          {/* Titre et sous-titre : bloc dédié, jamais sous les boutons */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between min-w-0">
           <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-100 flex flex-wrap items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-gold-400 rounded-2xl flex-shrink-0">
-                <ShoppingCart className="w-8 h-8 icon-on-gradient" />
+            <div className="flex items-center gap-3 mb-2 min-w-0">
+              <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                <ShoppingCart className="w-6 h-6 text-blue-400" />
               </div>
-              <span className="break-words">{t('orders.title')}</span>
-            </h1>
-            <p className="text-gray-400 mt-2 break-words">
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('orders.title')}</h1>
+            </div>
+            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
               {t('orders.subtitle')}
             </p>
           </div>
 
-          {/* Boutons : rangée dédiée, wrap propre sans recouvrir le texte */}
-            <div className="flex flex-wrap items-center gap-2 relative z-20">
-              <button
-                onClick={openNewOrderModal}
-                className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white transition-colors touch-target whitespace-nowrap text-sm sm:text-base"
-              >
-                <Plus className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span>Nouveau</span>
-              </button>
-              <button
-                onClick={handleExportCsv}
-                className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-space-800 text-gray-300 hover:bg-space-700 transition-colors touch-target whitespace-nowrap text-sm sm:text-base"
-              >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span>Export</span>
-              </button>
-              <button
-                onClick={() => { setActiveTab('logs'); loadLogs(); }}
-                className={`px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 transition-colors touch-target whitespace-nowrap text-sm sm:text-base ${
-                  activeTab === 'logs'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-space-800 text-gray-300 hover:bg-space-700'
-                }`}
-              >
-                <History className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                <span>Logs</span>
-              </button>
+          <div className="flex flex-wrap items-center gap-2 relative z-20">
+            <button
+              onClick={openNewOrderModal}
+              className="btn-primary flex items-center gap-2 min-h-[44px]"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Nouveau</span>
+            </button>
+            <button
+              onClick={handleExportCsv}
+              className={`flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl transition-all duration-200 ${
+                isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Export</span>
+            </button>
+            <button
+              onClick={() => { setActiveTab('logs'); loadLogs(); }}
+              className={`flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl transition-all duration-200 ${
+                activeTab === 'logs'
+                  ? 'bg-blue-500 text-white'
+                  : isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              <History className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Logs</span>
+            </button>
 
               {/* Cleanup Menu */}
               <div className="relative cleanup-menu-container">
@@ -667,59 +677,73 @@ export default function Orders() {
               </div>
 
           {/* Stats - always visible in header */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-8 min-w-0">
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-8 min-w-0">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${
+              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-amber-500/20 rounded-xl flex-shrink-0">
-                  <Clock className="w-5 h-5 text-amber-400" />
+                <div className="p-2 bg-amber-500/10 rounded-xl flex-shrink-0">
+                  <Clock className="w-5 h-5 text-amber-500" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-2xl font-bold text-amber-400 truncate" title={stats.pending}>{stats.pending}</p>
-                  <p className="text-xs text-gray-500 truncate">En attente</p>
+                  <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.pending}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>En attente</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+            
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${
+              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-green-500/20 rounded-xl flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
+                <div className="p-2 bg-green-500/10 rounded-xl flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-2xl font-bold text-gray-100 truncate" title={stats.validated}>{stats.validated}</p>
-                  <p className="text-xs text-gray-500 truncate">Validées</p>
+                  <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.validated}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Validées</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${
+              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-emerald-500/20 rounded-xl flex-shrink-0">
-                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-2xl font-bold text-emerald-400 truncate" title={stats.delivered ?? 0}>{stats.delivered ?? 0}</p>
-                  <p className="text-xs text-gray-500 truncate">Livrées</p>
+                  <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.delivered ?? 0}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Livrées</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0">
+
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${
+              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-red-500/20 rounded-xl flex-shrink-0">
-                  <XCircle className="w-5 h-5 text-red-400" />
+                <div className="p-2 bg-red-500/10 rounded-xl flex-shrink-0">
+                  <XCircle className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-2xl font-bold text-gray-100 truncate" title={stats.rejected}>{stats.rejected}</p>
-                  <p className="text-xs text-gray-500 truncate">Rejetées</p>
+                  <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.rejected}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Rejetées</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700 min-w-0 col-span-2 sm:col-span-3 lg:col-span-1">
+
+            <div className={`rounded-xl p-4 border transition-all duration-300 col-span-2 sm:col-span-3 lg:col-span-1 ${
+              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-amber-100/20'
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2 bg-gold-400/20 rounded-xl flex-shrink-0">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                   <TrendingUp className="w-5 h-5 text-gold-400" />
                 </div>
-                <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="text-2xl font-bold text-gold-400 truncate" title={formatCurrency(stats.totalRevenue)}>{formatCurrency(stats.totalRevenue)}</p>
-                  <p className="text-xs text-gray-500 truncate">Chiffre d'affaires</p>
+                <div className="min-w-0">
+                  <p className={`text-2xl font-bold truncate text-gold-400`}>{formatCurrency(stats.totalRevenue)}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Revenus</p>
                 </div>
               </div>
             </div>
@@ -728,7 +752,7 @@ export default function Orders() {
       </div>
 
       {/* Tab bar */}
-      <div className="border-b border-space-700 mb-6 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className={`border-b mb-6 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0 ${isDark ? 'border-space-700' : 'border-gray-200'}`} style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="flex gap-1 min-w-max">
           {ORDERS_TABS.map((tab) => {
             const Icon = tab.icon
@@ -737,14 +761,14 @@ export default function Orders() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 pb-3 px-3 sm:px-4 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 touch-target ${
+                className={`flex items-center gap-2 pb-3 px-3 sm:px-4 border-b-2 transition-all duration-200 whitespace-nowrap flex-shrink-0 touch-target ${
                   isActive
                     ? 'border-gold-400 text-gold-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-300'
+                    : `border-transparent ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {t(tab.nameKey)}
+                <span className="font-medium">{t(tab.nameKey)}</span>
               </button>
             )
           })}
@@ -1056,22 +1080,26 @@ export default function Orders() {
       {activeTab === 'orders' && (
         <div className="space-y-6 overflow-x-auto min-w-0">
       {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div className="input-with-icon flex-1 min-w-[200px]">
-          <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
-            <Search className="w-5 h-5" />
-          </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
+        }`}>
+          <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Rechercher une commande..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="input-dark min-w-[150px]"
+          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[150px] transition-all duration-300 ${
+            isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
+          }`}
         >
           <option value="all">Tous les statuts</option>
           {Object.entries(ORDER_STATUSES).map(([key, value]) => (
@@ -1087,18 +1115,18 @@ export default function Orders() {
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-20 h-20 bg-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <ShoppingCart className="w-10 h-10 text-gray-600" />
+          <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
+            <ShoppingCart className="w-10 h-10 text-gray-500" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-300 mb-2">
+          <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             {orders.length === 0 ? 'Aucune commande' : 'Aucun résultat'}
           </h3>
-          <p className="text-gray-500">
+          <p className={`${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
             Les commandes détectées par l'IA apparaîtront ici
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {filteredOrders.map((order, index) => {
             const statusInfo = getStatusInfo(order.status)
             const StatusIcon = statusInfo.icon
@@ -1106,31 +1134,33 @@ export default function Orders() {
               <div 
                 key={order.id}
                 onClick={() => setSelectedOrderView(order)}
-                className={`card p-4 sm:p-5 hover:bg-space-800/80 cursor-pointer group transition-all animate-fadeIn ${
-                  order.status === 'pending' ? 'border-l-4 border-amber-500' : 
-                  order.status === 'delivered' ? 'border-l-4 border-emerald-500' : 
-                  order.status === 'rejected' ? 'border-l-4 border-red-500' : ''
+                className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn cursor-pointer ${
+                  isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
+                } ${
+                  order.status === 'pending' ? 'border-l-2 border-l-amber-500' : 
+                  order.status === 'delivered' ? 'border-l-2 border-l-emerald-500' : 
+                  order.status === 'rejected' ? 'border-l-2 border-l-red-500' : ''
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className={`p-3 rounded-2xl flex-shrink-0 ${getStatusIconBgClasses(order.status)} group-hover:scale-110 transition-transform`}>
+                  <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'} group-hover:scale-110 transition-transform duration-300`}>
                       <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="font-bold text-gray-100 text-sm sm:text-base truncate">{order.customer_name}</h3>
+                        <h3 className={`font-semibold text-sm sm:text-base truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{order.customer_name}</h3>
                         <div 
-                          className={`w-2 h-2 rounded-full flex-shrink-0 mt-0.5 ${
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
                             ['validated', 'delivered'].includes(order.status) ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.4)]' :
-                            order.status === 'pending' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]' :
+                            order.status === 'pending' || order.status === 'completed' ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]' :
                             'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'
                           }`}
                           title={t(statusInfo.nameKey)}
                         />
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-500 font-medium">
+                      <div className={`flex items-center gap-2 text-[10px] sm:text-xs font-medium ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                         <span className="truncate">{formatDate(order.created_at)}</span>
                         <span>•</span>
                         <span className="truncate">{order.items?.length || 0} articles</span>
@@ -1142,7 +1172,7 @@ export default function Orders() {
                     <p className="text-base sm:text-lg font-display font-bold text-gold-400 whitespace-nowrap">
                       {formatCurrency(order.total_amount, order.currency)}
                     </p>
-                    <p className="text-[10px] text-gray-600 font-mono">#{order.id.substring(0, 8)}</p>
+                    <p className={`text-[10px] font-mono ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>#{order.id.substring(0, 8)}</p>
                   </div>
                 </div>
               </div>

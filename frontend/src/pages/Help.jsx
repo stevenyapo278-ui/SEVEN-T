@@ -2,9 +2,12 @@ import { BookOpen, MessagesSquare, Settings, ShieldCheck, Mail, PlayCircle, Exte
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { usePageTitle } from '../hooks/usePageTitle'
+import { useTheme } from '../contexts/ThemeContext'
 
 export default function Help() {
   const { t } = useTranslation()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   usePageTitle(t('nav.help', 'Aide & Support'))
 
   const faqs = [
@@ -54,28 +57,39 @@ export default function Help() {
   ]
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
-      {/* Header */}
-      <div className="card p-6 sm:p-8 bg-gradient-to-br from-space-800 to-space-900 border-space-700">
-        <div className="flex flex-col md:flex-row items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-gold-400/20 flex items-center justify-center flex-shrink-0">
-            <HelpCircle className="w-8 h-8 text-gold-400" />
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-12">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                  <HelpCircle className="w-6 h-6 text-gold-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Centre d'Aide & Support
+                </h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                Retrouvez toutes les ressources nécessaires pour tirer le meilleur parti de votre plateforme SEVEN T.
+              </p>
+            </div>
+            <a
+              href="mailto:support@seven-t.com"
+              className="btn-primary whitespace-nowrap inline-flex items-center gap-2 flex-shrink-0"
+            >
+              <Mail className="w-4 h-4" />
+              Contacter le support
+            </a>
           </div>
-          <div className="text-center md:text-left flex-1">
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-100 mb-2">
-              Centre d'Aide & Support
-            </h1>
-            <p className="text-gray-400 max-w-2xl">
-              Retrouvez toutes les ressources nécessaires pour tirer le meilleur parti de votre plateforme SEVEN T. Parcourez nos guides ou contactez notre équipe.
-            </p>
-          </div>
-          <a
-            href="mailto:support@seven-t.com"
-            className="btn-primary whitespace-nowrap inline-flex items-center gap-2"
-          >
-            <Mail className="w-4 h-4" />
-            Contacter le support
-          </a>
         </div>
       </div>
 
@@ -83,7 +97,7 @@ export default function Help() {
         
         {/* Left Col - Guides */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="card p-6">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
               <PlayCircle className="w-5 h-5 text-blue-400" />
               Guides rapides
@@ -103,7 +117,7 @@ export default function Help() {
             </div>
           </div>
 
-          <div className="card p-6">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
               <MessagesSquare className="w-5 h-5 text-gold-400" />
               Foire Aux Questions (FAQ)
@@ -127,7 +141,7 @@ export default function Help() {
 
         {/* Right Col - Docs & Resources */}
         <div className="space-y-6">
-          <div className="card p-6">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-cyan-400" />
               Ressources

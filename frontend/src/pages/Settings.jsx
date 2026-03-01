@@ -285,11 +285,35 @@ export default function Settings() {
     }
   }
 
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0 pb-24">
-      <div className="mb-8">
-        <h1 className="text-2xl font-display font-bold text-gray-100">{t('settings.title')}</h1>
-        <p className="text-gray-400">{t('settings.subtitle')}</p>
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-24">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <User className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('settings.title')}</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                {t('settings.subtitle')}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Floating Save Button */}
@@ -311,7 +335,9 @@ export default function Settings() {
       </div>
 
       {/* Profile */}
-      <form onSubmit={handleSaveAll} className="card p-6 mb-6">
+      <form onSubmit={handleSaveAll} className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('settings.profileTitle')}</h2>
         <div className="space-y-4">
           <div>
@@ -377,7 +403,9 @@ export default function Settings() {
       </form>
 
       {/* Abonnement et usage */}
-      <div className="card p-6 mb-6">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2 min-w-0 truncate">
             <Crown className="w-5 h-5 text-gold-400 flex-shrink-0" />
@@ -457,7 +485,9 @@ export default function Settings() {
       </div>
 
       {/* Préférences */}
-      <div className="card p-6 mb-6">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
           <Coins className="w-5 h-5 text-gold-400" />
           {t('settings.preferencesTitle')}
@@ -549,9 +579,11 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Moyens de paiement — affiché uniquement si l'admin a activé le module pour cet utilisateur */}
+      {/* Moyens de paiement */}
       {!!user?.payment_module_enabled && (
-      <div className="card p-6 mb-6">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
           <Lock className="w-5 h-5 text-gold-400" />
           {t('settings.paymentMethods')}
@@ -673,9 +705,11 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Résumé quotidien (Daily briefing) - module daily_briefing */}
+      {/* Résumé quotidien */}
       {user?.plan_features?.daily_briefing && (
-        <div className="card p-6 mb-6">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        }`}>
           <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
             <Mail className="w-5 h-5 text-gold-400" />
             {t('settings.dailyBriefing')}
@@ -783,7 +817,9 @@ export default function Settings() {
       )}
 
       {/* Données et confidentialité */}
-      <div className="card p-6 mb-6">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
           <Download className="w-5 h-5 text-blue-400" />
           {t('settings.dataPrivacy')}

@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useTheme } from '../contexts/ThemeContext'
 import { 
   UserPlus, 
   Plus, 
@@ -60,6 +61,8 @@ const LEAD_SOURCES = [
 
 export default function Leads() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { showConfirm } = useConfirm()
   const [leads, setLeads] = useState([])
   const [suggestedLeads, setSuggestedLeads] = useState([])
@@ -212,101 +215,120 @@ export default function Leads() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero */}
-      <div className="relative rounded-3xl border border-space-700 p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" aria-hidden="true">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" />
-        </div>
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="min-w-0">
-              <h1 className="text-3xl font-display font-bold text-gray-100 mb-2 flex flex-wrap items-center gap-3 truncate">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-gold-400 rounded-2xl">
-                  <UserPlus className="w-8 h-8 icon-on-gradient" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <UserPlus className="w-6 h-6 text-blue-400" />
                 </div>
-                Gestion des Leads
-              </h1>
-              <p className="text-gray-400">
-                Suivez et convertissez vos prospects en clients
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('leads.title') || 'Gestion des Leads'}</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                {t('leads.subtitle') || 'Suivez et convertissez vos prospects en clients'}
               </p>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn-primary inline-flex items-center justify-center gap-2 flex-shrink-0 touch-target"
-            >
-              <Plus className="w-5 h-5" />
-              Ajouter un lead
-            </button>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                type="button"
+                onClick={() => loadLeads()}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="btn-primary flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Ajouter un lead</span>
+              </button>
+            </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+          {/* Stats Bar */}
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mt-8">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <Users className="w-5 h-5 text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.total}</p>
-                  <p className="text-xs text-gray-500">Total leads</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Total leads</p>
                 </div>
               </div>
             </div>
             {stats.suggested > 0 && (
-              <div className="bg-gradient-to-br from-blue-500/20 to-gold-400/20 backdrop-blur-sm rounded-2xl p-4 border border-blue-500/30 animate-pulse">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/30 rounded-xl">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
+              <div className={`rounded-xl p-4 border transition-all duration-300 relative overflow-hidden group ${
+                isDark ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-200 shadow-sm'
+              }`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent animate-pulse" />
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="p-2 bg-blue-500/20 rounded-xl">
+                    <Sparkles className="w-5 h-5 text-blue-500" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-blue-400">{stats.suggested}</p>
-                    <p className="text-xs text-gray-400">À valider</p>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-xl font-bold truncate ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{stats.suggested}</p>
+                    <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-blue-500/70' : 'text-blue-400'}`}>À valider</p>
                   </div>
                 </div>
               </div>
             )}
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <UserPlus className="w-5 h-5 text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.new}</p>
-                  <p className="text-xs text-gray-500">Nouveaux</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.new}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Nouveaux</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-xl">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <UserCheck className="w-5 h-5 text-blue-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.qualified}</p>
-                  <p className="text-xs text-gray-500">Qualifiés</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.qualified}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Qualifiés</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/20 rounded-xl">
-                  <ShoppingCart className="w-5 h-5 text-green-400" />
+                <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
+                  <ShoppingCart className="w-5 h-5 text-emerald-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.customers}</p>
-                  <p className="text-xs text-gray-500">Clients</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.customers}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Clients</p>
                 </div>
               </div>
             </div>
-            <div className="bg-space-800/50 backdrop-blur-sm rounded-2xl p-4 border border-space-700">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gold-400/20 rounded-xl">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                   <TrendingUp className="w-5 h-5 text-gold-400" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-100">{stats.conversionRate}%</p>
-                  <p className="text-xs text-gray-500">Conversion</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.conversionRate}%</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Conversion</p>
                 </div>
               </div>
             </div>
@@ -314,38 +336,46 @@ export default function Leads() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+      {/* Search & Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 min-w-0">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+        }`}>
+          <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher un lead (nom, téléphone, email, entreprise)..."
+            placeholder="Rechercher un lead (nom, téléphone, email)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-dark w-full pl-12"
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="input-dark min-w-[150px]"
-        >
-          <option value="all">Tous statuts</option>
-          {LEAD_STATUSES.map(status => (
-            <option key={status.id} value={status.id}>{status.label}</option>
-          ))}
-        </select>
-        <select
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value)}
-          className="input-dark min-w-[150px]"
-        >
-          <option value="all">Toutes sources</option>
-          {LEAD_SOURCES.map(source => (
-            <option key={source.id} value={source.id}>{source.label}</option>
-          ))}
-        </select>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`px-4 py-3 rounded-2xl border min-w-[160px] transition-all duration-300 ${
+              isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
+            }`}
+          >
+            <option value="all">Tous statuts</option>
+            {LEAD_STATUSES.map(status => (
+              <option key={status.id} value={status.id}>{status.label}</option>
+            ))}
+          </select>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className={`px-4 py-3 rounded-2xl border min-w-[160px] transition-all duration-300 ${
+              isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
+            }`}
+          >
+            <option value="all">Toutes sources</option>
+            {LEAD_SOURCES.map(source => (
+              <option key={source.id} value={source.id}>{source.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Suggested Leads Section */}

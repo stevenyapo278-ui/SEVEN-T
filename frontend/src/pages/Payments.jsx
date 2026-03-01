@@ -209,52 +209,68 @@ export default function Payments() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className={`text-2xl font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-            💳 {t('payments.title')}
-          </h1>
-          <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-            {t('payments.subtitle')}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 flex-shrink-0">
-          <button
-            onClick={handleExportCsv}
-            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl border touch-target ${isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
-          >
-            <Download className="w-4 h-4" />
-            {t('payments.exportCsv')}
-          </button>
-          <button
-            onClick={() => setShowModal(true)}
-            className="btn-primary flex items-center justify-center gap-2 touch-target"
-          >
-            <Plus className="w-4 h-4" />
-            {t('payments.newLink')}
-          </button>
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-12">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <CreditCard className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('payments.title')}</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                {t('payments.subtitle')}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                type="button"
+                onClick={() => handleExportCsv()}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('payments.exportCsv')}</span>
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                className="btn-primary flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>{t('payments.newLink')}</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</p>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total liens</p>
           </div>
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <p className="text-2xl font-bold text-amber-500">{stats.pending}</p>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('payments.statusPending')}</p>
           </div>
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <p className="text-2xl font-bold text-emerald-500">{stats.paid}</p>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('payments.statusPaid')}</p>
           </div>
-          <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className={`p-4 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <p className="text-2xl font-bold text-emerald-500">{(stats.totalAmount || 0).toLocaleString()} FCFA</p>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Montant reçu</p>
           </div>
@@ -262,28 +278,31 @@ export default function Payments() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="input-with-icon flex-1">
-          <div className="pl-3 flex items-center justify-center flex-shrink-0 text-icon">
-            <Search className="w-5 h-5" />
-          </div>
+      <div className="flex flex-col sm:flex-row gap-3 min-w-0 mb-6">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+        }`}>
+          <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
+            placeholder="Rechercher..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher..."
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {['all', 'pending', 'paid', 'cancelled'].map(status => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                 statusFilter === status
-                  ? 'bg-gold-400 text-space-900'
-                  : isDark ? 'bg-space-800 text-icon hover:bg-space-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : isDark
+                    ? 'bg-space-800 text-gray-400 hover:bg-space-700 hover:text-gray-200 border border-space-700'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
               }`}
             >
               {status === 'all' ? t(STATUS_KEYS.all) : t(STATUS_KEYS[status])}
@@ -310,7 +329,9 @@ export default function Payments() {
           filteredLinks.map((link, index) => (
             <div
               key={link.id}
-              className={`p-4 rounded-xl border animate-fadeIn ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}
+              className={`p-6 rounded-2xl border transition-all duration-300 animate-fadeIn ${
+                isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+              }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start justify-between gap-4">

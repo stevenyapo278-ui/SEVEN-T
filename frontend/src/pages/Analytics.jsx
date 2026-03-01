@@ -39,7 +39,8 @@ import toast from 'react-hot-toast'
 const COLORS = ['#F5D47A', '#8B5CF6', '#22C55E', '#3B82F6', '#EF4444']
 
 export default function Analytics() {
-  const { isDark } = useTheme()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('7d')
   const [overview, setOverview] = useState(null)
@@ -128,71 +129,91 @@ export default function Analytics() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-display font-bold text-gray-100">Analytics</h1>
-          <p className="text-gray-400 text-sm sm:text-base">Performances et métriques de votre activité</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Period selector */}
-          <div className="flex bg-space-800 rounded-lg p-1">
-            {['7d', '30d', '90d'].map((p) => (
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                  <BarChart3 className="w-6 h-6 text-gold-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Analytics</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                Performances et métriques de votre activité
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <div className={`flex rounded-xl p-1 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
+                {['7d', '30d', '90d'].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                      period === p
+                        ? isDark ? 'bg-gold-400 text-space-950 shadow-lg' : 'bg-white text-gray-900 shadow-sm'
+                        : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {p === '7d' ? '7j' : p === '30d' ? '30j' : '90j'}
+                  </button>
+                ))}
+              </div>
               <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  period === p
-                    ? 'bg-gold-400 text-space-900'
-                    : 'text-gray-400 hover:text-gray-100'
+                onClick={loadAnalytics}
+                disabled={loading}
+                className={`p-2 rounded-xl transition-all duration-200 ${
+                  isDark ? 'bg-space-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-900'
                 }`}
               >
-                {p === '7d' ? '7 jours' : p === '30d' ? '30 jours' : '90 jours'}
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
-            ))}
+            </div>
           </div>
-          <button
-            onClick={loadAnalytics}
-            disabled={loading}
-            className="p-2 text-gray-400 hover:text-gray-100 hover:bg-space-800 rounded-lg transition-colors"
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+
+          {/* Key Stats Row */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
+            <StatSmall
+              title="Conversations"
+              value={overview?.conversations?.value}
+              growth={overview?.conversations?.growth}
+              icon={MessageSquare}
+              color="blue"
+            />
+            <StatSmall
+              title="Messages"
+              value={overview?.messages?.value}
+              growth={overview?.messages?.growth}
+              icon={BarChart3}
+              color="gold"
+            />
+            <StatSmall
+              title="Leads"
+              value={overview?.leads?.value}
+              growth={overview?.leads?.growth}
+              icon={Users}
+              color="emerald"
+            />
+            <StatSmall
+              title="Commandes"
+              value={overview?.orders?.value}
+              growth={overview?.orders?.growth}
+              icon={ShoppingCart}
+              color="amber"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard
-          title="Conversations"
-          value={overview?.conversations?.value}
-          growth={overview?.conversations?.growth}
-          icon={MessageSquare}
-          color="gold"
-        />
-        <StatCard
-          title="Messages"
-          value={overview?.messages?.value}
-          growth={overview?.messages?.growth}
-          icon={BarChart3}
-          color="blue"
-        />
-        <StatCard
-          title="Leads"
-          value={overview?.leads?.value}
-          growth={overview?.leads?.growth}
-          icon={Users}
-          color="emerald"
-        />
-        <StatCard
-          title="Commandes"
-          value={overview?.orders?.value}
-          growth={overview?.orders?.growth}
-          icon={ShoppingCart}
-          color="blue"
-        />
-      </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -357,6 +378,38 @@ export default function Analytics() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function StatSmall({ title, value, growth, icon: Icon, color = 'blue' }) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  const isPositive = growth >= 0
+
+  const colorClasses = {
+    blue: 'bg-blue-500/10 text-blue-400',
+    gold: 'bg-gold-400/10 text-gold-400',
+    emerald: 'bg-emerald-500/10 text-emerald-400',
+    amber: 'bg-amber-500/10 text-amber-400'
+  }
+
+  return (
+    <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-2 rounded-lg flex-shrink-0 ${colorClasses[color]}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        {growth !== undefined && (
+          <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+            <span>{isPositive ? '+' : ''}{growth}%</span>
+          </div>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{value?.toLocaleString() || 0}</p>
+        <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{title}</p>
+      </div>
     </div>
   )
 }

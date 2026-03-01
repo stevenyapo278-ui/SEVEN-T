@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
+import { useTheme } from '../contexts/ThemeContext'
 import { WelcomeModal, OnboardingChecklist, useOnboardingTour } from '../components/Onboarding'
 import { 
   Bot, 
@@ -30,6 +31,8 @@ export default function Dashboard() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const location = useLocation()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { startTour, completedTours } = useOnboardingTour()
   const [stats, setStats] = useState(null)
   const [agents, setAgents] = useState([])
@@ -171,8 +174,11 @@ export default function Dashboard() {
     messagesCount: stats?.messages?.total || 0
   }
 
+
+
+
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Welcome Modal for first-time users */}
       <WelcomeModal 
         isOpen={showWelcome} 
@@ -180,21 +186,92 @@ export default function Dashboard() {
         onComplete={handleWelcomeComplete}
       />
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-display font-bold text-gray-100 truncate">
-            {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
-          </h1>
-          <p className="text-gray-400">{t('dashboard.welcomeSubtitle')}</p>
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                  <Sparkles className="w-6 h-6 text-gold-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
+                </h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                {t('dashboard.welcomeSubtitle')}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                type="button"
+                onClick={loadData}
+                disabled={loading}
+                className={`p-2 rounded-xl transition-all duration-200 ${
+                  isDark ? 'bg-space-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Key Stats Row inside Hero */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <Bot className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.agents?.total || 0}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.agents')}</p>
+                </div>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
+                  <MessageSquare className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.conversations?.total || 0}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.conversations')}</p>
+                </div>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.messages?.total || 0}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.messages')}</p>
+                </div>
+              </div>
+            </div>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                  <Zap className="w-5 h-5 text-gold-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.credits || quotas?.credits || 0}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.credits')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <button 
-          onClick={loadData}
-          className="p-2 text-gray-400 hover:text-gray-100 hover:bg-space-800 rounded-lg transition-colors touch-target flex items-center justify-center flex-shrink-0"
-          title={t('dashboard.refresh')}
-        >
-          <RefreshCw className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Onboarding Checklist */}
@@ -244,63 +321,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4" data-tour="stats">
-        <div className="card p-3 sm:p-5">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-            </div>
-            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium truncate ${
-              stats?.agents?.active > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
-            }`}>
-              {stats?.agents?.active || 0} {t('dashboard.stats.active')}
-            </span>
-          </div>
-          <h3 className="text-xl sm:text-3xl font-display font-bold text-gray-100">{stats?.agents?.total || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.agents')}</p>
-        </div>
-
-        <div className="card p-3 sm:p-5">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-              <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
-            </div>
-            {stats?.conversations?.this_week > 0 && (
-              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium bg-emerald-500/20 text-emerald-400 truncate">
-                +{stats.conversations.this_week}
-              </span>
-            )}
-          </div>
-          <h3 className="text-xl sm:text-3xl font-display font-bold text-gray-100">{stats?.conversations?.total || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.conversations')}</p>
-        </div>
-
-        <div className="card p-3 sm:p-5">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-            </div>
-            {stats?.messages?.today > 0 && (
-              <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-400 truncate">
-                +{stats.messages.today}
-              </span>
-            )}
-          </div>
-          <h3 className="text-xl sm:text-3xl font-display font-bold text-gray-100">{stats?.messages?.total || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.messages')}</p>
-        </div>
-
-        <div className="card p-3 sm:p-5">
-          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gold-400/20 flex items-center justify-center flex-shrink-0">
-              <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-gold-400" />
-            </div>
-          </div>
-          <h3 className="text-xl sm:text-3xl font-display font-bold text-gold-400">{stats?.credits || quotas?.credits || 0}</h3>
-          <p className="text-[10px] sm:text-sm text-gray-500 uppercase tracking-wider">{t('dashboard.stats.credits')}</p>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Agents Section */}

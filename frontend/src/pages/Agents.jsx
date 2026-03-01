@@ -283,9 +283,9 @@ export default function Agents() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full min-w-0">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Hero Header - theme-aware */}
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 ${
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div
@@ -294,96 +294,93 @@ export default function Agents() {
           aria-hidden
         />
         
-        <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between min-w-0">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg flex-shrink-0">
-                <Bot className="w-5 h-5 sm:w-6 sm:h-6 icon-on-gradient" />
+            <div className="flex items-center gap-3 mb-2 min-w-0">
+              <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                <Bot className="w-6 h-6 text-blue-400" />
               </div>
-              <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('agents.title')}</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('agents.title')}</h1>
               {quotas && (
-                <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ${
+                <span className={`px-2.5 sm:px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                   quotas.plan.name === 'free' 
-                    ? isDark ? 'bg-gray-500/20 text-gray-400' : 'bg-gray-200 text-gray-600'
+                    ? isDark ? 'bg-space-700/50 text-gray-500' : 'bg-gray-200 text-gray-600'
                     : 'bg-gold-400/20 text-gold-400'
                 }`}>
-                  <Crown className="w-3 h-3 sm:w-3.5 sm:h-3.5 inline mr-1" />
+                  <Crown className="w-3.5 h-3.5 inline mr-1" />
                   {quotas.plan.displayName}
                 </span>
               )}
             </div>
-            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('agents.subtitle')}</p>
+            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('agents.subtitle')}</p>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
             <button
               onClick={() => loadAgents()}
-              className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl transition-all duration-200 min-h-[44px] ${
-                isDark ? 'bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700 hover:text-gray-900'
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Actualiser</span>
             </button>
             <button
               onClick={handleCreateAgent}
               disabled={!canCreateAgent}
-              className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-semibold transition-all duration-200 min-h-[44px] ${
-                canCreateAgent
-                  ? 'bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 hover:shadow-lg hover:shadow-gold-400/25'
-                  : 'bg-space-700 text-gray-500 cursor-not-allowed'
-              }`}
+              className="btn-primary flex items-center gap-2 min-h-[44px]"
             >
               <Plus className="w-5 h-5" />
-              <span className="whitespace-nowrap">{t('agents.create')}</span>
+              <span>{t('agents.create')}</span>
             </button>
           </div>
         </div>
 
         {/* Stats Row - theme-aware */}
-        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6 lg:mt-8">
-          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
-                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+        <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'}`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                <Bot className="w-5 h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{agents.length}</p>
+                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   {t('agents.stats.total')} ({activeAgents} {t('agents.stats.active')})
                 </p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
-                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'}`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
+                <Activity className="w-5 h-5 text-emerald-400" />
               </div>
               <div className="min-w-0">
-                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{connectedAgents}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.connected')}</p>
+                <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{connectedAgents}</p>
+                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.connected')}</p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
-                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'}`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                <MessageSquare className="w-5 h-5 text-blue-400" />
               </div>
               <div className="min-w-0">
-                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalMessages.toLocaleString()}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.messages')}</p>
+                <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalMessages.toLocaleString()}</p>
+                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.messages')}</p>
               </div>
             </div>
           </div>
-          <div className={`backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 border min-w-0 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white/80 border-gray-200'}`}>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="p-1.5 sm:p-2 bg-gold-400/10 rounded-lg flex-shrink-0">
-                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-gold-400" />
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'}`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                <Zap className="w-5 h-5 text-gold-400" />
               </div>
-              <div className="min-w-0">
-                <p className={`text-lg sm:text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{quotas?.credits || 0}</p>
-                <p className={`text-xs sm:text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.credits')}</p>
+              <div className="min-w-0 flex-1">
+                <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{quotas?.credits || 0}</p>
+                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{t('agents.stats.credits')}</p>
               </div>
             </div>
           </div>

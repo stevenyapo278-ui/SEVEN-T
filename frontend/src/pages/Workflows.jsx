@@ -341,28 +341,60 @@ export default function Workflows() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-display font-bold text-gray-100">Automatisations</h1>
-          <p className="text-gray-400 text-sm sm:text-base">Créez des workflows automatiques pour vos agents</p>
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-12">
+      {/* Header Hero */}
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <GitBranch className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Automatisations</h1>
+              </div>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+                Créez des workflows automatiques pour vos agents
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button
+                type="button"
+                onClick={() => loadData()}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Actualiser</span>
+              </button>
+              <button
+                onClick={() => {
+                  resetForm()
+                  setShowModal(true)
+                }}
+                className="btn-primary flex items-center gap-2 min-h-[44px]"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Nouveau workflow</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={() => {
-            resetForm()
-            setShowModal(true)
-          }}
-          className="btn-primary flex items-center justify-center gap-2 flex-shrink-0 touch-target"
-        >
-          <Plus className="w-5 h-5" />
-          Nouveau workflow
-        </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+        <div className={`p-4 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gold-400/20 flex items-center justify-center flex-shrink-0">
             <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-gold-400" />
           </div>
@@ -371,7 +403,9 @@ export default function Workflows() {
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Workflows</p>
           </div>
         </div>
-        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+        <div className={`p-4 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
             <Play className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
           </div>
@@ -380,7 +414,9 @@ export default function Workflows() {
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Actifs</p>
           </div>
         </div>
-        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+        <div className={`p-4 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-400/20 flex items-center justify-center flex-shrink-0">
             <History className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
           </div>
@@ -389,7 +425,9 @@ export default function Workflows() {
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Totaux</p>
           </div>
         </div>
-        <div className="card p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
+        <div className={`p-4 rounded-2xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-400/20 flex items-center justify-center flex-shrink-0">
             <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
           </div>
@@ -401,7 +439,9 @@ export default function Workflows() {
       </div>
 
       {/* Contacts pour les actions (livreur, gérant, etc.) */}
-      <div className="card p-6">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2 truncate">
@@ -507,15 +547,16 @@ export default function Workflows() {
       </div>
 
       {/* Search */}
-      <div className="input-with-icon max-w-md">
-        <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-400">
-          <Search className="w-5 h-5" />
-        </div>
+      <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 max-w-md mb-6 ${
+        isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+      }`}>
+        <Search className="w-5 h-5 text-gray-400" />
         <input
           type="text"
           placeholder="Rechercher un workflow..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
         />
       </div>
 
@@ -536,7 +577,9 @@ export default function Workflows() {
           {filteredWorkflows.map((workflow, index) => {
             const TriggerIcon = TRIGGER_ICONS[workflow.trigger_type] || Zap
             return (
-              <div key={workflow.id} className="card p-6 animate-fadeIn" style={{ animationDelay: `${index * 50}ms` }}>
+              <div key={workflow.id} className={`p-6 rounded-2xl border transition-all duration-300 animate-fadeIn ${
+                isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+              }`} style={{ animationDelay: `${index * 50}ms` }}>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -611,7 +654,9 @@ export default function Workflows() {
       )}
 
       {/* Workflow execution history */}
-      <div className="card p-6">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2 truncate">

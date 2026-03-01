@@ -250,9 +250,9 @@ export default function Tools() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto w-full min-w-0 px-0 sm:px-2 lg:px-4">
+    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Hero Header - theme-aware, motif adapté au thème */}
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8 ${
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div
@@ -262,26 +262,28 @@ export default function Tools() {
         />
         <div className="relative flex flex-col gap-4 sm:gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg flex-shrink-0">
-                <Wrench className="w-5 h-5 sm:w-6 sm:h-6 icon-on-gradient" />
+            <div className="flex items-center gap-3 mb-2 min-w-0">
+              <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
+                <Wrench className="w-6 h-6 text-gold-400" />
               </div>
-              <h1 className={`text-2xl sm:text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Outils</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Outils</h1>
               {quotas?.plan && (
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${quotas.plan.name === 'free' ? 'bg-gray-500/20 text-gray-400' : 'bg-gold-400/20 text-gold-400'}`}>
+                <span className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ${quotas.plan.name === 'free' ? 'bg-gray-500/20 text-gray-400' : 'bg-gold-400/20 text-gold-400'}`}>
                   <Crown className="w-3.5 h-3.5 inline mr-1" />
                   {quotas.plan.displayName}
                 </span>
               )}
             </div>
-            <p className={`text-sm sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Connectez vos canaux (WhatsApp, Outlook) et assignez-les à vos agents</p>
+            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Connectez vos canaux et assignez-les à vos agents</p>
           </div>
           <button
             onClick={loadTools}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white rounded-xl transition-all duration-200 min-h-[44px] flex-shrink-0"
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 min-h-[44px] flex-shrink-0 ${
+              isDark ? 'bg-space-700/50 hover:bg-space-700 text-gray-300 hover:text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700 hover:text-gray-900'
+            }`}
           >
             <RefreshCw className="w-4 h-4" />
-            Rafraîchir
+            <span className="hidden sm:inline">Actualiser</span>
           </button>
         </div>
       </div>
@@ -303,132 +305,122 @@ export default function Tools() {
 
       {/* Add tool cards */}
       {!loadError && (
-      <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 lg:mb-8">
-        <div className="relative overflow-hidden rounded-2xl bg-space-800/50 border border-space-700/50 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
-              <MessageSquare className="w-6 h-6 text-emerald-400" />
+        <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl border p-5 sm:p-6 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                <MessageSquare className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div className="min-w-0">
+                <h2 className={`text-lg font-display font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>WhatsApp</h2>
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Restant: {whatsappRemaining.text}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-display font-semibold text-gray-100">WhatsApp</h2>
-              <p className="text-sm text-gray-500">Restant: {whatsappRemaining.text}</p>
-            </div>
-          </div>
-          {whatsappRemaining.canAdd ? (
-            <button
-              onClick={() => createTool('whatsapp')}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-200 disabled:opacity-50"
-            >
-              <Plus className="w-5 h-5" />
-              Connecter WhatsApp
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-amber-400">Aucun compte WhatsApp inclus dans votre plan.</p>
-              <Link
-                to="/dashboard/settings?tab=subscription"
-                className="block w-full text-center px-4 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 hover:shadow-lg hover:shadow-gold-400/25 transition-all duration-200"
+            {whatsappRemaining.canAdd ? (
+              <button
+                onClick={() => createTool('whatsapp')}
+                disabled={loading}
+                className="btn-primary w-full flex items-center justify-center gap-2 min-h-[48px]"
               >
-                Améliorer mon plan
-              </Link>
-            </div>
-          )}
-        </div>
+                <Plus className="w-5 h-5" />
+                Connecter WhatsApp
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-amber-400">Aucun compte WhatsApp inclus dans votre plan.</p>
+                <Link
+                  to="/dashboard/settings?tab=subscription"
+                  className="btn-primary w-full block text-center min-h-[48px]"
+                >
+                  Améliorer mon plan
+                </Link>
+              </div>
+            )}
+          </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-space-800/50 border border-space-700/50 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2.5 bg-blue-500/10 rounded-xl">
-              <Mail className="w-6 h-6 text-blue-400" />
+          <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl border p-5 sm:p-6 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-blue-500/10 rounded-xl">
+                <Mail className="w-6 h-6 text-blue-400" />
+              </div>
+              <div className="min-w-0">
+                <h2 className={`text-lg font-display font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Outlook</h2>
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Restant: {outlookRemaining.text}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-lg font-display font-semibold text-gray-100">Outlook</h2>
-              <p className="text-sm text-gray-500">Restant: {outlookRemaining.text}</p>
-            </div>
-          </div>
-          {outlookRemaining.canAdd ? (
-            <button
-              onClick={() => createTool('outlook')}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-semibold bg-space-700 hover:bg-space-600 text-gray-200 transition-all duration-200 disabled:opacity-50"
-            >
-              <Plus className="w-5 h-5" />
-              Connecter Outlook
-            </button>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-amber-400">Aucun compte Outlook inclus dans votre plan.</p>
-              <Link
-                to="/dashboard/settings?tab=subscription"
-                className="block w-full text-center px-4 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-gold-400 to-amber-500 text-space-900 hover:shadow-lg hover:shadow-gold-400/25 transition-all duration-200"
+            {outlookRemaining.canAdd ? (
+              <button
+                onClick={() => createTool('outlook')}
+                disabled={loading}
+                className="btn-secondary w-full flex items-center justify-center gap-2 min-h-[48px]"
               >
-                Améliorer mon plan
-              </Link>
-            </div>
-          )}
+                <Plus className="w-5 h-5" />
+                Connecter Outlook
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-amber-400">Aucun compte Outlook inclus dans votre plan.</p>
+                <Link
+                  to="/dashboard/settings?tab=subscription"
+                  className="btn-primary w-full block text-center min-h-[48px]"
+                >
+                  Améliorer mon plan
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* List of tools */}
       <div className="min-w-0">
-        <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100 mb-3 sm:mb-4">Mes outils connectés</h2>
+        <h2 className={`text-lg sm:text-xl font-display font-semibold mb-4 sm:mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Mes outils connectés</h2>
         {loading ? (
           <div className="text-gray-400">Chargement...</div>
         ) : tools.length === 0 ? (
-          <div className="rounded-2xl border border-space-700/50 bg-space-800/30 p-12 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-space-700/50 flex items-center justify-center mx-auto mb-6">
+          <div className={`rounded-3xl border p-12 text-center ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-gray-50 border-gray-200'}`}>
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-space-700/50' : 'bg-white shadow-sm'}`}>
               <Wrench className="w-10 h-10 text-gray-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-100 mb-2">Aucun outil connecté</h3>
-            <p className="text-gray-400 max-w-md mx-auto mb-6">
-              Connectez WhatsApp ou Outlook pour que vos agents envoient et reçoivent des messages. Assignez ensuite l'outil à un agent dans sa fiche.
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Aucun outil connecté</h3>
+            <p className={`max-w-md mx-auto mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Connectez WhatsApp ou Outlook pour que vos agents envoient et reçoivent des messages.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              {whatsappRemaining.canAdd ? (
+              {whatsappRemaining.canAdd && (
                 <button
                   type="button"
                   onClick={() => createTool('whatsapp')}
                   disabled={loading}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50"
+                  className="btn-primary"
                 >
-                  <MessageSquare className="w-5 h-5" />
+                  <MessageSquare className="w-5 h-5 mr-2 inline" />
                   Ajouter WhatsApp
                 </button>
-              ) : (
-                <Link
-                  to="/dashboard/settings?tab=subscription"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold bg-gold-400/20 text-gold-400 border border-gold-400/30 hover:bg-gold-400/30 transition-all"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  WhatsApp – Améliorer mon plan
-                </Link>
               )}
-              {outlookRemaining.canAdd ? (
+              {outlookRemaining.canAdd && (
                 <button
                   type="button"
                   onClick={() => createTool('outlook')}
                   disabled={loading}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold bg-space-700 hover:bg-space-600 text-gray-200 transition-all disabled:opacity-50"
+                  className="btn-secondary"
                 >
-                  <Mail className="w-5 h-5" />
+                  <Mail className="w-5 h-5 mr-2 inline" />
                   Ajouter Outlook
                 </button>
-              ) : (
-                <Link
-                  to="/dashboard/settings?tab=subscription"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold bg-gold-400/20 text-gold-400 border border-gold-400/30 hover:bg-gold-400/30 transition-all"
-                >
-                  <Mail className="w-5 h-5" />
-                  Outlook – Améliorer mon plan
-                </Link>
               )}
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 min-w-0">
-            {tools.map(tool => (
-              <div key={tool.id} className="rounded-xl sm:rounded-2xl bg-space-800/50 border border-space-700/50 p-4 sm:p-6 min-w-0 overflow-hidden">
+          <div className="space-y-2">
+            {tools.map((tool, index) => (
+              <div 
+                key={tool.id} 
+                className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn ${
+                  isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
+                }`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     {tool.type === 'whatsapp' ? (
@@ -574,8 +566,8 @@ export default function Tools() {
           </div>
         )}
       </div>
-      </>
-      )}
+    </>
+  )}
 
       {/* Overlay QR code en premier plan */}
       {connectingToolId && (
