@@ -58,6 +58,16 @@ export default function LandingChatbot() {
     if (messages.length > 0 || isTyping) scrollToBottom()
   }, [messages, isTyping])
 
+  useEffect(() => {
+    const handleOpenDemo = () => {
+      setOpen(true)
+      setIsLeadForm(true)
+      setShowProactive(false)
+    }
+    window.addEventListener('open-landing-chat-demo', handleOpenDemo)
+    return () => window.removeEventListener('open-landing-chat-demo', handleOpenDemo)
+  }, [])
+
   const fetchWelcome = async () => {
     setIsTyping(true)
     try {
