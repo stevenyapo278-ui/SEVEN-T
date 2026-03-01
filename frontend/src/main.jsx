@@ -16,28 +16,29 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <ThemeProvider>
         <FontProvider>
-        <AuthProvider>
-          <ConfirmProvider>
-            <CurrencyProvider>
-              <App />
-            <div role="region" aria-label="Notifications" aria-live="polite" className="toaster-region">
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  className: '',
-                  style: {
-                    background: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-color)',
-                  },
-                }}
-              />
-            </div>
-            </CurrencyProvider>
-          </ConfirmProvider>
-        </AuthProvider>
+          <AuthProvider>
+            <ConfirmProvider>
+              <CurrencyProvider>
+                <App />
+                <div role="region" aria-label="Notifications" aria-live="polite" className="toaster-region">
+                  <Toaster
+                    position="top-right"
+                    toastOptions={{
+                      className: '',
+                      style: {
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-color)',
+                      },
+                    }}
+                  />
+                </div>
+              </CurrencyProvider>
+            </ConfirmProvider>
+          </AuthProvider>
         </FontProvider>
       </ThemeProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )
+
