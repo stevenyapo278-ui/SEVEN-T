@@ -1153,7 +1153,7 @@ function DashboardLayoutContent() {
         </div>
 
         {/* Page content - safe area bottom for Android gesture bar */}
-        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-x-hidden pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Outlet />
         </main>
       </div>

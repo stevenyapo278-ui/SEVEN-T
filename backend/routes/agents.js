@@ -284,7 +284,7 @@ router.post('/', authenticateToken, async (req, res) => {
         res.status(201).json({ 
             message: 'Agent créé avec succès',
             agent,
-            model_adjusted: finalModel !== selectedModel ? `Modèle ajusté pour votre plan (${finalModel})` : null
+            model_adjusted: (req.user.is_admin && finalModel !== selectedModel) ? `Modèle ajusté pour votre plan (${finalModel})` : null
         });
     } catch (error) {
         console.error('Create agent error:', error);
@@ -596,11 +596,22 @@ router.put('/:id', authenticateToken, async (req, res) => {
             tool_id
         } = req.body;
 
-        // Check ownership
-        const existing = await db.get('SELECT id, template FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        // Check ownership and current model
+        const existing = await db.get('SELECT id, template, model FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
+
+        // Enforce model availability for the user's plan if not an admin
+        let finalModel = model;
+        if (model && !req.user.is_admin) {
+            const userRow = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
+            const availableModels = await getAvailableModels(userRow.plan);
+            if (!availableModels.includes(model)) {
+                finalModel = availableModels.includes(existing.model) ? existing.model : availableModels[0];
+            }
+        }
+
         const templateValue = req.body.template !== undefined ? (req.body.template || null) : existing.template ?? null;
         const toolIdValue = req.body.tool_id !== undefined ? (req.body.tool_id || null) : undefined;
 
@@ -630,7 +641,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
             'updated_at = CURRENT_TIMESTAMP'
         ];
         const values = [
-            name, description, system_prompt, model, media_model, temperature, max_tokens, language,
+            name, description, system_prompt, finalModel || null, media_model, temperature, max_tokens, language,
             response_delay, auto_reply, is_active,
             availability_enabled, availability_start, availability_end, availability_days, availability_timezone, absence_message,
             human_transfer_enabled, human_transfer_keywords, human_transfer_message,

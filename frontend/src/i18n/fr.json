@@ -155,6 +155,7 @@
     },
     "detail": {
       "tabs": {
+        "overview": "Vue d'ensemble",
         "summary": "Résumé",
         "conversations": "Conversations",
         "contacts": "Contacts",
@@ -192,6 +193,12 @@
         "test": "Tester",
         "updateAt": "À l'instant",
         "noMessage": "Aucun message"
+      },
+      "tool": {
+        "title": "Outil WhatsApp",
+        "change": "Changer d'outil",
+        "assign": "Assigner un outil",
+        "manage": "Gérer les outils"
       },
       "actions": {
         "save": "Sauvegarder",

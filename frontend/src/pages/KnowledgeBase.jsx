@@ -120,14 +120,15 @@ export default function KnowledgeBase() {
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6">
       {/* Header Hero - theme-aware */}
-      <div className={`relative overflow-hidden rounded-3xl border p-4 sm:p-8 ${
+      <div className={`relative rounded-3xl border p-4 sm:p-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-950 border-space-700' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{ backgroundImage: `url(${isDark ? patternDark : patternLight})` }}
-          aria-hidden
-        />
+        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" aria-hidden="true">
+          <div
+            className="absolute inset-0 opacity-50"
+            style={{ backgroundImage: `url(${isDark ? patternDark : patternLight})` }}
+          />
+        </div>
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">

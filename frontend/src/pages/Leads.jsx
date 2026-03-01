@@ -214,8 +214,10 @@ export default function Leads() {
   return (
     <div className="space-y-6">
       {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl border border-space-700 p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" aria-hidden="true" />
+      <div className="relative rounded-3xl border border-space-700 p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" aria-hidden="true">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5 hero-pattern-overlay" />
+        </div>
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">

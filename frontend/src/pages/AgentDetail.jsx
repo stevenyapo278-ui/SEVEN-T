@@ -41,6 +41,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../contexts/AuthContext'
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {
@@ -770,7 +771,7 @@ function OverviewTab({ agent, onUpdate }) {
         <div className="card p-4 sm:p-6 min-w-0">
           <h2 className="text-base sm:text-lg font-display font-semibold text-gray-100 mb-3 sm:mb-4 flex items-center gap-2">
             <Wrench className="w-5 h-5 text-gold-400" />
-            {t('agents.detail.tool.title')}
+            {t('agents.detail.tool.title', 'WhatsApp Tool')}
           </h2>
           {agent.tool_id ? (
             <div className="p-4 bg-space-800 rounded-xl border border-space-700">
@@ -796,13 +797,13 @@ function OverviewTab({ agent, onUpdate }) {
               className="btn-primary inline-flex items-center gap-2"
             >
               <Wrench className="w-4 h-4" />
-              {agent.tool_id ? t('agents.detail.tool.change') : t('agents.detail.tool.assign')}
+              {agent.tool_id ? t('agents.detail.tool.change', 'Change tool') : t('agents.detail.tool.assign', 'Assign tool')}
             </Link>
             <Link
               to="/dashboard/tools"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-space-700 hover:bg-space-600 text-gray-200 transition-colors"
             >
-              {t('agents.detail.tool.manage')}
+              {t('agents.detail.tool.manage', 'Manage tools')}
             </Link>
           </div>
         </div>
@@ -1084,6 +1085,7 @@ function ContactsTab({ agent }) {
 
 function SettingsTab({ agent, onUpdate }) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const { showConfirm } = useConfirm()
   const [formData, setFormData] = useState({
     name: agent.name,
@@ -2555,6 +2557,7 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
 
 function PlaygroundTab({ agent }) {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)

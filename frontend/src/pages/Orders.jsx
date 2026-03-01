@@ -540,8 +540,8 @@ export default function Orders() {
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6">
       {/* Header Hero */}
-      <div className="relative overflow-hidden rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
-        <div className="relative z-10 space-y-6">
+      <div className="relative z-30 rounded-3xl border border-space-700 p-4 sm:p-8" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+        <div className="space-y-6">
           {/* Titre et sous-titre : bloc dédié, jamais sous les boutons */}
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-gray-100 flex flex-wrap items-center gap-3">
@@ -556,7 +556,7 @@ export default function Orders() {
           </div>
 
           {/* Boutons : rangée dédiée, wrap propre sans recouvrir le texte */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 relative z-20">
               <button
                 onClick={openNewOrderModal}
                 className="px-4 py-2 min-h-[44px] rounded-xl flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white transition-colors touch-target whitespace-nowrap text-sm sm:text-base"
@@ -594,55 +594,74 @@ export default function Orders() {
                   </button>
                   
                   {showCleanupMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-space-800 border border-space-700 rounded-xl shadow-xl z-50 overflow-hidden">
-                      <div className="p-2 border-b border-space-700">
-                        <p className="text-xs text-gray-500 px-2">Supprimer par statut</p>
-                      </div>
-                      <div className="p-1">
-                        <button
-                          onClick={() => handleBulkDelete('rejected')}
-                          disabled={actionLoading}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          Supprimer les rejetées ({stats.rejected})
-                        </button>
-                        <button
-                          onClick={() => handleBulkDelete('cancelled')}
-                          disabled={actionLoading}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:bg-space-700 rounded-lg transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                          Supprimer les annulées
-                        </button>
-                      </div>
-                      <div className="p-2 border-t border-space-700">
-                        <p className="text-xs text-gray-500 px-2">Nettoyage automatique</p>
-                      </div>
-                      <div className="p-1">
-                        <button
-                          onClick={() => handleCleanup(7)}
-                          disabled={actionLoading}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          Nettoyer {">"} 7 jours
-                        </button>
-                        <button
-                          onClick={() => handleCleanup(30)}
-                          disabled={actionLoading}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                          Nettoyer {">"} 30 jours
-                        </button>
-                      </div>
-                      {actionLoading && (
-                        <div className="p-3 flex items-center justify-center">
-                          <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                    <>
+                      {/* Mobile Backdrop */}
+                      <div 
+                        className="fixed inset-0 z-[60] bg-space-950/40 backdrop-blur-sm lg:hidden animate-fadeIn" 
+                        onClick={() => setShowCleanupMenu(false)}
+                      />
+                      
+                      {/* Menu Container: Mobile Bottom Sheet / Desktop Dropdown */}
+                      <div className="fixed lg:absolute bottom-0 lg:bottom-auto left-0 lg:left-auto right-0 lg:right-0 lg:top-full z-[70] p-4 lg:p-0 lg:mt-2 transition-all">
+                        <div className="bg-space-800 border border-space-700 rounded-3xl lg:rounded-xl shadow-2xl overflow-hidden w-full lg:w-64 animate-slideUp lg:animate-fadeIn origin-bottom lg:origin-top-right">
+                          <div className="p-3 lg:p-2 border-b border-space-700">
+                            <p className="text-xs text-gray-500 px-2 uppercase tracking-wider font-bold">Supprimer par statut</p>
+                          </div>
+                          <div className="p-2 lg:p-1 space-y-1">
+                            <button
+                              onClick={() => handleBulkDelete('rejected')}
+                              disabled={actionLoading}
+                              className="w-full flex items-center gap-3 px-4 py-3 lg:px-3 lg:py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-xl lg:rounded-lg transition-colors touch-target"
+                            >
+                              <XCircle className="w-5 h-5 lg:w-4 lg:h-4" />
+                              <span className="flex-1 text-left">Supprimer les rejetées ({stats.rejected})</span>
+                            </button>
+                            <button
+                              onClick={() => handleBulkDelete('cancelled')}
+                              disabled={actionLoading}
+                              className="w-full flex items-center gap-3 px-4 py-3 lg:px-3 lg:py-2 text-sm text-gray-400 hover:bg-space-700 rounded-xl lg:rounded-lg transition-colors touch-target"
+                            >
+                              <X className="w-5 h-5 lg:w-4 lg:h-4" />
+                              <span className="flex-1 text-left">Supprimer les annulées</span>
+                            </button>
+                          </div>
+                          <div className="p-3 lg:p-2 border-t border-space-700">
+                            <p className="text-xs text-gray-500 px-2 uppercase tracking-wider font-bold">Nettoyage automatique</p>
+                          </div>
+                          <div className="p-2 lg:p-1 space-y-1">
+                            <button
+                              onClick={() => handleCleanup(7)}
+                              disabled={actionLoading}
+                              className="w-full flex items-center gap-3 px-4 py-3 lg:px-3 lg:py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl lg:rounded-lg transition-colors touch-target"
+                            >
+                              <RefreshCw className="w-5 h-5 lg:w-4 lg:h-4" />
+                              <span className="flex-1 text-left">Nettoyer {">"} 7 jours</span>
+                            </button>
+                            <button
+                              onClick={() => handleCleanup(30)}
+                              disabled={actionLoading}
+                              className="w-full flex items-center gap-3 px-4 py-3 lg:px-3 lg:py-2 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl lg:rounded-lg transition-colors touch-target"
+                            >
+                              <RefreshCw className="w-5 h-5 lg:w-4 lg:h-4" />
+                              <span className="flex-1 text-left">Nettoyer {">"} 30 jours</span>
+                            </button>
+                          </div>
+                          {actionLoading && (
+                            <div className="p-4 flex items-center justify-center bg-space-900/50">
+                              <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+                            </div>
+                          )}
+                          
+                          {/* Mobile close button for better UX */}
+                          <button 
+                            onClick={() => setShowCleanupMenu(false)}
+                            className="w-full py-4 lg:hidden text-sm text-gray-500 font-medium border-t border-space-700 bg-space-900/20"
+                          >
+                            Fermer
+                          </button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

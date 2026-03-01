@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
 import { 
@@ -97,17 +98,22 @@ const AI_MODELS = [
   }
 ]
 
-const STEPS = [
+const STEPS_CONFIG = [
   { id: 'template', title: 'Type d\'agent' },
   { id: 'name', title: 'Nom et description' },
-  { id: 'model', title: 'Modèle IA' },
+  { id: 'model', title: 'Modèle IA', adminOnly: true },
   { id: 'confirm', title: 'Confirmation' }
 ]
 
 export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [creating, setCreating] = useState(false)
+
+  // Filter steps based on user permissions
+  const STEPS = STEPS_CONFIG.filter(step => !step.adminOnly || user?.is_admin)
+
   const [formData, setFormData] = useState({
     template: null,
     name: '',
@@ -145,7 +151,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
           name: formData.name,
           description: formData.description || TEMPLATES.find(t => t.id === formData.template)?.description,
           template: formData.template,
-          model: formData.model
+          model: user?.is_admin ? formData.model : undefined
         })
         
         toast.success('Agent créé avec succès ! 🎉')
@@ -409,16 +415,20 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                   <span className="text-gray-400 text-sm flex-shrink-0">Nom</span>
                   <span className="text-gray-100 font-medium truncate text-right">{formData.name}</span>
                 </div>
-                <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
-                  <span className="text-gray-400 text-sm flex-shrink-0">Modèle IA</span>
-                  <span className="text-gray-100 font-medium truncate text-right">{selectedModel?.name}</span>
-                </div>
-                <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
-                  <span className="text-gray-400 text-sm flex-shrink-0">Coût par message</span>
-                  <span className={`font-bold flex-shrink-0 ${selectedModel?.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>
-                    {selectedModel?.credits} crédit{selectedModel?.credits !== 1 ? 's' : ''}
-                  </span>
-                </div>
+                {user?.is_admin && (
+                  <>
+                    <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-gray-400 text-sm flex-shrink-0">Modèle IA</span>
+                      <span className="text-gray-100 font-medium truncate text-right">{selectedModel?.name}</span>
+                    </div>
+                    <div className="p-3 sm:p-4 flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-gray-400 text-sm flex-shrink-0">Coût par message</span>
+                      <span className={`font-bold flex-shrink-0 ${selectedModel?.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>
+                        {selectedModel?.credits} crédit{selectedModel?.credits !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">

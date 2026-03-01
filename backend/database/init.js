@@ -149,7 +149,12 @@ export async function initDatabase() {
     }
 
     pool = new Pool({
-        connectionString
+        connectionString,
+        // Production pool settings for multi-tenant SaaS concurrency
+        max: parseInt(process.env.DB_POOL_MAX || '20'),        // Max simultaneous connections
+        idleTimeoutMillis: 30000,                              // Release idle connections after 30s
+        connectionTimeoutMillis: 5000,                         // Fail fast if no connection available
+        allowExitOnIdle: false                                 // Keep pool alive (server process)
     });
 
     // Basic connectivity check
