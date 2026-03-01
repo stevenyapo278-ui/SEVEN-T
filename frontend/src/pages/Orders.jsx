@@ -100,6 +100,8 @@ export default function Orders() {
   })
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedOrderView, setSelectedOrderView] = useState(null)
+  const [focusStat, setFocusStat] = useState(null)
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const [logs, setLogs] = useState([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [showCleanupMenu, setShowCleanupMenu] = useState(false)
@@ -408,7 +410,27 @@ export default function Orders() {
     const matchesSearch = order.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          order.customer_phone?.includes(searchQuery) ||
                          order.id.includes(searchQuery)
-    return matchesStatus && matchesSearch
+    
+    // Date filtering
+    let matchesDate = true
+    if (dateRange.start || dateRange.end) {
+      const orderDate = new Date(order.created_at)
+      orderDate.setHours(0, 0, 0, 0)
+      
+      if (dateRange.start) {
+        const start = new Date(dateRange.start)
+        start.setHours(0, 0, 0, 0)
+        if (orderDate < start) matchesDate = false
+      }
+      
+      if (dateRange.end) {
+        const end = new Date(dateRange.end)
+        end.setHours(23, 59, 59, 999)
+        if (orderDate > end) matchesDate = false
+      }
+    }
+
+    return matchesStatus && matchesSearch && matchesDate
   })
 
   const getStatusInfo = (status) => ORDER_STATUSES[status] || ORDER_STATUSES.pending
@@ -679,71 +701,87 @@ export default function Orders() {
           </div>
 
           {/* Stats - always visible in header */}
+          {/* Stats - always visible in header */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-8 min-w-0">
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${
-              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
-            }`}>
+            <div 
+              onClick={() => setFocusStat({ label: 'En attente', value: stats.pending, icon: Clock, color: 'amber' })}
+              className={`rounded-xl p-4 border transition-all duration-300 cursor-pointer ${
+                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md hover:scale-[1.02]'
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 bg-amber-500/10 rounded-xl flex-shrink-0">
                   <Clock className="w-5 h-5 text-amber-500" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 overflow-hidden flex-1">
                   <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.pending}</p>
                   <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>En attente</p>
                 </div>
               </div>
             </div>
             
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${
-              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
-            }`}>
+            <div 
+              onClick={() => setFocusStat({ label: 'Validées', value: stats.validated, icon: CheckCircle, color: 'green' })}
+              className={`rounded-xl p-4 border transition-all duration-300 cursor-pointer ${
+                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md hover:scale-[1.02]'
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 bg-green-500/10 rounded-xl flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-green-500" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 overflow-hidden flex-1">
                   <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.validated}</p>
                   <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Validées</p>
                 </div>
               </div>
             </div>
 
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${
-              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
-            }`}>
+            <div 
+              onClick={() => setFocusStat({ label: 'Livrées', value: stats.delivered ?? 0, icon: CheckCircle, color: 'emerald' })}
+              className={`rounded-xl p-4 border transition-all duration-300 cursor-pointer ${
+                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md hover:scale-[1.02]'
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
                   <CheckCircle className="w-5 h-5 text-emerald-500" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 overflow-hidden flex-1">
                   <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.delivered ?? 0}</p>
                   <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Livrées</p>
                 </div>
               </div>
             </div>
 
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${
-              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md'
-            }`}>
+            <div 
+              onClick={() => setFocusStat({ label: 'Rejetées', value: stats.rejected, icon: XCircle, color: 'red' })}
+              className={`rounded-xl p-4 border transition-all duration-300 cursor-pointer ${
+                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md hover:scale-[1.02]'
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 bg-red-500/10 rounded-xl flex-shrink-0">
                   <XCircle className="w-5 h-5 text-red-500" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 overflow-hidden flex-1">
                   <p className={`text-2xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.rejected}</p>
                   <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Rejetées</p>
                 </div>
               </div>
             </div>
 
-            <div className={`rounded-xl p-4 border transition-all duration-300 col-span-2 sm:col-span-3 lg:col-span-1 ${
-              isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-amber-100/20'
-            }`}>
+            <div 
+              onClick={() => setFocusStat({ label: 'Revenus', value: formatCurrency(stats.totalRevenue), icon: TrendingUp, color: 'gold' })}
+              className={`rounded-xl p-4 border transition-all duration-300 col-span-2 sm:col-span-3 lg:col-span-1 cursor-pointer ${
+                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md hover:scale-[1.02]'
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                   <TrendingUp className="w-5 h-5 text-gold-400" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 overflow-hidden flex-1">
                   <p className={`text-2xl font-bold truncate text-gold-400`}>{formatCurrency(stats.totalRevenue)}</p>
                   <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Revenus</p>
                 </div>
@@ -1083,31 +1121,67 @@ export default function Orders() {
         <div className="space-y-6 overflow-x-auto min-w-0">
       {/* Filters */}
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
-        }`}>
-          <Search className="w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher une commande..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
-          />
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
+            isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
+          }`}>
+            <Search className="w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Nom, téléphone ou n° commande..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[200px] transition-all duration-300 ${
+              isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
+            }`}
+          >
+            <option value="all">Tous les statuts</option>
+            {Object.entries(ORDER_STATUSES).map(([key, value]) => (
+              <option key={key} value={key}>{t(value.nameKey)}</option>
+            ))}
+          </select>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[150px] transition-all duration-300 ${
-            isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
-          }`}
-        >
-          <option value="all">Tous les statuts</option>
-          {Object.entries(ORDER_STATUSES).map(([key, value]) => (
-            <option key={key} value={key}>{t(value.nameKey)}</option>
-          ))}
-        </select>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-500" />
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Période :</span>
+          </div>
+          <div className="flex items-center gap-2 flex-1 sm:flex-none">
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-xl border text-sm ${
+                isDark ? 'bg-space-800 border-space-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'
+              }`}
+            />
+            <span className="text-gray-500">à</span>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-xl border text-sm ${
+                isDark ? 'bg-space-800 border-space-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'
+              }`}
+            />
+          </div>
+          {(dateRange.start || dateRange.end) && (
+            <button
+              onClick={() => setDateRange({ start: '', end: '' })}
+              className="text-xs text-red-400 hover:text-red-300 font-bold px-2 py-1"
+            >
+              Réinitialiser
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Orders List */}
@@ -1589,6 +1663,40 @@ export default function Orders() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {focusStat && (
+        <div 
+          className="fixed inset-0 z-[75] flex items-center justify-center p-4"
+          onClick={() => setFocusStat(null)}
+        >
+          <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm animate-fade-in" />
+          <div 
+            className="relative z-10 w-full max-w-sm bg-space-900/90 border border-white/10 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 animate-zoom-in text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setFocusStat(null)}
+              className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white"
+            >
+              <XCircle className="w-6 h-6" />
+            </button>
+            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg ${
+              focusStat.color === 'amber' ? 'bg-amber-500/10 text-amber-500' :
+              focusStat.color === 'green' ? 'bg-green-500/10 text-green-500' :
+              focusStat.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500' :
+              focusStat.color === 'red' ? 'bg-red-500/10 text-red-500' :
+              focusStat.color === 'gold' ? 'bg-gold-400/10 text-gold-400' : ''
+            }`}>
+              {(() => {
+                const Icon = focusStat.icon
+                return <Icon className="w-10 h-10" />
+              })()}
+            </div>
+            <p className="text-gray-400 text-sm uppercase tracking-widest font-bold mb-2">{focusStat.label}</p>
+            <h3 className={`text-3xl sm:text-4xl font-display font-black break-words max-w-full ${isDark ? 'text-white' : 'text-gray-900'}`}>{focusStat.value}</h3>
+            <button onClick={() => setFocusStat(null)} className="btn-secondary w-full mt-8">Fermer</button>
           </div>
         </div>
       )}

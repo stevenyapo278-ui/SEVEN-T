@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Package, Edit, Trash2, History, Tag, Image } from 'lucide-react'
+import { Package, Edit, Trash2, History, Tag, Image, Maximize2 } from 'lucide-react'
 import { getProductImageUrl } from './utils'
 
 export default function ProductList({
@@ -59,9 +59,17 @@ export default function ProductList({
                 <span className="text-xs text-gray-500 uppercase tracking-wide">{t('products.tableSku')}</span>
                 <span className="text-sm font-mono text-gray-400 truncate">{product.sku || '–'}</span>
               </div>
-              <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0 overflow-hidden">
+              <div 
+                className="md:col-span-2 flex flex-col gap-0.5 min-w-0"
+                onClick={(e) => { e.stopPropagation(); onView(product) }}
+              >
                 <span className="md:hidden text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{t('products.tablePrice')}</span>
-                <span className="text-base sm:text-lg font-bold text-gold-400 truncate" title={formatPrice(product.price)}>{formatPrice(product.price)}</span>
+                <div className="group/price relative flex items-center gap-2 group">
+                  <span className="text-base sm:text-lg font-bold text-gold-400 break-words" title={formatPrice(product.price)}>
+                    {formatPrice(product.price)}
+                  </span>
+                  <Maximize2 className="w-3.5 h-3.5 text-gold-400/0 md:group-hover/price:text-gold-400/50 transition-all transform scale-75 group-hover/price:scale-100" />
+                </div>
                 {typeof product.cost_price === 'number' && product.cost_price > 0 && (
                   <span className="hidden md:block text-xs text-gray-400 mt-0.5 truncate" title={formatPrice((product.price || 0) - (product.cost_price || 0))}>
                     {t('products.marginLabel')} {formatPrice((product.price || 0) - (product.cost_price || 0))}

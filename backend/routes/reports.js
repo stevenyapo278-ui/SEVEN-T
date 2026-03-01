@@ -43,22 +43,22 @@ router.post('/generate', authenticateToken, async (req, res) => {
         switch (report_type) {
             case 'weekly_summary':
             case 'monthly_summary':
-                reportData = generateSummaryReport(req.user.id, startDate, endDate);
+                reportData = await generateSummaryReport(req.user.id, startDate, endDate);
                 break;
             case 'agent_performance':
-                reportData = generateAgentReport(req.user.id, startDate, endDate);
+                reportData = await generateAgentReport(req.user.id, startDate, endDate);
                 break;
             case 'conversion_report':
-                reportData = generateConversionReport(req.user.id, startDate, endDate);
+                reportData = await generateConversionReport(req.user.id, startDate, endDate);
                 break;
             case 'product_report':
-                reportData = generateProductReport(req.user.id, startDate, endDate);
+                reportData = await generateProductReport(req.user.id, startDate, endDate);
                 break;
         }
 
         // Save generated report
         const id = uuidv4();
-        db.prepare(`
+        await db.prepare(`
             INSERT INTO generated_reports (id, user_id, report_type, title, data, period_start, period_end)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(
@@ -87,9 +87,9 @@ router.post('/generate', authenticateToken, async (req, res) => {
 });
 
 // Get generated reports history
-router.get('/history', authenticateToken, (req, res) => {
+router.get('/history', authenticateToken, async (req, res) => {
     try {
-        const reports = db.prepare(`
+        const reports = await db.prepare(`
             SELECT id, report_type, title, period_start, period_end, created_at
             FROM generated_reports
             WHERE user_id = ?
@@ -105,9 +105,9 @@ router.get('/history', authenticateToken, (req, res) => {
 });
 
 // Get report subscriptions (MUST be before /:id route)
-router.get('/subscriptions', authenticateToken, (req, res) => {
+router.get('/subscriptions', authenticateToken, async (req, res) => {
     try {
-        const subscriptions = db.prepare('SELECT * FROM report_subscriptions WHERE user_id = ?').all(req.user.id);
+        const subscriptions = await db.prepare('SELECT * FROM report_subscriptions WHERE user_id = ?').all(req.user.id);
         res.json({ subscriptions });
     } catch (error) {
         console.error('Get subscriptions error:', error);
@@ -116,9 +116,9 @@ router.get('/subscriptions', authenticateToken, (req, res) => {
 });
 
 // Get a specific generated report
-router.get('/:id', authenticateToken, (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
     try {
-        const report = db.prepare('SELECT * FROM generated_reports WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+        const report = await db.prepare('SELECT * FROM generated_reports WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
 
         if (!report) {
             return res.status(404).json({ error: 'Rapport non trouvé' });
@@ -137,8 +137,19 @@ router.get('/:id', authenticateToken, (req, res) => {
     }
 });
 
+// Delete a generated report
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        await db.prepare('DELETE FROM generated_reports WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+        res.json({ message: 'Rapport supprimé' });
+    } catch (error) {
+        console.error('Delete report error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Create/update report subscription
-router.post('/subscriptions', authenticateToken, (req, res) => {
+router.post('/subscriptions', authenticateToken, async (req, res) => {
     try {
         const { report_type, frequency = 'weekly', email } = req.body;
 
@@ -146,7 +157,7 @@ router.post('/subscriptions', authenticateToken, (req, res) => {
             return res.status(400).json({ error: 'Type de rapport invalide' });
         }
 
-        const user = db.prepare('SELECT email FROM users WHERE id = ?').get(req.user.id);
+        const user = await db.prepare('SELECT email FROM users WHERE id = ?').get(req.user.id);
         const targetEmail = email || user.email;
 
         // Calculate next send date
@@ -164,26 +175,26 @@ router.post('/subscriptions', authenticateToken, (req, res) => {
         }
 
         // Check if subscription exists
-        const existing = db.prepare('SELECT * FROM report_subscriptions WHERE user_id = ? AND report_type = ?')
+        const existing = await db.prepare('SELECT * FROM report_subscriptions WHERE user_id = ? AND report_type = ?')
             .get(req.user.id, report_type);
 
         if (existing) {
-            db.prepare(`
+            await db.prepare(`
                 UPDATE report_subscriptions 
                 SET frequency = ?, email = ?, is_active = 1, next_send_at = ?
                 WHERE id = ?
             `).run(frequency, targetEmail, nextSend.toISOString(), existing.id);
 
-            const subscription = db.prepare('SELECT * FROM report_subscriptions WHERE id = ?').get(existing.id);
+            const subscription = await db.prepare('SELECT * FROM report_subscriptions WHERE id = ?').get(existing.id);
             res.json({ subscription });
         } else {
             const id = uuidv4();
-            db.prepare(`
+            await db.prepare(`
                 INSERT INTO report_subscriptions (id, user_id, report_type, frequency, email, next_send_at)
                 VALUES (?, ?, ?, ?, ?, ?)
             `).run(id, req.user.id, report_type, frequency, targetEmail, nextSend.toISOString());
 
-            const subscription = db.prepare('SELECT * FROM report_subscriptions WHERE id = ?').get(id);
+            const subscription = await db.prepare('SELECT * FROM report_subscriptions WHERE id = ?').get(id);
             res.status(201).json({ subscription });
         }
     } catch (error) {
@@ -193,9 +204,9 @@ router.post('/subscriptions', authenticateToken, (req, res) => {
 });
 
 // Toggle subscription active state
-router.post('/subscriptions/:id/toggle', authenticateToken, (req, res) => {
+router.post('/subscriptions/:id/toggle', authenticateToken, async (req, res) => {
     try {
-        const existing = db.prepare('SELECT * FROM report_subscriptions WHERE id = ? AND user_id = ?')
+        const existing = await db.prepare('SELECT * FROM report_subscriptions WHERE id = ? AND user_id = ?')
             .get(req.params.id, req.user.id);
 
         if (!existing) {
@@ -203,7 +214,7 @@ router.post('/subscriptions/:id/toggle', authenticateToken, (req, res) => {
         }
 
         const newState = existing.is_active ? 0 : 1;
-        db.prepare('UPDATE report_subscriptions SET is_active = ? WHERE id = ?').run(newState, req.params.id);
+        await db.prepare('UPDATE report_subscriptions SET is_active = ? WHERE id = ?').run(newState, req.params.id);
 
         res.json({ is_active: newState === 1 });
     } catch (error) {
@@ -213,9 +224,9 @@ router.post('/subscriptions/:id/toggle', authenticateToken, (req, res) => {
 });
 
 // Delete subscription
-router.delete('/subscriptions/:id', authenticateToken, (req, res) => {
+router.delete('/subscriptions/:id', authenticateToken, async (req, res) => {
     try {
-        db.prepare('DELETE FROM report_subscriptions WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+        await db.prepare('DELETE FROM report_subscriptions WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
         res.json({ message: 'Abonnement supprimé' });
     } catch (error) {
         console.error('Delete subscription error:', error);
@@ -224,54 +235,68 @@ router.delete('/subscriptions/:id', authenticateToken, (req, res) => {
 });
 
 // Helper functions to generate reports
-function generateSummaryReport(userId, startDate, endDate) {
+async function generateSummaryReport(userId, startDate, endDate) {
     const startStr = startDate.toISOString();
     const endStr = endDate.toISOString();
+
+    const convTotal = await db.prepare(`
+        SELECT COUNT(*) as count FROM conversations c
+        JOIN agents a ON c.agent_id = a.id
+        WHERE a.user_id = ? AND c.created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    const convActive = await db.prepare(`
+        SELECT COUNT(*) as count FROM conversations c
+        JOIN agents a ON c.agent_id = a.id
+        WHERE a.user_id = ? AND c.status = 'active' AND c.created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    const msgTotal = await db.prepare(`
+        SELECT COUNT(*) as count FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN agents a ON c.agent_id = a.id
+        WHERE a.user_id = ? AND m.created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    const msgIncoming = await db.prepare(`
+        SELECT COUNT(*) as count FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN agents a ON c.agent_id = a.id
+        WHERE a.user_id = ? AND m.role = 'user' AND m.created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    const msgOutgoing = await db.prepare(`
+        SELECT COUNT(*) as count FROM messages m
+        JOIN conversations c ON m.conversation_id = c.id
+        JOIN agents a ON c.agent_id = a.id
+        WHERE a.user_id = ? AND m.role = 'assistant' AND m.created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    const leadsCount = await db.prepare(`SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at BETWEEN ? AND ?`).get(userId, startStr, endStr);
+    const ordersCount = await db.prepare(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at BETWEEN ? AND ?`).get(userId, startStr, endStr);
+    const revenueSum = await db.prepare(`SELECT SUM(total_amount) as sum FROM orders WHERE user_id = ? AND status IN ('completed', 'validated', 'delivered') AND created_at BETWEEN ? AND ?`).get(userId, startStr, endStr);
 
     return {
         conversations: {
-            total: db.prepare(`
-                SELECT COUNT(*) as count FROM conversations c
-                JOIN agents a ON c.agent_id = a.id
-                WHERE a.user_id = ? AND c.created_at BETWEEN ? AND ?
-            `).get(userId, startStr, endStr).count,
-            active: db.prepare(`
-                SELECT COUNT(*) as count FROM conversations c
-                JOIN agents a ON c.agent_id = a.id
-                WHERE a.user_id = ? AND c.status = 'active' AND c.created_at BETWEEN ? AND ?
-            `).get(userId, startStr, endStr).count
+            total: convTotal?.count || 0,
+            active: convActive?.count || 0
         },
         messages: {
-            total: db.prepare(`
-                SELECT COUNT(*) as count FROM messages m
-                JOIN conversations c ON m.conversation_id = c.id
-                JOIN agents a ON c.agent_id = a.id
-                WHERE a.user_id = ? AND m.created_at BETWEEN ? AND ?
-            `).get(userId, startStr, endStr).count,
-            incoming: db.prepare(`
-                SELECT COUNT(*) as count FROM messages m
-                JOIN conversations c ON m.conversation_id = c.id
-                JOIN agents a ON c.agent_id = a.id
-                WHERE a.user_id = ? AND m.role = 'user' AND m.created_at BETWEEN ? AND ?
-            `).get(userId, startStr, endStr).count,
-            outgoing: db.prepare(`
-                SELECT COUNT(*) as count FROM messages m
-                JOIN conversations c ON m.conversation_id = c.id
-                JOIN agents a ON c.agent_id = a.id
-                WHERE a.user_id = ? AND m.role = 'assistant' AND m.created_at BETWEEN ? AND ?
-            `).get(userId, startStr, endStr).count
+            total: msgTotal?.count || 0,
+            incoming: msgIncoming?.count || 0,
+            outgoing: msgOutgoing?.count || 0
         },
-        leads: db.prepare(`SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at BETWEEN ? AND ?`).get(userId, startStr, endStr).count,
-        orders: db.prepare(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at BETWEEN ? AND ?`).get(userId, startStr, endStr).count,
-        revenue: db.prepare(`SELECT SUM(total_amount) as sum FROM orders WHERE user_id = ? AND status = 'completed' AND created_at BETWEEN ? AND ?`).get(userId, startStr, endStr).sum || 0
+        leads: leadsCount?.count || 0,
+        orders: ordersCount?.count || 0,
+        revenue: revenueSum?.sum || 0
     };
 }
 
-function generateAgentReport(userId, startDate, endDate) {
+async function generateAgentReport(userId, startDate, endDate) {
     const startStr = startDate.toISOString();
     const endStr = endDate.toISOString();
 
-    const agents = db.prepare(`
+    const agents = await db.prepare(`
         SELECT 
             a.id, a.name, a.is_active, a.whatsapp_connected,
             (SELECT COUNT(*) FROM conversations c WHERE c.agent_id = a.id AND c.created_at BETWEEN ? AND ?) as conversations,
@@ -280,39 +305,44 @@ function generateAgentReport(userId, startDate, endDate) {
         WHERE a.user_id = ?
     `).all(startStr, endStr, startStr, endStr, userId);
 
-    return { agents };
+    return { agents: agents || [] };
 }
 
-function generateConversionReport(userId, startDate, endDate) {
+async function generateConversionReport(userId, startDate, endDate) {
     const startStr = startDate.toISOString();
+
+    const convCount = await db.prepare(`SELECT COUNT(*) as c FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND c.created_at >= ?`).get(userId, startStr);
+    const leadsCount = await db.prepare(`SELECT COUNT(*) as c FROM leads WHERE user_id = ? AND created_at >= ?`).get(userId, startStr);
+    const ordersCount = await db.prepare(`SELECT COUNT(*) as c FROM orders WHERE user_id = ? AND created_at >= ?`).get(userId, startStr);
+    const completedOrdersCount = await db.prepare(`SELECT COUNT(*) as c FROM orders WHERE user_id = ? AND status IN ('completed', 'validated', 'delivered') AND created_at >= ?`).get(userId, startStr);
 
     return {
         funnel: [
-            { stage: 'Conversations', count: db.prepare(`SELECT COUNT(*) as c FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND c.created_at >= ?`).get(userId, startStr).c },
-            { stage: 'Leads', count: db.prepare(`SELECT COUNT(*) as c FROM leads WHERE user_id = ? AND created_at >= ?`).get(userId, startStr).c },
-            { stage: 'Commandes', count: db.prepare(`SELECT COUNT(*) as c FROM orders WHERE user_id = ? AND created_at >= ?`).get(userId, startStr).c },
-            { stage: 'Complétées', count: db.prepare(`SELECT COUNT(*) as c FROM orders WHERE user_id = ? AND status = 'completed' AND created_at >= ?`).get(userId, startStr).c }
+            { stage: 'Conversations', count: convCount?.c || 0 },
+            { stage: 'Leads', count: leadsCount?.c || 0 },
+            { stage: 'Commandes', count: ordersCount?.c || 0 },
+            { stage: 'Réalisées', count: completedOrdersCount?.c || 0 }
         ]
     };
 }
 
-function generateProductReport(userId, startDate, endDate) {
+async function generateProductReport(userId, startDate, endDate) {
     const startStr = startDate.toISOString();
 
-    const products = db.prepare(`
+    const products = await db.prepare(`
         SELECT 
             p.id, p.name, p.price, p.stock,
             COALESCE(SUM(oi.quantity), 0) as sold,
             COALESCE(SUM(oi.quantity * oi.unit_price), 0) as revenue
         FROM products p
         LEFT JOIN order_items oi ON p.id = oi.product_id
-        LEFT JOIN orders o ON oi.order_id = o.id AND o.status = 'completed' AND o.created_at >= ?
+        LEFT JOIN orders o ON oi.order_id = o.id AND o.status IN ('completed', 'validated', 'delivered') AND o.created_at >= ?
         WHERE p.user_id = ?
         GROUP BY p.id
         ORDER BY sold DESC
     `).all(startStr, userId);
 
-    return { products };
+    return { products: products || [] };
 }
 
 export default router;

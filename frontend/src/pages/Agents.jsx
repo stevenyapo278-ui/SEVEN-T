@@ -1105,26 +1105,28 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
         }`} />
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium text-gray-100 truncate">{agent.name}</h3>
-          {isNew && (
-            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gold-400/20 text-gold-400 rounded">NEW</span>
-          )}
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-            !isActive
-              ? 'bg-gray-500/20 text-gray-500'
-              : agent.whatsapp_connected
-                ? 'bg-emerald-500/20 text-emerald-400'
-                : 'bg-orange-500/20 text-orange-400'
-          }`}>
-            {!isActive ? 'Inactif' : agent.whatsapp_connected ? 'Connecté' : 'Déconnecté'}
-          </span>
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
+          <h3 className="font-bold text-sm sm:text-base text-gray-100 truncate max-w-[120px] sm:max-w-none">{agent.name}</h3>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isNew && (
+              <span className="px-1.5 py-0.5 text-[9px] font-black bg-gold-400/20 text-gold-400 rounded-md tracking-wider">NEW</span>
+            )}
+            <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold ${
+              !isActive
+                ? 'bg-gray-500/20 text-gray-500'
+                : agent.whatsapp_connected
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : 'bg-orange-500/20 text-orange-400'
+            }`}>
+              {!isActive ? 'Inactif' : agent.whatsapp_connected ? 'Connecté' : 'Déconnecté'}
+            </span>
+          </div>
         </div>
-        <p className="text-sm text-gray-500 truncate">{agent.description || 'Aucune description'}</p>
+        <p className="text-xs sm:text-sm text-gray-500 truncate max-w-[200px] sm:max-w-none">{agent.description || 'Aucune description'}</p>
       </div>
 
-      <div className={`hidden md:flex items-center gap-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+      <div className={`hidden lg:flex items-center gap-8 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
         <div className="text-center min-w-[80px]">
           <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.total_conversations || 0}</p>
           <p className="text-xs">Conversations</p>
@@ -1135,14 +1137,14 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 sm:gap-2 ml-auto">
         <button
           onClick={(e) => { e.stopPropagation(); handleToggleActive(); }}
           disabled={toggling}
-          className={`p-2 rounded-lg transition-all ${
+          className={`p-2 rounded-xl transition-all ${
             isActive 
-              ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' 
-              : 'bg-gray-500/20 text-gray-500 hover:bg-gray-500/30'
+              ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' 
+              : 'bg-gray-500/10 text-gray-500 hover:bg-gray-500/20'
           }`}
         >
           {toggling ? (
@@ -1156,14 +1158,14 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
         <Link
           to={`/dashboard/agents/${agent.id}?tab=playground`}
           onClick={(e) => e.stopPropagation()}
-          className="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+          className="hidden sm:flex p-2 text-blue-400 hover:bg-blue-500/10 rounded-xl transition-colors"
         >
           <Play className="w-4 h-4" />
         </Link>
         <div className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-            className="p-2 hover:bg-space-700 rounded-lg transition-colors text-gray-500 hover:text-white"
+            className="p-2 hover:bg-space-700/50 rounded-xl transition-colors text-gray-500 hover:text-white"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
