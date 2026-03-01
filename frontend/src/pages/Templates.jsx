@@ -12,7 +12,9 @@ import {
   Tag,
   Clock,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  RefreshCw,
+  Loader2
 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
 import toast from 'react-hot-toast'
@@ -155,7 +157,7 @@ export default function Templates() {
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero */}
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div

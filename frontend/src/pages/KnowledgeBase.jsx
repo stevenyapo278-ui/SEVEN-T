@@ -21,7 +21,8 @@ import {
   Link2,
   Copy,
   Check,
-  RefreshCw
+  RefreshCw,
+  Edit3
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -49,6 +50,7 @@ export default function KnowledgeBase() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingItem, setEditingItem] = useState(null)
   const [expandedItem, setExpandedItem] = useState(null)
 
   useEffect(() => {
@@ -120,7 +122,7 @@ export default function KnowledgeBase() {
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero - theme-aware */}
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" aria-hidden="true">
@@ -317,6 +319,12 @@ export default function KnowledgeBase() {
                           )}
                         </button>
                         <button
+                          onClick={() => setEditingItem(item)}
+                          className={`p-1.5 transition-colors ${isDark ? 'text-gray-500 hover:text-blue-400' : 'text-gray-500 hover:text-blue-600'}`}
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => handleDelete(item.id)}
                           className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
                         >
@@ -348,12 +356,17 @@ export default function KnowledgeBase() {
         </div>
       ) : null}
 
-      {/* Add Modal */}
-      {showAddModal && (
-        <AddKnowledgeModal
-          onClose={() => setShowAddModal(false)}
-          onAdded={() => {
+      {/* Edit/Add Modal */}
+      {(showAddModal || editingItem) && (
+        <KnowledgeModal
+          item={editingItem}
+          onClose={() => {
             setShowAddModal(false)
+            setEditingItem(null)
+          }}
+          onSaved={() => {
+            setShowAddModal(false)
+            setEditingItem(null)
             loadKnowledge()
           }}
         />
@@ -362,11 +375,12 @@ export default function KnowledgeBase() {
   )
 }
 
-function AddKnowledgeModal({ onClose, onAdded }) {
+function KnowledgeModal({ item, onClose, onSaved }) {
   useLockBodyScroll(true)
-  const [activeType, setActiveType] = useState('text')
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+  const isEditing = !!item
+  const [activeType, setActiveType] = useState(item?.type || 'text')
+  const [title, setTitle] = useState(item?.title || '')
+  const [content, setContent] = useState(item?.content || '')
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
@@ -378,7 +392,7 @@ function AddKnowledgeModal({ onClose, onAdded }) {
     { id: 'website', label: 'Site web', icon: Globe, color: 'blue' },
   ]
 
-  const handleTextSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim() || !content.trim()) {
       toast.error('Titre et contenu requis')
@@ -386,9 +400,14 @@ function AddKnowledgeModal({ onClose, onAdded }) {
     }
     setLoading(true)
     try {
-      await api.post('/knowledge/global', { title, content, type: 'text' })
-      toast.success('Ajouté à la base de connaissances')
-      onAdded()
+      if (isEditing) {
+        await api.put(`/knowledge/global/${item.id}`, { title, content, type: activeType })
+        toast.success('Mis à jour')
+      } else {
+        await api.post('/knowledge/global', { title, content, type: activeType })
+        toast.success('Ajouté à la base de connaissances')
+      }
+      onSaved()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erreur')
     } finally {
@@ -406,7 +425,7 @@ function AddKnowledgeModal({ onClose, onAdded }) {
     try {
       await api.post('/knowledge/global/extract-url', { url, title: title || undefined })
       toast.success('Contenu extrait et ajouté')
-      onAdded()
+      onSaved()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erreur lors de l\'extraction')
     } finally {
@@ -428,7 +447,7 @@ function AddKnowledgeModal({ onClose, onAdded }) {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       toast.success('Fichier ajouté')
-      onAdded()
+      onSaved()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erreur lors de l\'upload')
     } finally {
@@ -443,56 +462,69 @@ function AddKnowledgeModal({ onClose, onAdded }) {
         <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
-              Ajouter à la base de connaissances
+              {isEditing ? 'Modifier l\'élément' : 'Ajouter à la base de connaissances'}
             </h2>
             <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label="Fermer">
               <X className="w-5 h-5" />
             </button>
           </div>
           
-          {/* Type selector */}
-          <div className="grid grid-cols-4 gap-2 mt-4">
-            {typeOptions.map((option) => {
-              const Icon = option.icon
-              const isActive = activeType === option.id
-              const colorClasses = {
-                blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
-                red: isActive ? 'bg-red-500/20 text-red-400 border-red-500/30' : '',
-              }
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setActiveType(option.id)}
-                  className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium transition-all border ${
-                    isActive
-                      ? colorClasses[option.color]
-                      : 'bg-space-800 text-gray-400 hover:text-gray-300 border-transparent hover:border-space-600'
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 ${
-                    option.id === 'youtube' ? 'text-red-500' : 
-                    option.id === 'pdf' ? 'text-red-400' : 
-                    option.id === 'website' ? 'text-blue-400' : ''
-                  }`} />
-                  {option.label}
-                </button>
-              )
-            })}
-          </div>
+          {/* Type selector - Only if not editing (types are fixed for files/urls once extracted) */}
+          {!isEditing && (
+            <div className="grid grid-cols-4 gap-2 mt-4">
+              {typeOptions.map((option) => {
+                const Icon = option.icon
+                const isActive = activeType === option.id
+                const colorClasses = {
+                  blue: isActive ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : '',
+                  red: isActive ? 'bg-red-500/20 text-red-400 border-red-500/30' : '',
+                }
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setActiveType(option.id)}
+                    className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium transition-all border ${
+                      isActive
+                        ? colorClasses[option.color]
+                        : 'bg-space-800 text-gray-400 hover:text-gray-300 border-transparent hover:border-space-600'
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${
+                      option.id === 'youtube' ? 'text-red-500' : 
+                      option.id === 'pdf' ? 'text-red-400' : 
+                      option.id === 'website' ? 'text-blue-400' : ''
+                    }`} />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6">
-          {/* Text input */}
-          {activeType === 'text' && (
-            <form onSubmit={handleTextSubmit} className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
-                <FileText className="w-6 h-6 text-blue-400" />
-                <div>
-                  <p className="text-sm font-medium text-blue-400">Texte personnalisé</p>
-                  <p className="text-xs text-gray-400">Ajoutez des informations pour vos agents</p>
+          {/* Text input / Edit UI */}
+          {(activeType === 'text' || isEditing) && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {(activeType === 'text' && !isEditing) && (
+                <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
+                  <FileText className="w-6 h-6 text-blue-400" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-400">Texte personnalisé</p>
+                    <p className="text-xs text-gray-400">Ajoutez des informations pour vos agents</p>
+                  </div>
                 </div>
-              </div>
+              )}
+              {isEditing && (
+                <div className="flex items-center gap-3 p-4 bg-gold-400/10 border border-gold-400/20 rounded-xl mb-4">
+                  <Edit3 className="w-6 h-6 text-gold-400" />
+                  <div>
+                    <p className="text-sm font-medium text-gold-400">Modification</p>
+                    <p className="text-xs text-gray-400">Mettez à jour le contenu de la base</p>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Titre *</label>
                 <input
@@ -521,14 +553,14 @@ function AddKnowledgeModal({ onClose, onAdded }) {
                   Annuler
                 </button>
                 <button type="submit" disabled={loading} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target disabled:opacity-50">
-                  {loading ? 'Ajout...' : 'Ajouter'}
+                  {loading ? (isEditing ? 'Mise à jour...' : 'Ajout...') : (isEditing ? 'Mettre à jour' : 'Ajouter')}
                 </button>
               </div>
             </form>
           )}
 
-          {/* YouTube input */}
-          {activeType === 'youtube' && (
+          {/* YouTube input (only for new) */}
+          {activeType === 'youtube' && !isEditing && (
             <form onSubmit={handleUrlSubmit} className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
                 <Video className="w-6 h-6 text-red-500" />
@@ -574,8 +606,8 @@ function AddKnowledgeModal({ onClose, onAdded }) {
             </form>
           )}
 
-          {/* Website input */}
-          {activeType === 'website' && (
+          {/* Website input (only for new) */}
+          {activeType === 'website' && !isEditing && (
             <form onSubmit={handleUrlSubmit} className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
                 <Globe className="w-6 h-6 text-blue-500" />
@@ -616,8 +648,8 @@ function AddKnowledgeModal({ onClose, onAdded }) {
             </form>
           )}
 
-          {/* PDF upload */}
-          {activeType === 'pdf' && (
+          {/* PDF upload (only for new) */}
+          {activeType === 'pdf' && !isEditing && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
                 <FileText className="w-6 h-6 text-red-400" />

@@ -285,7 +285,7 @@ export default function Agents() {
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Hero Header - theme-aware */}
-      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div
@@ -669,7 +669,7 @@ export default function Agents() {
           ))}
         </div>
       ) : (
-        <div className={`rounded-xl sm:rounded-2xl overflow-hidden min-w-0 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-xl sm:rounded-2xl min-w-0 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
           {filteredAgents.map((agent, index) => (
             <AgentListItem 
               key={agent.id} 
@@ -798,7 +798,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
   return (
     <div 
       onClick={handleCardClick}
-      className={`group relative bg-space-800/50 border rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50 animate-fadeIn cursor-pointer min-w-0 overflow-hidden ${
+      className={`group relative bg-space-800/50 border rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50 animate-fadeIn cursor-pointer min-w-0 ${
         isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-space-700/50 hover:border-space-600'
       } ${!isActive ? 'opacity-70' : ''}`}
       style={{ animationDelay: `${index * 50}ms` }}

@@ -568,4 +568,46 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
     }
 });
 
+// Update global knowledge item
+router.put('/global/:id', authenticateToken, async (req, res) => {
+    try {
+        const { title, content, type } = req.body;
+
+        const item = await db.get(`
+            SELECT * FROM global_knowledge 
+            WHERE id = ? AND user_id = ?
+        `, req.params.id, req.user.id);
+
+        if (!item) {
+            return res.status(404).json({ error: 'Élément non trouvé' });
+        }
+
+        await db.run(`
+            UPDATE global_knowledge SET 
+                title = COALESCE(?, title),
+                content = COALESCE(?, content),
+                type = COALESCE(?, type)
+            WHERE id = ?
+        `, title, content, type, req.params.id);
+
+        const updated = await db.get('SELECT * FROM global_knowledge WHERE id = ?', req.params.id);
+        
+        if (updated && (title != null || content != null)) {
+            indexGlobalKnowledge(req.params.id, updated.title, updated.content).catch(err =>
+                console.warn('[Knowledge] Vector index error:', err?.message)
+            );
+        }
+
+        res.json({ 
+            item: {
+                ...updated,
+                metadata: JSON.parse(updated.metadata || '{}')
+            }
+        });
+    } catch (error) {
+        console.error('Update global knowledge error:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour' });
+    }
+});
+
 export default router;
