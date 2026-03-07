@@ -115,9 +115,8 @@ export async function getEffectivePlanName(planName, user = null) {
         
         // Si la date est passée et qu'il n'y a pas d'abonnement Stripe actif
         if (endDate < now && !user.stripe_subscription_id) {
-            // L'essai a expiré, on bascule sur 'free' (limité)
-            // L'utilisateur devra passer à un plan supérieur pour retrouver les fonctions du Starter
-            return 'free';
+            // L'essai a expiré, on bascule sur 'free_expired' (super limité)
+            return 'free_expired';
         }
     }
 
@@ -128,8 +127,37 @@ export async function getEffectivePlanName(planName, user = null) {
 export const PLANS = {
     free: {
         name: 'free',
-        displayName: 'Gratuit',
-        description: 'Découvrir la plateforme (sans WhatsApp)',
+        displayName: 'Essai Gratuit',
+        description: 'Découvrir la plateforme avec WhatsApp (Essai de 7 jours)',
+        price: 0,
+        priceCurrency: 'XOF',
+        limits: {
+            agents: 1,
+            whatsapp_accounts: 1,
+            outlook_accounts: 0,
+            conversations_per_month: 50,
+            messages_per_month: 500,
+            credits_per_month: 500,
+            knowledge_items: 10,
+            templates: 5
+        },
+        features: {
+            models: ['gemini-1.5-flash'],
+            availability_hours: false,
+            voice_responses: false,
+            payment_module: false,
+            next_best_action: false,
+            conversion_score: false,
+            daily_briefing: false,
+            sentiment_routing: false,
+            catalog_import: false,
+            human_handoff_alerts: false
+        }
+    },
+    free_expired: {
+        name: 'free_expired',
+        displayName: 'Essai expiré',
+        description: 'Votre période d\'essai est terminée. Passez à un plan supérieur.',
         price: 0,
         priceCurrency: 'XOF',
         limits: {
@@ -137,10 +165,10 @@ export const PLANS = {
             whatsapp_accounts: 0,
             outlook_accounts: 0,
             conversations_per_month: 0,
-            messages_per_month: 100,
-            credits_per_month: 100,
-            knowledge_items: 5,
-            templates: 3
+            messages_per_month: 20,
+            credits_per_month: 20,
+            knowledge_items: 2,
+            templates: 1
         },
         features: {
             models: ['gemini-1.5-flash'],
@@ -293,6 +321,9 @@ export async function hasModule(planName, moduleKey) {
  */
 export async function getPlan(planName) {
     const dbPlans = await loadPlansFromDB();
+    if (planName === 'free_expired') {
+        return { ...PLANS['free_expired'], features: { ...FEATURES_BASELINE, ...PLANS['free_expired'].features } };
+    }
     if (dbPlans && dbPlans[planName]) {
         return dbPlans[planName];
     }

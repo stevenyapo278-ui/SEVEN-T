@@ -512,7 +512,7 @@ router.post('/users', authenticateAdmin, async (req, res) => {
         await db.run(`
             INSERT INTO users (id, name, email, password, company, plan, credits, is_admin, parent_user_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 100, is_admin || 0, parentId);
+        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, parentId);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         const { password: pwd, ...userWithoutPassword } = user;

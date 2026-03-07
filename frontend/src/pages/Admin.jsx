@@ -874,7 +874,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Plan</label>
               <select
-                value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans[0]?.name || activePlans[0]?.id || 'free')}
+                value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans.find(p => p.is_default)?.name || activePlans[0]?.name || 'free')}
                 onChange={(e) => handlePlanChange(e.target.value)}
                 className="input-dark w-full"
               >
@@ -1012,7 +1012,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
     password: '',
     company: '',
     plan: 'free',
-    credits: 100,
+    credits: 500,
     is_admin: 0,
     parent_user_id: ''
   })
@@ -1102,7 +1102,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Plan</label>
               <select
-                value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans[0]?.name || activePlans[0]?.id || 'free')}
+                value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans.find(p => p.is_default)?.name || activePlans[0]?.name || 'free')}
                 onChange={(e) => handlePlanChange(e.target.value)}
                 className="input-dark w-full"
               >

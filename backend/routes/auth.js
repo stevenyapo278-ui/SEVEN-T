@@ -180,7 +180,7 @@ router.get('/google/callback', async (req, res) => {
                 
                 await db.run(`
                     INSERT INTO users (id, email, password, name, company, google_id, plan, subscription_status, subscription_end_date, credits)
-                    VALUES (?, ?, ?, ?, ?, ?, 'starter', 'trialing', ?, 1500)
+                    VALUES (?, ?, ?, ?, ?, ?, 'free', 'trialing', ?, 500)
                 `, userId, email.toLowerCase().trim(), placeholderPassword, (name || email).trim(), null, googleId, trialEndDate.toISOString());
                 
                 user = await db.get('SELECT * FROM users WHERE id = ?', userId);
@@ -232,14 +232,14 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         // Hash password with higher cost factor
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user with 7-day Starter trial
+        // Create user with 7-day Free trial
         const userId = uuidv4();
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + 7);
 
         await db.run(`
             INSERT INTO users (id, email, password, name, company, plan, subscription_status, subscription_end_date, credits)
-            VALUES (?, ?, ?, ?, ?, 'starter', 'trialing', ?, 1500)
+            VALUES (?, ?, ?, ?, ?, 'free', 'trialing', ?, 500)
         `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, trialEndDate.toISOString());
 
         // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)

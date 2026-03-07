@@ -819,6 +819,30 @@ function DashboardLayoutContent() {
     }))
   }, [paymentModuleEnabled])
 
+  // Helper for Trial Countdown
+  const renderTrialCountdown = () => {
+    if (user?.subscription_status !== 'trialing' || !user?.subscription_end_date) return null
+    const end = new Date(user.subscription_end_date)
+    if (end < currentTime) return null
+    
+    const diffMs = end - currentTime
+    const days = Math.floor(diffMs / 86400000)
+    const hours = Math.floor((diffMs % 86400000) / 3600000)
+    const mins = Math.floor((diffMs % 3600000) / 60000)
+    
+    let text = ''
+    if (days > 0) text = `${days}j ${hours}h restants`
+    else if (hours > 0) text = `${hours}h ${mins}m restantes`
+    else text = `${mins}m restantes`
+
+    return (
+      <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap border animate-pulse ${isDark ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+        <Clock className="w-3.5 h-3.5" />
+        Essai : {text}
+      </div>
+    )
+  }
+
   useEffect(() => {
     const tick = setInterval(() => setCurrentTime(new Date()), 1000)
     return () => clearInterval(tick)
@@ -1094,6 +1118,7 @@ function DashboardLayoutContent() {
             </span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            {renderTrialCountdown()}
             <LanguageSwitcher className="hidden sm:flex" />
             <ThemeToggle size="sm" />
             <UserMenu user={user} onLogout={handleLogout} />
@@ -1133,6 +1158,7 @@ function DashboardLayoutContent() {
 
           {/* Right - Lang, credits, theme, notifications, user */}
           <div className="flex items-center gap-1">
+            {renderTrialCountdown()}
             <LanguageSwitcher />
             <Link
               to="/dashboard/settings"
