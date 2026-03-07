@@ -175,10 +175,14 @@ router.get('/google/callback', async (req, res) => {
             } else {
                 const userId = uuidv4();
                 const placeholderPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+                const trialEndDate = new Date();
+                trialEndDate.setDate(trialEndDate.getDate() + 7);
+                
                 await db.run(`
-                    INSERT INTO users (id, email, password, name, company, google_id)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                `, userId, email.toLowerCase().trim(), placeholderPassword, (name || email).trim(), null, googleId);
+                    INSERT INTO users (id, email, password, name, company, google_id, plan, subscription_status, subscription_end_date, credits)
+                    VALUES (?, ?, ?, ?, ?, ?, 'starter', 'trialing', ?, 1500)
+                `, userId, email.toLowerCase().trim(), placeholderPassword, (name || email).trim(), null, googleId, trialEndDate.toISOString());
+                
                 user = await db.get('SELECT * FROM users WHERE id = ?', userId);
                 sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
                 notificationService.notifyWelcome(userId);
@@ -228,16 +232,19 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         // Hash password with higher cost factor
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user
+        // Create user with 7-day Starter trial
         const userId = uuidv4();
-        await db.run(`
-            INSERT INTO users (id, email, password, name, company)
-            VALUES (?, ?, ?, ?, ?)
-        `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null);
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 7);
 
-        // Get created user and attach plan_features (plan effectif si le plan en base est désactivé)
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, created_at FROM users WHERE id = ?', userId);
-        const effectivePlan = await getEffectivePlanName(user.plan);
+        await db.run(`
+            INSERT INTO users (id, email, password, name, company, plan, subscription_status, subscription_end_date, credits)
+            VALUES (?, ?, ?, ?, ?, 'starter', 'trialing', ?, 1500)
+        `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, trialEndDate.toISOString());
+
+        // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, created_at, subscription_end_date, stripe_subscription_id FROM users WHERE id = ?', userId);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
         const token = generateToken(user);
@@ -280,9 +287,9 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         // Generate token
         const token = generateToken(user);
 
-        // Remove password from response and attach plan_features (plan effectif si désactivé)
+        // Remove password from response and attach plan_features (plan effectif si désactivé ou expiré)
         const { password: _, ...userWithoutPassword } = user;
-        const effectivePlan = await getEffectivePlanName(user.plan);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
         res.json({
@@ -299,12 +306,12 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, stripe_subscription_id, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
-        const effectivePlan = await getEffectivePlanName(user.plan);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
         res.json({ user: { ...user, plan: effectivePlan, plan_features } });
@@ -351,8 +358,8 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
-        const effectivePlan = await getEffectivePlanName(user.plan);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, stripe_subscription_id, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
         res.json({ user: { ...user, plan: effectivePlan, plan_features } });

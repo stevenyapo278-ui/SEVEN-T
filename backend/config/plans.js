@@ -89,9 +89,9 @@ export async function getDefaultPlanName() {
             WHERE is_active = 1 AND is_default = 1 
             LIMIT 1
         `).get();
-        return row?.name || 'free';
+        return row?.name || 'starter';
     } catch (e) {
-        return 'free';
+        return 'starter';
     }
 }
 
@@ -99,10 +99,29 @@ export async function getDefaultPlanName() {
  * Plan name to show in API: if the given plan is inactive, returns the default plan name.
  * Use in GET /me etc. so the frontend always sees an active plan.
  */
-export async function getEffectivePlanName(planName) {
+export async function getEffectivePlanName(planName, user = null) {
     const dbPlans = await loadPlansFromDB();
-    if (dbPlans && dbPlans[planName]) return planName;
-    return await getDefaultPlanName();
+    let effectiveName = planName;
+    
+    // Si le plan n'existe pas ou n'est pas actif, utiliser le plan par défaut
+    if (!dbPlans || !dbPlans[planName]) {
+        effectiveName = await getDefaultPlanName();
+    }
+
+    // Vérification de l'expiration (Essai ou prépayé)
+    if (user && user.subscription_end_date) {
+        const endDate = new Date(user.subscription_end_date);
+        const now = new Date();
+        
+        // Si la date est passée et qu'il n'y a pas d'abonnement Stripe actif
+        if (endDate < now && !user.stripe_subscription_id) {
+            // L'essai a expiré, on bascule sur 'free' (limité)
+            // L'utilisateur devra passer à un plan supérieur pour retrouver les fonctions du Starter
+            return 'free';
+        }
+    }
+
+    return effectiveName;
 }
 
 // Default/Fallback plans configuration (aligned with config/defaultPlans.js)

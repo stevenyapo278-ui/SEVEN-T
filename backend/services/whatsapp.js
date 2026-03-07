@@ -208,12 +208,25 @@ class WhatsAppManager {
 
     async connect(toolId, forceNew = false) {
         try {
-            // Don't connect if the tool was deleted (avoids reconnection loop after tool removal)
-            const stillValid = await this.isToolStillValid(toolId);
-            if (!stillValid) {
+            // Check if tool is valid
+            const tool = await db.get('SELECT * FROM tools WHERE id = ?', toolId);
+            if (!tool) {
                 this.clearSession(toolId);
                 this.statuses.delete(toolId);
-                return { error: 'Outil supprimé', status: 'disconnected' };
+                return { error: 'Outil non trouvé', status: 'disconnected' };
+            }
+
+            // Check plan limits
+            const user = await db.get('SELECT * FROM users WHERE id = ?', tool.user_id);
+            if (user) {
+                const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
+                const effectivePlanName = await getEffectivePlanName(user.plan, user);
+                const plan = await getPlan(effectivePlanName);
+                
+                if (plan.limits.whatsapp_accounts <= 0) {
+                    this.statuses.set(toolId, { status: 'error', message: 'Votre plan ne permet pas de connecter WhatsApp' });
+                    return { error: 'Votre plan actuel ne permet pas de connecter WhatsApp. Veuillez passer à un plan supérieur.', status: 'disconnected' };
+                }
             }
 
             // If forceNew, clear the existing session first
@@ -837,6 +850,20 @@ class WhatsAppManager {
 
     async handleIncomingMessage(toolId, sock, message, type) {
         try {
+            const agent = await this.getAgentByToolId(toolId);
+            if (!agent) return;
+
+            // Plan & Trial check
+            const user = await db.get('SELECT * FROM users WHERE id = ?', agent.user_id);
+            const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
+            const effectivePlanName = await getEffectivePlanName(user?.plan, user);
+            const plan = await getPlan(effectivePlanName);
+
+            if (plan.limits.whatsapp_accounts <= 0) {
+                console.log(`[WhatsApp] Blocked incoming message for agent ${agent.id}: Plan ${effectivePlanName} does not allow WhatsApp.`);
+                return;
+            }
+
             const result = await this.processReceptionOnly(toolId, sock, message, type);
             if (!result) return;
             if (result.audioTranscriptionFailed) {

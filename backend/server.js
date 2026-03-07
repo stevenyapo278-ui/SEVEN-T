@@ -217,10 +217,10 @@ app.get('/api/users/me', async (req, res) => {
         if (!userId) {
             return res.json({ user: null });
         }
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, payment_module_enabled FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, stripe_subscription_id, payment_module_enabled FROM users WHERE id = ?', userId);
         if (!user) return res.json({ user: null });
         const { getPlan, getEffectivePlanName } = await import('./config/plans.js');
-        const effectivePlan = await getEffectivePlanName(user.plan);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
         return res.json({ user: { ...user, plan: effectivePlan, plan_features } });

@@ -12,7 +12,7 @@ export const defaultPlans = [
         price: 0,
         price_currency: 'XOF',
         sort_order: 1,
-        is_default: 1,
+        is_default: 0,
         stripe_price_id: null,
         limits: JSON.stringify({
             agents: 1,
@@ -41,11 +41,11 @@ export const defaultPlans = [
         id: 'starter',
         name: 'starter',
         display_name: 'Starter',
-        description: 'Pour démarrer avec un numéro WhatsApp',
+        description: 'Pour démarrer avec un numéro WhatsApp (Essai gratuit de 1 semaine)',
         price: 15000,
         price_currency: 'XOF',
         sort_order: 2,
-        is_default: 0,
+        is_default: 1,
         stripe_price_id: process.env.STRIPE_PRICE_STARTER || 'price_starter_monthly',
         limits: JSON.stringify({
             agents: 1,

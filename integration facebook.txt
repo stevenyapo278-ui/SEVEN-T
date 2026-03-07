@@ -1,0 +1,745 @@
+  Je vais créer un document technique complet pour intégrer l'API Messenger dans un SaaS. Voici un guide structuré :
+
+---
+
+# Documentation Technique : Intégration API Messenger dans un SaaS
+
+## Architecture Overview
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Client SaaS   │────▶│  Votre Backend   │────▶│  Meta Graph API │
+│   (Frontend)    │     │  (Node.js/JS)    │     │   (Messenger)   │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │
+                               ▼
+                        ┌──────────────────┐
+                        │   Webhook Server │
+                        │   (HTTPS/SSL)    │
+                        └──────────────────┘
+```
+
+---
+
+## 1. Prérequis & Configuration Meta
+
+### 1.1 Création de l'Application Meta
+
+1. Rendez-vous sur [developers.facebook.com](https://developers.facebook.com)
+2. Créer une nouvelle application → Type "Business" → Sélectionner "Messenger"
+3. Dans le tableau de bord, ajouter le produit **Messenger**
+
+### 1.2 Configuration des Tokens
+
+| Variable | Source | Usage |
+|----------|--------|-------|
+| `APP_ID` | Dashboard App | Identification OAuth |
+| `APP_SECRET` | Dashboard App → Settings → Basic | Sécurité webhook |
+| `PAGE_ACCESS_TOKEN` | Messenger → Token Generation | Envoi de messages |
+| `VERIFY_TOKEN` | Créé par vous | Validation webhook |
+
+**Génération du Page Access Token :**
+- Messenger → API Settings → Generate Token
+- Sélectionner votre Page Facebook
+- **Important** : Ce token est permanent mais peut être révoqué
+
+---
+
+## 2. Architecture Backend (Node.js/Express)
+
+### 2.1 Structure du Projet
+
+```
+messenger-saas-integration/
+├── src/
+│   ├── config/
+│   │   └── meta.js          # Configuration API
+│   ├── controllers/
+│   │   └── webhook.js       # Gestion webhooks
+│   ├── services/
+│   │   ├── messenger.js     # Service API Meta
+│   │   └── conversation.js  # Logique métier SaaS
+│   ├── models/
+│   │   └── Conversation.js  # Modèle DB
+│   └── routes/
+│       └── messenger.js     # Routes API
+├── server.js
+└── package.json
+```
+
+### 2.2 Configuration Environnement
+
+```javascript
+// src/config/meta.js
+require('dotenv').config();
+
+module.exports = {
+  meta: {
+    appId: process.env.META_APP_ID,
+    appSecret: process.env.META_APP_SECRET,
+    pageAccessToken: process.env.META_PAGE_ACCESS_TOKEN,
+    verifyToken: process.env.META_VERIFY_TOKEN,
+    apiVersion: 'v18.0',
+    graphUrl: 'https://graph.facebook.com'
+  },
+  webhook: {
+    path: '/webhook/messenger',
+    port: process.env.PORT || 3000
+  }
+};
+```
+
+**.env.example :**
+```bash
+# Meta API Configuration
+META_APP_ID=votre_app_id
+META_APP_SECRET=votre_app_secret
+META_PAGE_ACCESS_TOKEN=votre_page_token
+META_VERIFY_TOKEN=votre_verify_token_securise_123
+
+# Database
+DATABASE_URL=mongodb://localhost:27017/messenger_saas
+
+# Server
+PORT=3000
+NODE_ENV=production
+```
+
+---
+
+## 3. Service API Messenger
+
+### 3.1 Client API Graph
+
+```javascript
+// src/services/messenger.js
+const axios = require('axios');
+const config = require('../config/meta');
+
+class MessengerService {
+  constructor() {
+    this.baseURL = `${config.meta.graphUrl}/${config.meta.apiVersion}`;
+    this.token = config.meta.pageAccessToken;
+  }
+
+  /**
+   * Envoie un message texte simple
+   * @param {string} psid - Page Scoped ID du destinataire
+   * @param {string} text - Contenu du message
+   */
+  async sendTextMessage(psid, text) {
+    try {
+      const response = await axios.post(
+        `${this.baseURL}/me/messages`,
+        {
+          recipient: { id: psid },
+          message: { text },
+          messaging_type: 'RESPONSE' // ou 'UPDATE' pour messages proactifs
+        },
+        {
+          params: { access_token: this.token }
+        }
+      );
+      
+      return {
+        success: true,
+        messageId: response.data.message_id,
+        timestamp: Date.now()
+      };
+    } catch (error) {
+      console.error('Erreur envoi message:', error.response?.data);
+      throw new Error(`Échec envoi message: ${error.message}`);
+    }
+  }
+
+  /**
+   * Envoie un message avec boutons interactifs
+   * @param {string} psid 
+   * @param {string} text 
+   * @param {Array} buttons - [{type: 'postback', title: 'Oui', payload: 'YES'}]
+   */
+  async sendButtonMessage(psid, text, buttons) {
+    try {
+      const response = await axios.post(
+        `${this.baseURL}/me/messages`,
+        {
+          recipient: { id: psid },
+          message: {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'button',
+                text: text,
+                buttons: buttons
+              }
+            }
+          }
+        },
+        {
+          params: { access_token: this.token }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Erreur envoi boutons:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
+   * Envoie un template de carousel (produits)
+   * @param {string} psid 
+   * @param {Array} elements - Éléments du carousel
+   */
+  async sendGenericTemplate(psid, elements) {
+    try {
+      const response = await axios.post(
+        `${this.baseURL}/me/messages`,
+        {
+          recipient: { id: psid },
+          message: {
+            attachment: {
+              type: 'template',
+              payload: {
+                template_type: 'generic',
+                elements: elements.map(el => ({
+                  title: el.title,
+                  subtitle: el.subtitle,
+                  image_url: el.imageUrl,
+                  buttons: el.buttons || []
+                }))
+              }
+            }
+          }
+        },
+        {
+          params: { access_token: this.token }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Erreur envoi template:', error.response?.data);
+      throw error;
+    }
+  }
+
+  /**
+   * Récupère les informations du profil utilisateur
+   * @param {string} psid 
+   */
+  async getUserProfile(psid) {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/${psid}`,
+        {
+          params: {
+            access_token: this.token,
+            fields: 'first_name,last_name,profile_pic,locale,timezone,gender'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error('Erreur récupération profil:', error.response?.data);
+      return null;
+    }
+  }
+
+  /**
+   * Marque un message comme "vu" (blue tick)
+   * @param {string} psid 
+   */
+  async markSeen(psid) {
+    try {
+      await axios.post(
+        `${this.baseURL}/me/messages`,
+        {
+          recipient: { id: psid },
+          sender_action: 'mark_seen'
+        },
+        {
+          params: { access_token: this.token }
+        }
+      );
+    } catch (error) {
+      console.error('Erreur mark seen:', error);
+    }
+  }
+
+  /**
+   * Affiche l'indicateur "en train d'écrire"
+   * @param {string} psid 
+   */
+  async sendTypingOn(psid) {
+    try {
+      await axios.post(
+        `${this.baseURL}/me/messages`,
+        {
+          recipient: { id: psid },
+          sender_action: 'typing_on'
+        },
+        {
+          params: { access_token: this.token }
+        }
+      );
+    } catch (error) {
+      console.error('Erreur typing indicator:', error);
+    }
+  }
+}
+
+module.exports = new MessengerService();
+```
+
+---
+
+## 4. Gestion des Webhooks
+
+### 4.1 Contrôleur Webhook
+
+```javascript
+// src/controllers/webhook.js
+const crypto = require('crypto');
+const config = require('../config/meta');
+const messengerService = require('../services/messenger');
+const conversationService = require('../services/conversation');
+
+class WebhookController {
+  /**
+   * Vérification du webhook (challenge Meta)
+   * GET /webhook/messenger
+   */
+  verify(req, res) {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    if (mode === 'subscribe' && token === config.meta.verifyToken) {
+      console.log('✅ Webhook vérifié avec succès');
+      res.status(200).send(challenge);
+    } else {
+      console.error('❌ Échec vérification webhook');
+      res.sendStatus(403);
+    }
+  }
+
+  /**
+   * Réception des événements Messenger
+   * POST /webhook/messenger
+   */
+  async receive(req, res) {
+    // Répondre immédiatement à Meta pour éviter les timeouts
+    res.status(200).send('EVENT_RECEIVED');
+
+    const body = req.body;
+
+    if (body.object !== 'page') {
+      return;
+    }
+
+    // Traiter chaque entrée
+    for (const entry of body.entry) {
+      const webhookEvent = entry.messaging?.[0];
+      
+      if (!webhookEvent) continue;
+
+      const senderPsid = webhookEvent.sender.id;
+      const pageId = entry.id;
+
+      try {
+        // Typing indicator pour UX
+        await messengerService.sendTypingOn(senderPsid);
+
+        // Traiter selon le type d'événement
+        if (webhookEvent.message) {
+          await this.handleMessage(senderPsid, webhookEvent.message, pageId);
+        } else if (webhookEvent.postback) {
+          await this.handlePostback(senderPsid, webhookEvent.postback, pageId);
+        } else if (webhookEvent.reaction) {
+          await this.handleReaction(senderPsid, webhookEvent.reaction);
+        }
+
+      } catch (error) {
+        console.error('Erreur traitement webhook:', error);
+      }
+    }
+  }
+
+  /**
+   * Traite un message entrant
+   */
+  async handleMessage(psid, message, pageId) {
+    // Récupérer ou créer la conversation
+    let conversation = await conversationService.findByPsid(psid);
+    
+    if (!conversation) {
+      // Nouveau contact : récupérer infos profil
+      const profile = await messengerService.getUserProfile(psid);
+      conversation = await conversationService.create({
+        psid,
+        pageId,
+        userProfile: profile,
+        platform: 'messenger'
+      });
+    }
+
+    // Sauvegarder le message entrant
+    await conversationService.addMessage(conversation.id, {
+      direction: 'inbound',
+      content: message.text || '[média]',
+      type: this.getMessageType(message),
+      metadata: message,
+      timestamp: Date.now()
+    });
+
+    // Logique métier SaaS : déterminer la réponse
+    const reply = await this.generateReply(conversation, message);
+
+    // Envoyer la réponse
+    if (reply) {
+      await messengerService.markSeen(psid);
+      
+      const sentMessage = await messengerService.sendTextMessage(psid, reply.text);
+      
+      // Sauvegarder la réponse sortante
+      await conversationService.addMessage(conversation.id, {
+        direction: 'outbound',
+        content: reply.text,
+        type: 'text',
+        metadata: sentMessage,
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  /**
+   * Traite un clic sur bouton (postback)
+   */
+  async handlePostback(psid, postback, pageId) {
+    const payload = postback.payload;
+    
+    console.log(`Postback reçu de ${psid}: ${payload}`);
+
+    // Logique métier selon le payload
+    switch (payload) {
+      case 'GET_STARTED':
+        await this.handleGetStarted(psid);
+        break;
+      case 'CONTACT_SUPPORT':
+        await this.handleSupportRequest(psid);
+        break;
+      default:
+        // Payloads personnalisés
+        await this.handleCustomPayload(psid, payload);
+    }
+  }
+
+  /**
+   * Détermine le type de message
+   */
+  getMessageType(message) {
+    if (message.text) return 'text';
+    if (message.attachments) {
+      const type = message.attachments[0].type;
+      return ['image', 'video', 'audio', 'file'].includes(type) ? type : 'file';
+    }
+    if (message.quick_reply) return 'quick_reply';
+    return 'unknown';
+  }
+
+  /**
+   * Génère une réponse (logique métier SaaS)
+   */
+  async generateReply(conversation, message) {
+    // TODO: Intégrer votre logique IA/nlp ici
+    // Exemple simple :
+    const text = message.text?.toLowerCase() || '';
+    
+    if (text.includes('bonjour') || text.includes('salut')) {
+      return {
+        text: `Bonjour ${conversation.userProfile?.first_name || ''} ! Comment puis-je vous aider aujourd'hui ?`
+      };
+    }
+    
+    if (text.includes('prix') || text.includes('tarif')) {
+      return {
+        text: 'Nos tarifs sont disponibles sur notre site. Souhaitez-vous un devis personnalisé ?'
+      };
+    }
+
+    // Réponse par défaut ou transfert vers humain
+    return {
+      text: "Je n'ai pas compris. Un agent va prendre le relais."
+    };
+  }
+
+  /**
+   * Bouton "Démarrer" (Get Started)
+   */
+  async handleGetStarted(psid) {
+    const welcomeMessage = "Bienvenue ! Je suis votre assistant virtuel. Comment puis-je vous aider ?";
+    await messengerService.sendTextMessage(psid, welcomeMessage);
+  }
+
+  /**
+   * Vérification de signature (sécurité production)
+   */
+  verifySignature(req) {
+    const signature = req.headers['x-hub-signature-256'];
+    if (!signature) return false;
+
+    const expected = crypto
+      .createHmac('sha256', config.meta.appSecret)
+      .update(JSON.stringify(req.body), 'utf8')
+      .digest('hex');
+    
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(`sha256=${expected}`)
+    );
+  }
+}
+
+module.exports = new WebhookController();
+```
+
+---
+
+## 5. Routes API
+
+```javascript
+// src/routes/messenger.js
+const express = require('express');
+const router = express.Router();
+const webhookController = require('../controllers/webhook');
+const messengerService = require('../services/messenger');
+
+// Webhook Meta (GET pour vérification, POST pour réception)
+router.get('/webhook/messenger', webhookController.verify.bind(webhookController));
+router.post('/webhook/messenger', webhookController.receive.bind(webhookController));
+
+// API interne SaaS : Envoyer message manuellement
+router.post('/api/conversations/:conversationId/send', async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { text } = req.body;
+    
+    // Récupérer conversation depuis DB
+    const conversation = await conversationService.findById(conversationId);
+    
+    if (!conversation) {
+      return res.status(404).json({ error: 'Conversation non trouvée' });
+    }
+
+    // Envoyer via Messenger
+    const result = await messengerService.sendTextMessage(conversation.psid, text);
+    
+    // Sauvegarder dans DB
+    await conversationService.addMessage(conversationId, {
+      direction: 'outbound',
+      content: text,
+      type: 'text',
+      metadata: result,
+      timestamp: Date.now(),
+      sentBy: req.user.id // ID de l'agent humain
+    });
+
+    res.json({ success: true, messageId: result.messageId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// API : Récupérer conversations
+router.get('/api/conversations', async (req, res) => {
+  try {
+    const conversations = await conversationService.findAll({
+      pageId: req.query.pageId,
+      status: req.query.status,
+      limit: req.query.limit || 20
+    });
+    
+    res.json(conversations);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
+```
+
+---
+
+## 6. Serveur Principal
+
+```javascript
+// server.js
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const helmet = require('helmet');
+const routes = require('./src/routes/messenger');
+
+const app = express();
+
+// Sécurité
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3001'
+}));
+
+// Body parser pour webhooks Meta (raw body nécessaire pour signature)
+app.use('/webhook', bodyParser.json({ 
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
+
+// Body parser standard pour autres routes
+app.use(bodyParser.json());
+
+// Routes
+app.use('/', routes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    service: 'messenger-saas-integration'
+  });
+});
+
+// Gestion erreurs
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Erreur serveur interne' });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Serveur démarré sur port ${PORT}`);
+  console.log(`📡 Webhook URL: https://votre-domaine.com/webhook/messenger`);
+});
+
+module.exports = app;
+```
+
+---
+
+## 7. Configuration Webhook Meta
+
+### 7.1 Paramètres Webhook (Dashboard Meta)
+
+| Paramètre | Valeur |
+|-----------|--------|
+| **Callback URL** | `https://votre-domaine.com/webhook/messenger` |
+| **Verify Token** | Votre token personnalisé (ex: `saas_webhook_2024_secure`) |
+| **Subscription Fields** | `messages`, `messaging_postbacks`, `message_reactions` |
+
+### 7.2 Événements à souscrire
+
+Dans **Messenger → Webhooks** :
+- ✅ `messages` - Messages entrants
+- ✅ `messaging_postbacks` - Clics sur boutons
+- ✅ `message_reactions` - Réactions (👍)
+- ✅ `message_reads` - Accusés de lecture
+- ✅ `messaging_optins` - Autorisations (Get Started)
+
+---
+
+## 8. Déploiement & SSL
+
+### 8.1 Exigences
+
+- **HTTPS obligatoire** (Meta refuse les webhooks HTTP)
+- **Domaine public** (pas localhost en production)
+- **Port 443** standard
+
+### 8.2 Déploiement Rapide (Railway/Render)
+
+```yaml
+# railway.yaml (exemple)
+services:
+  - name: messenger-api
+    build:
+      dockerfile: Dockerfile
+    envs:
+      - META_PAGE_ACCESS_TOKEN
+      - META_VERIFY_TOKEN
+      - META_APP_SECRET
+    healthcheck:
+      path: /health
+      port: 3000
+```
+
+### 8.3 Docker
+
+```dockerfile
+# Dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+---
+
+## 9. Gestion Multi-Client (SaaS)
+
+Pour gérer **plusieurs pages Facebook** (clients) :
+
+```javascript
+// src/services/multiTenant.js
+class MultiTenantService {
+  /**
+   * Récupère le token selon l'ID de page
+   */
+  async getTokenForPage(pageId) {
+    // Depuis votre DB de clients
+    const client = await Client.findOne({ pageId });
+    return client?.messengerToken;
+  }
+
+  /**
+   * Route dynamique par client
+   */
+  async handleWebhookForClient(pageId, event) {
+    const token = await this.getTokenForPage(pageId);
+    const messenger = new MessengerService(token);
+    
+    // Traiter l'événement...
+  }
+}
+```
+
+---
+
+## 10. Bonnes Pratiques & Sécurité
+
+| Pratique | Implémentation |
+|----------|---------------|
+| **Vérification signature** | Activer `verifySignature` en production |
+| **Rate limiting** | Max 100 req/min par PSID |
+| **Sanitization** | Échapper HTML dans les messages |
+| **Logs** | Logger tous les événements (pas les PII) |
+| **Retry logic** | Exponential backoff sur erreurs API |
+| **Token rotation** | Planifier renouvellement tous les 6 mois |
+
+---
+
+## 11. Ressources
+
+- **Documentation Meta** : https://developers.facebook.com/docs/messenger-platform
+- **Graph API Explorer** : https://developers.facebook.com/tools/explorer
+- **Webhooks Testing** : Utiliser ngrok pour local (`ngrok http 3000`)
+
+---
+
+Ce document vous donne une base technique complète pour intégrer Messenger dans votre SaaS. 

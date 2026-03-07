@@ -47,7 +47,7 @@ const id = uuidv4();
 const hashedPassword = await bcrypt.hash(password, 12);
 await db.run(`
   INSERT INTO users (id, email, password, name, company, plan, credits, is_admin)
-  VALUES (?, ?, ?, ?, '', 'free', 100, 1)
+  VALUES (?, ?, ?, ?, '', 'starter', 1500, 1)
 `, id, email, hashedPassword, name);
 
 console.log('Admin créé avec succès.');

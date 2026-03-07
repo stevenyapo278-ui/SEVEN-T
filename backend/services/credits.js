@@ -64,12 +64,9 @@ export const CREDIT_COSTS = {
  * Get user's current credits
  */
 export async function getUserCredits(userId) {
-    const user = await db.get('SELECT credits, plan FROM users WHERE id = ?', userId);
+    const user = await db.get('SELECT credits, plan, subscription_end_date, stripe_subscription_id FROM users WHERE id = ?', userId);
     if (!user) return null;
-    return {
-        credits: user.credits,
-        plan: user.plan
-    };
+    return user;
 }
 
 /**
@@ -94,10 +91,9 @@ export function getCreditCost(action) {
  * Check if user has enough credits for an action
  */
 export async function hasEnoughCredits(userId, action, quantity = 1) {
-    const user = await getUserCredits(userId);
-    if (!user) return false;
-    
-    const plan = await getPlan(user.plan);
+    const { getEffectivePlanName } = await import('../config/plans.js');
+    const effectivePlanName = await getEffectivePlanName(user.plan, user);
+    const plan = await getPlan(effectivePlanName);
     
     // Enterprise plan has unlimited credits
     if (plan.limits.credits_per_month === -1) {
@@ -114,10 +110,9 @@ export async function hasEnoughCredits(userId, action, quantity = 1) {
  * Uses atomic UPDATE with WHERE condition to prevent race conditions
  */
 export async function deductCredits(userId, action, quantity = 1, metadata = {}) {
-    const user = await getUserCredits(userId);
-    if (!user) return { success: false, error: 'User not found' };
-    
-    const plan = await getPlan(user.plan);
+    const { getEffectivePlanName } = await import('../config/plans.js');
+    const effectivePlanName = await getEffectivePlanName(user.plan, user);
+    const plan = await getPlan(effectivePlanName);
     
     // Enterprise plan doesn't deduct credits
     if (plan.limits.credits_per_month === -1) {
