@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@100;300;400;500;600;700;800;900&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -53,11 +53,11 @@
   --tag-orange-text: #d29922;
   --step-bg: #1f3a5f;
 
-  /* Font stack — logo, UI, body, code */
+  /* Font stack — Anchor (Headline) + Supporting (UI/Body) */
   --font-brand: "Audiowide", monospace;
-  --font-ui: "Syne", sans-serif;
-  --font-body: "Syne", sans-serif;
-  --font-display: "Syne", sans-serif;
+  --font-ui: "Geist", sans-serif;
+  --font-body: "Geist", sans-serif;
+  --font-display: "Instrument Serif", serif;
   --font-code: "JetBrains Mono", monospace;
 }
 
@@ -110,9 +110,9 @@
   --step-bg: #ddf4ff;
 
   --font-brand: "Audiowide", monospace;
-  --font-ui: "Syne", sans-serif;
-  --font-body: "Syne", sans-serif;
-  --font-display: "Syne", sans-serif;
+  --font-ui: "Geist", sans-serif;
+  --font-body: "Geist", sans-serif;
+  --font-display: "Instrument Serif", serif;
   --font-code: "JetBrains Mono", monospace;
 }
 
@@ -139,12 +139,14 @@ h5,
 h6 {
   font-family: var(--font-display);
   color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 h1 {
   font-size: 2.25rem;
-  font-weight: 800;
-  color: var(--accent-blue);
+  font-weight: 500; /* Instrument Serif looks better at 500/600 than 800 */
+  color: var(--text-primary);
+  line-height: 1.1;
+  font-style: italic;
 }
 h2 {
   font-size: 1.5rem;
@@ -161,6 +163,7 @@ h3 {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
+  opacity: 0.8;
 }
 .file-title {
   font-family: var(--font-code);
@@ -781,11 +784,58 @@ select.input option {
   color: var(--text-primary);
 }
 
-.light .input,
-.light .input-dark {
-  background: #ffffff;
-  border-color: #d0d7de;
-  color: #1f2328;
+.light {
+  --font-brand: "Audiowide", monospace;
+  --font-ui: "Geist", sans-serif;
+  --font-body: "Geist", sans-serif;
+  --font-display: "Instrument Serif", serif;
+  --font-code: "JetBrains Mono", monospace;
+}
+
+/* Glassmorphism & Depth Utils */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark .glass {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.light .glass {
+  background: rgba(0, 0, 0, 0.02);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  mix-blend-mode: overlay;
+  z-index: 10;
+}
+
+/* Star of the Show Typography */
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 8vw, 8rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.hero-subtitle {
+  font-family: var(--font-ui);
+  opacity: 0.7;
+  max-width: 600px;
+  line-height: 1.6;
 }
 
 .light .input:hover,

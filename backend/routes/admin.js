@@ -236,7 +236,7 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
     try {
         const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, payment_module_enabled, parent_user_id } = req.body;
 
-        const existing = await db.get('SELECT id, is_admin FROM users WHERE id = ?', req.params.id);
+        const existing = await db.get('SELECT id, is_admin, plan FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
@@ -258,10 +258,16 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
         }
 
         // Ne pas autoriser d'assigner un plan désactivé
+        let planChanged = false;
+        let oldPlan = existing.plan;
+        
         if (plan != null && plan !== '') {
             const planActive = await db.get('SELECT 1 FROM subscription_plans WHERE name = ? AND is_active = 1', plan);
             if (!planActive) {
                 return res.status(400).json({ error: 'Ce plan n\'est pas actif. Choisissez un plan actif dans la liste.' });
+            }
+            if (plan !== existing.plan) {
+                planChanged = true;
             }
         }
 
@@ -273,24 +279,86 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
             }
         }
 
-        const voiceValue = voice_responses_enabled !== undefined ? (voice_responses_enabled ? 1 : 0) : null;
-        const paymentModuleValue = payment_module_enabled !== undefined ? (payment_module_enabled ? 1 : 0) : null;
-        const parentId = parent_user_id === '' || parent_user_id === null || parent_user_id === undefined ? null : parent_user_id;
-        await db.run(`
-            UPDATE users SET 
-                name = COALESCE(?, name),
-                email = COALESCE(?, email),
-                company = COALESCE(?, company),
-                plan = COALESCE(?, plan),
-                credits = COALESCE(?, credits),
-                is_admin = COALESCE(?, is_admin),
-                is_active = COALESCE(?, is_active),
-                voice_responses_enabled = CASE WHEN ?::integer IS NOT NULL THEN ?::integer ELSE voice_responses_enabled END,
-                payment_module_enabled = CASE WHEN ?::integer IS NOT NULL THEN ?::integer ELSE payment_module_enabled END,
-                parent_user_id = ?::text,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-        `, name, email, company, plan, credits, is_admin, is_active, voiceValue, voiceValue, paymentModuleValue, paymentModuleValue, parentId ?? null, req.params.id);
+        // Préparer chaque champ explicitement pour garantir la mise à jour
+        const setClauses = [];
+        const params = [];
+
+        if (name !== undefined && name !== null) {
+            setClauses.push('name = ?');
+            params.push(String(name).trim());
+        }
+        if (email !== undefined && email !== null && String(email).trim() !== '') {
+            setClauses.push('email = ?');
+            params.push(String(email).trim().toLowerCase());
+        }
+        if (company !== undefined) {
+            setClauses.push('company = ?');
+            params.push(company || null);
+        }
+        if (plan !== undefined && plan !== null && plan !== '') {
+            setClauses.push('plan = ?');
+            params.push(plan);
+            
+            if (planChanged) {
+                const nextMonth = new Date();
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                
+                setClauses.push('subscription_status = ?');
+                params.push('active');
+                
+                setClauses.push('subscription_end_date = ?');
+                params.push(nextMonth.toISOString());
+            }
+        }
+        if (credits !== undefined && credits !== null) {
+            setClauses.push('credits = ?');
+            params.push(Number(credits));
+        }
+        if (is_admin !== undefined && is_admin !== null) {
+            setClauses.push('is_admin = ?');
+            params.push(is_admin ? 1 : 0);
+        }
+        if (is_active !== undefined && is_active !== null) {
+            setClauses.push('is_active = ?');
+            params.push(is_active ? 1 : 0);
+        }
+        if (voice_responses_enabled !== undefined) {
+            setClauses.push('voice_responses_enabled = ?');
+            params.push(voice_responses_enabled ? 1 : 0);
+        }
+        if (payment_module_enabled !== undefined) {
+            setClauses.push('payment_module_enabled = ?');
+            params.push(payment_module_enabled ? 1 : 0);
+        }
+        if (parent_user_id !== undefined) {
+            const parentId = parent_user_id === '' || parent_user_id === null ? null : parent_user_id;
+            setClauses.push('parent_user_id = ?');
+            params.push(parentId);
+        }
+
+        if (setClauses.length === 0) {
+            return res.status(400).json({ error: 'Aucun champ à mettre à jour' });
+        }
+
+        setClauses.push('updated_at = CURRENT_TIMESTAMP');
+        params.push(req.params.id);
+
+        await db.run(
+            `UPDATE users SET ${setClauses.join(', ')} WHERE id = ?`,
+            ...params
+        );
+
+        if (planChanged) {
+            const notifId = uuidv4();
+            await db.run(
+                `INSERT INTO notifications (id, user_id, type, title, message) VALUES (?, ?, ?, ?, ?)`,
+                notifId,
+                req.params.id,
+                'info',
+                'Changement de plan',
+                `Votre abonnement a été mis à jour vers le plan "${plan}". Découvrez vos nouvelles fonctionnalités !`
+            );
+        }
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;

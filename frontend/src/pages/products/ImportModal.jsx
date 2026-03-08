@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, Download, Upload } from 'lucide-react'
 import api from '../../services/api'
@@ -8,6 +8,11 @@ export default function ImportModal({ onClose, onImported }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = 'unset' }
+  }, [])
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0]

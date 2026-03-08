@@ -29,6 +29,7 @@ import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import LandingChatbot from '../components/LandingChatbot'
+import toast from 'react-hot-toast'
 
 /* ─── Data ────────────────────────────────────────────────── */
 
@@ -166,14 +167,14 @@ function PlanCard({ plan, isPopular, isDark }) {
   const formatPrice = (p) => p === 0 ? 'Gratuit' : new Intl.NumberFormat('fr-FR').format(p)
 
   return (
-    <div className={`relative flex flex-col rounded-2xl border p-8 transition-all duration-300 ${
+    <div className={`relative flex flex-col rounded-3xl border p-8 transition-all duration-500 glass hover:scale-[1.02] ${
       isPopular
         ? isDark
-          ? 'border-amber-400/50 bg-gradient-to-b from-amber-400/8 to-transparent shadow-2xl shadow-amber-400/10'
-          : 'border-amber-400 bg-gradient-to-b from-amber-50 to-white shadow-2xl shadow-amber-200'
+          ? 'border-amber-400/40 bg-gradient-to-b from-amber-400/10 to-transparent shadow-2xl shadow-amber-400/5'
+          : 'border-amber-400 bg-gradient-to-b from-amber-50/50 to-white shadow-2xl shadow-amber-200/40'
         : isDark
-          ? 'border-white/8 bg-white/3 hover:border-white/15'
-          : 'border-gray-200 bg-white hover:border-gray-300 shadow-sm hover:shadow-md'
+          ? 'border-white/10'
+          : 'border-gray-200 shadow-sm hover:shadow-xl hover:shadow-gray-200/40'
     }`}>
       {isPopular && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
@@ -221,6 +222,135 @@ function PlanCard({ plan, isPopular, isDark }) {
       >
         {plan.price === 0 ? 'Commencer gratuitement' : 'S\'abonner'}
       </Link>
+    </div>
+  )
+}
+
+function ContactModal({ isOpen, onClose, isDark }) {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    subject: 'Demande de démo',
+    message: ''
+  })
+  const [loading, setLoading] = useState(false)
+
+  if (!isOpen) return null
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      // Simulation of sending
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      toast.success('Votre demande de démo a été envoyée !')
+      onClose()
+      // Reset form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        subject: 'Demande de démo',
+        message: ''
+      })
+    } catch (err) {
+      toast.error("Erreur lors de l'envoi")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative w-full max-w-2xl rounded-[2rem] border p-6 sm:p-10 shadow-2xl animate-fadeIn my-auto ${isDark ? 'bg-[#0D1120] border-white/10' : 'bg-white border-gray-200'}`}>
+        <button onClick={onClose} className={`absolute top-6 right-6 p-2 rounded-xl transition ${isDark ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'}`}>
+          <X className="w-5 h-5" />
+        </button>
+        
+        <div className="mb-8">
+          <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Demander une démo</h2>
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Parlez-nous de votre projet et nous vous contacterons rapidement.</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className={`text-xs font-semibold uppercase tracking-wider opacity-70 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Prénom(s)</label>
+              <input 
+                type="text" 
+                required
+                className={`w-full px-4 py-3.5 rounded-2xl border transition-all outline-none ${isDark ? 'bg-white/5 border-white/10 text-white focus:border-amber-400/50' : 'bg-blue-50/30 border-gray-200 text-gray-900 focus:border-blue-500'}`}
+                placeholder="Ex: Jean Paul"
+                value={formData.firstName}
+                onChange={e => setFormData({...formData, firstName: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className={`text-xs font-semibold uppercase tracking-wider opacity-70 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Nom</label>
+              <input 
+                type="text" 
+                required
+                className={`w-full px-4 py-3.5 rounded-2xl border transition-all outline-none ${isDark ? 'bg-white/5 border-white/10 text-white focus:border-amber-400/50' : 'bg-blue-50/30 border-gray-200 text-gray-900 focus:border-blue-500'}`}
+                placeholder="Ex: Kouassi"
+                value={formData.lastName}
+                onChange={e => setFormData({...formData, lastName: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className={`text-xs font-semibold uppercase tracking-wider opacity-70 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Email</label>
+              <input 
+                type="email" 
+                required
+                className={`w-full px-4 py-3.5 rounded-2xl border transition-all outline-none ${isDark ? 'bg-white/5 border-white/10 text-white focus:border-amber-400/50' : 'bg-gray-50/30 border-gray-200 text-gray-900 focus:border-blue-500'}`}
+                placeholder="Ex: jean.paul@entreprise.com"
+                value={formData.email}
+                onChange={e => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2 relative">
+              <label className={`text-xs font-semibold uppercase tracking-wider opacity-70 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Sujet</label>
+              <div className="relative">
+                <select 
+                  className={`w-full px-4 py-3.5 rounded-2xl border transition-all outline-none appearance-none ${isDark ? 'bg-[#1a1f35] border-white/10 text-white focus:border-amber-400/50' : 'bg-gray-50/30 border-gray-200 text-gray-900 focus:border-blue-500'}`}
+                  value={formData.subject}
+                  onChange={e => setFormData({...formData, subject: e.target.value})}
+                >
+                  <option value="Demande de démo" className={isDark ? 'bg-[#1a1f35] text-white' : 'bg-white text-gray-900'}>Demande de démo</option>
+                  <option value="Support technique" className={isDark ? 'bg-[#1a1f35] text-white' : 'bg-white text-gray-900'}>Support technique</option>
+                  <option value="Partenariat" className={isDark ? 'bg-[#1a1f35] text-white' : 'bg-white text-gray-900'}>Partenariat</option>
+                  <option value="Autre" className={isDark ? 'bg-[#1a1f35] text-white' : 'bg-white text-gray-900'}>Autre</option>
+                </select>
+                <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none opacity-50 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label className={`text-xs font-semibold uppercase tracking-wider opacity-70 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Votre message</label>
+            <textarea 
+              required
+              rows={4}
+              className={`w-full px-4 py-3.5 rounded-2xl border transition-all resize-none outline-none ${isDark ? 'bg-white/5 border-white/10 text-white focus:border-amber-400/50' : 'bg-gray-50/30 border-gray-200 text-gray-900 focus:border-blue-500'}`}
+              placeholder="Bonjour, j'aimerais..."
+              value={formData.message}
+              onChange={e => setFormData({...formData, message: e.target.value})}
+            />
+          </div>
+          
+          <button 
+            type="submit"
+            disabled={loading}
+            className={`w-full py-4.5 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 ${loading ? 'opacity-70 cursor-not-allowed' : 'bg-[#007AFF] text-white hover:bg-[#0066CC] shadow-xl shadow-blue-500/20 active:scale-[0.98]'}`}
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Envoyer message'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }
@@ -275,7 +405,18 @@ export default function Landing() {
     return plans.length >= 2 ? plans[1].id : plans[0]?.id
   }
 
-  const openDemo = () => window.dispatchEvent(new CustomEvent('open-landing-chat-demo'))
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
+  const openDemo = () => setIsContactModalOpen(true)
+
+  // Bloquer le scroll quand le modal est ouvert
+  useEffect(() => {
+    if (isContactModalOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => { document.body.style.overflow = 'unset' }
+  }, [isContactModalOpen])
 
   /* ── Palette shortcuts ── */
   const bg = isDark ? 'bg-[#080B14]' : 'bg-gray-50'
@@ -288,7 +429,9 @@ export default function Landing() {
   const navBg = isDark ? 'bg-[#080B14]/90 border-white/6' : 'bg-white/90 border-gray-200'
 
   return (
-    <div className={`min-h-screen ${bg} antialiased overflow-x-hidden transition-colors duration-300`}>
+    <div className={`min-h-screen ${bg} antialiased overflow-x-hidden transition-colors duration-300 font-body relative`}>
+      {/* Texture Overlay */}
+      <div className="noise-overlay" />
 
       {/* ── NAV ───────────────────────────────── */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? `${navBg} backdrop-blur-xl border-b shadow-lg ${isDark ? 'shadow-black/20' : 'shadow-gray-200/60'}` : ''}`}>
@@ -355,13 +498,33 @@ export default function Landing() {
               </a>
             ))}
             <div className="pt-2 space-y-2">
-              <button onClick={() => { openDemo(); setMobileMenuOpen(false) }}
-                className="w-full py-3 px-4 text-sm text-amber-500 border border-amber-400/30 rounded-xl transition font-medium hover:bg-amber-50">
-                {t('landing.demo')}
-              </button>
-              <Link to="/register" className={`block w-full py-3 px-4 text-center text-sm rounded-xl font-semibold transition ${isDark ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
-                Commencer gratuitement
-              </Link>
+              {user ? (
+                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}
+                  className="block w-full py-4 px-4 text-center text-sm bg-gradient-to-r from-amber-400 to-orange-500 text-black rounded-xl font-bold shadow-lg shadow-amber-400/20 active:scale-[0.98] transition-all">
+                  Mon espace →
+                </Link>
+              ) : (
+                <>
+                  <button onClick={() => { openDemo(); setMobileMenuOpen(false) }}
+                    className={`w-full py-3 px-4 text-sm text-amber-500 border border-amber-400/30 rounded-xl transition font-medium ${isDark ? 'hover:bg-amber-400/10' : 'hover:bg-amber-50'}`}>
+                    {t('landing.demo')}
+                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}
+                      className={`block w-full py-3 px-4 text-center text-sm rounded-xl font-medium transition ${textMuted} ${isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                      Connexion
+                    </Link>
+                    <Link to="/register" onClick={() => setMobileMenuOpen(false)}
+                      className={`block w-full py-3 px-4 text-center text-sm rounded-xl font-bold transition shadow-lg ${isDark ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+                      S'inscrire
+                    </Link>
+                  </div>
+                </>
+              )}
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/5 mt-4">
+                <span className={`text-xs font-medium ${textMuted}`}>Mode {isDark ? 'Sombre' : 'Clair'}</span>
+                <ThemeToggle />
+              </div>
             </div>
           </div>
         )}
@@ -369,79 +532,84 @@ export default function Landing() {
 
       {/* ── HERO ──────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-20 px-5 overflow-hidden">
-        {/* Background glows — adaptatifs */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden>
+        {/* Premium Background — The Star of the Show */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
           {isDark ? (
             <>
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]" />
-              <div className="absolute top-1/2 right-0 w-[500px] h-[500px] bg-amber-500/8 rounded-full blur-[100px]" />
-              <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-600/8 rounded-full blur-[100px]" />
-              <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+              {/* The Abstract Data Flow Star */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] opacity-20 md:opacity-30 mix-blend-screen scale-110">
+                <img 
+                  src="/home/styapo/.gemini/antigravity/brain/76c72d94-e430-40f3-a464-8a65953c47db/ai_saas_abstract_hero_1772985982735.png" 
+                  alt="" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-blue-600/20 rounded-full blur-[120px]" />
+              <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px]" />
             </>
           ) : (
             <>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03] scale-150">
+                <img 
+                   src="/home/styapo/.gemini/antigravity/brain/76c72d94-e430-40f3-a464-8a65953c47db/ai_saas_abstract_hero_1772985982735.png" 
+                   alt="" 
+                   className="w-full h-full object-cover grayscale brightness-200"
+                />
+              </div>
               <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-amber-100 rounded-full blur-[140px] opacity-60" />
-              <div className="absolute top-1/2 right-0 w-[500px] h-[400px] bg-blue-100 rounded-full blur-[120px] opacity-50" />
-              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,0.3) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.3) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
             </>
           )}
+          {/* Visual Rhyming: Grid and Lines */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto text-center">
-          {/* Badge */}
-          <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-8 backdrop-blur-sm border ${
-            isDark
-              ? 'bg-amber-400/10 border-amber-400/20 text-amber-400'
-              : 'bg-amber-50 border-amber-200 text-amber-600'
-          }`}>
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className={`relative inline-flex rounded-full h-2 w-2 ${isDark ? 'bg-amber-400' : 'bg-amber-500'}`}></span>
-            </span>
-            Automatisation WhatsApp avec IA — Disponible maintenant
-          </div>
+        <div className="relative z-10 max-w-6xl mx-auto text-center px-4">
+          <div className="flex flex-col items-center">
+            {/* Badge — Rhyming with the orange accent */}
+            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] mb-12 backdrop-blur-md border animate-fadeIn ${
+              isDark
+                ? 'bg-amber-400/5 border-amber-400/20 text-amber-400'
+                : 'bg-amber-50 border-amber-200 text-amber-600'
+            }`}>
+              <Sparkles className="w-3 h-3" />
+              Intelligence Artificielle de confiance
+            </div>
 
-          <h1 className={`text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.05] mb-8 ${text}`}>
-            Répondez à vos clients
-            <br />
-            <span className="bg-gradient-to-r from-amber-500 via-orange-400 to-amber-400 bg-clip-text text-transparent">
-              24h/24, sans effort.
-            </span>
-          </h1>
+            <h1 className={`hero-title mb-10 ${text}`}>
+              L'IA qui <span className="text-amber-500 italic">travaille</span>
+              <br />
+              quand <span className="opacity-60">vous dormez.</span>
+            </h1>
 
-          <p className={`text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed mb-12 ${textMuted}`}>
-            SEVEN T automatise vos conversations WhatsApp avec une IA intelligente. Qualifiez vos leads, traitez vos commandes et fidélisez vos clients — même quand vous dormez.
-          </p>
+            <p className={`hero-subtitle mb-14 text-lg md:text-xl font-medium px-4 ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+              Automatisez vos conversations WhatsApp, qualifiez vos leads et gérez vos ventes en toute simplicité. SEVEN T est le cerveau de votre relation client africaine.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <Link to="/register"
-              className={`group flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-all shadow-2xl hover:scale-[1.02] ${
-                isDark
-                  ? 'bg-white text-black hover:bg-gray-100 shadow-white/10 hover:shadow-white/20'
-                  : 'bg-gray-900 text-white hover:bg-gray-800 shadow-gray-900/20 hover:shadow-gray-900/30'
-              }`}>
-              Commencer gratuitement
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <button onClick={openDemo}
-              className={`group flex items-center gap-2 px-8 py-4 border rounded-2xl font-medium text-base transition-all ${
-                isDark
-                  ? 'border-white/15 text-white hover:bg-white/5 hover:border-white/25'
-                  : 'border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400'
-              }`}>
-              <Play className="w-4 h-4 text-amber-500 fill-amber-500 group-hover:scale-110 transition-transform" />
-              {t('landing.demo')}
-            </button>
-          </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-20 w-full sm:w-auto">
+              <Link to="/register"
+                className={`group flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] active:scale-95 ${
+                  isDark
+                    ? 'bg-white text-black shadow-[0_20px_40px_-15px_rgba(255,255,255,0.3)]'
+                    : 'bg-gray-900 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)]'
+                }`}>
+                Essayer gratuitement
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <button onClick={openDemo}
+                className={`group flex items-center justify-center gap-3 px-10 py-5 glass rounded-2xl font-bold text-lg transition-all hover:bg-white/5 active:scale-95 ${text}`}>
+                <Play className="w-5 h-5 text-amber-500 fill-amber-500" />
+                Voir la démo
+              </button>
+            </div>
 
-          {/* Trust bar */}
-          <div className={`flex flex-wrap items-center justify-center gap-6 text-xs ${textFaint}`}>
-            {['Sans carte bancaire', 'Configuration en 5 min', 'Support 7j/7', 'Conformité WhatsApp Business'].map((item, i) => (
-              <span key={i} className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-500" />
-                {item}
-              </span>
-            ))}
+            {/* Visual Rhyming: Floating Cards (Depth) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
+               {['Automatique', '24h/24', 'Précis', 'Local'].map((word, i) => (
+                 <div key={word} className={`p-4 rounded-xl border ${borderFaint} glass text-[10px] font-bold uppercase tracking-widest ${textMuted}`}>
+                    {word}
+                 </div>
+               ))}
+            </div>
           </div>
         </div>
 
@@ -451,23 +619,21 @@ export default function Landing() {
       </section>
 
       {/* ── STATS BAR ─────────────────────────── */}
-      <section className={`border-y ${borderFaint} ${isDark ? 'bg-white/2' : 'bg-white'} py-10 transition-colors duration-300`}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+      <section className={`border-y ${borderFaint} ${isDark ? 'bg-white/[0.02]' : 'bg-white'} py-12 transition-colors duration-300 relative`}>
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 group">
             {[
               { value: '2B+', label: 'Utilisateurs WhatsApp', icon: Globe },
               { value: '< 10s', label: 'Temps de réponse', icon: Zap },
-              { value: '24/7', label: 'Disponibilité agents', icon: Clock },
+              { value: '24/7', label: 'Disponibilité IA', icon: Clock },
               { value: '99%', label: 'Taux de satisfaction', icon: Star },
             ].map((s, i) => (
-              <div key={i} className="flex flex-col items-center text-center md:flex-row md:text-left md:items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-white/5' : 'bg-amber-50'}`}>
-                  <s.icon className="w-5 h-5 text-amber-500" />
+              <div key={i} className="flex flex-col items-center text-center group-hover:opacity-100 opacity-70 transition-opacity duration-500">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-all duration-500 glass group-hover:scale-110`}>
+                  <s.icon className="w-6 h-6 text-amber-500" />
                 </div>
-                <div>
-                  <p className={`text-2xl md:text-3xl font-bold ${text}`}>{s.value}</p>
-                  <p className={`text-xs ${textMuted}`}>{s.label}</p>
-                </div>
+                <p className={`text-3xl md:text-4xl font-bold tracking-tighter ${text}`}>{s.value}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${textFaint}`}>{s.label}</p>
               </div>
             ))}
           </div>
@@ -490,12 +656,13 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map((f, i) => (
               <div key={i}
-                className={`group p-7 rounded-2xl border transition-all duration-300 hover:scale-[1.02] cursor-default ${isDark ? f.darkBg : f.lightBg}`}>
-                <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center mb-5 ${isDark ? f.darkBg : f.lightBg}`}>
-                  <f.icon className={`w-6 h-6 ${f.iconColor}`} />
+                className={`group p-8 rounded-3xl border transition-all duration-500 glass hover:scale-[1.03] cursor-default relative overflow-hidden`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full -mr-16 -mt-16 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center mb-8 glass ${isDark ? f.darkBg : f.lightBg}`}>
+                  <f.icon className={`w-7 h-7 ${f.iconColor}`} />
                 </div>
-                <h3 className={`font-semibold text-lg mb-3 ${text}`}>{f.title}</h3>
-                <p className={`text-sm leading-relaxed ${textMuted}`}>{f.description}</p>
+                <h3 className={`font-bold text-xl mb-4 ${text} tracking-tight`}>{f.title}</h3>
+                <p className={`text-sm leading-relaxed ${textMuted} opacity-70 group-hover:opacity-100 transition-opacity`}>{f.description}</p>
               </div>
             ))}
           </div>
@@ -758,6 +925,7 @@ export default function Landing() {
       </footer>
 
       {!user && <LandingChatbot />}
+      <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} isDark={isDark} />
     </div>
   )
 }

@@ -55,7 +55,10 @@ async function loadPlansFromDB() {
                     displayName: plan.display_name,
                     description: plan.description,
                     price: plan.price,
+                    price_yearly: plan.price_yearly,
                     priceCurrency: plan.price_currency || 'XOF',
+                    stripe_price_id: plan.stripe_price_id,
+                    stripe_price_id_yearly: plan.stripe_price_id_yearly,
                     limits: { ...defaultLimits, ...dbLimits },
                     features: { ...FEATURES_BASELINE, ...dbFeatures }
                 };
@@ -134,6 +137,7 @@ export const PLANS = {
         limits: {
             agents: 1,
             whatsapp_accounts: 1,
+
             outlook_accounts: 0,
             conversations_per_month: 50,
             messages_per_month: 500,
@@ -163,6 +167,7 @@ export const PLANS = {
         limits: {
             agents: 1,
             whatsapp_accounts: 0,
+
             outlook_accounts: 0,
             conversations_per_month: 0,
             messages_per_month: 20,
@@ -192,6 +197,7 @@ export const PLANS = {
         limits: {
             agents: 1,
             whatsapp_accounts: 1,
+
             outlook_accounts: 1,
             conversations_per_month: 300,
             messages_per_month: 1500,
@@ -221,6 +227,7 @@ export const PLANS = {
         limits: {
             agents: 2,
             whatsapp_accounts: 2,
+
             outlook_accounts: 2,
             conversations_per_month: 1500,
             messages_per_month: 5000,
@@ -250,6 +257,7 @@ export const PLANS = {
         limits: {
             agents: 4,
             whatsapp_accounts: 4,
+
             outlook_accounts: 4,
             conversations_per_month: 5000,
             messages_per_month: 20000,
@@ -279,6 +287,7 @@ export const PLANS = {
         limits: {
             agents: -1,
             whatsapp_accounts: -1,
+
             outlook_accounts: -1,
             conversations_per_month: -1,
             messages_per_month: -1,

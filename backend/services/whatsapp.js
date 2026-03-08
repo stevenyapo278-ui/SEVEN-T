@@ -1725,7 +1725,9 @@ class WhatsAppManager {
      */
     async handleBatchDrain(toolId, conversationId, batch) {
         if (!batch.length) return;
-        const sock = this.connections.get(toolId);
+        const tool = await db.get('SELECT type FROM tools WHERE id = ?', toolId);
+        let sock = this.connections.get(toolId);
+        
         if (!sock) {
             console.warn('[WhatsApp] handleBatchDrain: no socket for toolId', toolId, '- batch not processed');
             return;

@@ -44,6 +44,7 @@ export default function Settings() {
   const [plans, setPlans] = useState([])
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState(null)
+  const [billingPeriod, setBillingPeriod] = useState('monthly')
   const [portalLoading, setPortalLoading] = useState(false)
 
   const [paymentProvidersData, setPaymentProvidersData] = useState({ providers: {}, configured: {} })
@@ -227,7 +228,8 @@ export default function Settings() {
   const formatPrice = (plan) => {
     if (plan.price === -1) return 'Sur devis'
     if (plan.price === 0) return 'Gratuit'
-    return `${plan.price.toLocaleString()} ${plan.priceCurrency || 'FCFA'}`
+    const price = billingPeriod === 'yearly' ? plan.priceYearly : plan.price
+    return `${(price || 0).toLocaleString()} ${plan.priceCurrency || 'FCFA'}`
   }
 
   const formatLimit = (value) => {
@@ -257,13 +259,34 @@ export default function Settings() {
 
   const handleChoosePlan = async (plan) => {
     if (plan.id === 'free' || plan.price === 0) return
-    if (!plan.stripePriceId) {
+    const priceId = billingPeriod === 'yearly' ? plan.stripePriceIdYearly : plan.stripePriceId
+    if (!priceId) {
       toast('Contactez-nous pour ce plan', { icon: '📧' })
       return
     }
     setCheckoutLoadingPlanId(plan.id)
     try {
-      const { data } = await api.post('/subscription/create-checkout-session', { planId: plan.id })
+      const { data } = await api.post('/subscription/create-checkout-session', { 
+        planId: plan.id,
+        billingPeriod 
+      })
+      if (data?.url) window.location.href = data.url
+      else toast.error('Lien de paiement indisponible')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors du paiement')
+    } finally {
+      setCheckoutLoadingPlanId(null)
+    }
+  }
+
+  const handleChoosePaymeTrustPlan = async (plan) => {
+    if (plan.id === 'free' || plan.price === 0) return
+    setCheckoutLoadingPlanId(`${plan.id}_pt`)
+    try {
+      const { data } = await api.post('/subscription/create-paymetrust-checkout', { 
+        planId: plan.id,
+        billingPeriod 
+      })
       if (data?.url) window.location.href = data.url
       else toast.error('Lien de paiement indisponible')
     } catch (err) {
@@ -900,13 +923,42 @@ export default function Settings() {
           </div>
         </div>
       )}
-
       {/* Changer de plan */}
       <div className="mb-6">
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2">{t('settings.changePlan')}</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          {t('settings.changePlanDesc')}
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex-1">
+            <h2 className="text-lg font-display font-semibold text-gray-100 mb-1">{t('settings.changePlan')}</h2>
+            <p className="text-sm text-gray-500">
+              {t('settings.changePlanDesc')}
+            </p>
+          </div>
+          <div className={`p-1 rounded-xl border flex items-center ${isDark ? 'bg-space-800 border-space-700' : 'bg-gray-100 border-gray-200'}`}>
+            <button
+              onClick={() => setBillingPeriod('monthly')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                billingPeriod === 'monthly'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Mensuel
+            </button>
+            <button
+              onClick={() => setBillingPeriod('yearly')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                billingPeriod === 'yearly'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              Annuel
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full bg-gold-400/20 text-gold-400 border border-gold-400/20`}>
+                -20%
+              </span>
+            </button>
+          </div>
+        </div>
+
         {loadingPlans ? (
           <div className="flex items-center justify-center py-10">
             <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
@@ -949,7 +1001,7 @@ export default function Settings() {
                   )}
                   <div className="mt-2 mb-4">
                     <span className="text-2xl font-display font-bold text-gradient">{formatPrice(plan)}</span>
-                    <span className="text-gray-500 text-sm">/mois</span>
+                    <span className="text-gray-500 text-sm">/{billingPeriod === 'yearly' ? 'an' : 'mois'}</span>
                   </div>
                   <ul className="space-y-2 mb-4">
                     {planFeatures.slice(0, 6).map((feature, idx) => (
@@ -965,7 +1017,7 @@ export default function Settings() {
                     type="button"
                     disabled={isCurrentPlan || (plan.id === 'free' || plan.price === 0)}
                     onClick={() => handleChoosePlan(plan)}
-                    className={`w-full py-2 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 ${
+                    className={`w-full py-2 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 mb-2 ${
                       isCurrentPlan
                         ? 'bg-space-800 text-gray-500 cursor-not-allowed'
                         : plan.id === 'free' || plan.price === 0
@@ -984,12 +1036,31 @@ export default function Settings() {
                       </>
                     ) : isCurrentPlan ? (
                       t('settings.current')
-                    ) : plan.id === 'free' || plan.price === 0 ? (
-                      i18n.language === 'en' ? 'Free' : 'Gratuit'
                     ) : (
-                      t('common.choose')
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        S'abonner par Carte
+                      </>
                     )}
                   </button>
+
+                  {!isCurrentPlan && plan.id !== 'free' && plan.price !== 0 && (
+                    <button
+                      type="button"
+                      disabled={checkoutLoadingPlanId === `${plan.id}_pt`}
+                      onClick={() => handleChoosePaymeTrustPlan(plan)}
+                      className="w-full py-2 rounded-xl text-sm font-medium border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors inline-flex items-center justify-center gap-2"
+                    >
+                      {checkoutLoadingPlanId === `${plan.id}_pt` ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <MessageCircle className="w-4 h-4 text-green-400" />
+                          Payer par Mobile Money
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               )
             })}

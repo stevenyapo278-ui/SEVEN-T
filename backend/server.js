@@ -47,7 +47,7 @@ import workflowRoutes from './routes/workflows.js';
 import flowRoutes from './routes/flows.js';
 import reportRoutes from './routes/reports.js';
 import userRoutes from './routes/users.js';
-import subscriptionRoutes, { handleStripeWebhook } from './routes/subscription.js';
+import subscriptionRoutes, { handleStripeWebhook, handlePaymeTrustSubscriptionWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
 import settingsRoutes from './routes/settings.js';
 
@@ -116,6 +116,9 @@ app.use(cookieParser());
 // Stripe subscription webhook needs raw body (before json parser)
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), (req, res) => handleStripeWebhook(req, res));
 
+// PaymeTrust subscription webhook
+app.post('/api/subscription/webhook/paymetrust', express.raw({ type: 'application/json' }), handlePaymeTrustSubscriptionWebhook);
+
 // Body parsing with limits
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -178,7 +181,7 @@ function safeJsonParse(str, fallback = {}) {
 app.get('/api/plans', async (req, res) => {
     try {
         const plans = await db.all(`
-            SELECT id, name, display_name, description, price, price_currency, limits, features, sort_order, stripe_price_id
+            SELECT id, name, display_name, description, price, price_currency, limits, features, sort_order, stripe_price_id, price_yearly, stripe_price_id_yearly
             FROM subscription_plans
             WHERE is_active = 1
             ORDER BY sort_order ASC
@@ -192,7 +195,9 @@ app.get('/api/plans', async (req, res) => {
             priceCurrency: plan.price_currency || 'FCFA',
             limits: safeJsonParse(plan.limits, {}),
             features: safeJsonParse(plan.features, {}),
-            stripePriceId: plan.stripe_price_id || null
+            stripePriceId: plan.stripe_price_id || null,
+            priceYearly: plan.price_yearly || null,
+            stripePriceIdYearly: plan.stripe_price_id_yearly || null
         }));
 
         return res.json({ plans: parsedPlans });

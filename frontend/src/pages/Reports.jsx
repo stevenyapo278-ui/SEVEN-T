@@ -60,6 +60,16 @@ export default function Reports() {
     email: ''
   })
 
+  // Bloquer le scroll quand un modal est ouvert
+  useEffect(() => {
+    if (showSubModal || !!generatedReport) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => { document.body.style.overflow = 'unset' }
+  }, [showSubModal, generatedReport])
+
   useEffect(() => {
     loadData()
   }, [])

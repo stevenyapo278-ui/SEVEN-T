@@ -9,6 +9,9 @@ const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+import paymetrust from '../services/paymetrust.js';
+import { v4 as uuidv4 } from 'uuid';
+import { getEffectivePlanName } from '../config/plans.js';
 
 /**
  * POST /api/subscription/create-checkout-session
@@ -19,19 +22,21 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
         return res.status(503).json({ error: 'Paiement Stripe non configuré (STRIPE_SECRET_KEY)' });
     }
     try {
-        const { planId } = req.body;
+        const { planId, billingPeriod = 'monthly' } = req.body;
         if (!planId) {
             return res.status(400).json({ error: 'planId requis' });
         }
         const planRow = await db.get(`
-            SELECT name, display_name, stripe_price_id FROM subscription_plans
+            SELECT name, display_name, stripe_price_id, stripe_price_id_yearly FROM subscription_plans
             WHERE name = ? AND is_active = 1
         `, planId);
         if (!planRow) {
             return res.status(404).json({ error: 'Plan non trouvé' });
         }
-        if (!planRow.stripe_price_id) {
-            return res.status(400).json({ error: 'Ce plan n\'est pas disponible à l\'achat en ligne. Contactez-nous.' });
+        const stripePriceId = billingPeriod === 'yearly' ? planRow.stripe_price_id_yearly : planRow.stripe_price_id;
+        
+        if (!stripePriceId) {
+            return res.status(400).json({ error: 'Ce plan n\'est pas disponible pour cette période d\'achat en ligne. Contactez-nous.' });
         }
         const userId = req.user.id;
         const userRow = await db.get('SELECT stripe_customer_id, email, name FROM users WHERE id = ?', userId);
@@ -48,7 +53,7 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
         const session = await stripe.checkout.sessions.create({
             mode: 'subscription',
             customer: customerId,
-            line_items: [{ price: planRow.stripe_price_id, quantity: 1 }],
+            line_items: [{ price: stripePriceId, quantity: 1 }],
             success_url: `${baseUrl}/dashboard/settings?subscription=success&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${baseUrl}/dashboard/settings?subscription=cancelled`,
             client_reference_id: userId,
@@ -62,6 +67,56 @@ router.post('/create-checkout-session', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('Create checkout session error:', err);
         res.status(500).json({ error: err.message || 'Erreur lors de la création de la session de paiement' });
+    }
+});
+
+/**
+ * POST /api/subscription/create-paymetrust-checkout
+ * Create a PaymeTrust invoice for the selected plan.
+ */
+router.post('/create-paymetrust-checkout', authenticateToken, async (req, res) => {
+    try {
+        const { planId, billingPeriod = 'monthly' } = req.body;
+        if (!planId) return res.status(400).json({ error: 'planId requis' });
+
+        const planRow = await db.get('SELECT * FROM subscription_plans WHERE name = ? AND is_active = 1', planId);
+        if (!planRow) return res.status(404).json({ error: 'Plan non trouvé' });
+
+        const amount = billingPeriod === 'yearly' ? planRow.price_yearly : planRow.price;
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ error: 'Prix non configuré pour ce plan' });
+        }
+
+        const userId = req.user.id;
+        const id = uuidv4();
+        
+        const returnUrl = `${baseUrl}/dashboard/settings?subscription=success&pt_id=${id}`;
+        const callbackUrl = process.env.BASE_URL 
+            ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/subscription/webhook/paymetrust` 
+            : `${baseUrl}/api/subscription/webhook/paymetrust`;
+
+        const result = await paymetrust.createInvoice({
+            amount,
+            currency: planRow.price_currency || 'XOF',
+            description: `Abonnement ${planRow.display_name} (${billingPeriod})`,
+            referenceId: id,
+            returnUrl,
+            callbackUrl
+        });
+
+        if (!result) {
+            return res.status(500).json({ error: 'Erreur PaymeTrust' });
+        }
+
+        await db.run(`
+            INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, currency, external_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, id, userId, planId, billingPeriod, amount, planRow.price_currency || 'XOF', result.invoiceId);
+
+        res.json({ url: result.paymentUrl });
+    } catch (err) {
+        console.error('PaymeTrust sub error:', err);
+        res.status(500).json({ error: 'Erreur lors de la création du paiement' });
     }
 });
 
@@ -93,19 +148,30 @@ router.post('/create-portal-session', authenticateToken, async (req, res) => {
 /**
  * Apply subscription to user: set plan, credits, stripe_subscription_id, subscription_status
  */
-async function applySubscriptionToUser(userId, planName, stripeSubscriptionId) {
+async function applySubscriptionToUser(userId, planName, stripeSubscriptionId, endDate = null) {
     const plan = await getPlan(planName);
     const credits = plan?.limits?.credits_per_month ?? 100;
+    
+    // If no explicit endDate is provided but it's a non-Stripe payment, 
+    // we might want to default to 1 month/year.
+    let finalEndDate = endDate;
+    if (!stripeSubscriptionId?.startsWith('sub_') && !finalEndDate) {
+        // Default to 31 days if manual/paymetrust and no date given
+        const d = new Date();
+        d.setDate(d.getDate() + 31);
+        finalEndDate = d;
+    }
+
     await db.run(`
         UPDATE users SET 
             plan = ?, 
             credits = ?, 
             stripe_subscription_id = ?, 
             subscription_status = 'active',
-            subscription_end_date = NULL,
+            subscription_end_date = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    `, planName, credits, stripeSubscriptionId || null, userId);
+    `, planName, credits, stripeSubscriptionId || null, finalEndDate, userId);
 }
 
 /**
@@ -150,9 +216,10 @@ export async function handleStripeWebhook(req, res) {
                 if (!userId) break;
                 const subscriptionId = session.subscription;
                 if (!subscriptionId) break;
+                
                 const sub = await stripe.subscriptions.retrieve(subscriptionId);
                 const priceId = sub.items?.data?.[0]?.price?.id;
-                const planRow = await db.get('SELECT name FROM subscription_plans WHERE stripe_price_id = ?', priceId);
+                const planRow = await db.get('SELECT name FROM subscription_plans WHERE stripe_price_id = ? OR stripe_price_id_yearly = ?', priceId, priceId);
                 const planName = planRow?.name || 'starter';
                 await applySubscriptionToUser(userId, planName, subscriptionId);
                 break;
@@ -162,10 +229,10 @@ export async function handleStripeWebhook(req, res) {
                 const userId = sub.metadata?.user_id;
                 if (!userId) break;
                 if (sub.status === 'active' || sub.status === 'trialing') {
-                    const priceId = sub.items?.data?.[0]?.price?.id;
-                    const planRow = await db.get('SELECT name FROM subscription_plans WHERE stripe_price_id = ?', priceId);
-                    const planName = planRow?.name || 'starter';
-                    await applySubscriptionToUser(userId, planName, sub.id);
+                const priceId = sub.items?.data?.[0]?.price?.id;
+                const planRow = await db.get('SELECT name FROM subscription_plans WHERE stripe_price_id = ? OR stripe_price_id_yearly = ?', priceId, priceId);
+                const planName = planRow?.name || 'starter';
+                await applySubscriptionToUser(userId, planName, sub.id);
                 }
                 break;
             }
@@ -192,6 +259,51 @@ export async function handleStripeWebhook(req, res) {
         return res.status(500).send('Webhook handler failed');
     }
     res.send();
+}
+
+/**
+ * PaymeTrust Webhook for SaaS Subscriptions
+ */
+export async function handlePaymeTrustSubscriptionWebhook(req, res) {
+    let body;
+    try {
+        const raw = req.body;
+        body = typeof raw === 'string' ? JSON.parse(raw) : (Buffer.isBuffer(raw) ? JSON.parse(raw.toString('utf8')) : raw);
+    } catch (e) {
+        return res.status(400).send('Invalid JSON');
+    }
+
+    const invoiceId = body?.data?.id ?? body?.data?.attributes?.id ?? body?.id;
+    const status = (body?.data?.attributes?.status ?? body?.data?.status ?? body?.status ?? '').toLowerCase();
+    
+    if (!invoiceId) return res.status(400).send('Missing invoice id');
+
+    const successStatuses = ['paid', 'completed', 'success', 'settled'];
+    if (!successStatuses.some(s => status.includes(s))) {
+        return res.status(200).send('OK');
+    }
+
+    try {
+        const payment = await db.get('SELECT * FROM saas_subscription_payments WHERE external_id = ? AND status != ?', invoiceId, 'paid');
+        if (!payment) return res.status(200).send('OK');
+
+        await db.run("UPDATE saas_subscription_payments SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
+        
+        // Calculate end date based on billing period
+        const endDate = new Date();
+        if (payment.billing_period === 'yearly') {
+            endDate.setFullYear(endDate.getFullYear() + 1);
+        } else {
+            endDate.setMonth(endDate.getMonth() + 1);
+        }
+
+        await applySubscriptionToUser(payment.user_id, payment.plan_id, `paymetrust_${payment.id}`, endDate);
+        
+        return res.status(200).send('OK');
+    } catch (err) {
+        console.error('PaymeTrust sub webhook error:', err);
+        return res.status(500).send('Error');
+    }
 }
 
 export default router;

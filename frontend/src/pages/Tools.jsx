@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
-import { MessageSquare, Mail, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check } from 'lucide-react'
+import { MessageSquare, Mail, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const TOOL_LABELS = {
@@ -30,6 +30,7 @@ export default function Tools() {
   const [editingToolId, setEditingToolId] = useState(null)
   const [editingLabel, setEditingLabel] = useState('')
   const [loadError, setLoadError] = useState(null)
+  const [configTool, setConfigTool] = useState(null)
 
   const loadTools = async () => {
     setLoadError(null)
@@ -140,7 +141,36 @@ export default function Tools() {
     }
   }
 
-  const connectOutlook = async (toolId) => {
+  const saveOutlookConfig = async (e) => {
+    e.preventDefault();
+    if (!configTool?.id || !configTool.draftConfig) return;
+    try {
+      setBusyToolId(configTool.id);
+      
+      const { clientId, clientSecret } = configTool.draftConfig;
+      if (!clientId || !clientSecret) {
+        toast.error('Client ID et Secret requis');
+        return;
+      }
+
+      await api.patch(`/tools/${configTool.id}`, {
+        config: configTool.draftConfig
+      });
+      
+      const savedToolId = configTool.id;
+      setConfigTool(null);
+      toast.success('Configuration sauvegardée, redirection vers Microsoft…');
+      
+      // Lance la connexion OAuth maintenant que configuré  
+      await connectOutlookAuth(savedToolId);
+    } catch (err) {
+      toast.error('Erreur configuration Outlook');
+    } finally {
+      setBusyToolId(null);
+    }
+  };
+
+  const connectOutlookAuth = async (toolId) => {
     try {
       setBusyToolId(toolId)
       const res = await api.post('/outlook/connect-url', { toolId })
@@ -201,8 +231,9 @@ export default function Tools() {
         await connectWhatsApp(tool.id)
       } else if (type === 'outlook') {
         await loadTools()
-        toast.success('Outil créé. Redirection vers Microsoft…')
-        await connectOutlook(tool.id)
+        const newTool = (await api.get(`/tools/${tool.id}`)).data.tool
+        setConfigTool({ ...newTool, draftConfig: { clientId: newTool.config?.clientId || '', clientSecret: newTool.config?.clientSecret || '' } })
+        toast.success('Outil créé, renseignez vos identifiants Microsoft.')
         return
       }
       await loadTools()
@@ -306,7 +337,7 @@ export default function Tools() {
       {/* Add tool cards */}
       {!loadError && (
         <>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl border p-5 sm:p-6 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2.5 bg-emerald-500/10 rounded-xl">
@@ -370,6 +401,7 @@ export default function Tools() {
               </div>
             )}
           </div>
+
         </div>
 
       {/* List of tools */}
@@ -540,27 +572,38 @@ export default function Tools() {
                         {tool.meta?.email && (
                           <p className="text-sm text-gray-400 mb-3">{tool.meta.email}</p>
                         )}
-                        <button
-                          onClick={() => disconnectOutlook(tool.id)}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
-                          disabled={busyToolId === tool.id}
-                        >
-                          <PowerOff className="w-4 h-4" />
-                          Déconnecter
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => disconnectOutlook(tool.id)}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            disabled={busyToolId === tool.id}
+                          >
+                            <PowerOff className="w-4 h-4" />
+                            Déconnecter
+                          </button>
+                          <button
+                            onClick={() => setConfigTool({ ...tool, draftConfig: { clientId: tool.config?.clientId || '', clientSecret: tool.config?.clientSecret || '' } })}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            disabled={busyToolId === tool.id}
+                          >
+                            <Wrench className="w-4 h-4" />
+                            Modifier
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <button
-                        onClick={() => connectOutlook(tool.id)}
+                        onClick={() => setConfigTool({ ...tool, draftConfig: { clientId: tool.config?.clientId || '', clientSecret: tool.config?.clientSecret || '' } })}
                         className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
                         disabled={busyToolId === tool.id}
                       >
-                        <Power className="w-4 h-4" />
-                        Connecter Outlook
+                        <Wrench className="w-4 h-4" />
+                        Configurer Outlook
                       </button>
                     )}
                   </div>
                 )}
+
               </div>
             ))}
           </div>
@@ -615,6 +658,78 @@ export default function Tools() {
               <X className="w-4 h-4" />
               Annuler
             </button>
+          </div>
+        </div>
+      )}
+
+
+      {/* Configuration Modal (Outlook) */}
+      {configTool && configTool.type === 'outlook' && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setConfigTool(null)}
+        >
+          <div
+            className="relative z-10 w-full max-w-md rounded-2xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col max-h-[90vh] overflow-y-auto animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setConfigTool(null)}
+              className="absolute top-4 right-4 p-2 rounded-xl text-gray-400 hover:text-white hover:bg-space-700 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-xl font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+              <Mail className="w-5 h-5 text-blue-500" />
+              Configuration Outlook
+            </h3>
+            
+            <form onSubmit={saveOutlookConfig} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Microsoft App Client ID</label>
+                <input
+                  type="text"
+                  required
+                  value={configTool.draftConfig?.clientId || ''}
+                  onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientId: e.target.value } })}
+                  className="input-dark w-full font-mono text-sm"
+                  placeholder="ex: 8bxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Client Secret</label>
+                <input
+                  type="password"
+                  required
+                  value={configTool.draftConfig?.clientSecret || ''}
+                  onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientSecret: e.target.value } })}
+                  className="input-dark w-full font-mono text-sm"
+                  placeholder="Secret de l'application..."
+                />
+                <p className="mt-2 text-xs text-gray-400">
+                  Besoin d'aide ? Créez une application dans Azure Active Directory, ajoutez l'URI de redirection <code>HTTPS://.../api/outlook/callback</code>, et générez un secret.
+                </p>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfigTool(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl font-medium bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={busyToolId === configTool.id}
+                  className="flex-1 px-4 py-2.5 rounded-xl font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                >
+                  Suivant (Connexion)
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

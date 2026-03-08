@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, Loader2 } from 'lucide-react'
 
@@ -19,6 +20,11 @@ const FIELD_KEYS = {
 
 export default function HistoryModal({ history, loading, productId, productName, formatPrice, onClose }) {
   const { t } = useTranslation()
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = 'unset' }
+  }, [])
 
   const formatDate = (d) => {
     if (!d) return '-'

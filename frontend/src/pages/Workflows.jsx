@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useTheme } from '../contexts/ThemeContext'
 import {
   Plus,
   Zap,
@@ -52,6 +53,8 @@ const ACTION_ICONS = {
 }
 
 export default function Workflows() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { showConfirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [workflows, setWorkflows] = useState([])
@@ -82,6 +85,16 @@ export default function Workflows() {
     actions: [],
     agent_id: ''
   })
+
+  // Bloquer le scroll quand un modal est ouvert
+  useEffect(() => {
+    if (showModal || showContactModal || !!selectedContactView || !!selectedLogView) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => { document.body.style.overflow = 'unset' }
+  }, [showModal, showContactModal, selectedContactView, selectedLogView])
 
   useEffect(() => {
     loadData()
@@ -401,7 +414,7 @@ export default function Workflows() {
             <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-gold-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.total || 0}</p>
+            <p className={`text-lg sm:text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats?.total || 0}</p>
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Workflows</p>
           </div>
         </div>
@@ -412,7 +425,7 @@ export default function Workflows() {
             <Play className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.active || 0}</p>
+            <p className={`text-lg sm:text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats?.active || 0}</p>
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Actifs</p>
           </div>
         </div>
@@ -423,7 +436,7 @@ export default function Workflows() {
             <History className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.totalExecutions || 0}</p>
+            <p className={`text-lg sm:text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats?.totalExecutions || 0}</p>
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Totaux</p>
           </div>
         </div>
@@ -434,7 +447,7 @@ export default function Workflows() {
             <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
           </div>
           <div className="min-w-0">
-            <p className="text-lg sm:text-2xl font-bold text-gray-100">{stats?.recentExecutions || 0}</p>
+            <p className={`text-lg sm:text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats?.recentExecutions || 0}</p>
             <p className="text-[10px] sm:text-sm text-gray-400 uppercase tracking-wider truncate">Semaine</p>
           </div>
         </div>
@@ -446,7 +459,7 @@ export default function Workflows() {
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2 truncate">
+            <h2 className={`text-lg font-semibold flex items-center gap-2 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <UserPlus className="w-5 h-5 text-gold-400 flex-shrink-0" />
               Contacts enregistrés
             </h2>
@@ -486,7 +499,7 @@ export default function Workflows() {
                     >
                       <td className="py-3 pr-4 font-medium">
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-100 group-hover:text-gold-400 transition-colors">{c.name}</span>
+                          <span className={`transition-colors ${isDark ? 'text-gray-100 group-hover:text-gold-400' : 'text-gray-900 group-hover:text-gold-600'}`}>{c.name}</span>
                         </div>
                       </td>
                       <td className="py-3 pr-4 text-gray-300">
@@ -532,7 +545,7 @@ export default function Workflows() {
                   className="p-4 rounded-2xl bg-space-800/50 border border-space-700 active:scale-[0.98] transition-all"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold text-gray-100">{c.name}</h4>
+                    <h4 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{c.name}</h4>
                     <span className="px-2 py-0.5 rounded-full bg-gold-400/20 text-gold-400 text-[10px] font-bold uppercase">
                       {contactRoleLabel(c.role)}
                     </span>
@@ -568,7 +581,7 @@ export default function Workflows() {
           <div className="w-16 h-16 rounded-2xl bg-gold-400/20 flex items-center justify-center mx-auto mb-4">
             <Zap className="w-8 h-8 text-gold-400" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-100 mb-2">Aucun workflow</h3>
+          <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Aucun workflow</h3>
           <p className="text-gray-400 mb-4">Créez votre premier workflow pour automatiser des actions</p>
           <button onClick={() => setShowModal(true)} className="btn-primary">
             Créer un workflow
@@ -590,7 +603,7 @@ export default function Workflows() {
                       <TriggerIcon className={`w-6 h-6 ${workflow.is_active ? 'text-emerald-400' : 'text-gray-400'}`} />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-100">{workflow.name}</h3>
+                      <h3 className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{workflow.name}</h3>
                       <p className="text-sm text-gray-400">
                         {types.triggerTypes[workflow.trigger_type]?.name || workflow.trigger_type}
                       </p>
@@ -661,7 +674,7 @@ export default function Workflows() {
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2 truncate">
+            <h2 className={`text-lg font-semibold flex items-center gap-2 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <History className="w-5 h-5 text-blue-400 flex-shrink-0" />
               Historique d’exécution
             </h2>
@@ -722,7 +735,7 @@ export default function Workflows() {
                         className="border-b border-space-700/50 hover:bg-space-800/50 cursor-pointer group transition-colors"
                       >
                         <td className="py-4 pr-4">
-                          <div className="font-semibold text-gray-100 group-hover:text-blue-400 transition-colors">{log.workflow_name}</div>
+                          <div className={`font-semibold group-hover:text-blue-400 transition-colors ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{log.workflow_name}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1">
                             {types.triggerTypes[log.trigger_type]?.name || log.trigger_type}
                           </div>
@@ -758,7 +771,7 @@ export default function Workflows() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${isSuccess ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                        <h4 className="font-bold text-gray-100 text-sm">{log.workflow_name}</h4>
+                        <h4 className={`font-bold text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{log.workflow_name}</h4>
                       </div>
                       <span className="text-[10px] text-gray-500">{formatRelativeTime(log.executed_at)}</span>
                     </div>
@@ -774,8 +787,8 @@ export default function Workflows() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="relative z-10 card p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-fadeIn">
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6">
+          <div className={`relative z-10 card p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-fadeIn ${isDark ? 'bg-space-800' : 'bg-white'}`}>
+            <h2 className={`text-xl font-display font-bold mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               {selectedWorkflow ? 'Modifier le workflow' : 'Nouveau workflow'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -835,7 +848,7 @@ export default function Workflows() {
                         }`}
                       >
                         <TriggerIcon className={`w-5 h-5 mb-2 ${form.trigger_type === key ? 'text-gold-400' : 'text-gray-400'}`} />
-                        <p className="text-sm font-medium text-gray-100">{trigger.name}</p>
+                        <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{trigger.name}</p>
                       </button>
                     )
                   })}
@@ -882,9 +895,7 @@ export default function Workflows() {
                             <ActionIcon className="w-4 h-4 text-gold-400" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-100">
-                              {types.actionTypes[action.type]?.name}
-                            </p>
+                            <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{types.actionTypes[action.type]?.name}</p>
                             {action.type === 'send_message' && (
                               <div className="mt-2 space-y-2">
                                 <div>
@@ -972,7 +983,9 @@ export default function Workflows() {
                       key={key}
                       type="button"
                       onClick={() => addAction(key)}
-                      className="px-3 py-1.5 text-sm border border-space-600 rounded-lg text-gray-400 hover:text-gray-100 hover:border-space-500 transition-colors"
+                      className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+                        isDark ? 'border-space-600 text-gray-400 hover:text-gray-100 hover:border-space-500' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                      }`}
                     >
                       + {action.name}
                     </button>
@@ -1003,8 +1016,8 @@ export default function Workflows() {
       {/* Modal Ajouter/Modifier contact */}
       {showContactModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="relative z-10 card p-4 sm:p-6 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-4">
+          <div className={`relative z-10 card p-4 sm:p-6 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn ${isDark ? 'bg-space-800' : 'bg-white'}`}>
+            <h2 className={`text-xl font-display font-bold mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               {selectedContact ? 'Modifier le contact' : 'Ajouter un contact'}
             </h2>
             <form onSubmit={saveContact} className="space-y-4">
@@ -1078,7 +1091,7 @@ export default function Workflows() {
                 {selectedContactView.name.charAt(0).toUpperCase()}
               </span>
             </div>
-            <h3 className="text-3xl font-display font-bold text-gray-100 mb-2">{selectedContactView.name}</h3>
+            <h3 className={`text-3xl font-display font-bold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{selectedContactView.name}</h3>
             <span className="px-4 py-1.5 rounded-full bg-gold-400/20 text-gold-400 text-sm font-semibold mb-6">
               {contactRoleLabel(selectedContactView.role)}
             </span>
@@ -1090,7 +1103,7 @@ export default function Workflows() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-500 uppercase font-medium">Numéro de téléphone</p>
-                  <p className="text-gray-100 font-semibold">{selectedContactView.phone_number}</p>
+                  <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{selectedContactView.phone_number}</p>
                 </div>
               </div>
 
@@ -1139,7 +1152,7 @@ export default function Workflows() {
                 {selectedLogView.success ? <CheckCircle className="w-8 h-8 text-emerald-400" /> : <XCircle className="w-8 h-8 text-red-400" />}
               </div>
               <div className="min-w-0">
-                <h3 className="text-2xl font-display font-bold text-gray-100 truncate">{selectedLogView.workflow_name}</h3>
+                <h3 className={`text-2xl font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{selectedLogView.workflow_name}</h3>
                 <p className="text-gray-400">{formatRelativeTime(selectedLogView.executed_at)}</p>
               </div>
             </div>
@@ -1147,11 +1160,11 @@ export default function Workflows() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
               <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
                 <p className="text-xs text-gray-500 uppercase font-medium mb-1">Déclencheur</p>
-                <p className="text-gray-100 font-semibold">{types.triggerTypes[selectedLogView.trigger_type]?.name || selectedLogView.trigger_type}</p>
+                <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{types.triggerTypes[selectedLogView.trigger_type]?.name || selectedLogView.trigger_type}</p>
               </div>
               <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
                 <p className="text-xs text-gray-500 uppercase font-medium mb-1">Agent Responsable</p>
-                <p className="text-gray-100 font-semibold">{selectedLogView.agent_name || 'Tous les agents'}</p>
+                <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{selectedLogView.agent_name || 'Tous les agents'}</p>
               </div>
             </div>
 
@@ -1167,7 +1180,7 @@ export default function Workflows() {
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${res.success ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
                         {res.success ? <CheckCircle className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
                       </div>
-                      <span className="text-sm font-medium text-gray-100">{res.action || 'Action'}</span>
+                      <span className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{res.action || 'Action'}</span>
                     </div>
                     {!res.success && res.error && (
                       <span className="text-xs text-red-400 max-w-[200px] truncate">{res.error}</span>

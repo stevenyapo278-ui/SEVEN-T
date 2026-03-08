@@ -618,6 +618,20 @@ export async function initDatabase() {
             FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS saas_subscription_payments (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            plan_id TEXT NOT NULL,
+            billing_period TEXT DEFAULT 'monthly',
+            amount DOUBLE PRECISION NOT NULL,
+            currency TEXT DEFAULT 'XOF',
+            status TEXT DEFAULT 'pending',
+            external_id TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            paid_at TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS payment_links (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -899,6 +913,8 @@ export async function initDatabase() {
             limits TEXT NOT NULL,
             features TEXT NOT NULL,
             stripe_price_id TEXT,
+            price_yearly INTEGER,
+            stripe_price_id_yearly TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -1140,6 +1156,16 @@ export async function initDatabase() {
     // Ensure there's a default user or similar? (Admin created by another script)
 
     // Ensure subscription plans exist and sync their properties (like stripe_price_id)
+    // Migration: subscription_plans - price_yearly and stripe_price_id_yearly
+    try {
+        await db.run('ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS price_yearly INTEGER');
+        await db.run('ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS stripe_price_id_yearly TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('subscription_plans migration:', e?.message);
+        }
+    }
+
     try {
         const countRow = await db.get('SELECT COUNT(*) as count FROM subscription_plans');
         if (!countRow || parseInt(countRow.count) === 0) {
@@ -1148,12 +1174,14 @@ export async function initDatabase() {
                 await db.run(`
                     INSERT INTO subscription_plans (
                         id, name, display_name, description, price, price_currency, 
-                        sort_order, is_default, limits, features, stripe_price_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        sort_order, is_default, limits, features, stripe_price_id,
+                        price_yearly, stripe_price_id_yearly
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (name) DO NOTHING
                 `, 
                     plan.id, plan.name, plan.display_name, plan.description, plan.price, plan.price_currency, 
-                    plan.sort_order, plan.is_default, plan.limits, plan.features, plan.stripe_price_id
+                    plan.sort_order, plan.is_default, plan.limits, plan.features, plan.stripe_price_id,
+                    plan.price_yearly || null, plan.stripe_price_id_yearly || null
                 );
             }
         } else {
@@ -1165,6 +1193,20 @@ export async function initDatabase() {
                         SET stripe_price_id = ? 
                         WHERE name = ? AND (stripe_price_id IS NULL OR stripe_price_id = '')
                     `, plan.stripe_price_id, plan.name);
+                }
+                if (plan.stripe_price_id_yearly) {
+                    await db.run(`
+                        UPDATE subscription_plans 
+                        SET stripe_price_id_yearly = ? 
+                        WHERE name = ? AND (stripe_price_id_yearly IS NULL OR stripe_price_id_yearly = '')
+                    `, plan.stripe_price_id_yearly, plan.name);
+                }
+                if (plan.price_yearly) {
+                    await db.run(`
+                        UPDATE subscription_plans 
+                        SET price_yearly = ? 
+                        WHERE name = ? AND (price_yearly IS NULL OR price_yearly = 0)
+                    `, plan.price_yearly, plan.name);
                 }
             }
         }
