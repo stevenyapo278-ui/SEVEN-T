@@ -175,8 +175,11 @@ router.get('/google/callback', async (req, res) => {
             } else {
                 const userId = uuidv4();
                 const placeholderPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
+                const trialSetting = await db.get("SELECT value FROM platform_settings WHERE key = 'default_trial_days'");
+                const trialDays = trialSetting && trialSetting.value ? parseInt(trialSetting.value, 10) : 7;
+                
                 const trialEndDate = new Date();
-                trialEndDate.setDate(trialEndDate.getDate() + 7);
+                trialEndDate.setDate(trialEndDate.getDate() + trialDays);
                 
                 await db.run(`
                     INSERT INTO users (id, email, password, name, company, google_id, plan, subscription_status, subscription_end_date, credits)
@@ -232,10 +235,13 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         // Hash password with higher cost factor
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Create user with 7-day Free trial
+        const trialSetting = await db.get("SELECT value FROM platform_settings WHERE key = 'default_trial_days'");
+        const trialDays = trialSetting && trialSetting.value ? parseInt(trialSetting.value, 10) : 7;
+        
+        // Create user with configured trial days
         const userId = uuidv4();
         const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 7);
+        trialEndDate.setDate(trialEndDate.getDate() + trialDays);
 
         await db.run(`
             INSERT INTO users (id, email, password, name, company, plan, subscription_status, subscription_end_date, credits)

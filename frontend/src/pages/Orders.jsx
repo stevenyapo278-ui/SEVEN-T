@@ -80,7 +80,7 @@ export default function Orders() {
   const isDark = theme === 'dark'
   const { user } = useAuth()
   const { showConfirm } = useConfirm()
-  const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
+  const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const [searchParams, setSearchParams] = useSearchParams()
   const tabFromUrl = searchParams.get('tab')
   const statusFromUrl = searchParams.get('status')

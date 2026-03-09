@@ -47,7 +47,7 @@ import workflowRoutes from './routes/workflows.js';
 import flowRoutes from './routes/flows.js';
 import reportRoutes from './routes/reports.js';
 import userRoutes from './routes/users.js';
-import subscriptionRoutes, { handleStripeWebhook, handlePaymeTrustSubscriptionWebhook } from './routes/subscription.js';
+import subscriptionRoutes, { handleStripeWebhook, handlePaymeTrustSubscriptionWebhook, handleGeniusPaySubscriptionWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
 import settingsRoutes from './routes/settings.js';
 
@@ -118,6 +118,9 @@ app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), 
 
 // PaymeTrust subscription webhook
 app.post('/api/subscription/webhook/paymetrust', express.raw({ type: 'application/json' }), handlePaymeTrustSubscriptionWebhook);
+
+// GeniusPay subscription webhook
+app.post('/api/subscription/webhook/geniuspay', express.raw({ type: 'application/json' }), handleGeniusPaySubscriptionWebhook);
 
 // Body parsing with limits
 app.use(express.json({ limit: '10mb' }));

@@ -55,7 +55,7 @@ export default function Payments() {
   const { user } = useAuth()
   const { isDark } = useTheme()
   const { showConfirm } = useConfirm()
-  const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
+  const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const [links, setLinks] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)

@@ -810,7 +810,7 @@ function DashboardLayoutContent() {
   const { activeTour } = useOnboardingTour()
   usePageTitle(pathToTitle(location.pathname))
 
-  const paymentModuleEnabled = !!(user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
+  const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const navGroups = useMemo(() => {
     if (paymentModuleEnabled) return navigationGroups
     return navigationGroups.map(g => ({
@@ -821,7 +821,7 @@ function DashboardLayoutContent() {
 
   // Helper for Trial Countdown
   const renderTrialCountdown = () => {
-    if (user?.subscription_status !== 'trialing' || !user?.subscription_end_date) return null
+    if (user?.plan !== 'free' || !user?.subscription_end_date) return null
     const end = new Date(user.subscription_end_date)
     if (end < currentTime) return null
     

@@ -604,7 +604,7 @@ export default function Settings() {
       </div>
 
       {/* Moyens de paiement */}
-      {!!user?.payment_module_enabled && (
+      {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && (
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
       }`}>
@@ -665,6 +665,29 @@ export default function Settings() {
                           )}
                         </>
                       )}
+                      {providerId === 'geniuspay' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentProviderModal({ provider: 'geniuspay' })
+                              setPaymentProviderForm({ api_key: '', api_secret: '' })
+                            }}
+                            className="text-sm px-3 py-1.5 rounded-lg bg-blue-400/20 text-blue-400 hover:bg-blue-400/30"
+                          >
+                            {configured ? 'Modifier' : 'Configurer'}
+                          </button>
+                          {configured && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePaymentProvider('geniuspay')}
+                              className="text-sm px-3 py-1.5 rounded-lg text-red-400 hover:bg-red-500/20"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 )
@@ -674,46 +697,88 @@ export default function Settings() {
       </div>
       )}
 
-      {/* Modal config PaymeTrust */}
-      {!!user?.payment_module_enabled && paymentProviderModal?.provider === 'paymetrust' && (
+      {/* Modal config PaymeTrust / GeniusPay */}
+      {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && paymentProviderModal?.provider && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
           <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-space-700 bg-space-900 shadow-2xl animate-fadeIn overflow-hidden">
             <div className="flex-shrink-0 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h3 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">Configurer PaymeTrust</h3>
+              <h3 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">
+                Configurer {paymentProviderModal.provider === 'geniuspay' ? 'GeniusPay' : 'PaymeTrust'}
+              </h3>
               <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="flex-shrink-0 touch-target text-gray-400 hover:text-gray-200">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <p className="text-sm text-gray-500">
-              Saisissez les identifiants de votre compte PaymeTrust. Ils ne sont jamais affichés en clair après enregistrement.
+              Saisissez les identifiants de votre compte. Ils ne sont jamais affichés en clair après enregistrement.
             </p>
             </div>
             <form onSubmit={handleSavePaymentProvider} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Account ID</label>
-                <input
-                  type="text"
-                  value={paymentProviderForm.account_id}
-                  onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, account_id: e.target.value }))}
-                  className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                  placeholder="Votre Account ID"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
-                <input
-                  type="password"
-                  value={paymentProviderForm.api_key}
-                  onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
-                  className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
+              {paymentProviderModal.provider === 'paymetrust' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Account ID</label>
+                    <input
+                      type="text"
+                      value={paymentProviderForm.account_id || ''}
+                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, account_id: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                      placeholder="Votre Account ID"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
+                    <input
+                      type="password"
+                      value={paymentProviderForm.api_key || ''}
+                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
+                    <input
+                      type="text"
+                      value={paymentProviderForm.api_key || ''}
+                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                      placeholder="pk_live_..."
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">API Secret</label>
+                    <input
+                      type="password"
+                      value={paymentProviderForm.api_secret || ''}
+                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_secret: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Webhook Secret (Optionnel)</label>
+                    <input
+                      type="password"
+                      value={paymentProviderForm.webhook_secret || ''}
+                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, webhook_secret: e.target.value }))}
+                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                      placeholder="whsec_..."
+                    />
+                    <p className="text-[10px] text-gray-500 mt-1">Nécessaire pour vérifier la validité des notifications de paiement.</p>
+                  </div>
+                </>
+              )}
               </div>
               <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                 <button type="button" onClick={() => setPaymentProviderModal(null)} className="min-h-[44px] touch-target px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800 flex-1 sm:flex-none">
@@ -1013,54 +1078,41 @@ export default function Settings() {
                       </li>
                     ))}
                   </ul>
-                  <button
-                    type="button"
-                    disabled={isCurrentPlan || (plan.id === 'free' || plan.price === 0)}
-                    onClick={() => handleChoosePlan(plan)}
-                    className={`w-full py-2 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 mb-2 ${
-                      isCurrentPlan
-                        ? 'bg-space-800 text-gray-500 cursor-not-allowed'
-                        : plan.id === 'free' || plan.price === 0
-                          ? 'bg-space-800 text-gray-500 cursor-not-allowed'
-                          : checkoutLoadingPlanId === plan.id
-                            ? 'bg-space-700 text-gray-400'
-                            : isPopular
-                              ? 'bg-blue-500 text-white hover:bg-blue-600'
-                              : 'bg-space-800 text-gray-300 hover:bg-space-700'
-                    }`}
-                  >
-                    {checkoutLoadingPlanId === plan.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        {t('settings.redirection')}
-                      </>
-                    ) : isCurrentPlan ? (
-                      t('settings.current')
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4" />
-                        S'abonner par Carte
-                      </>
-                    )}
-                  </button>
-
                   {!isCurrentPlan && plan.id !== 'free' && plan.price !== 0 && (
                     <button
                       type="button"
-                      disabled={checkoutLoadingPlanId === `${plan.id}_pt`}
-                      onClick={() => handleChoosePaymeTrustPlan(plan)}
-                      className="w-full py-2 rounded-xl text-sm font-medium border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 transition-colors inline-flex items-center justify-center gap-2"
+                      disabled={checkoutLoadingPlanId === `${plan.id}_gp`}
+                      onClick={async () => {
+                        setCheckoutLoadingPlanId(`${plan.id}_gp`)
+                        try {
+                          const { data } = await api.post('/subscription/create-geniuspay-checkout', { 
+                            planId: plan.id,
+                            billingPeriod 
+                          })
+                          if (data?.url) window.location.href = data.url
+                          else toast.error('Lien de paiement indisponible')
+                        } catch (err) {
+                          toast.error(err.response?.data?.error || 'Erreur lors du paiement')
+                        } finally {
+                          setCheckoutLoadingPlanId(null)
+                        }
+                      }}
+                      className="w-full py-3 rounded-xl text-sm font-bold bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:scale-[1.02] transition-all active:scale-95 inline-flex items-center justify-center gap-2"
                     >
-                      {checkoutLoadingPlanId === `${plan.id}_pt` ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                      {checkoutLoadingPlanId === `${plan.id}_gp` ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t('settings.redirection')}
+                        </>
                       ) : (
                         <>
-                          <MessageCircle className="w-4 h-4 text-green-400" />
-                          Payer par Mobile Money
+                          <CreditCard className="w-5 h-5" />
+                          S'abonner maintenant
                         </>
                       )}
                     </button>
                   )}
+
                 </div>
               )
             })}

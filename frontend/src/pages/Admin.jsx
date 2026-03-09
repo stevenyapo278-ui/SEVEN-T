@@ -75,8 +75,9 @@ export default function Admin() {
   const [editingModel, setEditingModel] = useState(null)
   const [showKeyModal, setShowKeyModal] = useState(false)
   const [editingKey, setEditingKey] = useState(null)
-  const [platformSettings, setPlatformSettings] = useState({ default_media_model: 'gemini-1.5-flash' })
+  const [platformSettings, setPlatformSettings] = useState({ default_media_model: 'gemini-1.5-flash', default_trial_days: '7' })
   const [savingMediaModel, setSavingMediaModel] = useState(false)
+  const [savingTrialDays, setSavingTrialDays] = useState(false)
 
   // Plans state
   const [plans, setPlans] = useState([])
@@ -147,6 +148,24 @@ export default function Admin() {
       toast.success(enabled ? 'Réponses vocales activées pour la plateforme' : 'Réponses vocales désactivées pour la plateforme')
     } catch (error) {
       toast.error('Erreur lors de l\'enregistrement')
+    }
+  }
+
+  const saveTrialDays = async (days) => {
+    const parsed = parseInt(days, 10)
+    if (isNaN(parsed) || parsed < 1 || parsed > 365) {
+      toast.error('Le nombre de jours doit être compris entre 1 et 365')
+      return
+    }
+    setSavingTrialDays(true)
+    try {
+      const res = await api.put('/admin/ai/settings', { default_trial_days: String(parsed) })
+      setPlatformSettings(prev => ({ ...prev, ...res.data.settings }))
+      toast.success(`Durée d'essai mise à jour : ${parsed} jours`)
+    } catch (error) {
+      toast.error('Erreur lors de l\'enregistrement')
+    } finally {
+      setSavingTrialDays(false)
     }
   }
 
@@ -601,6 +620,8 @@ export default function Admin() {
           savingMediaModel={savingMediaModel}
           onSaveMediaModel={saveDefaultMediaModel}
           onSaveVoiceResponsesEnabled={saveVoiceResponsesEnabled}
+          onSaveTrialDays={saveTrialDays}
+          savingTrialDays={savingTrialDays}
           onToggleModel={handleToggleModel}
           onDeleteModel={handleDeleteModel}
           onEditModel={(model) => { setEditingModel(model); setShowModelModal(true); }}
@@ -785,7 +806,8 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     is_active: user.is_active,
     voice_responses_enabled: !!user.voice_responses_enabled,
     payment_module_enabled: !!user.payment_module_enabled,
-    parent_user_id: user.parent_user_id || ''
+    parent_user_id: user.parent_user_id || '',
+    subscription_end_date: user.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : ''
   })
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
@@ -977,6 +999,36 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               />
             </div>
           )}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Date fin d&apos;essai / d&apos;abonnement
+              <span className="ml-2 text-xs text-amber-400">
+                {formData.subscription_end_date ? `${Math.ceil((new Date(formData.subscription_end_date) - new Date()) / 86400000)} jour(s) restant(s)` : 'Non définie'}
+              </span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={formData.subscription_end_date}
+                onChange={(e) => setFormData({ ...formData, subscription_end_date: e.target.value })}
+                className="input-dark flex-1"
+              />
+              {[7, 14, 30].map(days => (
+                <button
+                  key={days}
+                  type="button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + days);
+                    setFormData({ ...formData, subscription_end_date: d.toISOString().slice(0, 10) });
+                  }}
+                  className="text-xs px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded transition-colors whitespace-nowrap"
+                >
+                  +{days}j
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Nouveau mot de passe <span className="text-gray-500">(laisser vide pour conserver)</span>
@@ -1328,12 +1380,19 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
 function AIModelsContent({ 
   models, apiKeys, stats, loading, 
   platformSettings = {}, savingMediaModel, onSaveMediaModel, onSaveVoiceResponsesEnabled,
+  onSaveTrialDays, savingTrialDays,
   onToggleModel, onDeleteModel, onEditModel, onCreateModel,
   onEditKey, onTestKey, onRefresh 
 }) {
   const [showKeys, setShowKeys] = useState({})
+  const [trialDaysInput, setTrialDaysInput] = useState(platformSettings.default_trial_days || '7')
   const mediaModelValue = platformSettings.default_media_model || 'gemini-1.5-flash'
   const voiceResponsesEnabled = platformSettings.voice_responses_enabled === '1'
+
+  // Sync input if platformSettings changes externally
+  useState(() => {
+    setTrialDaysInput(platformSettings.default_trial_days || '7')
+  })
   const MEDIA_MODEL_OPTIONS = [
     { value: 'models/gemini-2.5-flash', label: 'Gemini 2.5 Flash - Dernier modèle ⭐' },
     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash - Très rapide' },
@@ -1447,6 +1506,39 @@ function AIModelsContent({
           />
           <span className="text-sm text-gray-300">Réponses vocales activées pour la plateforme</span>
         </label>
+      </div>
+
+      {/* Trial Duration Setting */}
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-amber-400" />
+          Durée d&apos;essai gratuit
+        </h3>
+        <p className="text-gray-400 text-sm mb-4">
+          Nombre de jours accordés aux nouveaux inscrits pour tester la plateforme gratuitement. Cette valeur s&apos;applique aux nouvelles inscriptions uniquement.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="number"
+            min={1}
+            max={365}
+            value={trialDaysInput}
+            onChange={(e) => setTrialDaysInput(e.target.value)}
+            className="input-dark w-32 text-center text-lg font-bold"
+          />
+          <span className="text-gray-400 text-sm">jours</span>
+          <button
+            onClick={() => onSaveTrialDays?.(trialDaysInput)}
+            disabled={savingTrialDays}
+            className="btn-primary flex items-center gap-2 disabled:opacity-50"
+          >
+            {savingTrialDays ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+            Enregistrer
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">
+          ⚡ Valeur actuelle : <span className="text-amber-400 font-semibold">{platformSettings.default_trial_days || 7} jours</span>
+        </p>
       </div>
 
       {/* API Keys Section */}

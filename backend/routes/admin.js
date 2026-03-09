@@ -234,7 +234,7 @@ router.get('/users/:id', authenticateAdmin, async (req, res) => {
 // Update user
 router.put('/users/:id', authenticateAdmin, async (req, res) => {
     try {
-        const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, payment_module_enabled, parent_user_id } = req.body;
+        const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, payment_module_enabled, parent_user_id, subscription_end_date } = req.body;
 
         const existing = await db.get('SELECT id, is_admin, plan FROM users WHERE id = ?', req.params.id);
         if (!existing) {
@@ -334,6 +334,29 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
             const parentId = parent_user_id === '' || parent_user_id === null ? null : parent_user_id;
             setClauses.push('parent_user_id = ?');
             params.push(parentId);
+        }
+        // Allow explicit override of subscription_end_date (only if plan didn't already set it)
+        if (subscription_end_date !== undefined && !planChanged) {
+            if (subscription_end_date === '' || subscription_end_date === null) {
+                setClauses.push('subscription_end_date = ?');
+                params.push(null);
+            } else {
+                const parsed = new Date(subscription_end_date);
+                if (!isNaN(parsed.getTime())) {
+                    setClauses.push('subscription_end_date = ?');
+                    params.push(parsed.toISOString());
+                    // Also update subscription_status to trialing if plan is free
+                    if (existing.plan === 'free' || existing.plan === 'free_expired') {
+                        setClauses.push('subscription_status = ?');
+                        params.push('trialing');
+                        // Restore free plan if expired
+                        if (existing.plan === 'free_expired') {
+                            setClauses.push('plan = ?');
+                            params.push('free');
+                        }
+                    }
+                }
+            }
         }
 
         if (setClauses.length === 0) {

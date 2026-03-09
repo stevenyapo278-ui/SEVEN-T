@@ -111,7 +111,6 @@ export default function Dashboard() {
     }
   }
 
-  // Calculate alerts
   const alerts = []
   
   if (quotas?.credit_warning?.level === 'critical') {
@@ -129,6 +128,35 @@ export default function Dashboard() {
       link: '/dashboard/settings'
     })
   }
+
+  
+  if (user?.plan === 'free_expired') {
+    alerts.unshift({
+      type: 'error',
+      message: t('dashboard.alerts.trialExpired', 'Votre période d\'essai gratuit est terminée. Vos agents WhatsApp ont été désactivés. Veuillez mettre à niveau votre plan pour réactiver vos services.'),
+      action: 'Mettre à niveau',
+      link: '/dashboard/settings'
+    })
+  } else if (user?.plan === 'free' && user?.subscription_end_date) {
+    const end = new Date(user.subscription_end_date)
+    if (end > new Date()) {
+      const diffMs = end - new Date()
+      const days = Math.floor(diffMs / 86400000)
+      const hours = Math.floor((diffMs % 86400000) / 3600000)
+      
+      let text = ''
+      if (days > 0) text = `Il vous reste ${days} jour(s) et ${hours} heure(s) sur votre essai gratuit. Profitez-en pour configurer votre agent !`
+      else text = `Attention, il vous reste moins de ${hours} heure(s) ou quelques minutes sur votre essai !`
+
+      alerts.unshift({
+        type: 'warning',
+        message: text,
+        action: 'Voir les plans',
+        link: '/dashboard/settings'
+      })
+    }
+  }
+
   
   const disconnectedAgents = agents.filter(a => a.is_active && !a.whatsapp_connected)
   if (disconnectedAgents.length > 0) {

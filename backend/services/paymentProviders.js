@@ -5,8 +5,9 @@
 
 import db from '../database/init.js';
 import paymetrust from './paymetrust.js';
+import geniuspay from './geniuspay.js';
 
-const PROVIDER_IDS = ['paymetrust'];
+const PROVIDER_IDS = ['paymetrust', 'geniuspay'];
 
 /**
  * Get stored credentials for a user and provider (no secrets in logs).
@@ -34,7 +35,9 @@ export async function getProviderConfig(userId, provider) {
  */
 export async function isProviderConfiguredForUser(userId, provider) {
     const config = await getProviderConfig(userId, provider);
-    return !!config && getAdapter(provider).isConfigured(config);
+    if (!config) return false;
+    const adapter = getAdapter(provider);
+    return adapter.isConfigured(config);
 }
 
 /**
@@ -49,6 +52,15 @@ function getAdapter(provider) {
                 },
                 async createInvoice(credentials, params) {
                     return paymetrust.createInvoiceWithCredentials(credentials, params);
+                }
+            };
+        case 'geniuspay':
+            return {
+                isConfigured(credentials) {
+                    return !!(credentials?.api_key && credentials?.api_secret);
+                },
+                async createInvoice(credentials, params) {
+                    return geniuspay.createInvoiceWithCredentials(credentials, params);
                 }
             };
         default:
@@ -80,10 +92,12 @@ export async function createInvoiceForUser(userId, provider, params) {
  */
 export function getSupportedProviders() {
     return {
-        paymetrust: { id: 'paymetrust', name: 'PaymeTrust', icon: '🔒' }
+        paymetrust: { id: 'paymetrust', name: 'PaymeTrust', icon: '🔒' },
+        geniuspay: { id: 'geniuspay', name: 'GeniusPay', icon: '💎' }
     };
 }
 
 export function getSupportedProviderIds() {
     return [...PROVIDER_IDS];
 }
+
