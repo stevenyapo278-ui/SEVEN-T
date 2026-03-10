@@ -18,6 +18,7 @@ import {
   Clock,
   RefreshCw,
   Crown,
+  Rocket,
   WifiOff,
   CheckCircle2,
   UserPlus,
@@ -91,6 +92,13 @@ export default function Dashboard() {
       startTour('sidebar')
     }, 500)
   }
+
+  // Chain tours: dashboard tour starts after sidebar tour is completed
+  useEffect(() => {
+    if (completedTours.includes('sidebar') && !completedTours.includes('dashboard')) {
+      startTour('dashboard')
+    }
+  }, [completedTours, startTour])
 
   const loadData = async () => {
     try {
@@ -233,6 +241,12 @@ export default function Dashboard() {
                 <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
                 </h1>
+                {agents.length === 0 && (
+                  <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-gold-400 text-black text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">
+                    <Rocket className="w-3 h-3" />
+                    Onboarding
+                  </span>
+                )}
               </div>
               <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
                 {t('dashboard.welcomeSubtitle')}
@@ -253,7 +267,7 @@ export default function Dashboard() {
           </div>
 
           {/* Key Stats Row inside Hero */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8" data-tour="stats">
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">

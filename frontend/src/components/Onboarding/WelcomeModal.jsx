@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -12,8 +13,14 @@ import {
   Rocket,
   Zap,
   Users,
-  X
+  X,
+  ChevronRight,
+  ShieldCheck,
+  Target,
+  Clock
 } from 'lucide-react'
+
+const MotionDiv = motion.div
 
 function getSteps(t) {
   return [
@@ -21,13 +28,33 @@ function getSteps(t) {
       id: 'welcome',
       title: t('onboarding.welcomeTitle'),
       description: t('onboarding.welcomeDesc'),
+      image: '/images/onboarding/welcome_bot.png',
       icon: Sparkles,
       content: (
-        <div className="space-y-4 text-center">
-          <div className="w-20 h-20 mx-auto bg-gradient-to-br from-gold-400 to-blue-500 rounded-2xl flex items-center justify-center">
-            <Rocket className="w-10 h-10 icon-on-gradient" />
+        <div className="space-y-6">
+          <p className="text-gray-300 text-center text-lg leading-relaxed">
+            {t('onboarding.welcomeIntro')}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-100">Sécurisé</h4>
+                <p className="text-xs text-gray-500">Protection de vos données</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-gold-400/20 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-gold-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-gray-100">Instantané</h4>
+                <p className="text-xs text-gray-500">Réponses en temps réel</p>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-300">{t('onboarding.welcomeIntro')}</p>
         </div>
       )
     },
@@ -37,27 +64,29 @@ function getSteps(t) {
       description: t('onboarding.stepAgentDesc'),
       icon: Bot,
       content: (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-space-800 rounded-xl border border-space-700">
-            <Bot className="w-8 h-8 text-blue-400 mb-2" />
-            <h4 className="font-medium text-gray-100">{t('onboarding.stepAgentCommercial')}</h4>
-            <p className="text-sm text-gray-400">{t('onboarding.stepAgentCommercialSub')}</p>
-          </div>
-          <div className="p-4 bg-space-800 rounded-xl border border-space-700">
-            <MessageSquare className="w-8 h-8 text-emerald-400 mb-2" />
-            <h4 className="font-medium text-gray-100">{t('onboarding.stepAgentSupport')}</h4>
-            <p className="text-sm text-gray-400">{t('onboarding.stepAgentSupportSub')}</p>
-          </div>
-          <div className="p-4 bg-space-800 rounded-xl border border-space-700">
-            <Package className="w-8 h-8 text-gold-400 mb-2" />
-            <h4 className="font-medium text-gray-100">{t('onboarding.stepAgentEcommerce')}</h4>
-            <p className="text-sm text-gray-400">{t('onboarding.stepAgentEcommerceSub')}</p>
-          </div>
-          <div className="p-4 bg-space-800 rounded-xl border border-space-700">
-            <Users className="w-8 h-8 text-blue-400 mb-2" />
-            <h4 className="font-medium text-gray-100">{t('onboarding.stepAgentFaq')}</h4>
-            <p className="text-sm text-gray-400">{t('onboarding.stepAgentFaqSub')}</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { id: 'commercial', icon: Target, color: 'blue' },
+            { id: 'support', icon: MessageSquare, color: 'emerald' },
+            { id: 'ecommerce', icon: Package, color: 'gold' },
+            { id: 'faq', icon: Users, color: 'purple' }
+          ].map((item) => (
+            <MotionDiv
+              key={item.id}
+              whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' }}
+              className="p-5 bg-white/5 rounded-2xl border border-white/10 group cursor-pointer"
+            >
+              <div className={`w-12 h-12 rounded-2xl mb-4 flex items-center justify-center bg-${item.color}-500/20 text-${item.color}-400 group-hover:scale-110 transition-transform`}>
+                <item.icon className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-gray-100 mb-1">
+                {t(`onboarding.stepAgent${item.id.charAt(0).toUpperCase() + item.id.slice(1)}`)}
+              </h4>
+              <p className="text-xs text-gray-500 leading-tight">
+                {t(`onboarding.stepAgent${item.id.charAt(0).toUpperCase() + item.id.slice(1)}Sub`)}
+              </p>
+            </MotionDiv>
+          ))}
         </div>
       )
     },
@@ -65,16 +94,35 @@ function getSteps(t) {
       id: 'whatsapp',
       title: t('onboarding.stepWhatsAppTitle'),
       description: t('onboarding.stepWhatsAppDesc'),
+      image: '/images/onboarding/whatsapp_connection.png',
       icon: MessageSquare,
       content: (
-        <div className="text-center space-y-4">
-          <div className="w-32 h-32 mx-auto bg-white rounded-xl flex items-center justify-center">
-            <div className="w-24 h-24 bg-space-800 rounded-lg flex items-center justify-center">
-              <Zap className="w-12 h-12 text-gold-400" />
+        <div className="space-y-6">
+          <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 text-center">
+            <p className="text-emerald-400 font-medium mb-4">
+              Connectez votre compte en 10 secondes
+            </p>
+            <div className="flex justify-center gap-4">
+               {[1, 2, 3].map(i => (
+                 <div key={i} className="flex flex-col items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center font-bold text-emerald-400">
+                      {i}
+                    </div>
+                 </div>
+               ))}
             </div>
           </div>
-          <p className="text-gray-300">{t('onboarding.stepWhatsAppIntro')}</p>
-          <p className="text-sm text-gold-400/90">{t('onboarding.stepWhatsAppHint')}</p>
+          <p className="text-gray-400 text-center text-sm px-4">
+            {t('onboarding.stepWhatsAppIntro')}
+          </p>
+          <div className="flex items-center gap-3 p-4 bg-gold-400/5 rounded-2xl border border-gold-400/20">
+             <div className="p-2 bg-gold-400/20 rounded-lg">
+                <Sparkles className="w-4 h-4 text-gold-400" />
+             </div>
+             <p className="text-xs text-gold-400/90 italic font-medium">
+               {t('onboarding.stepWhatsAppHint')}
+             </p>
+          </div>
         </div>
       )
     },
@@ -82,30 +130,34 @@ function getSteps(t) {
       id: 'ready',
       title: t('onboarding.stepReadyTitle'),
       description: t('onboarding.stepReadyDesc'),
+      image: '/images/onboarding/success_launch.png',
       icon: CheckCircle,
       content: (
-        <div className="text-center space-y-6">
-          <div className="flex justify-center gap-4">
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle className="w-6 h-6 text-emerald-400" />
-              </div>
-              <p className="text-sm text-gray-400">{t('onboarding.stepReady24')}</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto bg-blue-500/20 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle className="w-6 h-6 text-blue-400" />
-              </div>
-              <p className="text-sm text-gray-400">{t('onboarding.stepReadyAI')}</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 mx-auto bg-gold-400/20 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle className="w-6 h-6 text-gold-400" />
-              </div>
-              <p className="text-sm text-gray-400">{t('onboarding.stepReadySimple')}</p>
-            </div>
+        <div className="space-y-8">
+          <div className="flex flex-col gap-4">
+            {[
+              { text: t('onboarding.stepReady24'), icon: Clock, color: 'emerald' },
+              { text: t('onboarding.stepReadyAI'), icon: Sparkles, color: 'blue' },
+              { text: t('onboarding.stepReadySimple'), icon: Zap, color: 'gold' }
+            ].map((item, i) => (
+              <MotionDiv
+                key={i}
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.1 * i }}
+                className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10"
+              >
+                <div className={`w-12 h-12 rounded-xl bg-${item.color}-500/20 flex items-center justify-center flex-shrink-0`}>
+                  <item.icon className={`w-6 h-6 text-${item.color}-400`} />
+                </div>
+                <p className="text-gray-200 font-medium">{item.text}</p>
+                <CheckCircle className="w-5 h-5 text-emerald-400 ml-auto" />
+              </MotionDiv>
+            ))}
           </div>
-          <p className="text-gray-300">{t('onboarding.stepReadyFollow')}</p>
+          <p className="text-gray-400 text-center font-medium italic">
+            {t('onboarding.stepReadyFollow')}
+          </p>
         </div>
       )
     }
@@ -116,6 +168,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
   useLockBodyScroll(isOpen)
   const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(0)
+  const [direction, setDirection] = useState(0)
   const navigate = useNavigate()
   const steps = useMemo(() => getSteps(t), [t])
 
@@ -130,8 +183,14 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
       onComplete()
       navigate('/dashboard/agents?create=true')
     } else {
+      setDirection(1)
       setCurrentStep(prev => prev + 1)
     }
+  }
+
+  const handleBack = () => {
+    setDirection(-1)
+    setCurrentStep(prev => prev - 1)
   }
 
   const handleSkip = () => {
@@ -139,95 +198,173 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
     onClose()
   }
 
+  const variants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.9
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      scale: 1
+    },
+    exit: (direction) => ({
+      zIndex: 0,
+      x: direction < 0 ? 300 : -300,
+      opacity: 0,
+      scale: 0.9
+    })
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/90 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <AnimatePresence>
+        <MotionDiv 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-space-950/95 backdrop-blur-xl" 
+        />
+      </AnimatePresence>
       
-      <div className="relative z-10 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 rounded-t-2xl sm:rounded-2xl border border-space-700 overflow-hidden animate-fadeIn">
-        {/* Progress bar */}
-        <div className="h-1 bg-space-800">
-          <div 
-            className="h-full bg-gradient-to-r from-gold-400 to-blue-500 transition-all duration-300"
-            style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-          />
-        </div>
-
-        {/* Skip button */}
-        <button 
-          onClick={handleSkip}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto min-h-0 p-6 sm:p-8">
-          {/* Step indicator */}
-          <div className="flex justify-center gap-2 mb-6">
-            {steps.map((_, index) => (
-              <div 
-                key={index}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentStep 
-                    ? 'bg-gold-400' 
-                    : index < currentStep 
-                    ? 'bg-blue-500' 
-                    : 'bg-space-700'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Icon */}
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-gold-400/20 to-blue-500/20 rounded-2xl flex items-center justify-center">
-              <StepIcon className="w-8 h-8 text-gold-400" />
-            </div>
-          </div>
-
-          {/* Title & Description */}
-          <h2 className="text-2xl font-display font-bold text-center text-gray-100 mb-2">
-            {step.title}
-          </h2>
-          <p className="text-center text-gray-400 mb-8">
-            {step.description}
-          </p>
-
-          {/* Step content */}
-          <div className="mb-8">
-            {step.content}
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col-reverse sm:flex-row gap-3">
-            {currentStep > 0 && (
-              <button
-                onClick={() => setCurrentStep(prev => prev - 1)}
-                className="flex-1 btn-secondary min-h-[44px] touch-target"
+      <MotionDiv 
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col lg:flex-row bg-[#0B0F1A] rounded-[2.5rem] border border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
+      >
+        {/* Left Side: Visual/Image */}
+        <div className="hidden lg:flex lg:w-[45%] bg-[#0D121F] relative overflow-hidden border-r border-white/5">
+           <AnimatePresence mode="wait" custom={direction}>
+              <MotionDiv
+                key={currentStep}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center"
               >
-                {t('onboarding.btnBack')}
-              </button>
-            )}
-            <button
-              onClick={handleNext}
-              className="flex-1 btn-primary min-h-[44px] touch-target inline-flex items-center justify-center gap-2"
-            >
-              {isLastStep ? t('onboarding.btnCreateAgent') : t('onboarding.btnContinue')}
-              <ArrowRight className="w-4 h-4" />
-            </button>
+                  {step.image ? (
+                    <img 
+                      src={step.image} 
+                      alt={step.title}
+                      className="w-full h-auto object-contain rounded-3xl shadow-2xl"
+                    />
+                  ) : (
+                    <div className="w-full aspect-square rounded-3xl bg-gradient-to-br from-gold-400/20 to-blue-500/20 flex items-center justify-center p-12">
+                       <StepIcon className="w-32 h-32 text-gold-400 drop-shadow-glow" />
+                    </div>
+                  )}
+                  
+                  <div className="mt-12 space-y-4">
+                     <div className="flex justify-center gap-2">
+                        {steps.map((_, i) => (
+                           <div 
+                             key={i} 
+                             className={`h-1.5 rounded-full transition-all duration-500 ${
+                               i === currentStep ? 'w-8 bg-gold-400' : 'w-2 bg-white/10'
+                             }`} 
+                           />
+                        ))}
+                     </div>
+                     <p className="text-[10px] uppercase font-black tracking-[0.3em] text-white/20">
+                        Étape {currentStep + 1} sur {steps.length}
+                     </p>
+                  </div>
+              </MotionDiv>
+           </AnimatePresence>
+           
+           {/* Background Decorations */}
+           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full" />
+           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-gold-400/10 blur-[120px] rounded-full" />
+        </div>
+
+        {/* Right Side: content */}
+        <div className="flex-1 flex flex-col min-h-0 p-8 sm:p-12">
+          {/* Header Mobile / Info */}
+          <div className="flex items-center justify-between mb-8">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gold-400/10 flex items-center justify-center border border-gold-400/20">
+                   <Sparkles className="w-5 h-5 text-gold-400" />
+                </div>
+                <span className="text-sm font-black uppercase tracking-widest text-white/40">Onboarding</span>
+             </div>
+             <button 
+               onClick={handleSkip}
+               className="p-2 hover:bg-white/5 rounded-full transition-colors group"
+             >
+               <X className="w-5 h-5 text-gray-500 group-hover:text-white" />
+             </button>
           </div>
 
-          {/* Skip link */}
-          {!isLastStep && (
-            <button 
-              onClick={handleSkip}
-              className="w-full mt-4 text-sm text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              {t('onboarding.skipIntro')}
-            </button>
-          )}
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
+            <AnimatePresence mode="wait" custom={direction}>
+              <MotionDiv
+                key={currentStep}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="space-y-8"
+              >
+                <div className="space-y-4">
+                   <h2 className="text-4xl sm:text-5xl font-display font-black text-white leading-tight">
+                     {step.title}
+                   </h2>
+                   <p className="text-lg text-gray-400 leading-relaxed max-w-lg">
+                     {step.description}
+                   </p>
+                </div>
+
+                <div className="pt-4">
+                  {step.content}
+                </div>
+              </MotionDiv>
+            </AnimatePresence>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="mt-12 flex items-center justify-between pt-8 border-t border-white/5">
+             <div>
+                {currentStep > 0 && (
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-2 text-gray-500 hover:text-white font-bold transition-colors"
+                  >
+                    Précédent
+                  </button>
+                )}
+             </div>
+
+             <div className="flex items-center gap-6">
+                {!isLastStep && (
+                   <button 
+                     onClick={handleSkip}
+                     className="text-sm font-bold text-gray-500 hover:text-gray-300 hidden sm:block"
+                   >
+                     Passer
+                   </button>
+                )}
+                
+                <button
+                  onClick={handleNext}
+                  className="group relative flex items-center gap-4 bg-white text-black px-8 py-5 rounded-2xl font-black overflow-hidden transition-all hover:scale-105 active:scale-95"
+                >
+                  <span className="relative z-10">
+                    {isLastStep ? t('onboarding.btnCreateAgent') : t('onboarding.btnContinue')}
+                  </span>
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
+                  <div className="absolute inset-0 bg-gold-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                </button>
+             </div>
+          </div>
         </div>
-      </div>
+      </MotionDiv>
     </div>
   )
 }

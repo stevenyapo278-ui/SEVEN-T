@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
+import { useOnboardingTour } from '../components/Onboarding'
 import { useConversationSocket } from '../hooks/useConversationSocket'
 import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -162,6 +163,7 @@ const getTimeAgo = (dateString) => {
 export default function Conversations() {
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()
+  const { startTour, completedTours } = useOnboardingTour()
   const { user: authUser, refreshUser } = useAuth()
   const isDark = theme === 'dark'
   const hasConversionScore = authUser?.plan_features?.conversion_score === true
@@ -186,6 +188,12 @@ export default function Conversations() {
   useEffect(() => {
     refreshUser()
   }, [refreshUser])
+
+  useEffect(() => {
+    if (!completedTours.includes('conversations')) {
+      startTour('conversations')
+    }
+  }, [completedTours, startTour])
 
   // Real-time: refetch list when a conversation is updated (new message)
   useConversationSocket(() => loadConversationsRef.current?.())
@@ -622,7 +630,7 @@ export default function Conversations() {
 
       {/* Conversations List */}
       {!loadError && filteredConversations.length === 0 ? (
-        <div className="bg-space-800/50 border border-space-700/50 rounded-3xl p-16 text-center">
+        <div className="bg-space-800/50 border border-space-700/50 rounded-3xl p-16 text-center" data-tour="conv-list">
           <div className="w-20 h-20 bg-gradient-to-br from-space-700 to-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             <MessageSquare className="w-10 h-10 text-gray-500" />
           </div>
@@ -645,7 +653,7 @@ export default function Conversations() {
           )}
         </div>
       ) : !loadError ? (
-        <div className="space-y-2">
+        <div className="space-y-2" data-tour="conv-list">
           {filteredConversations.map((conv, index) => {
             const isSelected = selectedConversations.has(conv.id)
             const CardWrapper = bulkMode ? 'div' : Link

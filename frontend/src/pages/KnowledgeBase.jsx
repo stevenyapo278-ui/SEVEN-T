@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import api from '../services/api'
+import { useOnboardingTour } from '../components/Onboarding'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -41,6 +43,8 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5" }) => {
 }
 
 export default function KnowledgeBase() {
+  const { t } = useTranslation()
+  const { startTour, completedTours } = useOnboardingTour()
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -56,6 +60,12 @@ export default function KnowledgeBase() {
   useEffect(() => {
     loadKnowledge()
   }, [])
+
+  useEffect(() => {
+    if (!completedTours.includes('add_knowledge')) {
+      startTour('add_knowledge')
+    }
+  }, [completedTours, startTour])
 
   const loadKnowledge = async () => {
     setLoadError(null)
@@ -138,7 +148,7 @@ export default function KnowledgeBase() {
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                   <BookOpen className="w-6 h-6 text-gold-400" />
                 </div>
-                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`} data-tour="tab-knowledge">
                   Base de Connaissances
                 </h1>
               </div>
@@ -148,6 +158,7 @@ export default function KnowledgeBase() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
+              data-tour="add-knowledge-button"
               className="btn-primary inline-flex items-center justify-center gap-2 flex-shrink-0 touch-target"
             >
               <Plus className="w-5 h-5" />

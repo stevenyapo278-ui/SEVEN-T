@@ -1,5 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, ChevronRight, ChevronLeft } from 'lucide-react'
+
+const MotionDiv = motion.div
 
 // Define tour steps for different pages
 export const TOUR_STEPS = {
@@ -44,22 +48,22 @@ export const TOUR_STEPS = {
   ],
   agentDetail: [
     {
-      id: 'agent-whatsapp',
-      target: '[data-tour="whatsapp-connect"]',
-      title: '📱 Connecter WhatsApp',
-      description: 'Scannez le QR code pour lier votre compte WhatsApp à cet agent.',
+      id: 'agent-overview',
+      target: '[data-tour="tab-overview"]',
+      title: '📋 Vue d\'ensemble',
+      description: 'Retrouvez ici le statut de connexion et les statistiques de votre agent.',
       position: 'bottom'
     },
     {
       id: 'agent-settings',
-      target: '[data-tour="agent-settings"]',
+      target: '[data-tour="tab-settings"]',
       title: '⚙️ Paramètres',
       description: 'Personnalisez le comportement, le modèle IA et les réponses automatiques.',
       position: 'bottom'
     },
     {
       id: 'agent-knowledge',
-      target: '[data-tour="agent-knowledge"]',
+      target: '[data-tour="tab-knowledge"]',
       title: '📚 Base de connaissances',
       description: 'Ajoutez des informations pour que l\'IA réponde plus précisément.',
       position: 'bottom'
@@ -94,6 +98,63 @@ export const TOUR_STEPS = {
       description: 'Gérez votre catalogue produits (agents type vente / e-commerce).',
       position: 'right'
     }
+  ],
+  whatsapp_connect: [
+    {
+      id: 'wc-select-agent',
+      target: '[data-tour="create-tool-whatsapp"]',
+      title: '📱 Connecter un compte',
+      description: 'Cliquez ici pour commencer la connexion de votre compte WhatsApp.',
+      position: 'bottom'
+    },
+    {
+      id: 'wc-qr-section',
+      target: '[data-tour="whatsapp-connect-section"]',
+      title: '🔗 Scanner le QR Code',
+      description: 'Scannez ce code avec votre téléphone (WhatsApp > Appareils connectés) pour activer l\'agent.',
+      position: 'right'
+    }
+  ],
+  add_knowledge: [
+    {
+      id: 'ak-tab',
+      target: '[data-tour="tab-knowledge"]',
+      title: '📚 Base de connaissances',
+      description: 'C\'est ici que vous donnez de la "mémoire" à votre IA.',
+      position: 'bottom'
+    },
+    {
+      id: 'ak-add-button',
+      target: '[data-tour="add-knowledge-button"]',
+      title: '➕ Ajouter du contenu',
+      description: 'Vous pouvez importer des PDF, du texte ou des liens web.',
+      position: 'left'
+    }
+  ],
+  conversations: [
+    {
+      id: 'conv-test',
+      target: '[data-tour="conv-list"]',
+      title: '💬 Tester l\'agent',
+      description: 'Envoyez un message pour tester la réponse automatique de votre agent.',
+      position: 'bottom'
+    }
+  ],
+  products: [
+    {
+      id: 'prod-list',
+      target: '[data-tour="products-list"]',
+      title: '📦 Catalogue Produits',
+      description: 'Gérez ici vos produits pour que votre agent puisse les proposer à vos clients.',
+      position: 'top'
+    },
+    {
+      id: 'prod-create',
+      target: '[data-tour="create-product"]',
+      title: '➕ Ajouter un produit',
+      description: 'Cliquez ici pour ajouter manuellement un nouveau produit à votre catalogue.',
+      position: 'bottom'
+    }
   ]
 }
 
@@ -101,44 +162,60 @@ export const TOUR_STEPS = {
 const OnboardingTourContext = createContext(null)
 
 export function OnboardingTourProvider({ children, userId }) {
-  const [activeTour, setActiveTour] = useState(null) // 'dashboard', 'agents', etc.
+  const [activeTour, setActiveTour] = useState(null)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [guidedTask, setGuidedTask] = useState(null)
   
-  // Use user-specific key for completed tours - only use key when userId is available
   const storageKey = userId ? `seven-t-completed-tours-${userId}` : null
-  
+  const taskKey = userId ? `seven-t-guided-task-${userId}` : null
   const [completedTours, setCompletedTours] = useState([])
 
-  // Load completed tours when userId becomes available
   useEffect(() => {
     if (storageKey) {
       const saved = localStorage.getItem(storageKey)
       setCompletedTours(saved ? JSON.parse(saved) : [])
     }
-  }, [storageKey])
+    if (taskKey) {
+      const savedTask = localStorage.getItem(taskKey)
+      if (savedTask) {
+        const parsed = JSON.parse(savedTask)
+        setGuidedTask(parsed)
+        // If we have a saved task and no active tour, try rebooting it
+        if (!activeTour && parsed.tour) {
+          setActiveTour(parsed.tour)
+          setCurrentStepIndex(0)
+        }
+      }
+    }
+  }, [storageKey, taskKey])
 
-  // Save completed tours to localStorage only when we have a valid userId
   useEffect(() => {
     if (storageKey && completedTours.length > 0) {
       localStorage.setItem(storageKey, JSON.stringify(completedTours))
     }
   }, [completedTours, storageKey])
 
-  const startTour = useCallback((tourId) => {
-    // Don't start tours until we have a valid userId to ensure proper storage
-    if (!userId) {
-      console.log('[Tour] Skipping tour start - no userId yet')
-      return
+  useEffect(() => {
+    if (taskKey) {
+      if (guidedTask) {
+        localStorage.setItem(taskKey, JSON.stringify(guidedTask))
+      } else {
+        localStorage.removeItem(taskKey)
+      }
     }
-    if (!completedTours.includes(tourId) && TOUR_STEPS[tourId]) {
+  }, [guidedTask, taskKey])
+
+  const startTour = useCallback((tourId) => {
+    if (!userId) return
+    if ((!completedTours.includes(tourId) || tourId === 'force') && TOUR_STEPS[tourId]) {
       setActiveTour(tourId)
       setCurrentStepIndex(0)
     }
   }, [completedTours, userId])
 
   const endTour = useCallback(() => {
-    if (activeTour) {
-      setCompletedTours(prev => [...prev, activeTour])
+    if (activeTour && activeTour !== 'force') {
+      setCompletedTours(prev => prev.includes(activeTour) ? prev : [...prev, activeTour])
     }
     setActiveTour(null)
     setCurrentStepIndex(0)
@@ -153,7 +230,6 @@ export function OnboardingTourProvider({ children, userId }) {
 
   const nextStep = useCallback(() => {
     if (!activeTour) return
-    
     const steps = TOUR_STEPS[activeTour]
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex(prev => prev + 1)
@@ -179,6 +255,17 @@ export function OnboardingTourProvider({ children, userId }) {
   const totalSteps = activeTour ? TOUR_STEPS[activeTour]?.length : 0
   const isTourActive = activeTour !== null
 
+  const startGuidedTask = useCallback((taskId, targetTour = null) => {
+    setGuidedTask({ id: taskId, tour: targetTour || taskId })
+    if (targetTour || taskId) {
+      startTour(targetTour || taskId)
+    }
+  }, [startTour])
+
+  const completeGuidedTask = useCallback(() => {
+    setGuidedTask(null)
+  }, [])
+
   const value = {
     activeTour,
     currentStep,
@@ -186,28 +273,34 @@ export function OnboardingTourProvider({ children, userId }) {
     totalSteps,
     isTourActive,
     completedTours,
+    guidedTask,
     startTour,
     endTour,
     skipAllTours,
     nextStep,
     prevStep,
     resetTours,
+    startGuidedTask,
+    completeGuidedTask,
     isStepActive: (stepId) => currentStep?.id === stepId
   }
 
   return (
     <OnboardingTourContext.Provider value={value}>
       {children}
-      {isTourActive && currentStep && (
-        <FloatingTourTooltip
-          step={currentStep}
-          stepNumber={currentStepIndex + 1}
-          totalSteps={totalSteps}
-          onNext={nextStep}
-          onPrev={prevStep}
-          onDismiss={endTour}
-        />
-      )}
+      <AnimatePresence>
+        {isTourActive && currentStep && (
+          <FloatingTourTooltip
+            key={currentStep.id}
+            step={currentStep}
+            stepNumber={currentStepIndex + 1}
+            totalSteps={totalSteps}
+            onNext={nextStep}
+            onPrev={prevStep}
+            onDismiss={endTour}
+          />
+        )}
+      </AnimatePresence>
     </OnboardingTourContext.Provider>
   )
 }
@@ -220,14 +313,12 @@ export function useOnboardingTour() {
   return context
 }
 
-// Floating tooltip that positions itself next to the target element
 function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
   const [position, setPosition] = useState({ top: 0, left: 0 })
   const [targetRect, setTargetRect] = useState(null)
   const tooltipRef = useRef(null)
 
   useEffect(() => {
-    // Plusieurs éléments peuvent avoir le même data-tour (sidebar desktop + mobile) : prendre le visible
     const candidates = document.querySelectorAll(step.target)
     const targetElement = Array.from(candidates).find((el) => {
       const rect = el.getBoundingClientRect()
@@ -235,21 +326,17 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
       return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
     }) || candidates[0]
 
-    if (!targetElement) {
-      console.warn(`Tour target not found: ${step.target}`)
-      return
-    }
+    if (!targetElement) return
 
     const updatePosition = () => {
       const rect = targetElement.getBoundingClientRect()
       setTargetRect(rect)
 
-      // Calculate tooltip position based on step.position
       let top = 0
       let left = 0
       const tooltipWidth = 320
       const tooltipHeight = 180
-      const offset = 12
+      const offset = 20
 
       switch (step.position) {
         case 'right':
@@ -272,7 +359,6 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
           break
       }
 
-      // Keep tooltip within viewport
       top = Math.max(10, Math.min(top, window.innerHeight - tooltipHeight - 10))
       left = Math.max(10, Math.min(left, window.innerWidth - tooltipWidth - 10))
 
@@ -291,230 +377,107 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
 
   if (!targetRect) return null
 
-  const padding = 4
-  const ring = {
-    top: targetRect.top - padding,
-    left: targetRect.left - padding,
-    width: targetRect.width + padding * 2,
-    height: targetRect.height + padding * 2,
-  }
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 0
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 0
+  const padding = 8
 
   return createPortal(
-    <>
-      {/* Backdrop en 4 panneaux pour laisser la cible visible (texte lisible) */}
-      <div
-        className="fixed left-0 top-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
-        style={{ width: Math.max(0, ring.left), height: vh }}
+    <div className="fixed inset-0 z-[9998] pointer-events-none">
+      {/* Backdrop Spotlight Effect */}
+      <MotionDiv 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-space-950/60 backdrop-blur-[2px] pointer-events-auto"
         onClick={onDismiss}
-        aria-hidden
-      />
-      <div
-        className="fixed top-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
-        style={{ left: ring.left + ring.width, width: Math.max(0, vw - ring.left - ring.width), height: vh }}
-        onClick={onDismiss}
-        aria-hidden
-      />
-      <div
-        className="fixed left-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
-        style={{ top: ring.top + ring.height, width: vw, height: Math.max(0, vh - ring.top - ring.height) }}
-        onClick={onDismiss}
-        aria-hidden
-      />
-      <div
-        className="fixed left-0 top-0 bg-space-950/80 backdrop-blur-sm z-[9998]"
-        style={{ width: vw, height: Math.max(0, ring.top) }}
-        onClick={onDismiss}
-        aria-hidden
-      />
-
-      {/* Bague dorée autour de la cible (aucun fond, le lien reste lisible) */}
-      <div
-        className="fixed z-[9999] pointer-events-none rounded-xl ring-2 ring-gold-400 ring-offset-2 ring-offset-space-950"
         style={{
-          top: ring.top,
-          left: ring.left,
-          width: ring.width,
-          height: ring.height,
+          clipPath: `polygon(
+            0% 0%, 
+            0% 100%, 
+            ${targetRect.left - padding}px 100%, 
+            ${targetRect.left - padding}px ${targetRect.top - padding}px, 
+            ${targetRect.left + targetRect.width + padding}px ${targetRect.top - padding}px, 
+            ${targetRect.left + targetRect.width + padding}px ${targetRect.top + targetRect.height + padding}px, 
+            ${targetRect.left - padding}px ${targetRect.top + targetRect.height + padding}px, 
+            ${targetRect.left - padding}px 100%, 
+            100% 100%, 
+            100% 0%
+          )`
         }}
       />
 
+      {/* Target Highlight Ring */}
+      <MotionDiv
+        layoutId="tour-highlight"
+        className="absolute z-[9999] rounded-2xl border-2 border-gold-400 shadow-[0_0_30px_rgba(245,212,122,0.3)] pointer-events-none"
+        initial={false}
+        animate={{
+          top: targetRect.top - padding,
+          left: targetRect.left - padding,
+          width: targetRect.width + padding * 2,
+          height: targetRect.height + padding * 2,
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      />
+
       {/* Tooltip */}
-      <div
+      <MotionDiv
         ref={tooltipRef}
-        className="fixed z-[10000] w-80 animate-in fade-in slide-in-from-bottom-2 duration-300"
-        style={{ top: position.top, left: position.left }}
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1, top: position.top, left: position.left }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="fixed z-[10000] w-80 pointer-events-auto"
       >
-        <div className="bg-space-800 border border-gold-400/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="bg-[#0B0F1A] border border-white/10 rounded-[1.5rem] shadow-2xl shadow-black overflow-hidden pointer-events-auto">
           {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-gold-400/10 to-blue-500/10 border-b border-space-700">
+          <div className="px-5 py-4 bg-white/5 border-b border-white/5">
             <div className="flex items-center justify-between">
-              <h4 className="font-display font-semibold text-gray-100">{step.title}</h4>
+              <h4 className="font-display font-black text-white italic tracking-tight">{step.title}</h4>
               <button 
-                onClick={onDismiss}
+                onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                 className="text-gray-500 hover:text-white transition-colors p-1"
-                title="Fermer le guide"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Body */}
-          <div className="px-4 py-3">
-            <p className="text-sm text-gray-300 leading-relaxed">{step.description}</p>
+          <div className="px-5 py-5">
+            <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-3 bg-space-900/50 border-t border-space-700 flex items-center justify-between">
-            <div className="flex items-center gap-1">
+          <div className="px-5 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
               {Array.from({ length: totalSteps }).map((_, i) => (
                 <div 
                   key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    i === stepNumber - 1 ? 'bg-gold-400' : 'bg-space-600'
+                  className={`h-1 rounded-full transition-all duration-500 ${
+                    i === stepNumber - 1 ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'
                   }`}
                 />
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {stepNumber > 1 && (
                 <button
-                  onClick={onPrev}
-                  className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors"
+                  onClick={(e) => { e.stopPropagation(); onPrev(); }}
+                  className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
                 >
                   Précédent
                 </button>
               )}
               <button
-                onClick={stepNumber === totalSteps ? onDismiss : onNext}
-                className="px-4 py-1.5 text-xs font-medium bg-gold-400 text-space-900 rounded-lg hover:bg-gold-300 transition-colors"
+                onClick={(e) => { e.stopPropagation(); stepNumber === totalSteps ? onDismiss() : onNext(); }}
+                className="px-5 py-2 text-xs font-black bg-white text-black rounded-xl hover:bg-gold-400 transition-all hover:scale-105 active:scale-95"
               >
-                {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant →'}
+                {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant'}
               </button>
             </div>
           </div>
         </div>
-      </div>
-    </>,
+      </MotionDiv>
+    </div>,
     document.body
-  )
-}
-
-// Component to wrap elements that should have tour tooltips (legacy, can be removed)
-export function TourStep({ stepId, children, className = '' }) {
-  const { currentStep, nextStep, prevStep, endTour, currentStepIndex, totalSteps } = useOnboardingTour()
-  
-  const isActive = currentStep?.id === stepId
-  const step = isActive ? currentStep : null
-
-  if (!isActive) {
-    return <div className={className}>{children}</div>
-  }
-
-  return (
-    <div className={`relative ${className}`}>
-      {/* Highlight ring */}
-      <div className="relative z-50 ring-2 ring-gold-400 ring-offset-2 ring-offset-space-900 rounded-lg">
-        {children}
-      </div>
-
-      {/* Tooltip */}
-      <TourTooltip
-        step={step}
-        stepNumber={currentStepIndex + 1}
-        totalSteps={totalSteps}
-        onNext={nextStep}
-        onPrev={prevStep}
-        onDismiss={endTour}
-      />
-    </div>
-  )
-}
-
-function TourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
-  if (!step) return null
-
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-3',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-3',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-3',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-3',
-    'bottom-left': 'top-full left-0 mt-3',
-    'bottom-right': 'top-full right-0 mt-3'
-  }
-
-  const arrowClasses = {
-    top: 'top-full left-1/2 -translate-x-1/2 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-space-800',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-space-800',
-    left: 'left-full top-1/2 -translate-y-1/2 border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-space-800',
-    right: 'right-full top-1/2 -translate-y-1/2 border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-space-800',
-    'bottom-left': 'bottom-full left-4 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-space-800',
-    'bottom-right': 'bottom-full right-4 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-space-800'
-  }
-
-  return (
-    <div className={`absolute z-[60] w-80 ${positionClasses[step.position] || positionClasses.bottom}`}>
-      {/* Arrow */}
-      <div className={`absolute w-0 h-0 ${arrowClasses[step.position] || arrowClasses.bottom}`} />
-      
-      {/* Content */}
-      <div className="bg-space-800 border border-gold-400/30 rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-        {/* Header */}
-        <div className="px-4 py-3 bg-gradient-to-r from-gold-400/10 to-blue-500/10 border-b border-space-700">
-          <div className="flex items-center justify-between">
-            <h4 className="font-display font-semibold text-gray-100">{step.title}</h4>
-            <button 
-              onClick={onDismiss}
-              className="text-gray-500 hover:text-white transition-colors p-1"
-              title="Fermer le guide"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="px-4 py-3">
-          <p className="text-sm text-gray-300 leading-relaxed">{step.description}</p>
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 py-3 bg-space-900/50 border-t border-space-700 flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div 
-                key={i}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === stepNumber - 1 ? 'bg-gold-400' : 'bg-space-600'
-                }`}
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            {stepNumber > 1 && (
-              <button
-                onClick={onPrev}
-                className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-white transition-colors"
-              >
-                Précédent
-              </button>
-            )}
-            <button
-              onClick={stepNumber === totalSteps ? onDismiss : onNext}
-              className="px-4 py-1.5 text-xs font-medium bg-gold-400 text-space-900 rounded-lg hover:bg-gold-300 transition-colors"
-            >
-              {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant →'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 

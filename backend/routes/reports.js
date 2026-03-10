@@ -9,8 +9,7 @@ const router = Router();
 
 // Report types
 const REPORT_TYPES = {
-    weekly_summary: { name: 'Résumé hebdomadaire', description: 'Vue d\'ensemble de l\'activité de la semaine' },
-    monthly_summary: { name: 'Résumé mensuel', description: 'Vue d\'ensemble de l\'activité du mois' },
+    activity_report: { name: 'Résumé d\'activité', description: 'Vue d\'ensemble de l\'activité sur la période choisie' },
     agent_performance: { name: 'Performance agents', description: 'Analyse des performances de vos agents' },
     conversion_report: { name: 'Rapport de conversion', description: 'Analyse du tunnel de conversion' },
     product_report: { name: 'Rapport produits', description: 'Ventes et performances des produits' }
@@ -41,8 +40,9 @@ router.post('/generate', authenticateToken, async (req, res) => {
         let reportData = {};
 
         switch (report_type) {
-            case 'weekly_summary':
-            case 'monthly_summary':
+            case 'activity_report':
+            case 'weekly_summary': // Backward compatibility
+            case 'monthly_summary': // Backward compatibility
                 reportData = await generateSummaryReport(req.user.id, startDate, endDate);
                 break;
             case 'agent_performance':

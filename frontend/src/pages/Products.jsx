@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp } from 'lucide-react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -14,10 +15,13 @@ import ProductList from './products/ProductList'
 import ProductModal from './products/ProductModal'
 import ImportModal from './products/ImportModal'
 import HistoryModal from './products/HistoryModal'
+import { useOnboardingTour } from '../components/Onboarding'
 
 export default function Products() {
   const { t } = useTranslation()
+  const { startTour, completedTours } = useOnboardingTour()
   const { theme } = useTheme()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isDark = theme === 'dark'
   const { user } = useAuth()
   const { formatPrice, getSymbol } = useCurrency()
@@ -101,6 +105,20 @@ export default function Products() {
     }
   }
 
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setShowAddModal(true)
+      searchParams.delete('create')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (!completedTours.includes('products')) {
+      startTour('products')
+    }
+  }, [completedTours, startTour])
+
   return (
     <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Header Hero */}
@@ -144,7 +162,7 @@ export default function Products() {
                   <span className="hidden sm:inline">Importer URL</span>
                 </button>
               )}
-              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2 min-h-[44px]">
+              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2 min-h-[44px]" data-tour="create-product">
                 <Plus className="w-5 h-5" aria-hidden />
                 <span>{t('products.btnAdd')}</span>
               </button>
@@ -210,6 +228,7 @@ export default function Products() {
           onDelete={handleDelete}
           onHistory={loadHistory}
           onView={setSelectedProductView}
+          data-tour="products-list"
         />
       ) : null}
 

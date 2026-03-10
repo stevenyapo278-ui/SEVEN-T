@@ -4,7 +4,7 @@ import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
-import { AgentCreationWizard } from '../components/Onboarding'
+import { AgentCreationWizard, useOnboardingTour } from '../components/Onboarding'
 import { 
   Bot, 
   Plus, 
@@ -58,6 +58,7 @@ const AVAILABLE_TAGS = [
 
 export default function Agents() {
   const { t } = useTranslation()
+  const { startTour, completedTours } = useOnboardingTour()
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -91,6 +92,14 @@ export default function Agents() {
       setSearchParams(searchParams, { replace: true })
     }
   }, [searchParams, setSearchParams])
+
+  // Start tour automatically on first visit
+  useEffect(() => {
+    // Only start if not already active and user has not completed it
+    if (!completedTours.includes('agents')) {
+      startTour('agents')
+    }
+  }, [completedTours, startTour])
 
   // Decide which creation mode to show (wizard for new users, modal for experienced)
   const handleCreateAgent = () => {
@@ -328,6 +337,7 @@ export default function Agents() {
             <button
               onClick={handleCreateAgent}
               disabled={!canCreateAgent}
+              data-tour="create-agent"
               className="btn-primary flex items-center gap-2 min-h-[44px]"
             >
               <Plus className="w-5 h-5" />
@@ -480,7 +490,7 @@ export default function Agents() {
       )}
 
       {/* Search, Filters & Sort */}
-      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4 sm:mb-6">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4 sm:mb-6" data-tour="agents-filters">
         {/* Search - full width on mobile */}
         <div className="relative w-full sm:flex-1 sm:min-w-[180px] sm:max-w-md">
           <Search className={`absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
@@ -665,6 +675,7 @@ export default function Agents() {
               bulkMode={bulkMode}
               index={index}
               isDark={isDark}
+              {...(index === 0 ? { 'data-tour': 'agent-card' } : {})}
             />
           ))}
         </div>
@@ -682,6 +693,7 @@ export default function Agents() {
               bulkMode={bulkMode}
               isLast={index === filteredAgents.length - 1}
               isDark={isDark}
+              {...(index === 0 ? { 'data-tour': 'agent-card' } : {})}
             />
           ))}
         </div>
@@ -798,6 +810,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
   return (
     <div 
       onClick={handleCardClick}
+      data-tour={index === 0 ? "agent-card" : undefined}
       className={`group relative bg-space-800/50 border rounded-xl sm:rounded-2xl transition-all duration-300 hover:shadow-xl hover:shadow-space-900/50 animate-fadeIn cursor-pointer min-w-0 ${
         isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-space-700/50 hover:border-space-600'
       } ${!isActive ? 'opacity-70' : ''}`}

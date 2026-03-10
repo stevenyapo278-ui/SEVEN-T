@@ -5,6 +5,7 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
 import { MessageSquare, Mail, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useOnboardingTour } from '../components/Onboarding'
 
 const TOOL_LABELS = {
   whatsapp: 'WhatsApp',
@@ -15,6 +16,7 @@ const POLL_INTERVAL_MS = 2000
 const POLL_TIMEOUT_MS = 5 * 60 * 1000 // 5 min max
 
 export default function Tools() {
+  const { startTour, completedTours, nextStep, isStepActive } = useOnboardingTour()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const [searchParams, setSearchParams] = useSearchParams()
@@ -56,6 +58,19 @@ export default function Tools() {
   useEffect(() => {
     loadTools()
   }, [])
+
+  useEffect(() => {
+    if (!completedTours.includes('whatsapp_connect')) {
+      startTour('whatsapp_connect')
+    }
+  }, [completedTours, startTour])
+
+  // Move to next step of whatsapp_connect tour if we start connecting
+  useEffect(() => {
+    if (connectingToolId && isStepActive('wc-select-agent')) {
+      nextStep()
+    }
+  }, [connectingToolId, isStepActive, nextStep])
 
   useEffect(() => {
     const outlook = searchParams.get('outlook')
@@ -352,6 +367,7 @@ export default function Tools() {
               <button
                 onClick={() => createTool('whatsapp')}
                 disabled={loading}
+                data-tour="create-tool-whatsapp"
                 className="btn-primary w-full flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <Plus className="w-5 h-5" />
@@ -621,6 +637,7 @@ export default function Tools() {
           <div
             className="relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col items-center max-h-[90vh] sm:max-h-[85vh] overflow-y-auto animate-fadeIn"
             onClick={(e) => e.stopPropagation()}
+            data-tour="whatsapp-connect-section"
           >
             <button
               type="button"

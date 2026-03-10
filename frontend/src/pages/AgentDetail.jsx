@@ -42,6 +42,7 @@ import {
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
+import { useOnboardingTour } from '../components/Onboarding'
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {
@@ -153,6 +154,7 @@ const getDisplayName = (conv, t) => {
 
 export default function AgentDetail() {
   const { t } = useTranslation()
+  const { startTour, completedTours } = useOnboardingTour()
   const { id } = useParams()
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
@@ -179,6 +181,20 @@ export default function AgentDetail() {
   useEffect(() => {
     loadAgent()
   }, [id])
+
+  // Start tour automatically on first visit to agent detail
+  useEffect(() => {
+    if (!completedTours.includes('agentDetail')) {
+      startTour('agentDetail')
+    }
+  }, [completedTours, startTour])
+
+  // If user switches to knowledge tab, and hasn't done the knowledge tour, start it
+  useEffect(() => {
+    if (activeTab === 'knowledge' && !completedTours.includes('add_knowledge')) {
+      startTour('add_knowledge')
+    }
+  }, [activeTab, completedTours, startTour])
 
   const loadAgent = async () => {
     try {
@@ -328,6 +344,7 @@ export default function AgentDetail() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              data-tour={`tab-${tab.id}`}
               className={`flex items-center gap-2 pb-3 pt-1 px-2 sm:px-0 border-b-2 transition-colors whitespace-nowrap flex-shrink-0 min-h-[44px] touch-target text-sm sm:text-base ${
                 activeTab === tab.id
                   ? 'border-gold-400 text-gold-400'
@@ -1946,6 +1963,7 @@ function KnowledgeTab({ agentId }) {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
+          data-tour="add-knowledge-button"
           className="btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] w-full sm:w-auto touch-target"
         >
           <Plus className="w-5 h-5" />

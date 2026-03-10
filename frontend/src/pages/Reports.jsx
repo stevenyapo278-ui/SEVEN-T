@@ -29,8 +29,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import toast from 'react-hot-toast'
 
 const REPORT_ICONS = {
-  weekly_summary: BarChart2,
-  monthly_summary: Calendar,
+  activity_report: BarChart2,
   agent_performance: Users,
   conversion_report: TrendingUp,
   product_report: ShoppingCart
@@ -50,25 +49,25 @@ export default function Reports() {
   const [showSubModal, setShowSubModal] = useState(false)
 
   const [generateForm, setGenerateForm] = useState({
-    report_type: 'weekly_summary',
+    report_type: 'activity_report',
     period: '7d'
   })
 
   const [subForm, setSubForm] = useState({
-    report_type: 'weekly_summary',
+    report_type: 'activity_report',
     frequency: 'weekly',
     email: ''
   })
 
   // Bloquer le scroll quand un modal est ouvert
   useEffect(() => {
-    if (showSubModal || !!generatedReport) {
+    if (showSubModal) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
     }
     return () => { document.body.style.overflow = 'unset' }
-  }, [showSubModal, generatedReport])
+  }, [showSubModal])
 
   useEffect(() => {
     loadData()

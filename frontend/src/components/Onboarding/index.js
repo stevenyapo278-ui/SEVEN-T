@@ -5,6 +5,5 @@ export { Tooltip, TooltipOverlay } from './Tooltip'
 export { 
   OnboardingTourProvider, 
   useOnboardingTour, 
-  TourStep,
   TOUR_STEPS 
 } from './OnboardingTour'
