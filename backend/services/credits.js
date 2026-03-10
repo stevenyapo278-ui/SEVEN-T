@@ -110,6 +110,9 @@ export async function hasEnoughCredits(userId, action, quantity = 1) {
  * Uses atomic UPDATE with WHERE condition to prevent race conditions
  */
 export async function deductCredits(userId, action, quantity = 1, metadata = {}) {
+    const user = await getUserCredits(userId);
+    if (!user) return { success: false, error: 'User not found' };
+
     const { getEffectivePlanName } = await import('../config/plans.js');
     const effectivePlanName = await getEffectivePlanName(user.plan, user);
     const plan = await getPlan(effectivePlanName);
@@ -143,16 +146,22 @@ export async function deductCredits(userId, action, quantity = 1, metadata = {})
     const newCredits = updatedUser.credits;
     
     const thresholds = [50, 20, 10, 5];
+    const { sendLowCreditsEmail } = await import('./email.js');
+    
     for (const threshold of thresholds) {
         if (user.credits > threshold && newCredits <= threshold) {
             notificationService.notifyLowCredits(userId, newCredits);
+            // Send email alert
+            sendLowCreditsEmail(updatedUser, newCredits).catch(e => console.error('Low credits email error:', e));
             break;
         }
     }
     
     if (user.credits > 0 && newCredits <= 0) {
-        const userInfo = await db.get('SELECT name FROM users WHERE id = ?', userId);
-        adminAnomaliesService.logCreditsZero(userId, userInfo?.name || 'Utilisateur');
+        adminAnomaliesService.logCreditsZero(userId, updatedUser.name || 'Utilisateur');
+        // Send email alert
+        const { sendCreditsExhaustedEmail } = await import('./email.js');
+        sendCreditsExhaustedEmail(updatedUser).catch(e => console.error('Credits exhausted email error:', e));
     }
     
     return { success: true, credits_remaining: newCredits, cost };

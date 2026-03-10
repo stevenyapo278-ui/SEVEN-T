@@ -1,9 +1,16 @@
 /**
  * Email Service for SEVEN T SaaS
  * Handles transactional emails (welcome, password reset, notifications, etc.)
+ * 
+ * Supported providers (priority order):
+ *  1. SendGrid  → set SENDGRID_API_KEY
+ *  2. Mailgun   → set MAILGUN_API_KEY + MAILGUN_DOMAIN
+ *  3. SMTP      → set SMTP_HOST (works with SendGrid, Mailgun, Amazon SES, or any SMTP)
+ *  4. Console   → development fallback (no email sent)
  */
 
 import nodemailer from 'nodemailer';
+import https from 'https';
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -14,34 +21,138 @@ const EMAIL_CONFIG = {
 // Company branding for emails
 const BRANDING = {
     name: 'SEVEN T',
-    logo: 'https://seven-t.com/logo.png', // Update with actual logo URL
-    color: '#FBBF24', // Gold color
+    logo: 'https://seven-t.com/logo.png',
+    color: '#FBBF24',
     website: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 
-/**
- * Create email transporter based on environment
- */
-function createTransporter() {
-    // Production: Use SMTP settings from env
-    if (process.env.SMTP_HOST) {
-        return nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
-    }
-    
-    // Development: Use ethereal.email (fake SMTP for testing)
-    console.log('⚠️  No SMTP configured. Emails will be logged to console.');
-    return null;
+// Detect active provider
+function getEmailProvider() {
+    if (process.env.SENDGRID_API_KEY) return 'sendgrid';
+    if (process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN) return 'mailgun';
+    if (process.env.SMTP_HOST) return 'smtp';
+    return 'console';
 }
 
-const transporter = createTransporter();
+const EMAIL_PROVIDER = getEmailProvider();
+console.log(`📧 Email provider: ${EMAIL_PROVIDER.toUpperCase()}`);
+
+/**
+ * Create SMTP transporter (generic — works with SendGrid, Mailgun, SES via SMTP)
+ */
+function createSmtpTransporter() {
+    return nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+        },
+    });
+}
+
+const smtpTransporter = EMAIL_PROVIDER === 'smtp' ? createSmtpTransporter() : null;
+
+/**
+ * Send via SendGrid REST API
+ */
+async function sendViaSendGrid({ to, subject, html, text }) {
+    const fromRaw = EMAIL_CONFIG.from;
+    const fromMatch = fromRaw.match(/^(.+)\s<(.+)>$/);
+    const fromObj = fromMatch
+        ? { name: fromMatch[1].trim(), email: fromMatch[2].trim() }
+        : { email: fromRaw };
+
+    const body = JSON.stringify({
+        personalizations: [{ to: [{ email: to }] }],
+        from: fromObj,
+        reply_to: { email: EMAIL_CONFIG.replyTo },
+        subject,
+        content: [
+            { type: 'text/html', value: html },
+            ...(text ? [{ type: 'text/plain', value: text }] : [])
+        ]
+    });
+
+    return new Promise((resolve, reject) => {
+        const req = https.request({
+            hostname: 'api.sendgrid.com',
+            path: '/v3/mail/send',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            }
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve({ success: true, messageId: `sg-${Date.now()}` });
+                } else {
+                    reject(new Error(`SendGrid error ${res.statusCode}: ${data}`));
+                }
+            });
+        });
+        req.on('error', reject);
+        req.write(body);
+        req.end();
+    });
+}
+
+/**
+ * Send via Mailgun REST API
+ */
+async function sendViaMailgun({ to, subject, html, text }) {
+    const domain = process.env.MAILGUN_DOMAIN;
+    const apiKey = process.env.MAILGUN_API_KEY;
+    const region = process.env.MAILGUN_REGION || 'us'; // 'eu' or 'us'
+    const hostname = region === 'eu' ? 'api.eu.mailgun.net' : 'api.mailgun.net';
+
+    const formData = new URLSearchParams({
+        from: EMAIL_CONFIG.from,
+        to,
+        subject,
+        html,
+        ...(text ? { text } : {})
+    }).toString();
+
+    const auth = Buffer.from(`api:${apiKey}`).toString('base64');
+
+    return new Promise((resolve, reject) => {
+        const req = https.request({
+            hostname,
+            path: `/v3/${domain}/messages`,
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': Buffer.byteLength(formData)
+            }
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve({ success: true, messageId: parsed.id || `mg-${Date.now()}` });
+                    } else {
+                        reject(new Error(`Mailgun error ${res.statusCode}: ${parsed.message || data}`));
+                    }
+                } catch {
+                    reject(new Error(`Mailgun parse error: ${data}`));
+                }
+            });
+        });
+        req.on('error', reject);
+        req.write(formData);
+        req.end();
+    });
+}
+
 
 /**
  * Base email template with responsive design
@@ -103,35 +214,58 @@ function baseTemplate(content, preheader = '') {
 }
 
 /**
- * Send an email
+ * Send an email — routes to the correct provider automatically
  */
 async function sendEmail({ to, subject, html, text }) {
-    const mailOptions = {
-        from: EMAIL_CONFIG.from,
-        replyTo: EMAIL_CONFIG.replyTo,
-        to,
-        subject,
-        html,
-        text: text || html.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-    };
+    const textFallback = text || html.replace(/<[^>]*>/g, '');
 
-    // If no transporter (dev mode), just log
-    if (!transporter) {
-        console.log('\n📧 Email (not sent - no SMTP configured):');
-        console.log(`   To: ${to}`);
-        console.log(`   Subject: ${subject}`);
-        console.log(`   Preview: ${html.substring(0, 200)}...`);
-        return { success: true, messageId: 'dev-mode-' + Date.now() };
+    // Provider: SendGrid API
+    if (EMAIL_PROVIDER === 'sendgrid') {
+        try {
+            const info = await sendViaSendGrid({ to, subject, html, text: textFallback });
+            console.log(`📧 [SendGrid] Email sent to ${to}: ${info.messageId}`);
+            return { success: true, messageId: info.messageId };
+        } catch (error) {
+            console.error('❌ [SendGrid] Error:', error.message);
+            return { success: false, error: error.message };
+        }
     }
 
-    try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`📧 Email sent to ${to}: ${info.messageId}`);
-        return { success: true, messageId: info.messageId };
-    } catch (error) {
-        console.error('❌ Email error:', error.message);
-        return { success: false, error: error.message };
+    // Provider: Mailgun API
+    if (EMAIL_PROVIDER === 'mailgun') {
+        try {
+            const info = await sendViaMailgun({ to, subject, html, text: textFallback });
+            console.log(`📧 [Mailgun] Email sent to ${to}: ${info.messageId}`);
+            return { success: true, messageId: info.messageId };
+        } catch (error) {
+            console.error('❌ [Mailgun] Error:', error.message);
+            return { success: false, error: error.message };
+        }
     }
+
+    // Provider: SMTP (nodemailer)
+    if (EMAIL_PROVIDER === 'smtp' && smtpTransporter) {
+        try {
+            const info = await smtpTransporter.sendMail({
+                from: EMAIL_CONFIG.from,
+                replyTo: EMAIL_CONFIG.replyTo,
+                to, subject, html,
+                text: textFallback,
+            });
+            console.log(`📧 [SMTP] Email sent to ${to}: ${info.messageId}`);
+            return { success: true, messageId: info.messageId };
+        } catch (error) {
+            console.error('❌ [SMTP] Email error:', error.message);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Fallback: console only (development)
+    console.log('\n📧 Email (not sent — no provider configured):');
+    console.log(`   To: ${to}`);
+    console.log(`   Subject: ${subject}`);
+    console.log(`   Preview: ${html.substring(0, 300)}...`);
+    return { success: true, messageId: 'dev-mode-' + Date.now() };
 }
 
 // ==================== EMAIL TEMPLATES ====================

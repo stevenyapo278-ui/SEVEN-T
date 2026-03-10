@@ -249,14 +249,27 @@ class AdminAnomaliesService {
     /**
      * Log WhatsApp disconnection
      */
-    logWhatsAppDisconnect(userId, agentId, agentName, reason) {
-        return this.log(
+    async logWhatsAppDisconnect(userId, agentId, agentName, reason) {
+        await this.log(
             ANOMALY_TYPES.WHATSAPP_DISCONNECT,
             SEVERITY.HIGH,
             'WhatsApp déconnecté',
             `Agent "${agentName}" déconnecté: ${reason}`,
             { userId, agentId, metadata: { agent_name: agentName, reason } }
         );
+
+        // Send email notification to user
+        if (userId) {
+            try {
+                const user = await db.get('SELECT email, name FROM users WHERE id = ?', userId);
+                if (user) {
+                    const { sendWhatsAppDisconnectedEmail } = await import('./email.js');
+                    await sendWhatsAppDisconnectedEmail(user, agentName);
+                }
+            } catch (err) {
+                console.error('[AdminAnomalies] WhatsApp disconnect email error:', err);
+            }
+        }
     }
 
     /**

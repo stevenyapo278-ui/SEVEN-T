@@ -13,6 +13,7 @@ import paymetrust from '../services/paymetrust.js';
 import geniuspay from '../services/geniuspay.js';
 import { v4 as uuidv4 } from 'uuid';
 import { getEffectivePlanName } from '../config/plans.js';
+import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '../services/email.js';
 
 /**
  * POST /api/subscription/create-checkout-session
@@ -233,6 +234,22 @@ async function applySubscriptionToUser(userId, planName, stripeSubscriptionId, e
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
     `, planName, credits, stripeSubscriptionId || null, finalEndDate, userId);
+
+    // Send confirmation email
+    try {
+        const user = await db.get('SELECT email, name FROM users WHERE id = ?', userId);
+        if (user) {
+            await sendPaymentSuccessEmail(user, {
+                planName: plan?.display_name || planName,
+                amount: '–', // Amount not always easily available here
+                date: new Date().toLocaleDateString('fr-FR'),
+                number: stripeSubscriptionId || 'N/A',
+                credits: credits
+            });
+        }
+    } catch (emailErr) {
+        console.error('Error sending subscription confirmation email:', emailErr);
+    }
 }
 
 /**
@@ -309,6 +326,16 @@ export async function handleStripeWebhook(req, res) {
                 const user = await db.get('SELECT id FROM users WHERE stripe_customer_id = ?', customerId);
                 if (user) {
                     await db.run('UPDATE users SET subscription_status = ? WHERE id = ?', 'past_due', user.id);
+                    
+                    // Send failure email
+                    try {
+                        const userData = await db.get('SELECT email, name FROM users WHERE id = ?', user.id);
+                        if (userData) {
+                            await sendPaymentFailedEmail(userData, 'Échec de paiement de votre facture Stripe.');
+                        }
+                    } catch (emailErr) {
+                        console.error('Error sending payment failed email:', emailErr);
+                    }
                 }
                 break;
             }
