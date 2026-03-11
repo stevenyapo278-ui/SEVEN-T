@@ -12,7 +12,7 @@ router.get('/me/export', authenticateToken, async (req, res) => {
         const user = await db.get(`
             SELECT id, email, name, company, plan, credits, is_admin, is_active,
                    created_at, updated_at, currency, media_model, subscription_status,
-                   subscription_end_date, stripe_customer_id, stripe_subscription_id, google_id
+                   subscription_end_date, google_id
             FROM users
             WHERE id = ?
         `, userId);

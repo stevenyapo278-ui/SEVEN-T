@@ -14,11 +14,9 @@ const baseUrl = () => (process.env.FRONTEND_URL || process.env.BASE_URL || 'http
 const PAYMENT_PROVIDERS_DISPLAY = {
     manual: { name: 'Manuel', icon: '💵' },
     geniuspay: { name: 'GeniusPay', icon: '💎' },
-    paymetrust: { name: 'PaymeTrust', icon: '🔒' },
     wave: { name: 'Wave', icon: '🌊' },
     orange_money: { name: 'Orange Money', icon: '🟠' },
-    mtn_momo: { name: 'MTN MoMo', icon: '🟡' },
-    stripe: { name: 'Stripe', icon: '💳' }
+    mtn_momo: { name: 'MTN MoMo', icon: '🟡' }
 };
 
 // Get all payment links for user
@@ -79,39 +77,6 @@ router.get('/export', authenticateToken, async (req, res) => {
     }
 });
 
-// PaymeTrust webhook
-router.post('/webhook/paymetrust', async (req, res) => {
-    let body;
-    try {
-        const raw = req.body;
-        body = typeof raw === 'string' ? JSON.parse(raw) : (Buffer.isBuffer(raw) ? JSON.parse(raw.toString('utf8')) : raw);
-    } catch (e) {
-        console.error('[PaymeTrust webhook] Invalid JSON:', e.message);
-        return res.status(400).send('Invalid JSON');
-    }
-    const invoiceId = body?.data?.id ?? body?.data?.attributes?.id ?? body?.id ?? body?.invoice_id;
-    const status = (body?.data?.attributes?.status ?? body?.data?.status ?? body?.status ?? '').toLowerCase();
-    if (!invoiceId) {
-        console.error('[PaymeTrust webhook] Missing invoice id in payload');
-        return res.status(400).send('Missing invoice id');
-    }
-    const successStatuses = ['paid', 'completed', 'success', 'settled'];
-    if (!successStatuses.some(s => status.includes(s))) {
-        return res.status(200).send('OK');
-    }
-    try {
-        const payment = await db.get('SELECT * FROM payment_links WHERE external_id = ? AND status != ?', String(invoiceId), 'paid');
-        if (!payment) return res.status(200).send('OK');
-        await db.run("UPDATE payment_links SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
-        if (payment.order_id) {
-            await db.run("UPDATE orders SET status = 'completed', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.order_id);
-        }
-        return res.status(200).send('OK');
-    } catch (err) {
-        console.error('[PaymeTrust webhook] Error updating payment:', err);
-        return res.status(500).send('Error');
-    }
-});
 
 // GeniusPay webhook
 router.post('/webhook/geniuspay', async (req, res) => {
@@ -189,7 +154,7 @@ router.get('/providers', authenticateToken, async (req, res) => {
                 configured[id] = await paymentProviders.isProviderConfiguredForUser(req.user.id, id);
             }
         }
-        res.json({ providers, configured, paymetrustConfigured: configured.paymetrust ?? false, paymentModuleEnabled });
+        res.json({ providers, configured, paymentModuleEnabled });
     } catch (error) {
         console.error('Get payment providers error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -210,16 +175,7 @@ router.put('/providers/:provider', authenticateToken, async (req, res) => {
         if (!paymentProviders.getSupportedProviderIds().includes(provider)) {
             return res.status(400).json({ error: 'Provider non supporté' });
         }
-        if (provider === 'paymetrust') {
-            const { account_id, api_key } = req.body || {};
-            if (!account_id || !api_key) return res.status(400).json({ error: 'account_id et api_key requis' });
-            const credentials = JSON.stringify({ account_id: account_id.trim(), api_key: api_key.trim() });
-            await db.run(`
-                INSERT INTO user_payment_providers (user_id, provider, credentials, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT (user_id, provider) DO UPDATE SET credentials = EXCLUDED.credentials, updated_at = CURRENT_TIMESTAMP
-            `, req.user.id, provider, credentials);
-        } else if (provider === 'geniuspay') {
+        if (provider === 'geniuspay') {
             const { api_key, api_secret, webhook_secret } = req.body || {};
             if (!api_key || !api_secret) return res.status(400).json({ error: 'api_key et api_secret requis' });
             const credentials = JSON.stringify({ 
@@ -295,7 +251,7 @@ export async function createPaymentLink(userId, opts = {}) {
 
     if (provider !== 'manual' && paymentModuleEnabled) {
         const returnUrl = `${baseUrl()}/pay/${shortId}/return`;
-        const webhookPath = provider === 'geniuspay' ? '/api/payments/webhook/geniuspay' : '/api/payments/webhook/paymetrust';
+        const webhookPath = '/api/payments/webhook/geniuspay';
         const callbackUrl = process.env.BASE_URL ? `${process.env.BASE_URL.replace(/\/$/, '')}${webhookPath}` : `${baseUrl()}${webhookPath}`;
         const result = await paymentProviders.createInvoiceForUser(userId, provider, {
             amount: Number(amount),

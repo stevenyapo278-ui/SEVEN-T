@@ -146,7 +146,6 @@ h1 {
   font-weight: 500; /* Instrument Serif looks better at 500/600 than 800 */
   color: var(--text-primary);
   line-height: 1.1;
-  font-style: italic;
 }
 h2 {
   font-size: 1.5rem;

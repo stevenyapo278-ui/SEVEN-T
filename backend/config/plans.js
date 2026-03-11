@@ -57,8 +57,6 @@ async function loadPlansFromDB() {
                     price: plan.price,
                     price_yearly: plan.price_yearly,
                     priceCurrency: plan.price_currency || 'XOF',
-                    stripe_price_id: plan.stripe_price_id,
-                    stripe_price_id_yearly: plan.stripe_price_id_yearly,
                     limits: { ...defaultLimits, ...dbLimits },
                     features: { ...FEATURES_BASELINE, ...dbFeatures }
                 };
@@ -116,8 +114,8 @@ export async function getEffectivePlanName(planName, user = null) {
         const endDate = new Date(user.subscription_end_date);
         const now = new Date();
         
-        // Si la date est passée et qu'il n'y a pas d'abonnement Stripe actif
-        if (endDate < now && !user.stripe_subscription_id) {
+        // Si la date est passée
+        if (endDate < now) {
             // L'essai a expiré, on bascule sur 'free_expired' (super limité)
             return 'free_expired';
         }

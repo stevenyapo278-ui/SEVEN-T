@@ -43,11 +43,10 @@ const STATUS_KEYS = {
 
 const PROVIDER_LABELS = {
   manual: 'Manuel',
-  paymetrust: 'PaymeTrust',
+  geniuspay: 'GeniusPay',
   wave: 'Wave',
   orange_money: 'Orange Money',
-  mtn_momo: 'MTN MoMo',
-  stripe: 'Stripe'
+  mtn_momo: 'MTN MoMo'
 }
 
 export default function Payments() {
@@ -62,7 +61,7 @@ export default function Payments() {
   const [showModal, setShowModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [paymetrustConfigured, setPaymetrustConfigured] = useState(false)
+  const [geniuspayConfigured, setGeniuspayConfigured] = useState(false)
 
   useEffect(() => {
     if (!paymentModuleEnabled) {
@@ -81,7 +80,7 @@ export default function Payments() {
       ])
       setLinks(paymentsRes.data.payments || [])
       setStats(statsRes.data.stats || { total: 0, pending: 0, paid: 0, totalAmount: 0 })
-      setPaymetrustConfigured(!!(providersRes.data?.configured?.paymetrust ?? providersRes.data?.paymetrustConfigured))
+      setGeniuspayConfigured(!!providersRes.data?.configured?.geniuspay)
     } catch (error) {
       console.error('Error loading payments:', error)
       setLinks([])
@@ -426,20 +425,20 @@ export default function Payments() {
           onClose={() => setShowModal(false)}
           onSave={loadData}
           isDark={isDark}
-          paymetrustConfigured={paymetrustConfigured}
+          geniuspayConfigured={geniuspayConfigured}
         />
       )}
     </div>
   )
 }
 
-function PaymentModal({ onClose, onSave, isDark, paymetrustConfigured }) {
+function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
   useLockBodyScroll(true)
   const [form, setForm] = useState({
     amount: '',
     currency: 'XOF',
     description: '',
-    provider: paymetrustConfigured ? 'paymetrust' : 'manual',
+    provider: geniuspayConfigured ? 'geniuspay' : 'manual',
     expires_in_hours: ''
   })
   const [saving, setSaving] = useState(false)
@@ -539,7 +538,7 @@ function PaymentModal({ onClose, onSave, isDark, paymetrustConfigured }) {
               }`}
             >
               <option value="manual">Manuel (lien interne)</option>
-              {paymetrustConfigured && <option value="paymetrust">PaymeTrust (carte / paiement en ligne)</option>}
+              {geniuspayConfigured && <option value="geniuspay">GeniusPay (carte / paiement en ligne)</option>}
               <option value="wave">Wave</option>
               <option value="orange_money">Orange Money</option>
               <option value="mtn_momo">MTN MoMo</option>

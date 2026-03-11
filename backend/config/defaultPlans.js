@@ -13,9 +13,7 @@ export const defaultPlans = [
         price_currency: 'XOF',
         sort_order: 1,
         is_default: 1,
-        stripe_price_id: null,
         price_yearly: 0,
-        stripe_price_id_yearly: null,
         limits: JSON.stringify({
             agents: 1,
             whatsapp_accounts: 1,
@@ -49,9 +47,7 @@ export const defaultPlans = [
         price_currency: 'XOF',
         sort_order: 2,
         is_default: 0,
-        stripe_price_id: process.env.STRIPE_PRICE_STARTER || 'price_starter_monthly',
         price_yearly: 150000,
-        stripe_price_id_yearly: process.env.STRIPE_PRICE_STARTER_YEARLY || 'price_starter_yearly',
         limits: JSON.stringify({
             agents: 1,
             whatsapp_accounts: 1,
@@ -85,9 +81,7 @@ export const defaultPlans = [
         price_currency: 'XOF',
         sort_order: 3,
         is_default: 0,
-        stripe_price_id: process.env.STRIPE_PRICE_PRO || 'price_pro_monthly',
         price_yearly: 350000,
-        stripe_price_id_yearly: process.env.STRIPE_PRICE_PRO_YEARLY || 'price_pro_yearly',
         limits: JSON.stringify({
             agents: 2,
             whatsapp_accounts: 2,
@@ -121,9 +115,7 @@ export const defaultPlans = [
         price_currency: 'XOF',
         sort_order: 4,
         is_default: 0,
-        stripe_price_id: process.env.STRIPE_PRICE_BUSINESS || 'price_business_monthly',
         price_yearly: 990000,
-        stripe_price_id_yearly: process.env.STRIPE_PRICE_BUSINESS_YEARLY || 'price_business_yearly',
         limits: JSON.stringify({
             agents: 4,
             whatsapp_accounts: 4,
@@ -157,9 +149,7 @@ export const defaultPlans = [
         price_currency: 'XOF',
         sort_order: 5,
         is_default: 0,
-        stripe_price_id: process.env.STRIPE_PRICE_ENTERPRISE || 'price_enterprise_monthly',
         price_yearly: -1,
-        stripe_price_id_yearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY || 'price_enterprise_yearly',
         limits: JSON.stringify({
             agents: -1,
             whatsapp_accounts: -1,

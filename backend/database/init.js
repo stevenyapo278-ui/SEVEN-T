@@ -186,8 +186,6 @@ export async function initDatabase() {
             credits INTEGER DEFAULT 1500,
             is_admin INTEGER DEFAULT 0,
             is_active INTEGER DEFAULT 1,
-            stripe_customer_id TEXT,
-            stripe_subscription_id TEXT,
             subscription_status TEXT DEFAULT 'trialing',
             subscription_end_date TIMESTAMP,
             currency TEXT DEFAULT 'XOF',
@@ -912,9 +910,7 @@ export async function initDatabase() {
             sort_order INTEGER DEFAULT 0,
             limits TEXT NOT NULL,
             features TEXT NOT NULL,
-            stripe_price_id TEXT,
             price_yearly INTEGER,
-            stripe_price_id_yearly TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -1016,15 +1012,6 @@ export async function initDatabase() {
         }
     }
 
-    // Migration: add payment_url_external for PaymeTrust (redirect URL)
-    try {
-        await db.run('ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS payment_url_external TEXT');
-    } catch (e) {
-        if (!/already exists/i.test(e?.message || '')) {
-            console.warn('payment_links.payment_url_external column migration:', e?.message);
-        }
-    }
-
     // Migration: orders - payment_method (online | on_delivery) and delivered_at for "paiement à la livraison"
     // Migration: message_templates shortcut column (for Templates page)
     try {
@@ -1074,23 +1061,7 @@ export async function initDatabase() {
         }
     }
 
-    // Migration: users.parent_user_id (mode agence - sous-comptes)
-    try {
-        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT');
-        const hasFk = await db.get(
-            "SELECT 1 FROM pg_constraint WHERE conname = 'users_parent_user_id_fkey'"
-        );
-        if (!hasFk) {
-            await db.run(`
-                ALTER TABLE users ADD CONSTRAINT users_parent_user_id_fkey
-                FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE SET NULL
-            `);
-        }
-    } catch (e) {
-        if (!/already exists/i.test(e?.message || '')) {
-            console.warn('users.parent_user_id column migration:', e?.message);
-        }
-    }
+
 
     // Migration: conversations - conversion_score, conversion_score_updated_at, suggested_action (Module 4)
     try {
@@ -1159,7 +1130,6 @@ export async function initDatabase() {
     // Migration: subscription_plans - price_yearly and stripe_price_id_yearly
     try {
         await db.run('ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS price_yearly INTEGER');
-        await db.run('ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS stripe_price_id_yearly TEXT');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('subscription_plans migration:', e?.message);
@@ -1174,33 +1144,19 @@ export async function initDatabase() {
                 await db.run(`
                     INSERT INTO subscription_plans (
                         id, name, display_name, description, price, price_currency, 
-                        sort_order, is_default, limits, features, stripe_price_id,
-                        price_yearly, stripe_price_id_yearly
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        sort_order, is_default, limits, features,
+                        price_yearly
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT (name) DO NOTHING
                 `, 
                     plan.id, plan.name, plan.display_name, plan.description, plan.price, plan.price_currency, 
-                    plan.sort_order, plan.is_default, plan.limits, plan.features, plan.stripe_price_id,
-                    plan.price_yearly || null, plan.stripe_price_id_yearly || null
+                    plan.sort_order, plan.is_default, plan.limits, plan.features,
+                    plan.price_yearly || null
                 );
             }
         } else {
-            // Update stripe_price_id if it's missing but we have it in default
+            // Update plans if missing properties we have in default
             for (const plan of defaultPlans) {
-                if (plan.stripe_price_id) {
-                    await db.run(`
-                        UPDATE subscription_plans 
-                        SET stripe_price_id = ? 
-                        WHERE name = ? AND (stripe_price_id IS NULL OR stripe_price_id = '')
-                    `, plan.stripe_price_id, plan.name);
-                }
-                if (plan.stripe_price_id_yearly) {
-                    await db.run(`
-                        UPDATE subscription_plans 
-                        SET stripe_price_id_yearly = ? 
-                        WHERE name = ? AND (stripe_price_id_yearly IS NULL OR stripe_price_id_yearly = '')
-                    `, plan.stripe_price_id_yearly, plan.name);
-                }
                 if (plan.price_yearly) {
                     await db.run(`
                         UPDATE subscription_plans 
@@ -1212,6 +1168,43 @@ export async function initDatabase() {
         }
     } catch (e) {
         console.error('Failed to seed subscription plans:', e?.message || e);
+    }
+
+    try {
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS subscription_coupons (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                code TEXT UNIQUE NOT NULL,
+                discount_type TEXT NOT NULL DEFAULT 'percentage',
+                discount_value DOUBLE PRECISION NOT NULL,
+                max_uses INTEGER,
+                used_count INTEGER DEFAULT 0,
+                expires_at TIMESTAMP,
+                is_active INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+    } catch (e) {
+        console.error('Failed to create coupons table:', e?.message);
+    }
+
+    try {
+        await db.run('ALTER TABLE subscription_coupons ADD COLUMN IF NOT EXISTS name TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('subscription_coupons name column migration:', e?.message);
+        }
+    }
+
+    try {
+        await db.run('ALTER TABLE saas_subscription_payments ADD COLUMN IF NOT EXISTS coupon_code TEXT');
+        await db.run('ALTER TABLE saas_subscription_payments ADD COLUMN IF NOT EXISTS discount_amount DOUBLE PRECISION DEFAULT 0');
+        await db.run('ALTER TABLE saas_subscription_payments ADD COLUMN IF NOT EXISTS original_amount DOUBLE PRECISION');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('saas_subscription_payments coupon columns migration:', e?.message);
+        }
     }
 
     console.log('PostgreSQL schema initialized successfully');

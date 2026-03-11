@@ -163,7 +163,7 @@ export default function OnboardingChecklist({ data, onDismiss }) {
               {progress >= 100 ? <CheckCircle className="w-7 h-7" /> : <Rocket className="w-7 h-7" />}
             </div>
             <div>
-              <h3 className="text-xl sm:text-2xl font-display font-black text-white italic tracking-tight">
+              <h3 className="text-xl sm:text-2xl font-syne font-black text-white italic tracking-tight">
                 {progress >= 100 ? 'C\'est presque prêt ! 🎊' : t('onboarding.checklistTitle')}
               </h3>
               <div className="flex items-center gap-2 mt-1">
@@ -284,7 +284,7 @@ export default function OnboardingChecklist({ data, onDismiss }) {
                       
                       <div className="pointer-events-none relative z-10">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className={`font-bold text-lg tracking-tight ${
+                          <h4 className={`font-syne font-bold text-lg tracking-tight ${
                             isComplete ? 'text-emerald-400' : 'text-gray-100'
                           }`}>
                             {t(item.titleKey)}

@@ -37,10 +37,11 @@ import {
   BarChart3,
   Eye,
   EyeOff,
-  Copy
+  Copy,
+  Ticket
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, getCreditsForPlan } from './Admin/index.js'
+import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, CouponsContent, getCreditsForPlan } from './Admin/index.js'
 
 export default function Admin() {
   const { showConfirm } = useConfirm()
@@ -588,6 +589,17 @@ export default function Admin() {
             <CreditCard className="w-5 h-5 flex-shrink-0" />
             <span className="whitespace-nowrap">Plans</span>
           </button>
+          <button
+            onClick={() => setActiveTab('coupons')}
+            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+              activeTab === 'coupons' 
+                ? 'border-gold-400 text-gold-400' 
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <Ticket className="w-5 h-5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Coupons</span>
+          </button>
         </div>
       </div>
 
@@ -647,6 +659,11 @@ export default function Admin() {
           onRestoreDefaults={handleRestoreDefaultPlans}
           onRefresh={loadPlans}
         />
+      )}
+
+      {/* Coupons Tab */}
+      {activeTab === 'coupons' && (
+        <CouponsContent />
       )}
 
       {/* Users Tab */}
@@ -806,7 +823,6 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     is_active: user.is_active,
     voice_responses_enabled: !!user.voice_responses_enabled,
     payment_module_enabled: !!user.payment_module_enabled,
-    parent_user_id: user.parent_user_id || '',
     subscription_end_date: user.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : ''
   })
   const [newPassword, setNewPassword] = useState('')
@@ -838,8 +854,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     setSaving(true)
     try {
       await api.put(`/admin/users/${user.id}`, {
-        ...formData,
-        parent_user_id: formData.parent_user_id || null
+        ...formData
       })
       
       if (newPassword) {
@@ -969,22 +984,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
             </label>
             <p className="text-xs text-gray-500 mt-1">Ces options ne sont effectives que si le plan de l&apos;utilisateur inclut les modules correspondants (voir Plans d&apos;abonnement).</p>
           </div>
-          {allUsers.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Compte agence (parent)</label>
-              <select
-                value={formData.parent_user_id || ''}
-                onChange={(e) => setFormData({ ...formData, parent_user_id: e.target.value || '' })}
-                className="input-dark w-full"
-              >
-                <option value="">Aucun (compte indépendant)</option>
-                {allUsers.filter(u => u.id !== user.id).map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Sous-compte d&apos;un compte agence</p>
-            </div>
-          )}
+
           {isPromotingToAdmin && (
             <div className="p-3 rounded-xl bg-gold-400/10 border border-gold-400/30">
               <p className="text-sm text-gray-300 mb-2">
@@ -1065,8 +1065,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
     company: '',
     plan: 'free',
     credits: 500,
-    is_admin: 0,
-    parent_user_id: ''
+    is_admin: 0
   })
   const [saving, setSaving] = useState(false)
   const initialCreditsSyncedRef = useRef(false)
@@ -1090,7 +1089,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
     e.preventDefault()
     setSaving(true)
     try {
-      await api.post('/admin/users', { ...formData, parent_user_id: formData.parent_user_id || null })
+      await api.post('/admin/users', { ...formData })
       toast.success('Utilisateur créé')
       onSave()
     } catch (error) {
@@ -1185,22 +1184,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
               />
             </div>
           </div>
-          {allUsers.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Compte agence (parent)</label>
-              <select
-                value={formData.parent_user_id || ''}
-                onChange={(e) => setFormData({ ...formData, parent_user_id: e.target.value || '' })}
-                className="input-dark w-full"
-              >
-                <option value="">Aucun (compte indépendant)</option>
-                {allUsers.map(u => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Créer comme sous-compte d&apos;un compte agence</p>
-            </div>
-          )}
+
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"

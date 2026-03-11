@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const location = useLocation()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const { startTour, completedTours } = useOnboardingTour()
+  const { startTour, completedTours, activeTour } = useOnboardingTour()
   const [stats, setStats] = useState(null)
   const [agents, setAgents] = useState([])
   const [quotas, setQuotas] = useState(null)
@@ -43,10 +43,14 @@ export default function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [selectedAlertView, setSelectedAlertView] = useState(null)
   const [selectedAgentView, setSelectedAgentView] = useState(null)
+  const tourTimerRef = useRef(null)
 
   // Reload data when navigating to this page
   useEffect(() => {
     loadData()
+    return () => {
+      if (tourTimerRef.current) clearTimeout(tourTimerRef.current)
+    }
   }, [location.key])
 
   useEffect(() => {
@@ -79,26 +83,41 @@ export default function Dashboard() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
+      if (tourTimerRef.current) clearTimeout(tourTimerRef.current)
     }
   }, [user?.id])
 
-  const handleWelcomeComplete = () => {
+  const handleWelcomeComplete = (skipTour = false) => {
     if (user?.id) {
       localStorage.setItem(`has_seen_welcome_${user.id}`, 'true')
     }
     setShowWelcome(false)
-    // Start sidebar tour after welcome modal
-    setTimeout(() => {
-      startTour('sidebar')
-    }, 500)
+    
+    if (skipTour) return
+
+    // Start sidebar tour after welcome modal IF not already completed
+    if (!completedTours.includes('sidebar')) {
+      tourTimerRef.current = setTimeout(() => {
+        startTour('sidebar')
+      }, 500)
+    } else if (!completedTours.includes('dashboard')) {
+      // If sidebar already completed, start dashboard tour after a short delay
+      tourTimerRef.current = setTimeout(() => {
+        startTour('dashboard')
+      }, 800)
+    }
   }
 
   // Chain tours: dashboard tour starts after sidebar tour is completed
   useEffect(() => {
-    if (completedTours.includes('sidebar') && !completedTours.includes('dashboard')) {
-      startTour('dashboard')
+    // Only start automatically if no other tour is running and welcome modal is closed
+    if (!showWelcome && !activeTour && completedTours.includes('sidebar') && !completedTours.includes('dashboard')) {
+      const timer = setTimeout(() => {
+        startTour('dashboard')
+      }, 1000)
+      return () => clearTimeout(timer)
     }
-  }, [completedTours, startTour])
+  }, [completedTours, startTour, activeTour, showWelcome])
 
   const loadData = async () => {
     try {

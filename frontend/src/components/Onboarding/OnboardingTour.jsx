@@ -377,6 +377,16 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
 
   if (!targetRect) return null
 
+  // Check if a major modal is open (WelcomeModal, Wizard, etc.)
+  // We check for some common modal classes or IDs
+  const isBlockingModalOpen = !!(
+    document.querySelector('[role="dialog"]') || 
+    document.querySelector('.wizard-modal') ||
+    document.querySelector('.welcome-modal')
+  )
+
+  if (isBlockingModalOpen) return null
+
   const padding = 8
 
   return createPortal(
@@ -430,7 +440,7 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
           {/* Header */}
           <div className="px-5 py-4 bg-white/5 border-b border-white/5">
             <div className="flex items-center justify-between">
-              <h4 className="font-display font-black text-white italic tracking-tight">{step.title}</h4>
+              <h4 className="font-syne font-black text-white italic tracking-tight">{step.title}</h4>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                 className="text-gray-500 hover:text-white transition-colors p-1"

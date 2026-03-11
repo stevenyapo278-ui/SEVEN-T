@@ -58,7 +58,7 @@ const AVAILABLE_TAGS = [
 
 export default function Agents() {
   const { t } = useTranslation()
-  const { startTour, completedTours } = useOnboardingTour()
+  const { startTour, endTour, completedTours, activeTour } = useOnboardingTour()
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -85,21 +85,26 @@ export default function Agents() {
   // Open create wizard from URL param
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
+      // If we open the wizard, stop any currently running tour (like sidebar or dashboard)
+      endTour()
       // Use wizard for better UX
       setShowCreationWizard(true)
       // Remove the param from URL
       searchParams.delete('create')
       setSearchParams(searchParams, { replace: true })
     }
-  }, [searchParams, setSearchParams])
+  }, [searchParams, setSearchParams, endTour])
 
   // Start tour automatically on first visit
   useEffect(() => {
-    // Only start if not already active and user has not completed it
-    if (!completedTours.includes('agents')) {
-      startTour('agents')
+    // Only start if not already active AND user has not completed it AND wizard is NOT open
+    if (!showCreationWizard && !activeTour && !completedTours.includes('agents')) {
+      const timer = setTimeout(() => {
+        startTour('agents')
+      }, 1000)
+      return () => clearTimeout(timer)
     }
-  }, [completedTours, startTour])
+  }, [completedTours, startTour, activeTour, showCreationWizard])
 
   // Decide which creation mode to show (wizard for new users, modal for experienced)
   const handleCreateAgent = () => {

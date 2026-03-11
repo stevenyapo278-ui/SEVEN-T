@@ -3,12 +3,15 @@
   "version": "1.0.0",
   "description": "Plateforme d'automatisation WhatsApp avec IA",
   "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "node --watch backend/server.js",
-    "dev:frontend": "cd frontend && npm run dev",
-    "install:all": "npm install && cd frontend && npm install",
-    "build": "cd frontend && npm run build",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "install:all": "npm install",
+    "build": "npm run build --workspace=frontend",
     "start": "node backend/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "db:clear": "node backend/scripts/clear-db.js",
@@ -38,7 +41,6 @@
     "pg": "^8.18.0",
     "socket.io": "^4.8.0",
     "qrcode": "^1.5.4",
-    "stripe": "^20.3.0",
     "tiktoken": "^1.0.22",
     "uuid": "^11.0.3",
     "youtube-transcript": "^1.2.1",

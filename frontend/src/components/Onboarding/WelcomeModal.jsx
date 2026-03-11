@@ -32,7 +32,7 @@ function getSteps(t) {
       icon: Sparkles,
       content: (
         <div className="space-y-6">
-          <p className="text-gray-300 text-center text-lg leading-relaxed">
+          <p className="text-gray-300 text-center text-base sm:text-lg leading-relaxed">
             {t('onboarding.welcomeIntro')}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -98,14 +98,14 @@ function getSteps(t) {
       icon: MessageSquare,
       content: (
         <div className="space-y-6">
-          <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 text-center">
-            <p className="text-emerald-400 font-medium mb-4">
+          <div className="p-4 sm:p-6 bg-emerald-500/10 rounded-2xl sm:rounded-3xl border border-emerald-500/20 text-center">
+            <p className="text-emerald-400 font-medium mb-3 sm:mb-4 text-sm sm:text-base">
               Connectez votre compte en 10 secondes
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-3 sm:gap-4">
                {[1, 2, 3].map(i => (
                  <div key={i} className="flex flex-col items-center gap-2">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center font-bold text-emerald-400">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-500/20 flex items-center justify-center font-bold text-emerald-400 text-sm sm:text-base">
                       {i}
                     </div>
                  </div>
@@ -145,13 +145,13 @@ function getSteps(t) {
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.1 * i }}
-                className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-white/5 rounded-xl sm:rounded-2xl border border-white/10"
               >
-                <div className={`w-12 h-12 rounded-xl bg-${item.color}-500/20 flex items-center justify-center flex-shrink-0`}>
-                  <item.icon className={`w-6 h-6 text-${item.color}-400`} />
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-${item.color}-500/20 flex items-center justify-center flex-shrink-0`}>
+                  <item.icon className={`w-5 h-5 sm:w-6 sm:h-6 text-${item.color}-400`} />
                 </div>
-                <p className="text-gray-200 font-medium">{item.text}</p>
-                <CheckCircle className="w-5 h-5 text-emerald-400 ml-auto" />
+                <p className="text-gray-200 font-medium text-sm sm:text-base">{item.text}</p>
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 ml-auto" />
               </MotionDiv>
             ))}
           </div>
@@ -180,7 +180,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
 
   const handleNext = () => {
     if (isLastStep) {
-      onComplete()
+      onComplete(true)
       navigate('/dashboard/agents?create=true')
     } else {
       setDirection(1)
@@ -232,7 +232,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
       <MotionDiv 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col lg:flex-row bg-[#0B0F1A] rounded-[2.5rem] border border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
+        className="relative z-10 w-full max-w-3xl max-h-[95vh] sm:max-h-[85vh] flex flex-col lg:flex-row bg-[#0B0F1A] rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
       >
         {/* Left Side: Visual/Image */}
         <div className="hidden lg:flex lg:w-[45%] bg-[#0D121F] relative overflow-hidden border-r border-white/5">
@@ -283,14 +283,14 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
         </div>
 
         {/* Right Side: content */}
-        <div className="flex-1 flex flex-col min-h-0 p-8 sm:p-12">
+        <div className="flex-1 flex flex-col min-h-0 p-5 sm:p-10">
           {/* Header Mobile / Info */}
-          <div className="flex items-center justify-between mb-8">
-             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gold-400/10 flex items-center justify-center border border-gold-400/20">
-                   <Sparkles className="w-5 h-5 text-gold-400" />
+          <div className="flex items-center justify-between mb-6">
+             <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gold-400/10 flex items-center justify-center border border-gold-400/20">
+                   <Sparkles className="w-4 h-4 text-gold-400" />
                 </div>
-                <span className="text-sm font-black uppercase tracking-widest text-white/40">Onboarding</span>
+                <span className="text-[10px] font-syne font-bold uppercase tracking-widest text-white/40">Onboarding</span>
              </div>
              <button 
                onClick={handleSkip}
@@ -310,18 +310,18 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
                 animate="center"
                 exit="exit"
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="space-y-8"
+                className="space-y-6 sm:space-y-8"
               >
-                <div className="space-y-4">
-                   <h2 className="text-4xl sm:text-5xl font-display font-black text-white leading-tight">
+                <div className="space-y-2 sm:space-y-3">
+                   <h2 className="text-xl sm:text-2xl lg:text-3xl font-syne font-black italic text-white leading-tight">
                      {step.title}
                    </h2>
-                   <p className="text-lg text-gray-400 leading-relaxed max-w-lg">
+                   <p className="text-xs sm:text-sm lg:text-base text-gray-400 leading-relaxed max-w-lg">
                      {step.description}
                    </p>
                 </div>
 
-                <div className="pt-4">
+                <div className="pt-2 sm:pt-4">
                   {step.content}
                 </div>
               </MotionDiv>
@@ -329,23 +329,34 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="mt-12 flex items-center justify-between pt-8 border-t border-white/5">
-             <div>
+          <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-between pt-6 sm:pt-8 border-t border-white/5 gap-4">
+             <div className="flex items-center justify-between w-full sm:w-auto">
+                <div className="flex lg:hidden gap-1.5 mr-4">
+                    {steps.map((_, i) => (
+                      <div 
+                        key={i}
+                        className={`h-1 rounded-full transition-all duration-300 ${
+                          i === currentStep ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'
+                        }`}
+                      />
+                    ))}
+                </div>
+
                 {currentStep > 0 && (
                   <button
                     onClick={handleBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-white font-bold transition-colors"
+                    className="flex items-center gap-2 text-gray-500 hover:text-white font-bold transition-colors text-sm sm:text-base"
                   >
                     Précédent
                   </button>
                 )}
              </div>
 
-             <div className="flex items-center gap-6">
+             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-6">
                 {!isLastStep && (
                    <button 
                      onClick={handleSkip}
-                     className="text-sm font-bold text-gray-500 hover:text-gray-300 hidden sm:block"
+                     className="text-sm font-bold text-gray-500 hover:text-gray-300 sm:block"
                    >
                      Passer
                    </button>
@@ -353,12 +364,12 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
                 
                 <button
                   onClick={handleNext}
-                  className="group relative flex items-center gap-4 bg-white text-black px-8 py-5 rounded-2xl font-black overflow-hidden transition-all hover:scale-105 active:scale-95"
+                  className="group relative flex items-center justify-center sm:justify-start gap-3 bg-white text-black px-5 sm:px-6 py-3 sm:py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none"
                 >
-                  <span className="relative z-10">
+                  <span className="relative z-10 text-xs sm:text-sm">
                     {isLastStep ? t('onboarding.btnCreateAgent') : t('onboarding.btnContinue')}
                   </span>
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
+                  <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
                   <div className="absolute inset-0 bg-gold-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                 </button>
              </div>

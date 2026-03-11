@@ -301,7 +301,7 @@ function PrivacyContent() {
       <ul>
         <li><strong>Google (Gemini AI)</strong> - Génération des réponses IA</li>
         <li><strong>OpenAI</strong> - Génération des réponses IA (alternative)</li>
-        <li><strong>Stripe</strong> - Traitement des paiements</li>
+        <li><strong>GeniusPay</strong> - Traitement des paiements</li>
         <li><strong>Hébergeur (OVH)</strong> - Stockage des données</li>
       </ul>
       <p>Nous ne vendons jamais vos données à des tiers.</p>

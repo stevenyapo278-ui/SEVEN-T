@@ -1,124 +1,83 @@
 import { Router } from 'express';
-import Stripe from 'stripe';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { getPlan } from '../config/plans.js';
 
 const router = Router();
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-const stripe = stripeSecret ? new Stripe(stripeSecret) : null;
 const baseUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-import paymetrust from '../services/paymetrust.js';
 import geniuspay from '../services/geniuspay.js';
 import { v4 as uuidv4 } from 'uuid';
 import { getEffectivePlanName } from '../config/plans.js';
 import { sendPaymentSuccessEmail, sendPaymentFailedEmail } from '../services/email.js';
 
 /**
- * POST /api/subscription/create-checkout-session
- * Create a Stripe Checkout Session for the given plan. Redirect user to Stripe to pay.
+ * Helper to validate a coupon
  */
-router.post('/create-checkout-session', authenticateToken, async (req, res) => {
-    if (!stripe) {
-        return res.status(503).json({ error: 'Paiement Stripe non configuré (STRIPE_SECRET_KEY)' });
+async function validateAndApplyCoupon(couponCode, amount) {
+    if (!couponCode) return { finalAmount: amount, discountAmount: 0, originalAmount: amount, valid: false, error: 'Code manquant' };
+    const coupon = await db.get('SELECT * FROM subscription_coupons WHERE code = ? AND is_active = 1', couponCode.trim().toUpperCase());
+    if (!coupon) return { finalAmount: amount, discountAmount: 0, originalAmount: amount, valid: false, error: 'Code invalide ou expiré' };
+    
+    if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+        return { finalAmount: amount, discountAmount: 0, originalAmount: amount, valid: false, error: 'Ce coupon a atteint sa limite d\'utilisation' };
     }
-    try {
-        const { planId, billingPeriod = 'monthly' } = req.body;
-        if (!planId) {
-            return res.status(400).json({ error: 'planId requis' });
-        }
-        const planRow = await db.get(`
-            SELECT name, display_name, stripe_price_id, stripe_price_id_yearly FROM subscription_plans
-            WHERE name = ? AND is_active = 1
-        `, planId);
-        if (!planRow) {
-            return res.status(404).json({ error: 'Plan non trouvé' });
-        }
-        const stripePriceId = billingPeriod === 'yearly' ? planRow.stripe_price_id_yearly : planRow.stripe_price_id;
-        
-        if (!stripePriceId) {
-            return res.status(400).json({ error: 'Ce plan n\'est pas disponible pour cette période d\'achat en ligne. Contactez-nous.' });
-        }
-        const userId = req.user.id;
-        const userRow = await db.get('SELECT stripe_customer_id, email, name FROM users WHERE id = ?', userId);
-        let customerId = userRow?.stripe_customer_id;
-        if (!customerId && userRow?.email) {
-            const customer = await stripe.customers.create({
-                email: userRow.email,
-                name: userRow.name || undefined,
-                metadata: { user_id: userId }
-            });
-            customerId = customer.id;
-            await db.run('UPDATE users SET stripe_customer_id = ? WHERE id = ?', customerId, userId);
-        }
-        const session = await stripe.checkout.sessions.create({
-            mode: 'subscription',
-            customer: customerId,
-            line_items: [{ price: stripePriceId, quantity: 1 }],
-            success_url: `${baseUrl}/dashboard/settings?subscription=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${baseUrl}/dashboard/settings?subscription=cancelled`,
-            client_reference_id: userId,
-            subscription_data: {
-                metadata: { user_id: userId },
-                trial_period_days: 0
-            },
-            allow_promotion_codes: true
-        });
-        res.json({ url: session.url });
-    } catch (err) {
-        console.error('Create checkout session error:', err);
-        res.status(500).json({ error: err.message || 'Erreur lors de la création de la session de paiement' });
+    
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        return { finalAmount: amount, discountAmount: 0, originalAmount: amount, valid: false, error: 'Ce coupon a expiré' };
     }
-});
+    
+    let finalAmount = amount;
+    let discountAmount = 0;
+    
+    if (coupon.discount_type === 'percentage') {
+        discountAmount = amount * (coupon.discount_value / 100);
+        finalAmount = amount - discountAmount;
+    } else if (coupon.discount_type === 'fixed') {
+        discountAmount = coupon.discount_value;
+        finalAmount = amount - discountAmount;
+    }
+    
+    if (finalAmount < 0) finalAmount = 0;
+    
+    return {
+        finalAmount: Math.round(finalAmount),
+        discountAmount: Math.round(discountAmount),
+        originalAmount: Math.round(amount),
+        valid: true,
+        coupon
+    };
+}
 
 /**
- * POST /api/subscription/create-paymetrust-checkout
- * Create a PaymeTrust invoice for the selected plan.
+ * POST /api/subscription/validate-coupon
  */
-router.post('/create-paymetrust-checkout', authenticateToken, async (req, res) => {
+router.post('/validate-coupon', authenticateToken, async (req, res) => {
     try {
-        const { planId, billingPeriod = 'monthly' } = req.body;
-        if (!planId) return res.status(400).json({ error: 'planId requis' });
+        const { planId, billingPeriod = 'monthly', couponCode } = req.body;
+        if (!planId || !couponCode) return res.status(400).json({ error: 'planId et couponCode requis' });
 
         const planRow = await db.get('SELECT * FROM subscription_plans WHERE name = ? AND is_active = 1', planId);
         if (!planRow) return res.status(404).json({ error: 'Plan non trouvé' });
 
         const amount = billingPeriod === 'yearly' ? planRow.price_yearly : planRow.price;
-        if (!amount || amount <= 0) {
-            return res.status(400).json({ error: 'Prix non configuré pour ce plan' });
+        if (!amount || amount <= 0) return res.status(400).json({ error: 'Prix non configuré pour ce plan' });
+
+        const result = await validateAndApplyCoupon(couponCode, amount);
+        if (!result.valid) {
+            return res.status(400).json({ error: result.error });
         }
 
-        const userId = req.user.id;
-        const id = uuidv4();
-        
-        const returnUrl = `${baseUrl}/dashboard/settings?subscription=success&pt_id=${id}`;
-        const callbackUrl = process.env.BASE_URL 
-            ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/subscription/webhook/paymetrust` 
-            : `${baseUrl}/api/subscription/webhook/paymetrust`;
-
-        const result = await paymetrust.createInvoice({
-            amount,
-            currency: planRow.price_currency || 'XOF',
-            description: `Abonnement ${planRow.display_name} (${billingPeriod})`,
-            referenceId: id,
-            returnUrl,
-            callbackUrl
+        res.json({
+            valid: true,
+            originalAmount: result.originalAmount,
+            discountAmount: result.discountAmount,
+            finalAmount: result.finalAmount,
+            code: result.coupon.code,
+            name: result.coupon.name
         });
-
-        if (!result) {
-            return res.status(500).json({ error: 'Erreur PaymeTrust' });
-        }
-
-        await db.run(`
-            INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, currency, external_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, id, userId, planId, billingPeriod, amount, planRow.price_currency || 'XOF', result.invoiceId);
-
-        res.json({ url: result.paymentUrl });
     } catch (err) {
-        console.error('PaymeTrust sub error:', err);
-        res.status(500).json({ error: 'Erreur lors de la création du paiement' });
+        console.error('Validate coupon error:', err);
+        res.status(500).json({ error: 'Erreur lors de la validation du coupon' });
     }
 });
 
@@ -127,14 +86,26 @@ router.post('/create-paymetrust-checkout', authenticateToken, async (req, res) =
  */
 router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) => {
     try {
-        const { planId, billingPeriod = 'monthly' } = req.body;
+        const { planId, billingPeriod = 'monthly', couponCode } = req.body;
         if (!planId) return res.status(400).json({ error: 'planId requis' });
 
         const planRow = await db.get('SELECT * FROM subscription_plans WHERE name = ? AND is_active = 1', planId);
         if (!planRow) return res.status(404).json({ error: 'Plan non trouvé' });
 
-        const amount = billingPeriod === 'yearly' ? planRow.price_yearly : planRow.price;
+        let amount = billingPeriod === 'yearly' ? planRow.price_yearly : planRow.price;
         if (!amount || amount <= 0) return res.status(400).json({ error: 'Prix non configuré' });
+        
+        let originalAmount = amount;
+        let discountAmount = 0;
+        let finalCouponCode = null;
+
+        if (couponCode) {
+            const couponRes = await validateAndApplyCoupon(couponCode, amount);
+            if (!couponRes.valid) return res.status(400).json({ error: couponRes.error });
+            amount = couponRes.finalAmount;
+            discountAmount = couponRes.discountAmount;
+            finalCouponCode = couponRes.coupon.code;
+        }
 
         const userId = req.user.id;
         const userRow = await db.get('SELECT name, email FROM users WHERE id = ?', userId);
@@ -158,7 +129,7 @@ router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) =>
         const result = await geniuspay.createInvoiceWithCredentials(credentials, {
             amount,
             currency: planRow.price_currency || 'XOF',
-            description: `Abonnement ${planRow.display_name} (${billingPeriod})`,
+            description: `Abonnement ${planRow.display_name} (${billingPeriod})` + (couponRes?.coupon?.name ? ` - Coupon: ${couponRes.coupon.name}` : (finalCouponCode ? ` - Coupon: ${finalCouponCode}` : '')),
             referenceId: id,
             returnUrl,
             callbackUrl,
@@ -171,54 +142,33 @@ router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) =>
         if (!result) return res.status(500).json({ error: 'Erreur GeniusPay' });
 
         await db.run(`
-            INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, currency, external_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, id, userId, planId, billingPeriod, amount, planRow.price_currency || 'XOF', result.invoiceId);
+            INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, currency, external_id, coupon_code, discount_amount, original_amount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, id, userId, planId, billingPeriod, amount, planRow.price_currency || 'XOF', result.invoiceId, finalCouponCode, discountAmount, originalAmount);
 
         res.json({ url: result.paymentUrl });
     } catch (err) {
         console.error('GeniusPay sub error:', err);
-        res.status(500).json({ error: 'Erreur lors de la création du paiement' });
-    }
-});
-
-/**
- * POST /api/subscription/create-portal-session
- * Create a Stripe Customer Portal session so the user can manage subscription / payment method.
- */
-router.post('/create-portal-session', authenticateToken, async (req, res) => {
-    if (!stripe) {
-        return res.status(503).json({ error: 'Stripe non configuré' });
-    }
-    try {
-        const userId = req.user.id;
-        const user = await db.get('SELECT stripe_customer_id FROM users WHERE id = ?', userId);
-        if (!user?.stripe_customer_id) {
-            return res.status(400).json({ error: 'Aucun abonnement à gérer' });
-        }
-        const session = await stripe.billingPortal.sessions.create({
-            customer: user.stripe_customer_id,
-            return_url: `${baseUrl}/dashboard/settings`
+        res.status(500).json({ 
+            error: 'Erreur lors de la création du paiement',
+            message: err.message,
+            code: 'GENIUSPAY_ERROR'
         });
-        res.json({ url: session.url });
-    } catch (err) {
-        console.error('Create portal session error:', err);
-        res.status(500).json({ error: err.message || 'Erreur' });
     }
 });
 
 /**
- * Apply subscription to user: set plan, credits, stripe_subscription_id, subscription_status
+ * Apply subscription to user: set plan, credits, subscription_status
  */
-async function applySubscriptionToUser(userId, planName, stripeSubscriptionId, endDate = null) {
+async function applySubscriptionToUser(userId, planName, externalSubscriptionId, endDate = null) {
     const plan = await getPlan(planName);
     const credits = plan?.limits?.credits_per_month ?? 100;
     
-    // If no explicit endDate is provided but it's a non-Stripe payment, 
+    // If no explicit endDate is provided but it's a non-GeniusPay payment, 
     // we might want to default to 1 month/year.
     let finalEndDate = endDate;
-    if (!stripeSubscriptionId?.startsWith('sub_') && !finalEndDate) {
-        // Default to 31 days if manual/paymetrust and no date given
+    if (!finalEndDate) {
+        // Default to 31 days if manual and no date given
         const d = new Date();
         d.setDate(d.getDate() + 31);
         finalEndDate = d;
@@ -228,12 +178,11 @@ async function applySubscriptionToUser(userId, planName, stripeSubscriptionId, e
         UPDATE users SET 
             plan = ?, 
             credits = ?, 
-            stripe_subscription_id = ?, 
             subscription_status = 'active',
             subscription_end_date = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    `, planName, credits, stripeSubscriptionId || null, finalEndDate, userId);
+    `, planName, credits, finalEndDate, userId);
 
     // Send confirmation email
     try {
@@ -243,7 +192,7 @@ async function applySubscriptionToUser(userId, planName, stripeSubscriptionId, e
                 planName: plan?.display_name || planName,
                 amount: '–', // Amount not always easily available here
                 date: new Date().toLocaleDateString('fr-FR'),
-                number: stripeSubscriptionId || 'N/A',
+                number: externalSubscriptionId || 'N/A',
                 credits: credits
             });
         }
@@ -253,7 +202,7 @@ async function applySubscriptionToUser(userId, planName, stripeSubscriptionId, e
 }
 
 /**
- * Remove subscription: set plan to free, clear stripe_subscription_id, set credits to free tier
+ * Remove subscription: set plan to free, set credits to free tier
  */
 async function removeSubscriptionFromUser(userId) {
     const plan = await getPlan('free');
@@ -262,136 +211,10 @@ async function removeSubscriptionFromUser(userId) {
         UPDATE users SET 
             plan = 'free', 
             credits = ?, 
-            stripe_subscription_id = NULL, 
             subscription_status = 'canceled',
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
     `, credits, userId);
-}
-
-/**
- * POST /api/subscription/webhook
- * Stripe webhook. Must be registered with express.raw({ type: 'application/json' }) before body parser.
- * req.body is a Buffer (raw).
- */
-export async function handleStripeWebhook(req, res) {
-    if (!stripe || !stripeWebhookSecret) {
-        return res.status(503).send('Webhook non configuré');
-    }
-    const sig = req.headers['stripe-signature'];
-    let event;
-    try {
-        event = stripe.webhooks.constructEvent(req.body, sig, stripeWebhookSecret);
-    } catch (err) {
-        console.error('Stripe webhook signature verification failed:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-    try {
-        switch (event.type) {
-            case 'checkout.session.completed': {
-                const session = event.data.object;
-                const userId = session.client_reference_id || session.subscription_data?.metadata?.user_id;
-                if (!userId) break;
-                const subscriptionId = session.subscription;
-                if (!subscriptionId) break;
-                
-                const sub = await stripe.subscriptions.retrieve(subscriptionId);
-                const priceId = sub.items?.data?.[0]?.price?.id;
-                const planRow = await db.get('SELECT name FROM subscription_plans WHERE stripe_price_id = ? OR stripe_price_id_yearly = ?', priceId, priceId);
-                const planName = planRow?.name || 'starter';
-                await applySubscriptionToUser(userId, planName, subscriptionId);
-                break;
-            }
-            case 'customer.subscription.updated': {
-                const sub = event.data.object;
-                const userId = sub.metadata?.user_id;
-                if (!userId) break;
-                if (sub.status === 'active' || sub.status === 'trialing') {
-                const priceId = sub.items?.data?.[0]?.price?.id;
-                const planRow = await db.get('SELECT name FROM subscription_plans WHERE stripe_price_id = ? OR stripe_price_id_yearly = ?', priceId, priceId);
-                const planName = planRow?.name || 'starter';
-                await applySubscriptionToUser(userId, planName, sub.id);
-                }
-                break;
-            }
-            case 'customer.subscription.deleted': {
-                const sub = event.data.object;
-                const userId = sub.metadata?.user_id;
-                if (userId) await removeSubscriptionFromUser(userId);
-                break;
-            }
-            case 'invoice.payment_failed': {
-                const invoice = event.data.object;
-                const customerId = invoice.customer;
-                const user = await db.get('SELECT id FROM users WHERE stripe_customer_id = ?', customerId);
-                if (user) {
-                    await db.run('UPDATE users SET subscription_status = ? WHERE id = ?', 'past_due', user.id);
-                    
-                    // Send failure email
-                    try {
-                        const userData = await db.get('SELECT email, name FROM users WHERE id = ?', user.id);
-                        if (userData) {
-                            await sendPaymentFailedEmail(userData, 'Échec de paiement de votre facture Stripe.');
-                        }
-                    } catch (emailErr) {
-                        console.error('Error sending payment failed email:', emailErr);
-                    }
-                }
-                break;
-            }
-            default:
-                break;
-        }
-    } catch (err) {
-        console.error('Stripe webhook handler error:', err);
-        return res.status(500).send('Webhook handler failed');
-    }
-    res.send();
-}
-
-/**
- * PaymeTrust Webhook for SaaS Subscriptions
- */
-export async function handlePaymeTrustSubscriptionWebhook(req, res) {
-    let body;
-    try {
-        const raw = req.body;
-        body = typeof raw === 'string' ? JSON.parse(raw) : (Buffer.isBuffer(raw) ? JSON.parse(raw.toString('utf8')) : raw);
-    } catch (e) {
-        return res.status(400).send('Invalid JSON');
-    }
-
-    const invoiceId = body?.data?.id ?? body?.data?.attributes?.id ?? body?.id;
-    const status = (body?.data?.attributes?.status ?? body?.data?.status ?? body?.status ?? '').toLowerCase();
-    
-    if (!invoiceId) return res.status(400).send('Missing invoice id');
-
-    const successStatuses = ['paid', 'completed', 'success', 'settled'];
-    if (!successStatuses.some(s => status.includes(s))) {
-        return res.status(200).send('OK');
-    }
-
-    try {
-        const payment = await db.get('SELECT * FROM saas_subscription_payments WHERE external_id = ? AND status != ?', invoiceId, 'paid');
-        if (!payment) return res.status(200).send('OK');
-
-        await db.run("UPDATE saas_subscription_payments SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
-        
-        // Calculate end date based on billing period
-        const endDate = new Date();
-        if (payment.billing_period === 'yearly') {
-            endDate.setFullYear(endDate.getFullYear() + 1);
-        } else {
-            endDate.setMonth(endDate.getMonth() + 1);
-        }
-
-        await applySubscriptionToUser(payment.user_id, payment.plan_id, `paymetrust_${payment.id}`, endDate);
-        
-        return res.status(200).send('OK');
-    } catch (err) {
-        console.error('PaymeTrust sub webhook error:', err);
-        return res.status(500).send('Error');
-    }
 }
 
 /**
@@ -437,13 +260,13 @@ export async function handleGeniusPaySubscriptionWebhook(req, res) {
             if (refId) {
                 const p2 = await db.get('SELECT * FROM saas_subscription_payments WHERE id = ? AND status != ?', refId, 'paid');
                 if (p2) {
-                    await finalizeSubscription(p2);
+                    await finalizeSubscription(p2, `geniuspay_${p2.id}`);
                 }
             }
             return res.status(200).send('OK');
         }
 
-        await finalizeSubscription(payment);
+        await finalizeSubscription(payment, `geniuspay_${payment.id}`);
         return res.status(200).send('OK');
     } catch (error) {
         console.error('[GeniusPay sub webhook] Error:', error);
@@ -451,15 +274,21 @@ export async function handleGeniusPaySubscriptionWebhook(req, res) {
     }
 }
 
-async function finalizeSubscription(payment) {
+async function finalizeSubscription(payment, externalSubId) {
+    if (payment.status === 'paid') return;
     await db.run("UPDATE saas_subscription_payments SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
+    
+    if (payment.coupon_code) {
+        await db.run("UPDATE subscription_coupons SET used_count = used_count + 1 WHERE code = ?", payment.coupon_code);
+    }
+    
     const endDate = new Date();
     if (payment.billing_period === 'yearly') {
         endDate.setFullYear(endDate.getFullYear() + 1);
     } else {
         endDate.setMonth(endDate.getMonth() + 1);
     }
-    await applySubscriptionToUser(payment.user_id, payment.plan_id, `geniuspay_${payment.id}`, endDate);
+    await applySubscriptionToUser(payment.user_id, payment.plan_id, externalSubId || `sub_${payment.id}`, endDate);
 }
 
 export default router;

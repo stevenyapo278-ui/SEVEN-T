@@ -47,7 +47,7 @@ import workflowRoutes from './routes/workflows.js';
 import flowRoutes from './routes/flows.js';
 import reportRoutes from './routes/reports.js';
 import userRoutes from './routes/users.js';
-import subscriptionRoutes, { handleStripeWebhook, handlePaymeTrustSubscriptionWebhook, handleGeniusPaySubscriptionWebhook } from './routes/subscription.js';
+import subscriptionRoutes, { handleGeniusPaySubscriptionWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
 import settingsRoutes from './routes/settings.js';
 
@@ -113,11 +113,7 @@ app.use(cors({
 // Cookie parsing (for OAuth state)
 app.use(cookieParser());
 
-// Stripe subscription webhook needs raw body (before json parser)
-app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }), (req, res) => handleStripeWebhook(req, res));
 
-// PaymeTrust subscription webhook
-app.post('/api/subscription/webhook/paymetrust', express.raw({ type: 'application/json' }), handlePaymeTrustSubscriptionWebhook);
 
 // GeniusPay subscription webhook
 app.post('/api/subscription/webhook/geniuspay', express.raw({ type: 'application/json' }), handleGeniusPaySubscriptionWebhook);
@@ -132,8 +128,7 @@ app.use(sanitizeInput);
 // Global rate limiting
 app.use('/api', apiLimiter);
 
-// Stripe webhook needs raw body (must be before json parser for this route)
-app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 
 // API Routes with specific rate limiters
 app.use('/api/auth', authLimiter, authRoutes);
@@ -153,6 +148,15 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/expenses', expenseRoutes);
+
+app.get('/api/health-db', async (req, res) => {
+    try {
+        const result = await db.all('SELECT 1 as connected');
+        res.json({ status: 'ok', db: result });
+    } catch (err) {
+        res.status(500).json({ status: 'error', error: err.message });
+    }
+});
 app.use('/api/tags', tagRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/campaigns', campaignRoutes);
@@ -170,6 +174,17 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve frontend static files in production
+if (isProduction) {
+    const distPath = join(__dirname, '..', 'frontend', 'dist');
+    app.use(express.static(distPath));
+    
+    // Support React Router (SPA) by serving index.html for unknown routes
+    app.get(/^((?!\/api).)*$/, (req, res) => {
+        res.sendFile(join(distPath, 'index.html'));
+    });
+}
+
 // Public route to get active subscription plans (for pricing page, settings, etc.)
 function safeJsonParse(str, fallback = {}) {
     if (str == null || str === '') return fallback;
@@ -184,7 +199,7 @@ function safeJsonParse(str, fallback = {}) {
 app.get('/api/plans', async (req, res) => {
     try {
         const plans = await db.all(`
-            SELECT id, name, display_name, description, price, price_currency, limits, features, sort_order, stripe_price_id, price_yearly, stripe_price_id_yearly
+            SELECT id, name, display_name, description, price, price_currency, limits, features, sort_order, price_yearly
             FROM subscription_plans
             WHERE is_active = 1
             ORDER BY sort_order ASC
@@ -198,9 +213,7 @@ app.get('/api/plans', async (req, res) => {
             priceCurrency: plan.price_currency || 'FCFA',
             limits: safeJsonParse(plan.limits, {}),
             features: safeJsonParse(plan.features, {}),
-            stripePriceId: plan.stripe_price_id || null,
-            priceYearly: plan.price_yearly || null,
-            stripePriceIdYearly: plan.stripe_price_id_yearly || null
+            priceYearly: plan.price_yearly || null
         }));
 
         return res.json({ plans: parsedPlans });
@@ -225,7 +238,7 @@ app.get('/api/users/me', async (req, res) => {
         if (!userId) {
             return res.json({ user: null });
         }
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, stripe_subscription_id, payment_module_enabled FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, payment_module_enabled FROM users WHERE id = ?', userId);
         if (!user) return res.json({ user: null });
         const { getPlan, getEffectivePlanName } = await import('./config/plans.js');
         const effectivePlan = await getEffectivePlanName(user.plan, user);

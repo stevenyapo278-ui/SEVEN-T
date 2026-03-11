@@ -91,62 +91,67 @@ function AdminRoute({ children }) {
   return children
 }
 
+import { OnboardingTourProvider } from './components/Onboarding'
+
 function App() {
+  const { user } = useAuth()
   return (
     <ErrorBoundary>
-      <CookieConsentBanner />
-      <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/legal" element={<Legal />} />
+      <OnboardingTourProvider userId={user?.id}>
+        <CookieConsentBanner />
+        <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/legal" element={<Legal />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
-        <Route path="agents" element={<Suspense fallback={<PageFallback />}><Agents /></Suspense>} />
-        <Route path="agents/:id" element={<Suspense fallback={<PageFallback />}><AgentDetail /></Suspense>} />
-        <Route path="products" element={<Suspense fallback={<PageFallback />}><Products /></Suspense>} />
-        <Route path="knowledge" element={<Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense>} />
-        <Route path="leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
-        <Route path="orders" element={<Suspense fallback={<PageFallback />}><Orders /></Suspense>} />
-        <Route path="conversations" element={<Suspense fallback={<PageFallback />}><Conversations /></Suspense>} />
-        <Route path="conversations/:id" element={<Suspense fallback={<PageFallback />}><ConversationDetail /></Suspense>} />
-        <Route path="analytics" element={<Suspense fallback={<PageFallback />}><Analytics /></Suspense>} />
-        <Route path="campaigns" element={<Suspense fallback={<PageFallback />}><Campaigns /></Suspense>} />
-        <Route path="templates" element={<Suspense fallback={<PageFallback />}><Templates /></Suspense>} />
-        <Route path="workflows" element={<Suspense fallback={<PageFallback />}><Workflows /></Suspense>} />
-        <Route path="payments" element={<Suspense fallback={<PageFallback />}><Payments /></Suspense>} />
-        <Route path="expenses" element={<Suspense fallback={<PageFallback />}><Expenses /></Suspense>} />
-        <Route path="tools" element={<Suspense fallback={<PageFallback />}><Tools /></Suspense>} />
-        <Route path="flows" element={<Suspense fallback={<PageFallback />}><Flows /></Suspense>} />
-        <Route path="flows/:id" element={<Suspense fallback={<PageFallback />}><FlowBuilder /></Suspense>} />
-        <Route path="reports" element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
-        <Route path="notifications" element={<Suspense fallback={<PageFallback />}><Notifications /></Suspense>} />
-        <Route path="settings" element={<Suspense fallback={<PageFallback />}><Settings /></Suspense>} />
-        <Route path="help" element={<Suspense fallback={<PageFallback />}><Help /></Suspense>} />
-        <Route path="docs" element={<Suspense fallback={<PageFallback />}><Docs /></Suspense>} />
-        <Route path="admin" element={
-          <AdminRoute>
-            <Suspense fallback={<PageFallback />}><Admin /></Suspense>
-          </AdminRoute>
-        } />
-      </Route>
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
+          <Route path="agents" element={<Suspense fallback={<PageFallback />}><Agents /></Suspense>} />
+          <Route path="agents/:id" element={<Suspense fallback={<PageFallback />}><AgentDetail /></Suspense>} />
+          <Route path="products" element={<Suspense fallback={<PageFallback />}><Products /></Suspense>} />
+          <Route path="knowledge" element={<Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense>} />
+          <Route path="leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
+          <Route path="orders" element={<Suspense fallback={<PageFallback />}><Orders /></Suspense>} />
+          <Route path="conversations" element={<Suspense fallback={<PageFallback />}><Conversations /></Suspense>} />
+          <Route path="conversations/:id" element={<Suspense fallback={<PageFallback />}><ConversationDetail /></Suspense>} />
+          <Route path="analytics" element={<Suspense fallback={<PageFallback />}><Analytics /></Suspense>} />
+          <Route path="campaigns" element={<Suspense fallback={<PageFallback />}><Campaigns /></Suspense>} />
+          <Route path="templates" element={<Suspense fallback={<PageFallback />}><Templates /></Suspense>} />
+          <Route path="workflows" element={<Suspense fallback={<PageFallback />}><Workflows /></Suspense>} />
+          <Route path="payments" element={<Suspense fallback={<PageFallback />}><Payments /></Suspense>} />
+          <Route path="expenses" element={<Suspense fallback={<PageFallback />}><Expenses /></Suspense>} />
+          <Route path="tools" element={<Suspense fallback={<PageFallback />}><Tools /></Suspense>} />
+          <Route path="flows" element={<Suspense fallback={<PageFallback />}><Flows /></Suspense>} />
+          <Route path="flows/:id" element={<Suspense fallback={<PageFallback />}><FlowBuilder /></Suspense>} />
+          <Route path="reports" element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
+          <Route path="notifications" element={<Suspense fallback={<PageFallback />}><Notifications /></Suspense>} />
+          <Route path="settings" element={<Suspense fallback={<PageFallback />}><Settings /></Suspense>} />
+          <Route path="help" element={<Suspense fallback={<PageFallback />}><Help /></Suspense>} />
+          <Route path="docs" element={<Suspense fallback={<PageFallback />}><Docs /></Suspense>} />
+          <Route path="admin" element={
+            <AdminRoute>
+              <Suspense fallback={<PageFallback />}><Admin /></Suspense>
+            </AdminRoute>
+          } />
+        </Route>
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </OnboardingTourProvider>
     </ErrorBoundary>
   )
 }

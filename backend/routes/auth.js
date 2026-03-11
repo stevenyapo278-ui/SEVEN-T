@@ -249,7 +249,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, trialEndDate.toISOString());
 
         // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, created_at, subscription_end_date, stripe_subscription_id FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, created_at, subscription_end_date FROM users WHERE id = ?', userId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
@@ -312,7 +312,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, stripe_subscription_id, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -364,7 +364,7 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, stripe_subscription_id, stripe_customer_id, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};

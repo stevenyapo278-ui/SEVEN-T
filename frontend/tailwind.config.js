@@ -55,6 +55,7 @@ export default {
         code: ['var(--font-code)', 'monospace'],
         display: ['var(--font-display)', 'sans-serif'],
         mono: ['var(--font-code)', 'monospace'],
+        syne: ['Syne', 'sans-serif'],
       },
       boxShadow: {
         'glow-gold': '0 0 60px rgba(251, 191, 36, 0.3)',

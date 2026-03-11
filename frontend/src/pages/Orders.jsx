@@ -111,7 +111,7 @@ export default function Orders() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsPeriod, setAnalyticsPeriod] = useState('30d')
   const [paymentLinkModal, setPaymentLinkModal] = useState({ open: false, order: null, message: '', url: '', loading: false })
-  const [paymetrustConfigured, setPaymetrustConfigured] = useState(false)
+  const [geniuspayConfigured, setGeniuspayConfigured] = useState(false)
   const [sendingInConversation, setSendingInConversation] = useState(null)
   const [showNewOrderModal, setShowNewOrderModal] = useState(false)
   const [products, setProducts] = useState([])
@@ -142,7 +142,7 @@ export default function Orders() {
     const loadPaymentProviders = async () => {
       try {
         const res = await api.get('/payments/providers')
-        setPaymetrustConfigured(!!(res.data?.configured?.paymetrust ?? res.data?.paymetrustConfigured))
+        setGeniuspayConfigured(!!res.data?.configured?.geniuspay)
       } catch {
         // ignore
       }
@@ -207,7 +207,7 @@ export default function Orders() {
   const handleCreatePaymentLink = async (order) => {
     setPaymentLinkModal(prev => ({ ...prev, open: true, order, message: '', url: '', loading: true }))
     try {
-      const provider = paymetrustConfigured ? 'paymetrust' : 'manual'
+      const provider = geniuspayConfigured ? 'geniuspay' : 'manual'
       const response = await api.post(`/orders/${order.id}/payment-link`, { provider })
       setPaymentLinkModal(prev => ({
         ...prev,

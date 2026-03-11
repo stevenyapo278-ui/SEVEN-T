@@ -4,10 +4,9 @@
  */
 
 import db from '../database/init.js';
-import paymetrust from './paymetrust.js';
 import geniuspay from './geniuspay.js';
 
-const PROVIDER_IDS = ['paymetrust', 'geniuspay'];
+const PROVIDER_IDS = ['geniuspay'];
 
 /**
  * Get stored credentials for a user and provider (no secrets in logs).
@@ -45,15 +44,7 @@ export async function isProviderConfiguredForUser(userId, provider) {
  */
 function getAdapter(provider) {
     switch (provider) {
-        case 'paymetrust':
-            return {
-                isConfigured(credentials) {
-                    return !!(credentials?.account_id && credentials?.api_key);
-                },
-                async createInvoice(credentials, params) {
-                    return paymetrust.createInvoiceWithCredentials(credentials, params);
-                }
-            };
+
         case 'geniuspay':
             return {
                 isConfigured(credentials) {
@@ -92,7 +83,6 @@ export async function createInvoiceForUser(userId, provider, params) {
  */
 export function getSupportedProviders() {
     return {
-        paymetrust: { id: 'paymetrust', name: 'PaymeTrust', icon: '🔒' },
         geniuspay: { id: 'geniuspay', name: 'GeniusPay', icon: '💎' }
     };
 }

@@ -154,7 +154,6 @@ router.post('/plans', async (req, res) => {
             price, 
             price_currency,
             billing_period,
-            stripe_price_id,
             limits, 
             features,
             is_active,
@@ -199,9 +198,9 @@ router.post('/plans', async (req, res) => {
         await db.prepare(`
             INSERT INTO subscription_plans (
                 id, name, display_name, description, price, price_currency, 
-                billing_period, stripe_price_id, limits, features, is_active, sort_order
+                billing_period, limits, features, is_active, sort_order
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
             planId,
             name.toLowerCase().replace(/\s+/g, '_'),
@@ -210,7 +209,6 @@ router.post('/plans', async (req, res) => {
             price || 0,
             price_currency || 'FCFA',
             billing_period || 'monthly',
-            stripe_price_id || null,
             JSON.stringify(limits || defaultLimits),
             JSON.stringify(features || defaultFeatures),
             is_active !== false ? 1 : 0,
@@ -251,7 +249,6 @@ router.put('/plans/:id', async (req, res) => {
             price, 
             price_currency,
             billing_period,
-            stripe_price_id,
             limits, 
             features,
             is_active,
@@ -281,10 +278,6 @@ router.put('/plans/:id', async (req, res) => {
         if (billing_period !== undefined) {
             updates.push('billing_period = ?');
             params.push(billing_period);
-        }
-        if (stripe_price_id !== undefined) {
-            updates.push('stripe_price_id = ?');
-            params.push(stripe_price_id || null);
         }
         if (limits !== undefined) {
             updates.push('limits = ?');
@@ -557,6 +550,112 @@ router.get('/available-models', async (req, res) => {
         res.json({ models: Array.isArray(models) ? models : [] });
     } catch (error) {
         console.error('Get available models error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * ==================== COUPONS CRUD ====================
+ */
+
+/**
+ * Get all coupons
+ */
+router.get('/coupons', async (req, res) => {
+    try {
+        const coupons = await db.all(`
+            SELECT * FROM subscription_coupons
+            ORDER BY created_at DESC
+        `);
+        res.json({ coupons: Array.isArray(coupons) ? coupons : [] });
+    } catch (error) {
+        console.error('Get coupons error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * Create a coupon
+ */
+router.post('/coupons', async (req, res) => {
+    try {
+        let { name, code, discount_type, discount_value, max_uses, expires_at, is_active } = req.body;
+        
+        if (!code || !discount_type || discount_value === undefined) {
+            return res.status(400).json({ error: 'Code, type de réduction et valeur requis' });
+        }
+
+        code = code.trim().toUpperCase();
+        const existing = await db.get('SELECT id FROM subscription_coupons WHERE code = ?', code);
+        if (existing) {
+            return res.status(400).json({ error: 'Ce code de coupon existe déjà' });
+        }
+
+        const id = uuidv4();
+        await db.run(`
+            INSERT INTO subscription_coupons (id, name, code, discount_type, discount_value, max_uses, expires_at, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, id, name || null, code, discount_type, discount_value, max_uses || null, expires_at || null, is_active !== false ? 1 : 0);
+
+        const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', id);
+        res.status(201).json({ message: 'Coupon créé avec succès', coupon });
+    } catch (error) {
+        console.error('Create coupon error:', error);
+        res.status(500).json({ error: 'Erreur lors de la création du coupon' });
+    }
+});
+
+/**
+ * Update a coupon
+ */
+router.put('/coupons/:id', async (req, res) => {
+    try {
+        const { name, code, discount_type, discount_value, max_uses, expires_at, is_active } = req.body;
+        
+        const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', req.params.id);
+        if (!coupon) return res.status(404).json({ error: 'Coupon non trouvé' });
+
+        const updates = [];
+        const params = [];
+
+        if (name !== undefined) { updates.push('name = ?'); params.push(name || null); }
+        if (code) {
+            const formattedCode = code.trim().toUpperCase();
+            const existing = await db.get('SELECT id FROM subscription_coupons WHERE code = ? AND id != ?', formattedCode, req.params.id);
+            if (existing) return res.status(400).json({ error: 'Ce code est déjà utilisé' });
+            updates.push('code = ?'); params.push(formattedCode);
+        }
+        if (discount_type) { updates.push('discount_type = ?'); params.push(discount_type); }
+        if (discount_value !== undefined) { updates.push('discount_value = ?'); params.push(discount_value); }
+        if (max_uses !== undefined) { updates.push('max_uses = ?'); params.push(max_uses || null); }
+        if (expires_at !== undefined) { updates.push('expires_at = ?'); params.push(expires_at || null); }
+        if (is_active !== undefined) { updates.push('is_active = ?'); params.push(is_active ? 1 : 0); }
+
+        if (updates.length > 0) {
+            params.push(req.params.id);
+            await db.run(`UPDATE subscription_coupons SET ${updates.join(', ')} WHERE id = ?`, ...params);
+        }
+
+        const updatedCoupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', req.params.id);
+        res.json({ message: 'Coupon mis à jour', coupon: updatedCoupon });
+    } catch (error) {
+        console.error('Update coupon error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * Delete a coupon
+ */
+router.delete('/coupons/:id', async (req, res) => {
+    try {
+        const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', req.params.id);
+        if (!coupon) return res.status(404).json({ error: 'Coupon non trouvé' });
+
+        await db.run('DELETE FROM subscription_coupons WHERE id = ?', req.params.id);
+        res.json({ message: 'Coupon supprimé' });
+    } catch (error) {
+        console.error('Delete coupon error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

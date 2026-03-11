@@ -64,7 +64,7 @@ export const CREDIT_COSTS = {
  * Get user's current credits
  */
 export async function getUserCredits(userId) {
-    const user = await db.get('SELECT credits, plan, subscription_end_date, stripe_subscription_id FROM users WHERE id = ?', userId);
+    const user = await db.get('SELECT credits, plan, subscription_end_date FROM users WHERE id = ?', userId);
     if (!user) return null;
     return user;
 }

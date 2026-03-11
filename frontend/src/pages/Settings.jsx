@@ -43,9 +43,8 @@ export default function Settings() {
   }, [user?.id, user?.name, user?.company, user?.media_model, user?.notification_number])
   const [plans, setPlans] = useState([])
   const [loadingPlans, setLoadingPlans] = useState(true)
-  const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState(null)
-  const [billingPeriod, setBillingPeriod] = useState('monthly')
-  const [portalLoading, setPortalLoading] = useState(false)
+  const [validCoupon, setValidCoupon] = useState(null)
+  const [couponLoading, setCouponLoading] = useState(false)
 
   const [paymentProvidersData, setPaymentProvidersData] = useState({ providers: {}, configured: {} })
   const [paymentProvidersLoading, setPaymentProvidersLoading] = useState(true)
@@ -60,15 +59,12 @@ export default function Settings() {
   const [dailyBriefingSaving, setDailyBriefingSaving] = useState(false)
   const [dailyBriefingForm, setDailyBriefingForm] = useState({ enabled: false, preferred_hour: 8, channel: 'email', email: '', whatsapp_contact_jid: '' })
 
-  // Handle redirect after Stripe Checkout (success or cancel)
+  // Handle redirect after GeniusPay Checkout
   useEffect(() => {
     const sub = searchParams.get('subscription')
     if (sub === 'success') {
       toast.success('Abonnement activé')
       refreshUser()
-      setSearchParams({}, { replace: true })
-    } else if (sub === 'cancelled') {
-      toast('Paiement annulé', { icon: 'ℹ️' })
       setSearchParams({}, { replace: true })
     }
   }, [searchParams, setSearchParams, refreshUser])
@@ -257,57 +253,63 @@ export default function Settings() {
     limits: { credits_per_month: 100 }
   }
 
-  const handleChoosePlan = async (plan) => {
+  const [checkoutLoadingPlanId, setCheckoutLoadingPlanId] = useState(null)
+  const [billingPeriod, setBillingPeriod] = useState('monthly')
+  const [couponCode, setCouponCode] = useState('')
+
+  const handleChooseGeniusPayPlan = async (plan) => {
     if (plan.id === 'free' || plan.price === 0) return
-    const priceId = billingPeriod === 'yearly' ? plan.stripePriceIdYearly : plan.stripePriceId
-    if (!priceId) {
-      toast('Contactez-nous pour ce plan', { icon: '📧' })
+    setCheckoutLoadingPlanId(`${plan.id}_gp`)
+    try {
+      const { data } = await api.post('/subscription/create-geniuspay-checkout', { 
+        planId: plan.id,
+        billingPeriod,
+        couponCode: couponCode.trim() || undefined
+      })
+      if (data?.url) window.location.href = data.url
+      else toast.error('Lien de paiement indisponible')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors du paiement')
+    } finally {
+      setCheckoutLoadingPlanId(null)
+    }
+  }
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setValidCoupon(null)
       return
     }
-    setCheckoutLoadingPlanId(plan.id)
+    
+    // Check against the first paid plan just to validate the code exists
+    const testPlan = plans.find(p => p.id !== 'free' && p.price > 0)
+    if (!testPlan) return toast.error('Aucun plan payant disponible pour tester le coupon')
+    
+    setCouponLoading(true)
     try {
-      const { data } = await api.post('/subscription/create-checkout-session', { 
-        planId: plan.id,
-        billingPeriod 
+      const { data } = await api.post('/subscription/validate-coupon', {
+        planId: testPlan.id,
+        billingPeriod,
+        couponCode: couponCode.trim()
       })
-      if (data?.url) window.location.href = data.url
-      else toast.error('Lien de paiement indisponible')
+      if (data.valid) {
+        setValidCoupon(data)
+        toast.success(`Coupon ${data.code} appliqué !`)
+      }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur lors du paiement')
+      setValidCoupon(null)
+      toast.error(err.response?.data?.error || 'Coupon invalide')
     } finally {
-      setCheckoutLoadingPlanId(null)
+      setCouponLoading(false)
     }
   }
 
-  const handleChoosePaymeTrustPlan = async (plan) => {
-    if (plan.id === 'free' || plan.price === 0) return
-    setCheckoutLoadingPlanId(`${plan.id}_pt`)
-    try {
-      const { data } = await api.post('/subscription/create-paymetrust-checkout', { 
-        planId: plan.id,
-        billingPeriod 
-      })
-      if (data?.url) window.location.href = data.url
-      else toast.error('Lien de paiement indisponible')
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur lors du paiement')
-    } finally {
-      setCheckoutLoadingPlanId(null)
+  // Effect to re-validate when billing period changes if there's a valid coupon
+  useEffect(() => {
+    if (validCoupon) {
+      validateCoupon()
     }
-  }
-
-  const handleManageSubscription = async () => {
-    setPortalLoading(true)
-    try {
-      const { data } = await api.post('/subscription/create-portal-session')
-      if (data?.url) window.location.href = data.url
-      else toast.error('Portail indisponible')
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur')
-    } finally {
-      setPortalLoading(false)
-    }
-  }
+  }, [billingPeriod])
 
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -449,27 +451,14 @@ export default function Settings() {
             <p className="text-sm text-gray-500">Plan actuel</p>
             <p className="text-xl font-display font-semibold text-gray-100">{currentPlan.name}</p>
           </div>
-          <div className="flex flex-col sm:items-end gap-2">
-            {!!user?.stripe_customer_id && (
-              <button
-                type="button"
-                onClick={handleManageSubscription}
-                disabled={portalLoading}
-                className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1.5 disabled:opacity-50"
-              >
-                <CreditCard className="w-4 h-4" />
-                {portalLoading ? t('common.loading') : t('settings.manageSubscription')}
-              </button>
-            )}
-            <div className="text-left sm:text-right">
-              <p className="text-sm text-gray-500">Messages IA restants</p>
-              <p className="text-2xl font-display font-bold text-blue-400 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 flex-shrink-0" />
-                <span className="tabular-nums">
-                  {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : String(user?.credits ?? 0)}
-                </span>
-              </p>
-            </div>
+          <div className="text-left sm:text-right">
+            <p className="text-sm text-gray-500">Messages IA restants</p>
+            <p className="text-2xl font-display font-bold text-blue-400 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 flex-shrink-0" />
+              <span className="tabular-nums">
+                {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : String(user?.credits ?? 0)}
+              </span>
+            </p>
           </div>
         </div>
         {(() => {
@@ -642,29 +631,6 @@ export default function Settings() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {providerId === 'paymetrust' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPaymentProviderModal({ provider: 'paymetrust' })
-                              setPaymentProviderForm({ account_id: '', api_key: '' })
-                            }}
-                            className="text-sm px-3 py-1.5 rounded-lg bg-gold-400/20 text-gold-400 hover:bg-gold-400/30"
-                          >
-                            {configured ? 'Modifier' : 'Configurer'}
-                          </button>
-                          {configured && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeletePaymentProvider('paymetrust')}
-                              className="text-sm px-3 py-1.5 rounded-lg text-red-400 hover:bg-red-500/20"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </>
-                      )}
                       {providerId === 'geniuspay' && (
                         <>
                           <button
@@ -705,7 +671,7 @@ export default function Settings() {
             <div className="flex-shrink-0 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h3 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">
-                Configurer {paymentProviderModal.provider === 'geniuspay' ? 'GeniusPay' : 'PaymeTrust'}
+                Configurer GeniusPay
               </h3>
               <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="flex-shrink-0 touch-target text-gray-400 hover:text-gray-200">
                 <X className="w-5 h-5" />
@@ -717,32 +683,6 @@ export default function Settings() {
             </div>
             <form onSubmit={handleSavePaymentProvider} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-              {paymentProviderModal.provider === 'paymetrust' ? (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Account ID</label>
-                    <input
-                      type="text"
-                      value={paymentProviderForm.account_id || ''}
-                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, account_id: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                      placeholder="Votre Account ID"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
-                    <input
-                      type="password"
-                      value={paymentProviderForm.api_key || ''}
-                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                </>
-              ) : (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
@@ -778,7 +718,6 @@ export default function Settings() {
                     <p className="text-[10px] text-gray-500 mt-1">Nécessaire pour vérifier la validité des notifications de paiement.</p>
                   </div>
                 </>
-              )}
               </div>
               <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
                 <button type="button" onClick={() => setPaymentProviderModal(null)} className="min-h-[44px] touch-target px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800 flex-1 sm:flex-none">
@@ -1023,6 +962,37 @@ export default function Settings() {
             </button>
           </div>
         </div>
+        
+        <div className="mb-6 max-w-sm">
+          <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+            Code promo (optionnel)
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => {
+                setCouponCode(e.target.value.toUpperCase())
+                if (validCoupon) setValidCoupon(null)
+              }}
+              placeholder="Ex: PROMO20"
+              className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100 placeholder:text-gray-500"
+            />
+            <button
+              onClick={validateCoupon}
+              disabled={couponLoading || !couponCode.trim()}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+            >
+              {couponLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Appliquer'}
+            </button>
+          </div>
+          {validCoupon && (
+            <p className="text-sm text-emerald-400 mt-2 flex items-center gap-1">
+              <Check className="w-4 h-4" />
+            {validCoupon.name ? `Coupon "${validCoupon.name}" (${validCoupon.code}) appliqué ! Remise appliquée au paiement.` : `Coupon ${validCoupon.code} appliqué ! Remise appliquée au paiement.`}
+            </p>
+          )}
+        </div>
 
         {loadingPlans ? (
           <div className="flex items-center justify-center py-10">
@@ -1082,21 +1052,7 @@ export default function Settings() {
                     <button
                       type="button"
                       disabled={checkoutLoadingPlanId === `${plan.id}_gp`}
-                      onClick={async () => {
-                        setCheckoutLoadingPlanId(`${plan.id}_gp`)
-                        try {
-                          const { data } = await api.post('/subscription/create-geniuspay-checkout', { 
-                            planId: plan.id,
-                            billingPeriod 
-                          })
-                          if (data?.url) window.location.href = data.url
-                          else toast.error('Lien de paiement indisponible')
-                        } catch (err) {
-                          toast.error(err.response?.data?.error || 'Erreur lors du paiement')
-                        } finally {
-                          setCheckoutLoadingPlanId(null)
-                        }
-                      }}
+                      onClick={() => handleChooseGeniusPayPlan(plan)}
                       className="w-full py-3 rounded-xl text-sm font-bold bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:scale-[1.02] transition-all active:scale-95 inline-flex items-center justify-center gap-2"
                     >
                       {checkoutLoadingPlanId === `${plan.id}_gp` ? (

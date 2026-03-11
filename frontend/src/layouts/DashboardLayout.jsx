@@ -798,8 +798,7 @@ const pathToTitle = (pathname) => {
   return map[first] || first
 }
 
-// Contenu du layout (enfant du Provider) pour pouvoir utiliser useOnboardingTour
-function DashboardLayoutContent() {
+export default function DashboardLayout() {
   const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(() => new Date())
@@ -1187,11 +1186,4 @@ function DashboardLayoutContent() {
   )
 }
 
-export default function DashboardLayout() {
-  const { user } = useAuth()
-  return (
-    <OnboardingTourProvider userId={user?.id}>
-      <DashboardLayoutContent />
-    </OnboardingTourProvider>
-  )
-}
+

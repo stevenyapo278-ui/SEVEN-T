@@ -63,7 +63,7 @@ export function Tooltip({
           {/* Header */}
           <div className="px-4 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 border-b border-space-700">
             <div className="flex items-center justify-between">
-              <h4 className="font-display font-semibold text-gold-400">{title}</h4>
+              <h4 className="font-syne font-semibold text-gold-400">{title}</h4>
               <button 
                 onClick={onDismiss}
                 className="text-gray-400 hover:text-white transition-colors"

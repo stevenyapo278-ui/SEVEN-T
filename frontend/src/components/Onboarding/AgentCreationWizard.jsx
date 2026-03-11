@@ -207,7 +207,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
               <div className="w-10 h-10 rounded-xl bg-gold-400 flex items-center justify-center">
                  <Bot className="w-6 h-6 text-black" />
               </div>
-              <span className="font-display font-black text-white italic">SEVEN T</span>
+              <span className="font-syne font-black text-white italic">SEVEN T</span>
            </div>
 
            <div className="space-y-6">
@@ -221,7 +221,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                    </div>
                    <div className="flex flex-col">
                       <span className={`text-[10px] uppercase font-black tracking-widest ${idx === currentStep ? 'text-gold-400/50' : 'text-white/10'}`}>Étape {idx + 1}</span>
-                      <span className={`font-bold transition-colors ${idx === currentStep ? 'text-white' : 'text-white/20'}`}>{step.title}</span>
+                      <span className={`font-syne font-bold transition-colors ${idx === currentStep ? 'text-white' : 'text-white/20'}`}>{step.title}</span>
                    </div>
                 </div>
               ))}
@@ -267,7 +267,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                 {currentStepId === 'template' && (
                   <div className="space-y-8">
                     <div>
-                      <h2 className="text-3xl sm:text-4xl font-display font-black text-white mb-2 italic">Choisissez son expertise</h2>
+                      <h2 className="text-3xl sm:text-4xl font-syne font-black text-white mb-2 italic">Choisissez son expertise</h2>
                       <p className="text-gray-400">Quel sera le rôle principal de votre futur agent ?</p>
                     </div>
 
@@ -289,7 +289,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                             }`}>
                               <Icon className="w-7 h-7" />
                             </div>
-                            <h4 className="font-black text-xl text-white mb-2">{template.name}</h4>
+                            <h4 className="font-syne font-bold text-lg text-white mb-2">{template.name}</h4>
                             <p className="text-sm text-gray-500 leading-snug line-clamp-2">{template.description}</p>
                             
                             {isSelected && (
@@ -308,7 +308,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                 {currentStepId === 'name' && (
                   <div className="space-y-10">
                     <div>
-                      <h2 className="text-3xl sm:text-4xl font-display font-black text-white mb-2 italic">Son identité</h2>
+                      <h2 className="text-3xl sm:text-4xl font-syne font-black text-white mb-2 italic">Son identité</h2>
                       <p className="text-gray-400">Comment vos clients doivent-ils l'appeler ?</p>
                     </div>
 
@@ -359,7 +359,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                 {currentStepId === 'model' && (
                   <div className="space-y-8">
                     <div>
-                      <h2 className="text-3xl sm:text-4xl font-display font-black text-white mb-2 italic">Son cerveau</h2>
+                      <h2 className="text-3xl sm:text-4xl font-syne font-black text-white mb-2 italic">Son cerveau</h2>
                       <p className="text-gray-400">L'intelligence artificielle qui pilote les réponses.</p>
                     </div>
 
@@ -379,7 +379,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                             </div>
                             <div className="flex-1 min-w-0">
                                <div className="flex items-center gap-2">
-                                  <h4 className="font-bold text-white mb-0.5">{model.name}</h4>
+                                  <h4 className="font-syne font-bold text-white mb-0.5">{model.name}</h4>
                                   {model.recommended && <span className="text-[10px] font-black uppercase text-gold-400 bg-gold-400/10 px-2 py-0.5 rounded">Recommandé</span>}
                                   {model.free && <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Gratuit</span>}
                                </div>
@@ -407,7 +407,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                        >
                           <Rocket className="w-12 h-12 text-black" />
                        </MotionDiv>
-                       <h2 className="text-4xl font-display font-black text-white italic">Prêt pour le décollage ?</h2>
+                       <h2 className="text-4xl font-syne font-black text-white italic">Prêt pour le décollage ?</h2>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -438,7 +438,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                     </div>
 
                     <div className="p-8 bg-gold-400/5 rounded-[2rem] border border-gold-400/10">
-                       <h4 className="text-gold-400 font-black uppercase text-xs mb-4 flex items-center gap-2">
+                       <h4 className="font-syne font-bold text-gold-400 uppercase text-xs mb-4 flex items-center gap-2">
                           <Zap className="w-4 h-4" />
                           Prochaines étapes
                        </h4>
@@ -479,7 +479,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                 type="button"
                 onClick={handleNext}
                 disabled={!canProceed() || creating}
-                className="group relative flex items-center gap-4 bg-white text-black px-10 py-5 rounded-2xl font-black overflow-hidden transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:grayscale"
+                className="group relative flex items-center gap-4 bg-white text-black px-10 py-5 rounded-2xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 disabled:grayscale"
               >
                 <span className="relative z-10 flex items-center gap-3">
                    {creating ? (
@@ -494,7 +494,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                       </>
                     ) : (
                       <>
-                        Étape suivante
+                        <span className="font-syne font-bold uppercase tracking-tight">Étape suivante</span>
                         <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
