@@ -57,7 +57,7 @@ COPY backend/ ./backend/
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Create necessary directories
-RUN mkdir -p data sessions \
+RUN mkdir -p data sessions uploads \
     && chown -R nodejs:nodejs /app
 
 # Switch to non-root user
