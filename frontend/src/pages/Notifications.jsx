@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Check, Trash2, RefreshCw, Search, Calendar, X } from 'lucide-react'
+import { Bell, Check, Trash2, RefreshCw, Search, Calendar, X, MessageSquare, UserPlus, AlertTriangle, ShieldCheck, CreditCard, Bot, Info, MoreHorizontal } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import api from '../services/api'
@@ -31,15 +31,35 @@ export default function Notifications() {
     const diffMs = now - date
     const diffMins = Math.floor(diffMs / 60000)
     const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
 
-    const locale = (i18n.resolvedLanguage || i18n.language || 'fr').split('-')[0]
+    if (diffMins < 1) return t('common.justNow', 'À l\'instant')
+    if (diffMins < 60) return `${diffMins} min`
+    if (diffHours < 24) return `${diffHours}h`
+    
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
 
-    if (diffMins < 1) return t('common.justNow', 'Just now')
-    if (diffMins < 60) return t('common.minutesAgo', { count: diffMins })
-    if (diffHours < 24) return t('common.hoursAgo', { count: diffHours })
-    if (diffDays < 7) return t('common.daysAgo', { count: diffDays })
-    return date.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')
+  const groupNotifications = (notifs) => {
+    const groups = {}
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    
+    notifs.forEach(n => {
+      const d = new Date(n.created_at)
+      d.setHours(0, 0, 0, 0)
+      
+      let key = d.toLocaleDateString()
+      if (d.getTime() === now.getTime()) key = t('common.today', 'Aujourd\'hui')
+      else if (d.getTime() === yesterday.getTime()) key = t('common.yesterday', 'Hier')
+      else key = d.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long' })
+      
+      if (!groups[key]) groups[key] = []
+      groups[key].push(n)
+    })
+    return groups
   }
 
   const loadNotifications = useCallback(async (filter = activeFilter) => {
@@ -112,6 +132,27 @@ export default function Notifications() {
     }
   }
 
+  const deleteReadAll = async () => {
+    const readIds = notifications.filter(n => n.is_read).map(n => n.id)
+    if (readIds.length === 0) return
+    
+    if (!window.confirm(t('notifications.confirmDeleteRead', 'Supprimer toutes les notifications lues ?'))) return
+
+    try {
+      setActionLoading(true)
+      // On boucle sur les deletes car le backend n'a peut-être pas de delete-all pour le moment
+      // Ou on pourrait ajouter une route backend delete-read-all
+      await Promise.all(readIds.map(id => api.delete(`/notifications/${id}`)))
+      setNotifications(prev => prev.filter(n => !n.is_read))
+      toast.success(t('notifications.successDeleteRead', 'Notifications lues supprimées'))
+    } catch (error) {
+      console.error('Error deleting read notifications:', error)
+      toast.error(t('common.error'))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const getTypeBadge = (type) => {
     const styles = {
       success: 'bg-green-500/10 text-green-500',
@@ -120,10 +161,23 @@ export default function Notifications() {
       lead: 'bg-blue-500/10 text-blue-500',
       whatsapp: 'bg-emerald-500/10 text-emerald-500',
       credit: 'bg-yellow-500/10 text-yellow-500',
-      agent: 'bg-blue-500/10 text-blue-500',
+      agent: 'bg-indigo-500/10 text-indigo-500',
       info: 'bg-blue-500/10 text-blue-500'
     }
     return styles[type] || styles.info
+  }
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'whatsapp': return <MessageSquare className="w-4 h-4" />
+      case 'lead': return <UserPlus className="w-4 h-4" />
+      case 'warning': return <AlertTriangle className="w-4 h-4" />
+      case 'error': return <AlertTriangle className="w-4 h-4" />
+      case 'success': return <ShieldCheck className="w-4 h-4" />
+      case 'credit': return <CreditCard className="w-4 h-4" />
+      case 'agent': return <Bot className="w-4 h-4" />
+      default: return <Info className="w-4 h-4" />
+    }
   }
 
   const clearFilters = () => {
@@ -161,20 +215,32 @@ export default function Notifications() {
               <button
                 onClick={() => loadNotifications(activeFilter)}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
-                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white border border-space-700' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">{t('dashboard.refresh')}</span>
               </button>
-              <button
-                onClick={markAllAsRead}
-                disabled={actionLoading || unreadCount === 0}
-                className="btn-primary flex items-center gap-2 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Check className="w-5 h-5" />
-                <span>{t('notifications.markAllRead')}</span>
-              </button>
+              
+              <div className="flex bg-space-800/50 p-1 rounded-xl border border-space-700/50">
+                <button
+                  onClick={markAllAsRead}
+                  disabled={actionLoading || unreadCount === 0}
+                  className="p-2.5 text-gray-400 hover:text-emerald-400 disabled:opacity-30 transition-colors"
+                  title={t('notifications.markAllRead')}
+                >
+                  <Check className="w-5 h-5" />
+                </button>
+                <div className="w-px h-6 bg-space-700 my-auto mx-1" />
+                <button
+                  onClick={deleteReadAll}
+                  disabled={actionLoading || notifications.filter(n => n.is_read).length === 0}
+                  className="p-2.5 text-gray-400 hover:text-red-400 disabled:opacity-30 transition-colors"
+                  title={t('notifications.deleteRead', 'Supprimer les lues')}
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -275,92 +341,106 @@ export default function Notifications() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100 dark:divide-space-700">
-            {notifications.map((notif, index) => (
-              <div
-                key={notif.id}
-                className={`p-4 md:p-5 animate-fadeIn ${
-                  isDark
-                    ? notif.is_read ? 'bg-space-800' : 'bg-space-700/60'
-                    : notif.is_read ? 'bg-white' : 'bg-blue-50/40'
-                }`}
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${getTypeBadge(notif.type)}`}>
-                        {notif.type}
-                      </span>
-                      {!notif.is_read && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-500/10 text-blue-400">
-                          {t('notifications.unread', 'Unread')}
-                        </span>
-                      )}
-                      <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                        {formatRelativeTime(notif.created_at)}
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <p className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                        {notif.title}
-                      </p>
-                      {notif.message && (
-                        <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {notif.message}
-                        </p>
-                      )}
-                    </div>
-                    {notif.metadata && (
-                      <div className={`mt-3 text-xs rounded-lg px-3 py-2 ${
-                        isDark ? 'bg-space-900/60 text-gray-400' : 'bg-gray-50 text-gray-600'
-                      }`}>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-                          {Object.entries(notif.metadata).map(([key, value]) => (
-                            <div key={key} className="truncate">
-                              <span className="font-medium">{key}:</span> {String(value)}
+            {Object.entries(groupNotifications(notifications)).map(([dateKey, groupNotifs]) => (
+              <div key={dateKey}>
+                <div className={`px-4 py-2 text-[10px] font-bold uppercase tracking-widest ${isDark ? 'bg-space-900/50 text-gray-500 border-y border-space-700/50' : 'bg-gray-50 text-gray-400 border-y border-gray-100'}`}>
+                  {dateKey}
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-space-700">
+                  {groupNotifs.map((notif, idx) => (
+                    <div
+                      key={notif.id}
+                      className={`group p-4 md:p-5 transition-all duration-300 hover:bg-space-800/40 animate-fadeIn ${
+                        isDark
+                          ? notif.is_read ? 'bg-transparent' : 'bg-blue-500/5 border-l-2 border-l-blue-500'
+                          : notif.is_read ? 'bg-white' : 'bg-blue-50/40 border-l-2 border-l-blue-500'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Type Icon Indicator */}
+                        <div className={`mt-1 h-10 w-10 shrink-0 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${getTypeBadge(notif.type)}`}>
+                          {getTypeIcon(notif.type)}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              {!notif.is_read && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                              )}
+                              <p className={`text-sm font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                                {notif.title}
+                              </p>
                             </div>
-                          ))}
+                            <span className={`text-[10px] whitespace-nowrap ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                              {formatRelativeTime(notif.created_at)}
+                            </span>
+                          </div>
+
+                          <p className={`text-sm break-words leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {notif.message}
+                          </p>
+
+                          {notif.metadata && (
+                            <div className={`mt-3 text-[11px] rounded-xl px-3 py-2 border ${
+                              isDark ? 'bg-space-900/40 border-space-700 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-600'
+                            }`}>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {Object.entries(typeof notif.metadata === 'string' ? JSON.parse(notif.metadata) : notif.metadata).map(([key, value]) => (
+                                  <div key={key} className="flex gap-2 min-w-0">
+                                    <span className="font-bold text-gray-500 shrink-0 capitalize">{key}:</span>
+                                    <span className="truncate">{String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="mt-4 flex items-center justify-between">
+                            <div>
+                               {notif.link && (
+                                <Link
+                                  to={notif.link}
+                                  onClick={() => {
+                                    if (!notif.is_read) markAsRead(notif.id)
+                                  }}
+                                  className={`inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
+                                    isDark ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                  }`}
+                                >
+                                  {t('common.open', 'Consulter')}
+                                  <MoreHorizontal className="w-3 h-3" />
+                                </Link>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                              {!notif.is_read && (
+                                <button
+                                  onClick={() => markAsRead(notif.id)}
+                                  className={`p-2 rounded-xl transition-colors ${
+                                    isDark ? 'hover:bg-emerald-500/10 text-emerald-500/60 hover:text-emerald-400' : 'hover:bg-emerald-50 text-emerald-600'
+                                  }`}
+                                  title={t('notifications.markRead')}
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => deleteNotification(notif.id)}
+                                className={`p-2 rounded-xl transition-colors ${
+                                  isDark ? 'hover:bg-red-500/10 text-red-500/60 hover:text-red-400' : 'hover:bg-red-50 text-red-600'
+                                }`}
+                                title={t('common.delete')}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    )}
-                    {notif.link && (
-                      <div className="mt-3">
-                        <Link
-                          to={notif.link}
-                          onClick={() => {
-                            if (!notif.is_read) markAsRead(notif.id)
-                          }}
-                          className={`text-xs font-medium ${
-                            isDark ? 'text-blue-300 hover:text-blue-200' : 'text-blue-600 hover:text-blue-500'
-                          }`}
-                        >
-                          {t('common.open', 'Open')}
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!notif.is_read && (
-                      <button
-                        onClick={() => markAsRead(notif.id)}
-                        className={`p-2 rounded-lg ${
-                          isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
-                        }`}
-                        title={t('notifications.markRead', 'Mark as read')}
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteNotification(notif.id)}
-                      className={`p-2 rounded-lg ${
-                        isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'
-                      }`}
-                      title={t('common.delete')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

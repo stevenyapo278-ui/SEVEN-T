@@ -1,0 +1,1 @@
+import('./backend/database/init.js').then(async ({ db, initDatabase }) => { await initDatabase(); const agents = await db.all('SELECT id, name, model FROM agents ORDER BY updated_at DESC LIMIT 5'); console.log('AGENTS:', agents); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });

@@ -79,6 +79,7 @@ export default function Admin() {
   const [platformSettings, setPlatformSettings] = useState({ default_media_model: 'gemini-1.5-flash', default_trial_days: '7' })
   const [savingMediaModel, setSavingMediaModel] = useState(false)
   const [savingTrialDays, setSavingTrialDays] = useState(false)
+  const [testingModel, setTestingModel] = useState(null)
 
   // Plans state
   const [plans, setPlans] = useState([])
@@ -89,8 +90,20 @@ export default function Admin() {
   // Confirmation modal for dangerous actions
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null) // { type, data, message, keyword }
-  const anyAdminModalOpen = showUserModal || showCreateModal || showDeleteModal || promoteAdminModal.open || showModelModal || showKeyModal || showPlanModal || showConfirmModal
+  const anyAdminModalOpen = showUserModal || showCreateModal || showDeleteModal || promoteAdminModal.open || showModelModal || showKeyModal || showPlanModal || showConfirmModal || testingModel !== null
   useLockBodyScroll(anyAdminModalOpen)
+
+  useEffect(() => {
+    // Reset all modals when changing tab to avoid stuck scroll locks
+    setShowUserModal(false)
+    setShowCreateModal(false)
+    setShowDeleteModal(false)
+    setPromoteAdminModal({ open: false, user: null })
+    setShowModelModal(false)
+    setShowKeyModal(false)
+    setShowPlanModal(false)
+    setShowConfirmModal(false)
+  }, [activeTab])
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
@@ -519,7 +532,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto min-h-screen overflow-y-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-gray-100">Administration</h1>
@@ -640,6 +653,7 @@ export default function Admin() {
           onCreateModel={() => { setEditingModel(null); setShowModelModal(true); }}
           onEditKey={(key) => { setEditingKey(key); setShowKeyModal(true); }}
           onTestKey={handleTestKey}
+          onTestModel={(model) => setTestingModel(model)}
           onRefresh={loadAIData}
         />
       )}
@@ -805,6 +819,14 @@ export default function Admin() {
           keyword={confirmAction.keyword}
           onConfirm={executeConfirmedAction}
           onCancel={() => { setShowConfirmModal(false); setConfirmAction(null); }}
+        />
+      )}
+
+      {/* Model Test Modal */}
+      {testingModel && (
+        <AIModelTestModal 
+          model={testingModel} 
+          onClose={() => setTestingModel(null)} 
         />
       )}
     </div>
@@ -1360,13 +1382,12 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
   )
 }
 
-// ==================== AI MODELS CONTENT ====================
 function AIModelsContent({ 
   models, apiKeys, stats, loading, 
   platformSettings = {}, savingMediaModel, onSaveMediaModel, onSaveVoiceResponsesEnabled,
   onSaveTrialDays, savingTrialDays,
   onToggleModel, onDeleteModel, onEditModel, onCreateModel,
-  onEditKey, onTestKey, onRefresh 
+  onEditKey, onTestKey, onTestModel, onRefresh 
 }) {
   const [showKeys, setShowKeys] = useState({})
   const [trialDaysInput, setTrialDaysInput] = useState(platformSettings.default_trial_days || '7')
@@ -1378,7 +1399,8 @@ function AIModelsContent({
     setTrialDaysInput(platformSettings.default_trial_days || '7')
   })
   const MEDIA_MODEL_OPTIONS = [
-    { value: 'models/gemini-2.5-flash', label: 'Gemini 2.5 Flash - Dernier modèle ⭐' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash - Ultrapide ⚡' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash - Dernier modèle ⭐' },
     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash - Très rapide' },
     { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro - Plus précis' }
   ]
@@ -1587,8 +1609,25 @@ function AIModelsContent({
                   )}
                 </div>
 
+                {keyData?.last_used_at && (
+                  <p className="text-[10px] text-gray-500 mt-2 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Dernier test : {new Date(keyData.last_used_at).toLocaleString()}
+                  </p>
+                )}
+
                 {keyData?.error_count > 0 && (
-                  <p className="text-xs text-red-400 mt-2">{keyData.error_count} erreur(s)</p>
+                  <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-[10px] text-red-400">
+                    <div className="font-semibold flex items-center gap-1 mb-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {keyData.error_count} erreur(s) détectée(s)
+                    </div>
+                    {keyData.last_error && (
+                      <p className="italic opacity-80 break-words line-clamp-2" title={keyData.last_error}>
+                        {keyData.last_error}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )
@@ -1615,10 +1654,11 @@ function AIModelsContent({
                     <span className={`text-xs px-2 py-0.5 rounded border ${getProviderColor(model.provider)}`}>
                       {model.provider}
                     </span>
-                    {model.is_free ? (
-                      <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">Gratuit</span>
-                    ) : (
-                      <span className="text-xs px-2 py-0.5 bg-gold-400/20 text-gold-400 rounded">{model.credits_per_use} crédit(s)</span>
+                    {model.api_key && (
+                      <span className="text-xs px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded flex items-center gap-1">
+                        <Key className="w-3 h-3" />
+                        Clé spécifique
+                      </span>
                     )}
                   </div>
                   <p className="text-sm text-gray-400 mb-2">{model.description}</p>
@@ -1650,6 +1690,13 @@ function AIModelsContent({
                     title="Modifier"
                   >
                     <Edit className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => onTestModel(model)}
+                    className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                    title="Tester ce modèle"
+                  >
+                    <TestTube className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => onDeleteModel(model.id)}
@@ -1705,15 +1752,13 @@ function AIModelsContent({
 function AIModelModal({ model, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: model?.name || '',
-    provider: model?.provider || 'openrouter',
+    provider: model?.provider || 'gemini',
     model_id: model?.model_id || '',
     description: model?.description || '',
-    credits_per_use: model?.credits_per_use || 1,
-    is_free: model?.is_free || false,
     is_active: model?.is_active !== false,
-    max_tokens: model?.max_tokens || 4096,
     category: model?.category || 'general',
-    sort_order: model?.sort_order || 0
+    sort_order: model?.sort_order || 0,
+    api_key: model?.api_key || ''
   })
   const [saving, setSaving] = useState(false)
 
@@ -1812,47 +1857,33 @@ function AIModelModal({ model, onClose, onSave }) {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Crédits</label>
-              <input
-                type="number"
-                value={formData.credits_per_use}
-                onChange={(e) => setFormData({ ...formData, credits_per_use: parseInt(e.target.value) || 0 })}
-                className="input-dark w-full"
-                min="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Max tokens</label>
-              <input
-                type="number"
-                value={formData.max_tokens}
-                onChange={(e) => setFormData({ ...formData, max_tokens: parseInt(e.target.value) || 4096 })}
-                className="input-dark w-full"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Ordre</label>
-              <input
-                type="number"
-                value={formData.sort_order}
-                onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-                className="input-dark w-full"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Ordre d'affichage</label>
+            <input
+              type="number"
+              value={formData.sort_order}
+              onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
+              className="input-dark w-full"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Clé API spécifique (Optionnel)
+            </label>
+            <input
+              type="password"
+              value={formData.api_key}
+              onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+              className="input-dark w-full"
+              placeholder={model?.api_key ? '••••••••••••••••' : 'Laisser vide pour utiliser la clé globale'}
+            />
+            <p className="text-[10px] text-gray-500 mt-1">
+              Si renseignée, cette clé sera utilisée uniquement pour ce modèle. Utile pour gérer les quotas séparément.
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.is_free}
-                onChange={(e) => setFormData({ ...formData, is_free: e.target.checked, credits_per_use: e.target.checked ? 0 : formData.credits_per_use })}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
-              />
-              <span className="text-sm text-gray-300">Gratuit</span>
-            </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -2399,6 +2430,141 @@ function ConfirmActionModal({ message, keyword, onConfirm, onCancel }) {
               )}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================== AI MODEL TEST MODAL ====================
+function AIModelTestModal({ model, onClose }) {
+  const [message, setMessage] = useState('Bonjour, ceci est un test.')
+  const [response, setResponse] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleTest = async (e) => {
+    e?.preventDefault()
+    if (!message.trim() || loading) return
+
+    setLoading(true)
+    setError(null)
+    setResponse(null)
+
+    try {
+      const res = await api.post(`/admin/ai/models/${model.id}/test`, { message })
+      setResponse(res.data)
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Une erreur est survenue')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+      <div className="card w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-fadeIn overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-space-700 flex items-center justify-between bg-space-800">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
+              <TestTube className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-display font-semibold text-gray-100">Tester : {model.name}</h3>
+              <p className="text-xs text-gray-500">{model.provider} • {model.model_id}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-100 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Input Area */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-300">Message de test</label>
+            <div className="flex gap-2">
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Entrez un message pour tester le modèle..."
+                className="input-dark flex-1 min-h-[80px] py-3 resize-none"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) handleTest()
+                }}
+              />
+            </div>
+            <p className="text-[10px] text-gray-500 text-right">Ctrl + Enter pour envoyer</p>
+          </div>
+
+          {/* Action Button */}
+          <button
+            onClick={handleTest}
+            disabled={loading || !message.trim()}
+            className="w-full btn-primary flex items-center justify-center gap-2 py-3"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Génération en cours...
+              </>
+            ) : (
+              <>
+                <Zap className="w-5 h-5" />
+                Lancer le test
+              </>
+            )}
+          </button>
+
+          {/* Error View */}
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-red-400">
+                <p className="font-bold mb-1">Erreur</p>
+                <p className="break-words opacity-90">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Response View */}
+          {response && (
+            <div className="space-y-4 animate-slideUp">
+              <div className="flex items-center gap-2 text-sm font-medium text-emerald-400">
+                <CheckCircle className="w-4 h-4" />
+                Réponse reçue avec succès
+              </div>
+              
+              <div className="card bg-space-900/50 p-4 border-emerald-500/20">
+                <p className="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">
+                  {typeof response.response?.response === 'string' 
+                    ? response.response.response 
+                    : typeof response.response === 'string'
+                      ? response.response
+                      : JSON.stringify(response.response, null, 2)}
+                </p>
+              </div>
+
+              {/* Technical Details */}
+              <div className="space-y-2">
+                <button 
+                  onClick={() => console.log(response)}
+                  className="text-[10px] text-gray-500 hover:text-gray-300 underline"
+                >
+                  Voir les détails bruts dans la console
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-space-700 bg-space-800/50 text-center">
+          <p className="text-[10px] text-gray-500">
+            Le test simule un agent standard. Si vous utilisez OpenRouter, assurez-vous que la clé est valide.
+          </p>
         </div>
       </div>
     </div>

@@ -43,6 +43,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useOnboardingTour } from '../components/Onboarding'
+import ToolAssignmentModal from '../components/ToolAssignmentModal'
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {
@@ -383,6 +384,7 @@ function OverviewTab({ agent, onUpdate }) {
   const [generatingQr, setGeneratingQr] = useState(false)
   const [qrCountdown, setQrCountdown] = useState(0)
   const [connecting, setConnecting] = useState(false) // New state for connection in progress
+  const [showToolModal, setShowToolModal] = useState(false)
   const intervalRef = useRef(null)
   const countdownRef = useRef(null)
   const qrRefreshRef = useRef(null)
@@ -809,21 +811,33 @@ function OverviewTab({ agent, onUpdate }) {
             <p className="text-sm text-gray-400">Aucun outil assigné à cet agent.</p>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              to={`/dashboard/agents/${agent.id}?tab=settings`}
+            <button
+              onClick={() => setShowToolModal(true)}
               className="btn-primary inline-flex items-center gap-2"
             >
               <Wrench className="w-4 h-4" />
               {agent.tool_id ? t('agents.detail.tool.change', 'Change tool') : t('agents.detail.tool.assign', 'Assign tool')}
-            </Link>
+            </button>
             <Link
               to="/dashboard/tools"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-space-700 hover:bg-space-600 text-gray-200 transition-colors"
             >
-              {t('agents.detail.tool.manage', 'Manage tools')}
+              {t('agents.detail.tool.manage', 'Gérer les outils')}
             </Link>
           </div>
         </div>
+
+        {showToolModal && (
+          <ToolAssignmentModal
+            agentId={agent.id}
+            currentToolId={agent.tool_id}
+            onClose={() => setShowToolModal(false)}
+            onAssigned={() => {
+              setShowToolModal(false)
+              onUpdate()
+            }}
+          />
+        )}
 
         {/* Recent Conversations */}
         <div className="card p-4 sm:p-6 min-w-0">
@@ -1136,6 +1150,8 @@ function SettingsTab({ agent, onUpdate }) {
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(false)
   const [tools, setTools] = useState([])
   const [toolsLoading, setToolsLoading] = useState(false)
+  const [availableModels, setAvailableModels] = useState([])
+  const [loadingModels, setLoadingModels] = useState(false)
   const [systemPromptFocusOpen, setSystemPromptFocusOpen] = useState(false)
   useLockBodyScroll(systemPromptFocusOpen)
 
@@ -1215,6 +1231,28 @@ function SettingsTab({ agent, onUpdate }) {
       .finally(() => {
         if (!isMounted) return
         setToolsLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    setLoadingModels(true)
+    api.get('/agents/available-models')
+      .then((res) => {
+        if (!isMounted) return
+        setAvailableModels(res.data?.models || [])
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setAvailableModels([])
+      })
+      .finally(() => {
+        if (!isMounted) return
+        setLoadingModels(false)
       })
 
     return () => {
@@ -1459,66 +1497,54 @@ function SettingsTab({ agent, onUpdate }) {
                   <p className="text-xs text-gray-500 mt-2">{t('agents.detail.settings.systemPromptHint', 'Changes are saved temporarily. Save agent to apply.')}</p>
                 </div>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {user?.is_admin && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.aiModel', 'AI Model')}</label>
-                    <select
-                      value={formData.model}
-                      onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                      className="input-dark w-full"
-                    >
-                      <optgroup label="⚡ Google Gemini">
-                        <option value="models/gemini-2.5-flash">Gemini 2.5 Flash - Dernier modèle ⭐ (1 crédit)</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide (1 crédit)</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro - Intelligent (2 crédits)</option>
-                      </optgroup>
-                      <optgroup label="🤖 OpenAI">
-                        <option value="gpt-4o-mini">GPT-4o Mini - Rapide (2 crédits)</option>
-                        <option value="gpt-4o">GPT-4o - Très intelligent (5 crédits)</option>
-                      </optgroup>
-                      <optgroup label="🆓 OpenRouter Gratuit">
-                        <option value="qwen/qwen3-next-80b-a3b-instruct:free">Qwen 3 Next 80B - Gratuit ⭐ (puissant)</option>
-                        <option value="meta-llama/llama-3.1-8b-instruct:free">Llama 3.1 8B - Gratuit (recommandé)</option>
-                        <option value="tngtech/deepseek-r1t-chimera:free">DeepSeek R1T Chimera - Gratuit</option>
-                        <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B - Gratuit</option>
-                        <option value="google/gemma-2-9b-it:free">Gemma 2 9B - Gratuit</option>
-                        <option value="qwen/qwen-2-7b-instruct:free">Qwen 2 7B - Gratuit</option>
-                        <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini - Gratuit</option>
-                      </optgroup>
-                      <optgroup label="🦙 Meta Llama (via OpenRouter)">
-                        <option value="meta-llama/llama-3.1-70b-instruct">Llama 3.1 70B - Puissant (1 crédit)</option>
-                        <option value="meta-llama/llama-3.1-405b-instruct">Llama 3.1 405B - Ultra (3 crédits)</option>
-                      </optgroup>
-                      <optgroup label="🌟 Mistral (via OpenRouter)">
-                        <option value="mistralai/mistral-7b-instruct">Mistral 7B - Rapide (1 crédit)</option>
-                        <option value="mistralai/mixtral-8x7b-instruct">Mixtral 8x7B - Équilibré (1 crédit)</option>
-                        <option value="mistralai/mistral-large">Mistral Large - Puissant (2 crédits)</option>
-                      </optgroup>
-                      <optgroup label="🧠 Anthropic Claude (via OpenRouter)">
-                        <option value="anthropic/claude-3-haiku">Claude 3 Haiku - Rapide (1 crédit)</option>
-                        <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet - Intelligent (3 crédits)</option>
-                        <option value="anthropic/claude-3-opus">Claude 3 Opus - Ultra (8 crédits)</option>
-                      </optgroup>
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('agents.detail.settings.aiModelHint', 'Free models are limited. Credits are deducted according to the chosen model.')}
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.language', 'Language')}</label>
+              {user?.is_admin && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.aiModel', 'AI Model')}</label>
                   <select
-                    value={formData.language}
-                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    value={formData.model}
+                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     className="input-dark w-full"
+                    disabled={loadingModels}
                   >
-                    <option value="fr">{t('common.languages.fr', 'French')}</option>
-                    <option value="en">{t('common.languages.en', 'English')}</option>
-                    <option value="es">{t('common.languages.es', 'Spanish')}</option>
+                    {availableModels.length > 0 ? (
+                      <>
+                        {/* Group by provider */}
+                        {[...new Set(availableModels.map(m => m.provider))].map(provider => (
+                          <optgroup key={provider} label={
+                            provider === 'gemini' ? '⚡ Google Gemini' :
+                            provider === 'openai' ? '🤖 OpenAI' :
+                            provider === 'openrouter' ? '🆓 OpenRouter' : provider.toUpperCase()
+                          }>
+                            {availableModels
+                              .filter(m => m.provider === provider)
+                              .map(model => (
+                                <option key={model.id} value={model.model_id}>
+                                  {model.name} {model.is_free ? '- Gratuit' : ''}
+                                </option>
+                              ))
+                            }
+                          </optgroup>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        <optgroup label="⚡ Google Gemini">
+                          <option value="gemini-2.0-flash">Gemini 2.0 Flash - Dernier modèle ⭐</option>
+                          <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide</option>
+                          <option value="gemini-1.5-pro">Gemini 1.5 Pro - Intelligent</option>
+                        </optgroup>
+                        <optgroup label="🤖 OpenAI">
+                          <option value="gpt-4o-mini">GPT-4o Mini - Rapide</option>
+                          <option value="gpt-4o">GPT-4o - Très intelligent</option>
+                        </optgroup>
+                      </>
+                    )}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {t('agents.detail.settings.aiModelHint', 'Sélectionnez le modèle qui animera votre agent.')}
+                  </p>
                 </div>
-              </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   {t('agents.detail.settings.temperature', 'Temperature')}: <span className="text-gold-400">{formData.temperature}</span>
@@ -2608,7 +2634,9 @@ function PlaygroundTab({ agent }) {
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: response.data.response,
-        model: response.data.model
+        model: response.data.model,
+        provider: response.data.provider,
+        credit_warning: response.data.credit_warning
       }])
     } catch (error) {
       console.error('Playground error:', error)
@@ -2630,9 +2658,12 @@ function PlaygroundTab({ agent }) {
               <p className="text-sm text-gray-400">{t('agents.detail.playground.subtitle', 'Test AI responses in real-time')}</p>
             </div>
             {user?.is_admin && (
-              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                {agent.model || 'gemini-1.5-flash'}
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Modèle (Settings)</span>
+                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full border border-blue-500/30">
+                  {agent.model || 'gemini-1.5-flash'}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -2657,6 +2688,18 @@ function PlaygroundTab({ agent }) {
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  {msg.role === 'assistant' && msg.model && user?.is_admin && (
+                    <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between gap-4">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${msg.model === agent.model ? 'bg-white/10 text-gray-400' : 'bg-amber-500/20 text-amber-400 font-bold'}`}>
+                        {msg.model === agent.model ? msg.model : `⚠️ Fallback: ${msg.model}`}
+                      </span>
+                      {msg.credit_warning && (
+                        <span className="text-[9px] text-amber-500 italic uppercase">
+                          {msg.credit_warning}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))

@@ -81,24 +81,26 @@ class AIService {
             return 'openrouter';
         }
 
+        // Liste des IDs connus pour OpenRouter (sans / ni :)
+        const openrouterIds = ['deepseek-r1t-chimera', 'qwen3-80b', 'liquid-lfm-40b'];
+        if (openrouterIds.includes(modelName)) return 'openrouter';
+
         // Modèle OpenRouter (contient "/" ou ":free")
         if (modelName?.includes('/') || modelName?.includes(':')) {
-            if (this.openrouterClient) return 'openrouter';
+            return 'openrouter';
         }
 
-        // Modèles explicitement Gemini (avant la règle "contient /" pour OpenRouter)
+        // Modèles explicitement Gemini
         if (modelName?.startsWith('gemini') || modelName?.startsWith('models/gemini')) {
-            if (this.geminiClient) return 'gemini';
-            if (this.openrouterClient) return 'openrouter';
-            if (this.openaiClient) return 'openai';
+            return 'gemini';
         }
+
         // Modèles explicitement OpenAI
         if (modelName?.startsWith('gpt')) {
-            if (this.openaiClient) return 'openai';
-            if (this.openrouterClient) return 'openrouter';
-            if (this.geminiClient) return 'gemini';
+            return 'openai';
         }
-        // Par défaut: Gemini > OpenAI > OpenRouter > Fallback
+
+        // Par défaut: Ordre de préférence selon les clients configurés
         if (this.geminiClient) return 'gemini';
         if (this.openaiClient) return 'openai';
         if (this.openrouterClient) return 'openrouter';
@@ -114,202 +116,196 @@ class AIService {
      * @param {Object|string} [messageAnalysisOrKnowledge] - Pre-analysis (new) or knowledge (legacy)
      * @param {Object} [messageAnalysisLegacy] - Pre-analysis (legacy 6-arg only)
      */
-    async generateResponse(agent, conversationHistory, normalizedPayloadOrMessage, knowledgeBaseOrUserId = [], messageAnalysisOrKnowledge = null, messageAnalysisLegacy = null) {
-        this.initialize();
-
-        // Input validation
-        if (!agent || typeof agent !== 'object') {
-            throw new Error('[AI] Invalid agent: agent must be a valid object');
-        }
-        if (!agent.id) {
-            console.warn('[AI] Warning: agent.id is missing');
-        }
-        if (!conversationHistory || !Array.isArray(conversationHistory)) {
-            throw new Error('[AI] Invalid conversationHistory: must be an array');
-        }
-        if (!normalizedPayloadOrMessage) {
-            throw new Error('[AI] Invalid message: normalizedPayloadOrMessage is required');
-        }
-
-        const isPayload = normalizedPayloadOrMessage && typeof normalizedPayloadOrMessage === 'object' && 'message' in normalizedPayloadOrMessage;
-        let userMessage, userId, knowledgeBase, messageAnalysis;
-        if (isPayload) {
-            userMessage = normalizedPayloadOrMessage.message;
-            userId = normalizedPayloadOrMessage.tenant_id ?? null;
-            knowledgeBase = Array.isArray(knowledgeBaseOrUserId) ? knowledgeBaseOrUserId : [];
-            messageAnalysis = messageAnalysisOrKnowledge;
-        } else {
-            userMessage = normalizedPayloadOrMessage;
-            knowledgeBase = Array.isArray(knowledgeBaseOrUserId) ? knowledgeBaseOrUserId : [];
-            if (typeof messageAnalysisOrKnowledge === 'string' || typeof messageAnalysisOrKnowledge === 'number') {
-                userId = messageAnalysisOrKnowledge;
-                messageAnalysis = messageAnalysisLegacy ?? null;
-            } else {
-                userId = null;
-                messageAnalysis = messageAnalysisOrKnowledge;
+    /**
+     * Get API key for a specific provider and optional modelId
+     */
+    async getApiKey(provider, modelId = null) {
+        try {
+            if (modelId) {
+                const modelRecord = await db.get('SELECT api_key FROM ai_models WHERE (id = ? OR model_id = ?) AND provider = ?', modelId, modelId, provider);
+                if (modelRecord?.api_key) return modelRecord.api_key;
             }
+            const keyRecord = await db.get('SELECT api_key FROM ai_api_keys WHERE provider = ? AND is_active = 1', provider);
+            if (keyRecord?.api_key) return keyRecord.api_key;
+            return {
+                gemini: process.env.GEMINI_API_KEY,
+                openai: process.env.OPENAI_API_KEY,
+                openrouter: process.env.OPENROUTER_API_KEY
+            }[provider] || null;
+        } catch (error) {
+            console.error(`[AI] Error fetching API key for ${provider}:`, error.message);
+            return null;
+        }
+    }
+
+    /**
+     * Refresh provider clients using keys stored in DB (when .env keys are missing).
+     * Called before each generateResponse so DB-configured keys are always available.
+     */
+    async refreshClientsFromDb() {
+        try {
+            const keys = await db.all('SELECT provider, api_key FROM ai_api_keys WHERE is_active = 1 AND api_key IS NOT NULL');
+            for (const { provider, api_key } of keys) {
+                if (!api_key) continue;
+                if (provider === 'openrouter') {
+                    // Always reinitialize to pick up key changes from admin panel
+                    this.openrouterClient = new OpenAI({ apiKey: api_key.trim(), baseURL: 'https://openrouter.ai/api/v1' });
+                } else if (provider === 'openai' && !this.openaiClient) {
+                    this.openaiClient = new OpenAI({ apiKey: api_key });
+                    console.log('[AI] OpenAI client initialized from DB key');
+                } else if (provider === 'gemini' && !this.geminiClient) {
+                    const { GoogleGenerativeAI } = await import('@google/generative-ai');
+                    this.geminiClient = new GoogleGenerativeAI(api_key);
+                    console.log('[AI] Gemini client initialized from DB key');
+                }
+            }
+        } catch (err) {
+            // Non-blocking — DB may not be ready
+        }
+    }
+
+    /**
+     * @param {Object} agent - Agent configuration
+     * @param {Array} conversationHistory - Previous messages
+     * @param {string} userMessage - New message from user
+     * @param {Array} knowledgeBase - RAG data
+     * @param {Object} messageAnalysis - Pre-analysis
+     * @param {string|null} userId - For credits
+     * @param {boolean} skipFallback - Disable fallback for manual testing
+     */
+    async generateResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null, userId = null, skipFallback = false) {
+        this.initialize();
+        await this.refreshClientsFromDb();
+
+        const agentModelId = agent.model || 'gemini-2.0-flash';
+        let resolvedModelId = agentModelId;
+
+        // 1. Resolve model ID from DB (handles UI UUID -> actual model string mapping)
+        try {
+            const modelRecord = await db.get(
+                'SELECT model_id FROM ai_models WHERE id = ? OR model_id = ?',
+                agentModelId, agentModelId
+            );
+            if (modelRecord?.model_id) {
+                resolvedModelId = modelRecord.model_id;
+            }
+        } catch (err) {
+            // DB not ready or error
         }
 
-        const provider = this.getProvider(agent.model);
-        const model = agent.model || 'gemini-1.5-flash';
+        // 2. Identify Provider based on resolved model
+        const provider = this.getProvider(resolvedModelId);
+        let finalModelString = resolvedModelId;
 
-        const intent = messageAnalysis?.intent?.primary || 'unknown';
-        console.log(`[AI] Provider: ${provider} | Model: ${model} | Intent: ${intent} | Message: "${userMessage.substring(0, 30)}..."`);
+        // OpenRouter needs prefix stripping
+        if (provider === 'openrouter' && finalModelString.startsWith('openrouter/')) {
+            finalModelString = finalModelString.slice('openrouter/'.length);
+        }
 
-        // Check credits if userId is provided
+        const agentWithResolvedModel = { ...agent, _resolvedModel: finalModelString };
+        const apiKey = await this.getApiKey(provider, finalModelString);
+
+        console.log(`[AI] Provider: ${provider} | Model: ${finalModelString} | User: ${userId || 'anonymous'}`);
+
+        // 3. Check Credits
         if (userId && provider !== 'fallback') {
-            const hasCredits = await hasEnoughCredits(userId, model);
+            const hasCredits = await hasEnoughCredits(userId, resolvedModelId);
             if (!hasCredits) {
-                console.log(`[AI] User ${userId} has insufficient credits for ${model}`);
-                // Return fallback response when out of credits
+                if (skipFallback) throw new Error('Quota de crédits SEVEN-T épuisé pour cet utilisateur.');
                 const fallback = this.fallbackResponse(agent, userMessage);
-                fallback.credit_warning = 'Crédits insuffisants - réponse de secours utilisée';
+                fallback.credit_warning = 'Crédits insuffisants';
                 return fallback;
             }
         }
 
         try {
-            let response;
-            
-            switch (provider) {
-                case 'gemini':
-                    // Use circuit breaker for Gemini
-                    response = await geminiCircuitBreaker.execute(async () => {
-                        return await this.generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                    });
-                    break;
-                case 'openai':
-                    // Use circuit breaker for OpenAI
-                    response = await openaiCircuitBreaker.execute(async () => {
-                        return await this.generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                    });
-                    break;
-                case 'openrouter':
-                    // Use circuit breaker for OpenRouter
-                    response = await openrouterCircuitBreaker.execute(async () => {
-                        return await this.generateOpenRouterResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                    });
-                    break;
-                default:
-                    response = this.fallbackResponse(agent, userMessage);
-            }
-
-            // Deduct credits only for real AI responses (not fallback)
-            if (userId && provider !== 'fallback') {
-                const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                const deduction = await deductCredits(userId, model, 1, {
-                    agent_id: agent.id,
-                    tokens: tokensUsed
-                });
-                response.credits_deducted = deduction.cost;
-                response.credits_remaining = deduction.credits_remaining;
-                if (!deduction.success) {
-                    console.warn(`[AI] Credit deduction failed: ${deduction.error ?? 'unknown'}`);
-                }
-
-                // Log detailed usage for admin statistics
-                try {
-                    const modelId = agent.model || 'unknown';
-                    const success = (response?.content && !response.content.startsWith('Désolé')) ? 1 : 0;
-                    const responseTime = response?.response_time || 0;
-                    
-                    db.run(`
-                        INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    `, uuidv4(), modelId, userId, agent.id, tokensUsed, deduction.cost || 0, success, responseTime);
-                } catch (logErr) {
-                    console.error('[AI] Error logging to ai_model_usage:', logErr.message);
-                }
-            }
-
-            return response;
+            // 4. Try Primary Model
+            return await this.executeProviderCall(provider, agentWithResolvedModel, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey, userId, resolvedModelId);
             
         } catch (error) {
-            // Log error with context
-            if (error.circuitBreakerOpen) {
-                aiLogger.warn(`Circuit breaker is open for ${provider}`, { provider, error: error.message });
-            } else if (error.timeout) {
-                aiLogger.error(`Request timeout for ${provider}`, { provider, error: error.message });
-            } else {
-                aiLogger.error(`Error from ${provider}`, { provider, error: error.message });
-            }
+            console.error(`[AI] Primary model failed (${provider}):`, error.message);
             
-            // Essayer d'autres providers en cas d'erreur (skip si circuit breaker est open)
-            if (provider === 'gemini' && this.openaiClient && !error.circuitBreakerOpen) {
-                console.log('[AI] Fallback vers OpenAI...');
-                try {
-                    const response = await openaiCircuitBreaker.execute(async () => {
-                        return await this.generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                    });
-                    if (userId) {
-                        const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                        const deduction = await deductCredits(userId, model, 1, { agent_id: agent.id, tokens: tokensUsed });
-                        response.credits_deducted = deduction.cost;
-                        response.credits_remaining = deduction.credits_remaining;
-                    }
-                    return response;
-                } catch (e) {
-                    console.error('[AI] Fallback OpenAI aussi échoué:', e.message);
-                }
-            } else if (provider === 'openai' && this.geminiClient && !error.circuitBreakerOpen) {
-                console.log('[AI] Fallback vers Gemini...');
-                try {
-                    const response = await geminiCircuitBreaker.execute(async () => {
-                        return await this.generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                    });
-                    if (userId) {
-                        const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                        const deduction = await deductCredits(userId, model, 1, { agent_id: agent.id, tokens: tokensUsed });
-                        response.credits_deducted = deduction.cost;
-                        response.credits_remaining = deduction.credits_remaining;
-                    }
-                    return response;
-                } catch (e) {
-                    console.error('[AI] Fallback Gemini aussi échoué:', e.message);
-                }
-            } else if (provider === 'openrouter' && !error.circuitBreakerOpen) {
-                // OpenRouter a échoué, essayer Gemini ou OpenAI
-                if (this.geminiClient) {
-                    console.log('[AI] OpenRouter échoué, fallback vers Gemini...');
+            if (skipFallback) throw error; 
+
+            // 5. Dynamic Fallback: Try other active models from your Admin list
+            try {
+                const fallbackModels = await db.all(
+                    'SELECT * FROM ai_models WHERE is_active = 1 AND id != ? ORDER BY sort_order ASC LIMIT 2',
+                    resolvedModelId
+                );
+
+                for (const fallbackModel of fallbackModels) {
+                    console.log(`[AI] Attempting dynamic fallback to: ${fallbackModel.name} (${fallbackModel.provider})`);
                     try {
-                        const response = await geminiCircuitBreaker.execute(async () => {
-                            return await this.generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                        });
-                        if (userId) {
-                            const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                            const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
-                            response.credits_deducted = deduction.cost;
-                            response.credits_remaining = deduction.credits_remaining;
+                        const fbProvider = this.getProvider(fallbackModel.model_id);
+                        let fbModelString = fallbackModel.model_id;
+                        if (fbProvider === 'openrouter' && fbModelString.startsWith('openrouter/')) {
+                            fbModelString = fbModelString.slice('openrouter/'.length);
                         }
-                        return response;
-                    } catch (e) {
-                        console.error('[AI] Fallback Gemini aussi échoué:', e.message);
+                        
+                        const fbApiKey = await this.getApiKey(fbProvider, fbModelString);
+                        const fbAgent = { ...agent, _resolvedModel: fbModelString };
+                        
+                        return await this.executeProviderCall(fbProvider, fbAgent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, fbApiKey, userId, fallbackModel.model_id);
+                    } catch (fbErr) {
+                        console.error(`[AI] Fallback to ${fallbackModel.name} also failed:`, fbErr.message);
+                        continue; // Try next fallback
                     }
                 }
-                if (this.openaiClient) {
-                    console.log('[AI] OpenRouter échoué, fallback vers OpenAI...');
-                    try {
-                        const response = await openaiCircuitBreaker.execute(async () => {
-                            return await this.generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis);
-                        });
-                        if (userId) {
-                            const tokensUsed = Number.isFinite(response?.tokens) ? response.tokens : 0;
-                            const deduction = await deductCredits(userId, 'ai_message', 1, { agent_id: agent.id, tokens: tokensUsed });
-                            response.credits_deducted = deduction.cost;
-                            response.credits_remaining = deduction.credits_remaining;
-                        }
-                        return response;
-                    } catch (e) {
-                        console.error('[AI] Fallback OpenAI aussi échoué:', e.message);
-                    }
-                }
+            } catch (dbErr) {
+                console.error('[AI] Error fetching fallback models:', dbErr.message);
             }
 
-            // Fallback after all APIs failed: no credit deduction (fallback response is free)
-            const fallback = this.fallbackResponse(agent, userMessage);
-            console.log('[AI] Using fallback response (no credits deducted)');
-            return fallback;
+            // Ultimate Fallback (Hardcoded polite message)
+            return this.fallbackResponse(agent, userMessage);
         }
+    }
+
+    /**
+     * Helper to execute a provider call with credits and logging
+     * Refactored to be reusable for fallback loops
+     */
+    async executeProviderCall(provider, agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey, userId, modelIdForCredits) {
+        let response;
+        
+        if (provider === 'gemini') {
+            response = await geminiCircuitBreaker.execute(() => 
+                this.generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
+            );
+        } else if (provider === 'openai') {
+            response = await openaiCircuitBreaker.execute(() => 
+                this.generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
+            );
+        } else if (provider === 'openrouter') {
+            response = await openrouterCircuitBreaker.execute(() => 
+                this.generateOpenRouterResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
+            );
+        } else {
+            response = this.fallbackResponse(agent, userMessage);
+        }
+
+        // Deduct Credits & Log Stats if successful
+        if (userId && provider !== 'fallback' && response?.content) {
+            const tokensUsed = response.tokens || 0;
+            const deduction = await deductCredits(userId, modelIdForCredits, 1, {
+                agent_id: agent.id,
+                tokens: tokensUsed
+            });
+            
+            response.credits_deducted = deduction.cost;
+            response.credits_remaining = deduction.credits_remaining;
+
+            try {
+                await db.run(`
+                    INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `, uuidv4(), modelIdForCredits, userId, agent.id, tokensUsed, deduction.cost || 0, 1, response.response_time || 0);
+            } catch (e) {
+                console.error('[AI] Stats log error:', e.message);
+            }
+        }
+
+        return response;
     }
 
     /**
@@ -400,6 +396,20 @@ class AIService {
         systemGlobal += '\n\n⚠️ RÈGLE — CONTEXTE: Utilise la CONVERSATION RÉCENTE fournie. Si le client a déjà été salué (échange précédent avec "Bonjour" ou salut), NE REDIS PAS "Bonjour" ni "Bonjour !" au début de ta réponse. Réponds directement à sa question ou demande (ex: produit, commande). Tu ne salues qu\'une seule fois au tout premier message du client.';
         systemGlobal += '\n\n⚠️ RÈGLE — FORMULATION: Quand tu transmets des informations du catalogue ou de la base de connaissances, utilise des formulations professionnelles comme "Voici les informations disponibles", "D\'après notre catalogue, ...", "Voici ce qui est indiqué : ...". Ne dis JAMAIS "C\'est tout ce que j\'ai comme information", "Je n\'ai que ça", ou des formulations qui sous-entendent un manque. Reste factuel et rassurant.';
 
+        // 📅 Amélioration #4 : Contexte temporel pour l'agent
+        const now = new Date();
+        const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        const dayName = dayNames[now.getDay()];
+        const day = now.getDate();
+        const month = monthNames[now.getMonth()];
+        const year = now.getFullYear();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+        const timeContext = `\n\n📅 CONTEXTE TEMPOREL (Ne partage pas cette info sauf si le client pose une question temporelle):\n- Date: ${dayName} ${day} ${month} ${year}\n- Heure: ${hours}h${minutes}\n- Période: ${isWeekend ? 'Week-end' : 'Jour de semaine'}`;
+        systemGlobal += timeContext;
+
         // [BUSINESS TENANT] — agent/catalogue et contexte temps réel
         let businessTenant = '';
         if (messageAnalysis) businessTenant += '\n\n' + this.buildAnalysisContext(messageAnalysis);
@@ -423,6 +433,7 @@ class AIService {
         const promptHash = crypto.createHash('sha256').update(fullPrompt).digest('hex').slice(0, 16);
         return { prompt: fullPrompt, promptHash };
     }
+
 
     /**
      * Get default prompt for agent without custom prompt
@@ -574,17 +585,33 @@ class AIService {
     /**
      * Génère une réponse avec Google Gemini
      */
-    async generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null) {
+    async generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null, customApiKey = null) {
         // Use centralized config for model mapping
         const geminiModel = getModelName('gemini', agent.model);
-
         console.log(`[AI] Using Gemini model: ${geminiModel}`);
+
+        // Get the actual API key to use
+        let genAI = null;
+        if (customApiKey) {
+            try {
+                genAI = new GoogleGenerativeAI(customApiKey);
+            } catch (e) {
+                console.error('[AI] Invalid Gemini API key:', e.message);
+            }
+        }
+
+        // Fallback to initial client if custom key failed or wasn't provided
+        if (!genAI) genAI = this.geminiClient;
+
+        if (!genAI) {
+            throw new Error('Google Gemini non initialisé (clé manquante)');
+        }
 
         // Use centralized config for generation parameters
         const genConfig = getGenerationConfig(agent);
         // Min 2048 tokens pour éviter la troncation (réponses commande, récap livraison, etc.)
         const maxOutputTokens = Math.max(genConfig.maxTokens || 500, 2048);
-        const model = this.geminiClient.getGenerativeModel({ 
+        const model = genAI.getGenerativeModel({ 
             model: geminiModel,
             generationConfig: {
                 temperature: genConfig.temperature,
@@ -799,6 +826,12 @@ class AIService {
             }
         }
 
+        // Try 6: Final fallback - if it's plain text (no braces) and looks like a response
+        if (trimmed.length > 0 && !trimmed.includes('{') && !trimmed.includes('}')) {
+            aiLogger.info('Using plain text as fallback response');
+            return { response: trimmed, need_human: false, confidence: 1 };
+        }
+
         aiLogger.error('Failed to parse LLM response as structured JSON', { 
             preview: trimmed.substring(0, 200) 
         });
@@ -885,12 +918,13 @@ class AIService {
      */
     resolveMediaModel(agent) {
         const raw = agent?.media_model || agent?.model;
-        if (!raw || typeof raw !== 'string') return 'gemini-1.5-flash-latest';
+        if (!raw || typeof raw !== 'string') return 'gemini-2.0-flash';
         const m = raw.toLowerCase();
-        if (m.includes('gemini-1.5-pro') || m.includes('gemini-pro')) return 'gemini-1.5-pro-latest';
-        if (m.includes('gemini-2.5') || m.includes('models/gemini-2.5-flash')) return 'gemini-2.5-flash';
-        if (m.includes('gemini')) return 'gemini-1.5-flash-latest';
-        return 'gemini-1.5-flash-latest';
+        if (m.includes('gemini-1.5-pro') || m.includes('gemini-pro')) return 'gemini-1.5-pro';
+        if (m.includes('gemini-2.5') || m.includes('models/gemini-2.5-flash') || m.includes('gemini-2.0')) return 'gemini-2.0-flash';
+        if (m.includes('gemini-1.5-flash')) return 'gemini-1.5-flash';
+        if (m.includes('gemini')) return 'gemini-2.0-flash';
+        return 'gemini-2.0-flash';
     }
 
     /**
@@ -898,7 +932,7 @@ class AIService {
      * @param {Object} agent - Agent configuration
      * @param {string} audioBase64 - Audio data (base64)
      * @param {string} mimeType - e.g. 'audio/ogg', 'audio/mpeg'
-     * @param {string|null} userId - For credit deduction
+     * @param {string|null} userId - Pour décompte des crédits
      */
     async transcribeAudio(agent, audioBase64, mimeType, userId = null) {
         this.initialize();
@@ -969,7 +1003,20 @@ class AIService {
 
     async generateResponseFromImage(agent, conversationHistory, imageBase64, mimeType, caption, knowledgeBase = [], userId = null) {
         this.initialize();
-        if (!this.geminiClient) {
+        const geminiModel = this.resolveMediaModel(agent);
+        
+        // Get the actual API key to use
+        const apiKey = await this.getApiKey('gemini', geminiModel);
+        let genAI = this.geminiClient;
+        if (apiKey) {
+            try {
+                genAI = new GoogleGenerativeAI(apiKey);
+            } catch (e) {
+                console.error('[AI] Vision: Erreur clé API custom:', e.message);
+            }
+        }
+
+        if (!genAI) {
             console.warn('[AI] Vision: Gemini non configuré, fallback texte');
             return {
                 content: "Je ne peux pas analyser les images pour le moment. Décrivez-moi ce que vous cherchez ou envoyez un message texte.",
@@ -979,7 +1026,6 @@ class AIService {
             };
         }
 
-        const geminiModel = this.resolveMediaModel(agent);
         if (userId) {
             const hasCredits = await hasEnoughCredits(userId, 'ai_message');
             if (!hasCredits) {
@@ -994,7 +1040,7 @@ class AIService {
         }
 
         try {
-            const model = this.geminiClient.getGenerativeModel({
+            const model = genAI.getGenerativeModel({
                 model: geminiModel,
                 generationConfig: {
                     temperature: agent?.temperature ?? 0.7,
@@ -1065,7 +1111,20 @@ class AIService {
     /**
      * Génère une réponse avec OpenAI
      */
-    async generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null) {
+    async generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null, customApiKey = null) {
+        // Use custom API key if provided
+        let client = this.openaiClient;
+        if (customApiKey) {
+            try {
+                client = new OpenAI({ apiKey: customApiKey });
+            } catch (e) {
+                console.error('[AI] Invalid custom OpenAI API key:', e.message);
+            }
+        }
+
+        if (!client) {
+            throw new Error('OpenAI non initialisé (clé manquante)');
+        }
         const { prompt: systemPrompt } = this.buildSystemPrompt(agent, knowledgeBase, messageAnalysis);
         const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec: "response" (string: ton message au client), "need_human" (boolean: true si tu recommandes de transférer à un humain), et optionnellement "confidence" (number 0-1). Exemple: {"response": "Bonjour, voici les informations...", "need_human": false, "confidence": 0.9}';
 
@@ -1101,7 +1160,7 @@ class AIService {
         // Use centralized config for generation parameters
         const genConfig = getGenerationConfig(agent);
         const maxTokens = Math.max(genConfig.maxTokens || 500, 2048);
-        const completion = await this.openaiClient.chat.completions.create({
+        const completion = await client.chat.completions.create({
             model: openaiModel,
             messages,
             temperature: genConfig.temperature,
@@ -1128,7 +1187,23 @@ class AIService {
      * Génère une réponse avec OpenRouter (accès à plusieurs modèles)
      * Avec retry automatique et fallback vers d'autres modèles gratuits
      */
-    async generateOpenRouterResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null) {
+    async generateOpenRouterResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null, customApiKey = null) {
+        // Use custom API key if provided and non-empty
+        let client = this.openrouterClient;
+        if (customApiKey && customApiKey.trim()) {
+            try {
+                client = new OpenAI({ 
+                    apiKey: customApiKey.trim(),
+                    baseURL: 'https://openrouter.ai/api/v1' 
+                });
+            } catch (e) {
+                console.error('[AI] Invalid custom OpenRouter API key:', e.message);
+            }
+        }
+
+        if (!client) {
+            throw new Error('OpenRouter non initialisé (clé API manquante ou non configurée dans Admin → Clés API)');
+        }
         const { prompt: systemPrompt } = this.buildSystemPrompt(agent, knowledgeBase, messageAnalysis);
         const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec: "response" (string: ton message au client), "need_human" (boolean: true si tu recommandes de transférer à un humain), et optionnellement "confidence" (number 0-1). Exemple: {"response": "Bonjour, voici les informations...", "need_human": false, "confidence": 0.9}';
 
@@ -1158,8 +1233,11 @@ class AIService {
             content: `📩 MESSAGE ACTUEL DU CLIENT (réponds à ce message):\n\n${userMessage}`
         });
 
-        // Use centralized config for model selection (mapping agent.model -> ID OpenRouter)
-        const primaryModel = getModelName('openrouter', agent.model || AI_CONFIG.models.openrouter.default);
+        // Use resolved model_id if available (set by generateResponse via DB lookup)
+        // This ensures OpenRouter gets the full model_id (e.g. 'tngtech/deepseek-r1t-chimera:free')
+        // instead of the short id stored in agent.model (e.g. 'deepseek-r1t-chimera')
+        const primaryModel = agent._resolvedModel
+            || getModelName('openrouter', agent.model || AI_CONFIG.models.openrouter.default);
         
         // Use centralized config for fallback models
         const fallbackModels = AI_CONFIG.models.openrouter.freeFallbacks
@@ -1183,7 +1261,7 @@ class AIService {
                     console.log(`[AI] Using OpenRouter model: ${modelName}`);
                 }
 
-                const completion = await this.openrouterClient.chat.completions.create({
+                const completion = await client.chat.completions.create({
                     model: modelName,
                     messages,
                     temperature: genConfig.temperature,

@@ -10,52 +10,30 @@ import { adminAnomaliesService } from './adminAnomalies.js';
 
 // Credit costs per action
 export const CREDIT_COSTS = {
-    // AI message generation - Google Gemini
+    // 1 AI Response = 1 Credit (Simplified for SaaS)
+    'ai_message': 1,
+    
+    // WhatsApp messages are free (included in response or manual)
+    'whatsapp_message_sent': 0,
+    
+    // AI models costs (Force all to 1 as per user requirement)
     'gemini-1.5-flash': 1,
     'gemini-1.5-flash-latest': 1,
     'gemini-2.0-flash': 1,
-    'gemini-1.5-pro': 2,
-    'gemini-1.5-pro-latest': 2,
+    'gemini-1.5-pro': 1,
+    'gemini-1.5-pro-latest': 1,
+    'gpt-4o-mini': 1,
+    'gpt-4o': 1,
+    'gpt-4-turbo': 1,
     
-    // AI message generation - OpenAI
-    'gpt-4o-mini': 2,
-    'gpt-4o': 5,
-    'gpt-4-turbo': 8,
-    
-    // AI message generation - OpenRouter (modèles gratuits)
+    // OpenRouter models
     'meta-llama/llama-3.1-8b-instruct:free': 0,
     'meta-llama/llama-3.2-3b-instruct:free': 0,
     'google/gemma-2-9b-it:free': 0,
     'qwen/qwen-2-7b-instruct:free': 0,
-    'qwen/qwen3-next-80b-a3b-instruct:free': 0, // Qwen 3 Next 80B
     'microsoft/phi-3-mini-128k-instruct:free': 0,
-    'huggingfaceh4/zephyr-7b-beta:free': 0,
-    'tngtech/deepseek-r1t-chimera:free': 0,
     
-    // AI message generation - OpenRouter (modèles payants économiques)
-    'meta-llama/llama-3.1-70b-instruct': 1,
-    'meta-llama/llama-3.1-405b-instruct': 3,
-    'mistralai/mistral-7b-instruct': 1,
-    'mistralai/mixtral-8x7b-instruct': 1,
-    'mistralai/mistral-large': 2,
-    
-    // AI message generation - OpenRouter (modèles premium)
-    'anthropic/claude-3.5-sonnet': 3,
-    'anthropic/claude-3-opus': 8,
-    'anthropic/claude-3-haiku': 1,
-    'openai/gpt-4o': 5,
-    'openai/gpt-4o-mini': 2,
-    'google/gemini-pro-1.5': 2,
-    'google/gemini-flash-1.5': 1,
-    
-    // Fallback
-    'fallback': 0, // Free fallback responses
-    
-    // 1 credit = 1 AI reply (used by ai.js for all models)
-    'ai_message': 1,
-    
-    // Other actions
-    'whatsapp_message_sent': 0.1,
+    'fallback': 0,
     'knowledge_item_add': 0,
     'template_use': 0,
 };
@@ -91,6 +69,9 @@ export function getCreditCost(action) {
  * Check if user has enough credits for an action
  */
 export async function hasEnoughCredits(userId, action, quantity = 1) {
+    const user = await getUserCredits(userId);
+    if (!user) return false;
+
     const { getEffectivePlanName } = await import('../config/plans.js');
     const effectivePlanName = await getEffectivePlanName(user.plan, user);
     const plan = await getPlan(effectivePlanName);

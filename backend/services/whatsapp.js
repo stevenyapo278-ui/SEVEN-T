@@ -884,7 +884,15 @@ class WhatsAppManager {
                     VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
                 `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
                 console.log(`[WhatsApp] Message saved: ${context.contactName} -> ${payload.content.substring(0, 30)}...`);
-                void notifyConversationUpdate(context.conversation.id);
+                void notifyConversationUpdate(context.conversation.id, {
+                    id: payload.inMsgId,
+                    role: 'user',
+                    content: payload.content,
+                    whatsapp_id: payload.whatsapp_id,
+                    message_type: payload.messageType,
+                    media_url: payload.mediaUrl,
+                    created_at: payload.createdAt
+                });
                 void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
                     conversationId: context.conversation.id,
                     messageId: payload.inMsgId,
@@ -901,32 +909,48 @@ class WhatsAppManager {
                 await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: payload.messageType, rawMessage: message });
                 return;
             }
-            // Human takeover: save incoming text immediately so it appears in the SaaS conversation view (no batching, no AI reply)
+            // [SAVE INSTANTLY] Save all incoming text messages immediately so they appear instantly on the dashboard
+            const inMsgId = payload.inMsgId || uuidv4();
+            await db.run(`
+                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
+                VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
+            `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.createdAt);
+            await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', payload.createdAt, context.conversation.id);
+            
+            // Notify frontend immediately (socket.io) for "instant" appearance
+            void notifyConversationUpdate(context.conversation.id, {
+                id: inMsgId,
+                role: 'user',
+                content: payload.content,
+                whatsapp_id: payload.whatsapp_id,
+                message_type: 'text',
+                media_url: payload.mediaUrl || null,
+                created_at: payload.createdAt
+            });
+            this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
+
+            // Trigger workflow: new_message
+            void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
+                conversationId: context.conversation.id,
+                messageId: inMsgId,
+                agentId: context.agent.id,
+                userId: context.agent.user_id,
+                contactJid: context.sender,
+                contactName: context.contactName,
+                contactNumber: context.contactNumberForConv,
+                message: payload.content,
+                messageType: 'text'
+            }, context.agent.id, context.agent.user_id);
+
+            // If human takeover mode: stop here (no AI reply)
             const conversationFresh = await db.get('SELECT human_takeover FROM conversations WHERE id = ?', context.conversation.id);
             if (conversationFresh?.human_takeover) {
-                await conversationMessageQueue.flush(toolId, context.conversation.id);
-                const inMsgId = payload.inMsgId || uuidv4();
-                await db.run(`
-                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
-                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
-                `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.createdAt);
-                await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', payload.createdAt, context.conversation.id);
                 console.log(`[WhatsApp] Message saved (human takeover): ${context.contactName} -> ${payload.content.substring(0, 30)}...`);
-                void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
-                    conversationId: context.conversation.id,
-                    messageId: inMsgId,
-                    agentId: context.agent.id,
-                    userId: context.agent.user_id,
-                    contactJid: context.sender,
-                    contactName: context.contactName,
-                    contactNumber: context.contactNumberForConv,
-                    message: payload.content,
-                    messageType: 'text'
-                }, context.agent.id, context.agent.user_id);
-                this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
                 return;
             }
-            conversationMessageQueue.enqueue(toolId, context.conversation.id, { ...payload, ...context });
+            
+            // Enqueue for AI response (batching/debounce)
+            conversationMessageQueue.enqueue(toolId, context.conversation.id, { ...payload, ...context, inMsgId });
         } catch (error) {
             console.error('[WhatsApp] Error handling message:', error);
         }
@@ -1607,7 +1631,15 @@ class WhatsAppManager {
                     INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, created_at)
                     VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?)
                 `, outMsgId, conversation.id, aiResponse.content, aiResponse.tokens || 0, whatsappMsgId, sentAsVoice ? 'audio' : null, new Date().toISOString());
-                void notifyConversationUpdate(conversation.id);
+                void notifyConversationUpdate(conversation.id, {
+                    id: outMsgId,
+                    role: 'assistant',
+                    content: aiResponse.content,
+                    whatsapp_id: whatsappMsgId,
+                    message_type: sentAsVoice ? 'audio' : (sentProductImageUrls.length > 0 ? 'image' : 'text'),
+                    media_url: sentProductImageUrls.length > 0 ? toMediaPath(sentProductImageUrls[0].url) : null,
+                    created_at: new Date().toISOString()
+                });
                 if (aiResponse.credits_deducted !== undefined) {
                     console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}. Remaining: ${aiResponse.credits_remaining}`);
                 }
@@ -1752,28 +1784,10 @@ class WhatsAppManager {
         }
         context.conversation = conversation;
         context.agent = agent;
-        const lastCreatedAt = batch[batch.length - 1].createdAt;
-        let firstMsgId = null;
-        for (const item of batch) {
-            const inMsgId = uuidv4();
-            if (!firstMsgId) firstMsgId = inMsgId;
-            await db.run(`
-                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
-                VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
-            `, inMsgId, conversationId, item.content, item.whatsapp_id, item.messageType || 'text', item.mediaUrl || null, item.createdAt);
-        }
-        await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', lastCreatedAt, conversationId);
-        void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
-            conversationId,
-            messageId: firstMsgId,
-            agentId: agent.id,
-            userId: agent.user_id,
-            contactJid: context.sender,
-            contactName: context.contactName,
-            contactNumber: context.contactNumberForConv,
-            message: batch.map(m => m.content).join('\n\n').substring(0, 500),
-            messageType: 'text'
-        }, agent.id, agent.user_id);
+        // Messages are already saved individually in handleIncomingMessage for "instant" visibility
+        const firstMsgId = batch[0].inMsgId;
+        
+        console.log(`[WhatsApp] handleBatchDrain: processing AI response for batch of ${batch.length} messages`);
         this.getProfilePicture(agent.id, context.sender).catch(() => {});
         const combinedMessage = batch.map(m => m.content).join('\n\n');
         const normalizedPayload = {

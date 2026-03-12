@@ -13,7 +13,9 @@ import {
   Bot,
   ArrowUpRight,
   RefreshCw,
-  Calendar
+  Calendar,
+  Filter,
+  ChevronDown
 } from 'lucide-react'
 import {
   AreaChart,
@@ -49,21 +51,24 @@ export default function Analytics() {
   const [peakHours, setPeakHours] = useState({ data: [], peakHours: [] })
   const [funnel, setFunnel] = useState([])
   const [topProducts, setTopProducts] = useState([])
-
-  useEffect(() => {
-    loadAnalytics()
-  }, [period])
+  const [productsSeasonality, setProductsSeasonality] = useState({ data: [], products: [] })
+  const [heatmapData, setHeatmapData] = useState([])
+  const [selectedAgent, setSelectedAgent] = useState('all')
+  const [showAgentFilter, setShowAgentFilter] = useState(false)
 
   const loadAnalytics = async () => {
     setLoading(true)
     try {
-      const [overviewRes, timelineRes, agentsRes, peakRes, funnelRes, productsRes] = await Promise.all([
-        api.get(`/analytics/overview?period=${period}`),
-        api.get(`/analytics/messages-timeline?period=${period}`),
+      const agentParam = selectedAgent !== 'all' ? `&agentId=${selectedAgent}` : ''
+      const [overviewRes, timelineRes, agentsRes, peakRes, funnelRes, productsRes, seasonalityRes, heatmapRes] = await Promise.all([
+        api.get(`/analytics/overview?period=${period}${agentParam}`),
+        api.get(`/analytics/messages-timeline?period=${period}${agentParam}`),
         api.get('/analytics/agent-performance'),
         api.get('/analytics/peak-hours'),
         api.get('/analytics/conversion-funnel'),
-        api.get('/analytics/top-products')
+        api.get(`/analytics/top-products?period=${period}${agentParam}`),
+        api.get(`/analytics/products-seasonality`),
+        api.get(`/analytics/weekly-heatmap`)
       ])
 
       setOverview(overviewRes.data.overview)
@@ -72,6 +77,8 @@ export default function Analytics() {
       setPeakHours(peakRes.data)
       setFunnel(funnelRes.data.funnel)
       setTopProducts(productsRes.data.products)
+      setProductsSeasonality(seasonalityRes.data)
+      setHeatmapData(heatmapRes.data.data)
     } catch (error) {
       console.error('Error loading analytics:', error)
       toast.error('Erreur lors du chargement des analytics')
@@ -79,6 +86,10 @@ export default function Analytics() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadAnalytics()
+  }, [period, selectedAgent])
 
   const StatCard = ({ title, value, growth, icon: Icon, color = 'gold' }) => {
     const isPositive = growth >= 0
@@ -146,13 +157,50 @@ export default function Analytics() {
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                   <BarChart3 className="w-6 h-6 text-gold-400" />
                 </div>
-                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Analytics</h1>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Tableau de Bord</h1>
               </div>
               <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
-                Performances et métriques de votre activité
+                Analysez vos performances et prévoyez vos besoins futurs
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              {/* Agent selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowAgentFilter(!showAgentFilter)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 min-h-[40px] ${
+                    isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:border-gold-400/50' : 'bg-white border-gray-300 text-gray-700 hover:border-gold-400'
+                  }`}
+                >
+                  <Bot className="w-4 h-4" />
+                  <span className="max-w-[120px] truncate">
+                    {selectedAgent === 'all' ? 'Tous les agents' : agentPerformance.find(a => a.id === selectedAgent)?.name || 'Agent'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 opacity-50" />
+                </button>
+                {showAgentFilter && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setShowAgentFilter(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-space-900 border border-space-700 rounded-xl shadow-2xl z-40 py-2 animate-fadeIn">
+                       <button
+                        onClick={() => { setSelectedAgent('all'); setShowAgentFilter(false); }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-space-800 transition-colors ${selectedAgent === 'all' ? 'text-gold-400 font-bold' : 'text-gray-400'}`}
+                       >
+                         Tous les agents
+                       </button>
+                       {agentPerformance.map(agent => (
+                         <button
+                           key={agent.id}
+                           onClick={() => { setSelectedAgent(agent.id); setShowAgentFilter(false); }}
+                           className={`w-full text-left px-4 py-2 text-sm hover:bg-space-800 transition-colors ${selectedAgent === agent.id ? 'text-gold-400 font-bold' : 'text-gray-400'}`}
+                         >
+                           {agent.name}
+                         </button>
+                       ))}
+                    </div>
+                  </>
+                )}
+              </div>
               <div className={`flex rounded-xl p-1 ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
                 {['7d', '30d', '90d'].map((p) => (
                   <button
@@ -351,33 +399,127 @@ export default function Analytics() {
       </div>
 
       {/* Top Products */}
-      {topProducts.length > 0 && (
-        <div className="card p-6">
-          <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Top produits vendus</h3>
-          <div className="overflow-x-auto table-responsive">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-sm text-gray-400 border-b border-space-700">
-                  <th className="pb-3 font-medium">Produit</th>
-                  <th className="pb-3 font-medium text-right">Prix</th>
-                  <th className="pb-3 font-medium text-right">Vendus</th>
-                  <th className="pb-3 font-medium text-right">Revenus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topProducts.slice(0, 5).map((product) => (
-                  <tr key={product.id} className="border-b border-space-800">
-                    <td className="py-3 text-gray-100">{product.name}</td>
-                    <td className="py-3 text-right text-gray-400">{product.price?.toLocaleString()} XOF</td>
-                    <td className="py-3 text-right font-medium text-gold-400">{product.total_sold}</td>
-                    <td className="py-3 text-right font-medium text-emerald-400">{product.revenue?.toLocaleString()} XOF</td>
+      <div className="pb-8">
+        {topProducts.length > 0 && (
+          <div className="card p-6">
+            <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Top produits ({period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : '90 derniers jours'})</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-sm text-gray-400 border-b border-space-700">
+                    <th className="pb-3 font-medium">Produit</th>
+                    <th className="pb-3 font-medium text-right">Vendus</th>
+                    <th className="pb-3 font-medium text-right">Revenus</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {topProducts.slice(0, 10).map((product) => (
+                    <tr key={product.id} className="border-b border-space-800">
+                      <td className="py-3 text-gray-100">{product.name}</td>
+                      <td className="py-3 text-right font-medium text-gold-400">{product.total_sold}</td>
+                      <td className="py-3 text-right font-medium text-emerald-400">
+                        {product.revenue?.toLocaleString()} <span className="text-[10px] opacity-70">XOF</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Seasonality & Heatmap Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
+         {/* Yearly Seasonality - Seasonal supply forecasting */}
+         <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
+               <div>
+                  <h3 className="text-lg font-display font-semibold text-gray-100">Saisonnalité Annuelle</h3>
+                  <p className="text-xs text-gray-400">Ventes mensuelles pour prévoir vos stocks</p>
+               </div>
+               <Calendar className="w-5 h-5 text-gold-400 opacity-50" />
+            </div>
+            {productsSeasonality.data.length > 0 ? (
+               <div className="w-full h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                     <BarChart data={productsSeasonality.data}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                        <XAxis dataKey="month" stroke="#9CA3AF" fontSize={10} axisLine={false} tickLine={false} />
+                        <YAxis stroke="#9CA3AF" fontSize={10} axisLine={false} tickLine={false} />
+                        <Tooltip
+                           contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
+                           itemStyle={{ fontSize: '10px' }}
+                        />
+                        {productsSeasonality.products.map((name, index) => (
+                           <Bar 
+                              key={name}
+                              dataKey={name}
+                              stackId="a"
+                              fill={COLORS[index % COLORS.length]}
+                              radius={[0, 0, 0, 0]}
+                           />
+                        ))}
+                     </BarChart>
+                  </ResponsiveContainer>
+               </div>
+            ) : (
+               <div className="flex items-center justify-center h-[300px] bg-space-800/20 rounded-2xl border border-dashed border-space-700">
+                  <p className="text-gray-500 italic">Données insuffisantes pour la saisonnalité</p>
+               </div>
+            )}
+         </div>
+
+         {/* Weekly Heatmap */}
+         <div className="card p-6">
+            <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Pics d'Heures & Jours</h3>
+            <p className="text-xs text-gray-400 mb-6">Activité des clients sur les 30 derniers jours</p>
+            
+            <div className="grid grid-cols-1 gap-1">
+               {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+                  <div key={day} className="flex items-center gap-2">
+                     <span className="text-[10px] text-gray-500 w-6 font-bold uppercase">{day}</span>
+                     <div className="flex-1 flex gap-0.4 sm:gap-1">
+                        {Array.from({ length: 24 }).map((_, h) => {
+                           const d = heatmapData.find(item => item.day === day && item.hour === h)
+                           const count = d?.count || 0
+                           let bgColor = 'bg-space-800'
+                           if (count > 0) bgColor = 'bg-gold-400/10'
+                           if (count > 5) bgColor = 'bg-gold-400/30'
+                           if (count > 15) bgColor = 'bg-gold-400/60'
+                           if (count > 30) bgColor = 'bg-gold-400'
+                           
+                           return (
+                              <div 
+                                 key={h}
+                                 className={`flex-1 h-3 sm:h-4 rounded-[2px] transition-all duration-500 ${bgColor}`}
+                                 title={`${day} ${h}h: ${count} messages`}
+                              />
+                           )
+                        })}
+                     </div>
+                  </div>
+               ))}
+               <div className="flex gap-2 mt-2 ml-8">
+                  <span className="text-[8px] text-gray-600">0h</span>
+                  <div className="flex-1" />
+                  <span className="text-[8px] text-gray-600">12h</span>
+                  <div className="flex-1" />
+                  <span className="text-[8px] text-gray-600">23h</span>
+               </div>
+            </div>
+            
+            <div className="mt-6 flex items-center justify-end gap-3">
+               <span className="text-[10px] text-gray-500">Calme</span>
+               <div className="flex gap-1">
+                  <div className="w-3 h-3 rounded-[2px] bg-space-800" />
+                  <div className="w-3 h-3 rounded-[2px] bg-gold-400/30" />
+                  <div className="w-3 h-3 rounded-[2px] bg-gold-400" />
+               </div>
+               <span className="text-[10px] text-gray-500">Intense</span>
+            </div>
+         </div>
+      </div>
     </div>
   )
 }

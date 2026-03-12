@@ -30,7 +30,7 @@ class MessageAnalyzer {
         this.productCache = new Map();
         this.productIndexCache = new Map();
         this.quantityPatternCache = new Map();
-        this.CACHE_TTL = 60000; // 60 seconds TTL
+        this.CACHE_TTL = 15000; // 15 seconds TTL (stocks must be fresh)
         this._validateConfig();
     }
 
@@ -320,7 +320,7 @@ class MessageAnalyzer {
         return patterns.some((pattern) => pattern.test(trimmed));
     }
 
-    async _getRecentConversationContext(conversationId, limit = 5) {
+    async _getRecentConversationContext(conversationId, limit = 12) {
         try {
             const rows = await db.all(`
                 SELECT content FROM messages

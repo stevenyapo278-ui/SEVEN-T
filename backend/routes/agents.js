@@ -49,6 +49,31 @@ router.get('/system-templates/:id', authenticateToken, (req, res) => {
     }
 });
 
+// ==================== AI MODELS ====================
+
+/**
+ * Get available AI models from the database
+ * This reflects the models configured in the admin panel
+ */
+router.get('/available-models', authenticateToken, async (req, res) => {
+    try {
+        const user = await db.get('SELECT plan, is_admin FROM users WHERE id = ?', req.user.id);
+        const models = await db.all('SELECT * FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
+        
+        if (user.is_admin) {
+            return res.json({ models });
+        }
+
+        const allowedModels = await getAvailableModels(user.plan);
+        const filtered = models.filter(m => allowedModels.includes(m.id));
+        
+        res.json({ models: filtered });
+    } catch (error) {
+        console.error('Get available models error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // ==================== QUOTAS & PLAN INFO ====================
 
 // Get user quotas and plan info
@@ -117,7 +142,7 @@ router.get('/quotas', authenticateToken, async (req, res) => {
                 displayName: plan.displayName,
                 price: plan.price
             },
-            credits: user.credits,
+            credits: Math.floor(user.credits || 0),
             credit_warning: creditWarning,
             credit_costs: CREDIT_COSTS,
             limits: plan.limits,
@@ -130,7 +155,7 @@ router.get('/quotas', authenticateToken, async (req, res) => {
                 messages_this_month: messagesThisMonth,
                 knowledge_items: knowledgeItems,
                 templates: templates,
-                credits_used_this_month: monthlyUsage.credits_used,
+                credits_used_this_month: Math.round(monthlyUsage.credits_used || 0),
                 ai_messages_this_month: monthlyUsage.ai_messages
             },
             remaining: {
@@ -264,10 +289,23 @@ router.post('/', authenticateToken, async (req, res) => {
             });
         }
 
-        // Check if model is available for plan
-        const selectedModel = model || 'gemini-1.5-flash';
-        const availableModels = await getAvailableModels(user.plan);
-        const finalModel = availableModels.includes(selectedModel) ? selectedModel : availableModels[0];
+        // 1. Fetch ALL active models from DB to respect admin's sort_order
+        const dbModels = await db.all('SELECT id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
+        
+        // 2. Filter allowed models for user's plan
+        const planAllowedIds = await getAvailableModels(user.plan);
+        const allowedModels = dbModels.filter(m => planAllowedIds.includes(m.id)).map(m => m.id);
+
+        // 3. Resolve the final model: specified -> check allowed | unspecified -> take first in list
+        let finalModel = (allowedModels.length > 0) ? allowedModels[0] : 'gemini-1.5-flash';
+        
+        if (model) {
+            // Admin can use any model in the DB models list, SaaS user restricted to plan list
+            const searchList = req.user.is_admin ? dbModels.map(m => m.id) : allowedModels;
+            if (searchList.includes(model)) {
+                finalModel = model;
+            }
+        }
 
         // Get template-based prompt if template is specified
         const promptConfig = getTemplatePrompt(template, name);
@@ -284,7 +322,7 @@ router.post('/', authenticateToken, async (req, res) => {
         res.status(201).json({ 
             message: 'Agent créé avec succès',
             agent,
-            model_adjusted: (req.user.is_admin && finalModel !== selectedModel) ? `Modèle ajusté pour votre plan (${finalModel})` : null
+            model_adjusted: (model && finalModel !== model) ? `Modèle ajusté pour votre plan (${finalModel})` : null
         });
     } catch (error) {
         console.error('Create agent error:', error);
@@ -604,11 +642,20 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         // Enforce model availability for the user's plan if not an admin
         let finalModel = model;
-        if (model && !req.user.is_admin) {
-            const userRow = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
-            const availableModels = await getAvailableModels(userRow.plan);
-            if (!availableModels.includes(model)) {
-                finalModel = availableModels.includes(existing.model) ? existing.model : availableModels[0];
+        if (model) {
+            const dbModels = await db.all('SELECT id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
+            if (req.user.is_admin) {
+                if (!dbModels.some(m => m.id === model)) {
+                    finalModel = existing.model; // Rollback if model doesn't exist
+                }
+            } else {
+                const userRow = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
+                const planAllowedIds = await getAvailableModels(userRow.plan);
+                const allowedModels = dbModels.filter(m => planAllowedIds.includes(m.id)).map(m => m.id);
+                if (!allowedModels.includes(model)) {
+                    // If not allowed, try to keep existing if still allowed, otherwise take the first allowed
+                    finalModel = allowedModels.includes(existing.model) ? existing.model : (allowedModels[0] || 'gemini-1.5-flash');
+                }
             }
         }
 
@@ -800,7 +847,9 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         res.json({ 
             response: response.content,
             tokens: response.tokens,
-            model: agent.model
+            model: response.model || agent.model,
+            provider: response.provider,
+            credit_warning: response.credit_warning
         });
 
     } catch (error) {

@@ -192,6 +192,56 @@ router.post('/:id/mark-delivered', authenticateToken, async (req, res) => {
     }
 });
 
+// Unmark order as delivered (back to validated)
+router.post('/:id/unmark-delivered', authenticateToken, async (req, res) => {
+    try {
+        const result = await orderService.unmarkAsDelivered(req.params.id, req.user.id);
+        if (!result.success) return res.status(400).json({ error: result.error });
+        res.json({ success: true, order: result.order });
+    } catch (error) {
+        console.error('Unmark delivered error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Revert order to pending (restores stock)
+router.post('/:id/revert-to-pending', authenticateToken, async (req, res) => {
+    try {
+        const result = await orderService.revertToPending(req.params.id, req.user.id);
+        if (!result.success) return res.status(400).json({ error: result.error });
+        res.json({ success: true, order: result.order });
+    } catch (error) {
+        console.error('Revert to pending error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Bulk validate orders
+router.post('/bulk-validate', authenticateToken, async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        if (!Array.isArray(orderIds)) return res.status(400).json({ error: 'Liste d\'identifiants requise' });
+        const results = await orderService.bulkValidateOrders(orderIds, req.user.id, req.user.name);
+        res.json(results);
+    } catch (error) {
+        console.error('Bulk validate error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
+// Bulk mark as delivered
+router.post('/bulk-mark-delivered', authenticateToken, async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        if (!Array.isArray(orderIds)) return res.status(400).json({ error: 'Liste d\'identifiants requise' });
+        const results = await orderService.bulkMarkAsDelivered(orderIds, req.user.id);
+        res.json(results);
+    } catch (error) {
+        console.error('Bulk mark delivered error:', error);
+        res.status(500).json({ error: 'Erreur' });
+    }
+});
+
 // Send payment link in WhatsApp conversation (checkout 100% in-app)
 router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (req, res) => {
     try {
@@ -285,7 +335,7 @@ router.post('/:id/reject', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: result.error });
         }
 
-        res.json({ success: true });
+        res.json({ success: true, order: result.order });
     } catch (error) {
         console.error('Reject order error:', error);
         res.status(500).json({ error: 'Erreur' });

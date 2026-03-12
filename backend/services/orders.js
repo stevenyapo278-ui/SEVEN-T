@@ -361,7 +361,7 @@ class OrderService {
 
             console.log(`[Orders] Rejected order ${orderId}`);
 
-            return { success: true };
+            return { success: true, order: await this.getOrderById(orderId, userId) };
         } catch (error) {
             console.error('[Orders] Reject error:', error);
             return { success: false, error: error.message };
@@ -400,6 +400,84 @@ class OrderService {
             console.error('[Orders] Mark delivered error:', error);
             return { success: false, error: error.message };
         }
+    }
+
+    /**
+     * Unmark order as delivered (put it back to validated)
+     */
+    async unmarkAsDelivered(orderId, userId) {
+        try {
+            const order = await this.getOrderById(orderId, userId);
+            if (!order) return { success: false, error: 'Commande non trouvée' };
+            if (order.status !== 'delivered') {
+                return { success: false, error: 'Cette commande n\'est pas marquée comme livrée' };
+            }
+            await db.run(`
+                UPDATE orders SET status = 'validated', delivered_at = NULL, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND user_id = ?
+            `, orderId, userId);
+            console.log(`[Orders] Unmarked order ${orderId} as delivered (back to validated)`);
+            return { success: true, order: await this.getOrderById(orderId, userId) };
+        } catch (error) {
+            console.error('[Orders] Unmark delivered error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Revert a validated order to pending and RESTORE stock
+     */
+    async revertToPending(orderId, userId) {
+        try {
+            const order = await this.getOrderById(orderId, userId);
+            if (!order) return { success: false, error: 'Commande non trouvée' };
+            if (['pending', 'rejected', 'cancelled'].includes(order.status)) {
+                return { success: false, error: 'La commande est déjà annulée ou en attente' };
+            }
+
+            // Restore stock for all products
+            for (const item of order.items) {
+                if (item.product_id) {
+                    await this.updateProductStock(item.product_id, userId, item.quantity, orderId, `Annulation Validation - Commande #${orderId.substring(0, 8)}`);
+                }
+            }
+
+            await db.run(`
+                UPDATE orders SET 
+                    status = 'pending', 
+                    validated_at = NULL, 
+                    validated_by = NULL,
+                    delivered_at = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND user_id = ?
+            `, orderId, userId);
+
+            console.log(`[Orders] Reverted order ${orderId} to pending and restored stock`);
+            return { success: true, order: await this.getOrderById(orderId, userId) };
+        } catch (error) {
+            console.error('[Orders] Revert to pending error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    async bulkValidateOrders(orderIds, userId, validatedBy = null) {
+        const results = { success: [], failed: [] };
+        for (const id of orderIds) {
+            const res = await this.validateOrder(id, userId, validatedBy);
+            if (res.success) results.success.push(id);
+            else results.failed.push({ id, error: res.error });
+        }
+        return results;
+    }
+
+    async bulkMarkAsDelivered(orderIds, userId) {
+        const results = { success: [], failed: [] };
+        for (const id of orderIds) {
+            const res = await this.markAsDelivered(id, userId);
+            if (res.success) results.success.push(id);
+            else results.failed.push({ id, error: res.error });
+        }
+        return results;
     }
 
     async updateProductStock(productId, userId, quantityChange, orderId = null, notes = null) {

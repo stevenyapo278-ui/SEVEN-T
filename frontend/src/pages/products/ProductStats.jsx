@@ -45,8 +45,8 @@ export default function ProductStats({ stats, formatPrice }) {
                   <Icon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`} title={String(value)}>{value}</p>
-                  <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{label}</p>
+                  <p className={`text-lg sm:text-xl font-bold break-words leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`} title={String(value)}>{value}</p>
+                  <p className={`text-[10px] sm:text-xs truncate font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'} mt-0.5`}>{label}</p>
                 </div>
               </div>
             </div>

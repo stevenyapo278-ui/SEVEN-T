@@ -28,7 +28,9 @@ import {
   RotateCw,
   XCircle,
   RefreshCw,
-  Loader2
+  Loader2,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -75,6 +77,7 @@ export default function Workflows() {
   const [searchTerm, setSearchTerm] = useState('')
   const [contactForm, setContactForm] = useState({ name: '', phone_number: '', role: 'livreur', notes: '' })
   const [focusedContactId, setFocusedContactId] = useState(null)
+  const [messageFocusOpen, setMessageFocusOpen] = useState(null) // index of action being edited fullscreen
 
   // Form state
   const [form, setForm] = useState({
@@ -924,14 +927,24 @@ export default function Workflows() {
                                     ))}
                                   </select>
                                 )}
-                                <div>
-                                  <label className="block text-xs text-gray-400 mb-1">Message (ou laisser vide si récap uniquement)</label>
+                                <div className="rounded-xl border border-space-600 bg-space-800/50 p-3 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                    <label className="block text-xs font-medium text-gray-300">Message (ou laisser vide si récap uniquement)</label>
+                                    <button
+                                      type="button"
+                                      onClick={() => setMessageFocusOpen(idx)}
+                                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-colors flex-shrink-0"
+                                    >
+                                      <Maximize2 className="w-3.5 h-3.5" />
+                                      Agrandir
+                                    </button>
+                                  </div>
                                   <textarea
                                     value={action.config.message || ''}
                                     onChange={(e) => updateActionConfig(idx, { message: e.target.value })}
-                                    className="input min-h-[80px]"
-                                    placeholder="Ex: Nouvelle livraison pour {customer_name}..."
-                                    rows={3}
+                                    className="w-full rounded-lg border border-space-600 bg-space-900 px-3 py-2 font-mono text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30 min-h-[160px] resize-y leading-relaxed"
+                                    placeholder={"Ex: 🚚 Nouvelle livraison pour {customer_name}..."}
+                                    rows={7}
                                   />
                                 </div>
                                 {['order_validated', 'order_created'].includes(form.trigger_type) && (
@@ -1010,6 +1023,38 @@ export default function Workflows() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Éditeur plein écran du message (style system prompt) */}
+      {messageFocusOpen !== null && form.actions[messageFocusOpen] && (
+        <div className="fixed inset-0 z-[60] flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-100">Message du workflow</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Variables : {'{customer_name}'} {'{customer_phone}'} {'{lieu_livraison}'} {'{delivery_phone}'} {'{order_items}'} {'{order_total}'} {'{currency}'} {'{order_id}'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMessageFocusOpen(null)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-space-800 hover:bg-space-700 border border-space-600 transition-colors"
+            >
+              <Minimize2 className="w-4 h-4" />
+              Réduire
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 rounded-xl border border-space-600 bg-space-900 overflow-hidden flex flex-col">
+            <textarea
+              value={form.actions[messageFocusOpen]?.config?.message || ''}
+              onChange={(e) => updateActionConfig(messageFocusOpen, { message: e.target.value })}
+              placeholder={"🚚 Nouvelle livraison pour {customer_name}...\n\nClient: {customer_name}\nTél: {customer_phone}\nLieu: {lieu_livraison}\nArticles: {order_items}\nTotal: {order_total} {currency}"}
+              className="flex-1 w-full min-h-0 p-4 font-mono text-sm text-gray-100 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none leading-relaxed"
+              autoFocus
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-2">Cliquez sur "Réduire" pour revenir au formulaire. Vos modifications sont conservées.</p>
         </div>
       )}
 

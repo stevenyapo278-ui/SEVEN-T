@@ -2,12 +2,17 @@
 export function getProductImageUrl(url) {
   if (!url?.trim()) return url
   const u = url.trim()
-  if (/^https?:\/\//i.test(u) && u.includes('/api/products/image/')) {
-    try {
-      return new URL(u).pathname
-    } catch {
-      return u
+  // URL absolue externe → la retourner telle quelle
+  if (u.startsWith('http')) {
+    // Si c'est une URL absolue vers notre propre API (ex: http://localhost:3001/api/products/image/...)
+    // on extrait juste le pathname pour éviter les problèmes de domaine
+    if (u.includes('/api/products/image/')) {
+      try { return new URL(u).pathname } catch { return u }
     }
+    return u
   }
-  return u
+  // URL relative déjà complète (ex: /api/products/image/xxx.jpg) → retourner telle quelle
+  if (u.startsWith('/api/') || u.startsWith('/products/')) return u
+  // Juste un nom de fichier → construire l'URL complète
+  return `/api/products/image/${u}`
 }

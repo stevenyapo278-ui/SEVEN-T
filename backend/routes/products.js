@@ -31,9 +31,14 @@ const upload = multer({
 router.get('/', authenticateToken, async (req, res) => {
     try {
         const products = await db.all(`
-            SELECT * FROM products 
-            WHERE user_id = ?
-            ORDER BY created_at DESC
+            SELECT p.*,
+                   COALESCE(SUM(CASE WHEN o.status IN ('validated', 'delivered', 'completed') THEN oi.quantity ELSE 0 END), 0) as total_sold
+            FROM products p
+            LEFT JOIN order_items oi ON p.id = oi.product_id
+            LEFT JOIN orders o ON oi.order_id = o.id
+            WHERE p.user_id = ?
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
         `, req.user.id);
 
         // Enrichir avec marge et taux de marge
@@ -201,8 +206,13 @@ router.post('/upload-image', authenticateToken, upload.single('image'), async (r
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
         const product = await db.get(`
-            SELECT * FROM products 
-            WHERE id = ? AND user_id = ?
+            SELECT p.*,
+                   COALESCE(SUM(CASE WHEN o.status IN ('validated', 'delivered', 'completed') THEN oi.quantity ELSE 0 END), 0) as total_sold
+            FROM products p
+            LEFT JOIN order_items oi ON p.id = oi.product_id
+            LEFT JOIN orders o ON oi.order_id = o.id
+            WHERE p.id = ? AND p.user_id = ?
+            GROUP BY p.id
         `, req.params.id, req.user.id);
 
         if (!product) {

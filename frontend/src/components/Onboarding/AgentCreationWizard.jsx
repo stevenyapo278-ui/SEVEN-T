@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
@@ -69,41 +69,7 @@ const TEMPLATES = [
   }
 ]
 
-const AI_MODELS = [
-  { 
-    id: 'models/gemini-2.5-flash', 
-    name: 'Gemini 2.5 Flash', 
-    description: 'Dernier modèle Google, très rapide',
-    credits: 1,
-    recommended: true
-  },
-  { 
-    id: 'gemini-1.5-flash', 
-    name: 'Gemini 1.5 Flash', 
-    description: 'Rapide et efficace',
-    credits: 1
-  },
-  { 
-    id: 'qwen/qwen3-next-80b-a3b-instruct:free', 
-    name: 'Qwen 3 80B', 
-    description: 'Gratuit et puissant',
-    credits: 0,
-    free: true
-  },
-  { 
-    id: 'tngtech/deepseek-r1t-chimera:free', 
-    name: 'DeepSeek R1', 
-    description: 'Gratuit, bon raisonnement',
-    credits: 0,
-    free: true
-  },
-  { 
-    id: 'gpt-4o-mini', 
-    name: 'GPT-4o Mini', 
-    description: 'OpenAI, très intelligent',
-    credits: 2
-  }
-]
+// AI_MODELS will be loaded from DB for admins to respect sort_order
 
 const STEPS_CONFIG = [
   { id: 'template', title: 'Mission', icon: Target },
@@ -111,13 +77,14 @@ const STEPS_CONFIG = [
   { id: 'model', title: 'Cerveau', adminOnly: true, icon: Sparkles },
   { id: 'confirm', title: 'Lancement', icon: Rocket }
 ]
-
 export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState(0)
   const [creating, setCreating] = useState(false)
+  const [aiModels, setAiModels] = useState([])
+  const [loadingModels, setLoadingModels] = useState(false)
 
   // Filter steps based on user permissions
   const STEPS = STEPS_CONFIG.filter(step => !step.adminOnly || user?.is_admin)
@@ -126,8 +93,29 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
     template: null,
     name: '',
     description: '',
-    model: 'models/gemini-2.5-flash'
+    model: null
   })
+
+  useEffect(() => {
+    if (user?.is_admin) {
+      const fetchModels = async () => {
+        setLoadingModels(true)
+        try {
+          const res = await api.get('/agents/available-models')
+          const models = res.data.models || []
+          setAiModels(models)
+          if (models.length > 0 && !formData.model) {
+            setFormData(prev => ({ ...prev, model: models[0].id }))
+          }
+        } catch (error) {
+          console.error('Failed to fetch models:', error)
+        } finally {
+          setLoadingModels(false)
+        }
+      }
+      fetchModels()
+    }
+  }, [user])
 
   if (!isOpen) return null
 
@@ -179,7 +167,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
   }
 
   const selectedTemplate = TEMPLATES.find(t => t.id === formData.template)
-  const selectedModel = AI_MODELS.find(m => m.id === formData.model)
+  const selectedModel = aiModels.find(m => m.id === formData.model)
 
   const variants = {
     enter: (direction) => ({ x: direction > 0 ? 50 : -50, opacity: 0 }),
@@ -364,34 +352,42 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                     </div>
 
                     <div className="space-y-4">
-                      {AI_MODELS.map((model) => {
-                        const isSelected = formData.model === model.id
-                        return (
-                          <div
-                            key={model.id}
-                            onClick={() => setFormData({ ...formData, model: model.id })}
-                            className={`p-6 rounded-3xl border-2 cursor-pointer transition-all flex items-center gap-4 ${
-                              isSelected ? 'bg-white/5 border-gold-400 shadow-[0_0_20px_rgba(245,212,122,0.1)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'
-                            }`}
-                          >
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isSelected ? 'bg-gold-400 text-black' : 'bg-white/5 text-gray-500'}`}>
-                              <Sparkles className="w-6 h-6" />
+                      {loadingModels ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                           <Loader2 className="w-8 h-8 animate-spin text-gold-400" />
+                           <p className="text-gray-500 font-medium">Chargement des cerveaux disponibles...</p>
+                        </div>
+                      ) : (
+                        aiModels.map((model, idx) => {
+                          const isSelected = formData.model === model.id
+                          return (
+                            <div
+                              key={model.id}
+                              onClick={() => setFormData({ ...formData, model: model.id })}
+                              className={`p-6 rounded-3xl border-2 cursor-pointer transition-all flex items-center gap-4 ${
+                                isSelected ? 'bg-white/5 border-gold-400 shadow-[0_0_20px_rgba(245,212,122,0.1)]' : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                              }`}
+                            >
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isSelected ? 'bg-gold-400 text-black' : 'bg-white/5 text-gray-500'}`}>
+                                <Sparkles className="w-6 h-6" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                 <div className="flex items-center gap-2">
+                                    <h4 className="font-syne font-bold text-white mb-0.5">{model.name}</h4>
+                                    {idx === 0 && <span className="text-[10px] font-black uppercase text-gold-400 bg-gold-400/10 px-2 py-0.5 rounded">Recommandé</span>}
+                                    {model.is_free === 1 && <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Gratuit</span>}
+                                 </div>
+                                 <p className="text-xs text-gray-500">{model.description}</p>
+                              </div>
+                              <div className="text-right">
+                                 <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:border-gold-400/50">
+                                    {isSelected && <Check className="w-4 h-4 text-gold-400" />}
+                                 </div>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                               <div className="flex items-center gap-2">
-                                  <h4 className="font-syne font-bold text-white mb-0.5">{model.name}</h4>
-                                  {model.recommended && <span className="text-[10px] font-black uppercase text-gold-400 bg-gold-400/10 px-2 py-0.5 rounded">Recommandé</span>}
-                                  {model.free && <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Gratuit</span>}
-                               </div>
-                               <p className="text-xs text-gray-500">{model.description}</p>
-                            </div>
-                            <div className="text-right">
-                               <span className={`text-xl font-black ${model.credits === 0 ? 'text-emerald-400' : 'text-gold-400'}`}>{model.credits}</span>
-                               <span className="text-[10px] block font-bold text-gray-600 uppercase">Credits</span>
-                            </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })
+                      )}
                     </div>
                   </div>
                 )}

@@ -278,8 +278,24 @@ export default function ConversationDetail() {
   const lastPollTimeRef = useRef(null) // Use ref to avoid stale closure
   const loadConversationRef = useRef(null)
 
-  // Real-time: refetch messages when this conversation is updated
-  useConversationSocket((convId) => { if (convId === id) loadConversationRef.current?.() })
+  // Real-time: refetch and incrementally update messages when this conversation is updated
+  useConversationSocket((convId, message) => {
+    if (convId === id) {
+      if (message) {
+        setMessages(prev => {
+          // Prevent duplicates (already in list or current user sending reply)
+          if (prev.some(m => m.id === message.id || (m.whatsapp_id === message.whatsapp_id && message.whatsapp_id))) {
+             return prev
+          }
+          const merged = [...prev, message]
+          merged.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+          return merged
+        })
+      }
+      // Still load everything to ensure state (takeover, conversion score, etc) is correct
+      loadConversationRef.current?.()
+    }
+  })
 
   useEffect(() => {
     loadConversation()
@@ -327,7 +343,7 @@ export default function ConversationDetail() {
           console.error('Polling error:', error)
         }
       }
-      pollIntervalRef.current = setInterval(tick, 3000)
+      pollIntervalRef.current = setInterval(tick, 1000)
     }
     return () => {
       if (pollIntervalRef.current) {

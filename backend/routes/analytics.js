@@ -105,9 +105,10 @@ router.get('/messages-timeline', authenticateToken, async (req, res) => {
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND m.created_at >= ?
+            ${req.query.agentId ? 'AND a.id = ?' : ''}
             GROUP BY (m.created_at AT TIME ZONE 'UTC')::date
             ORDER BY date ASC
-        `, req.user.id, since.toISOString());
+        `, req.user.id, since.toISOString(), ...(req.query.agentId ? [req.query.agentId] : []));
 
         res.json({ data });
     } catch (error) {
@@ -145,7 +146,16 @@ router.get('/response-time', authenticateToken, async (req, res) => {
     }
 });
 
-// Get agent performance comparison
+// Helper function to format duration
+function formatDuration(minutes) {
+    if (minutes < 1) return '< 1 min';
+    if (minutes < 60) return `${Math.round(minutes)} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}min`;
+}
+
+// Get product sales timeline
 router.get('/agent-performance', authenticateToken, async (req, res) => {
     try {
         const agents = await db.all(`
@@ -249,6 +259,14 @@ router.get('/conversion-funnel', authenticateToken, async (req, res) => {
 // Get top products
 router.get('/top-products', authenticateToken, async (req, res) => {
     try {
+        const { period = '7d' } = req.query;
+        let daysBack = 7;
+        if (period === '30d') daysBack = 30;
+        if (period === '90d') daysBack = 90;
+
+        const since = new Date();
+        since.setDate(since.getDate() - daysBack);
+
         const products = await db.all(`
             SELECT 
                 p.id,
@@ -259,11 +277,11 @@ router.get('/top-products', authenticateToken, async (req, res) => {
             FROM order_items oi
             JOIN products p ON oi.product_id = p.id
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.user_id = ? AND o.status = 'completed'
+            WHERE o.user_id = ? AND o.status = 'completed' AND o.created_at >= ?
             GROUP BY p.id, p.name, p.price
             ORDER BY total_sold DESC
             LIMIT 10
-        `, req.user.id);
+        `, req.user.id, since.toISOString());
 
         res.json({ products });
     } catch (error) {
@@ -272,13 +290,172 @@ router.get('/top-products', authenticateToken, async (req, res) => {
     }
 });
 
-// Helper function to format duration
-function formatDuration(minutes) {
-    if (minutes < 1) return '< 1 min';
-    if (minutes < 60) return `${Math.round(minutes)} min`;
-    const hours = Math.floor(minutes / 60);
-    const mins = Math.round(minutes % 60);
-    return `${hours}h ${mins}min`;
-}
+// Get yearly seasonality for top 5 products (Current Year)
+router.get('/products-seasonality', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const currentYear = new Date().getFullYear();
+
+        // 1. Get top 5 products of all time
+        const top5 = await db.all(`
+            SELECT p.id, p.name
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.user_id = ? AND o.status = 'completed'
+            GROUP BY p.id, p.name
+            ORDER BY SUM(oi.quantity) DESC
+            LIMIT 5
+        `, userId);
+
+        if (top5.length === 0) return res.json({ data: [], products: [] });
+
+        const productIds = top5.map(p => p.id);
+        const placeholders = productIds.map(() => '?').join(',');
+
+        // 2. Get monthly data for these products
+        const stats = await db.all(`
+            SELECT 
+                EXTRACT(MONTH FROM o.created_at)::int as month,
+                p.name,
+                SUM(oi.quantity)::int as quantity
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.user_id = ? AND o.status = 'completed'
+            AND EXTRACT(YEAR FROM o.created_at) = ?
+            AND p.id IN (${placeholders})
+            GROUP BY month, p.name
+            ORDER BY month ASC
+        `, userId, currentYear, ...productIds);
+
+        const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
+        
+        // Pivot data for frontend
+        const result = monthNames.map((name, i) => {
+            const monthIdx = i + 1;
+            const entry = { month: name };
+            top5.forEach(p => {
+                const stat = stats.find(s => s.month === monthIdx && s.name === p.name);
+                entry[p.name] = stat?.quantity || 0;
+            });
+            return entry;
+        });
+
+        res.json({ data: result, products: top5.map(p => p.name) });
+    } catch (error) {
+        console.error('Get products seasonality error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Get activity heatmap (Day of week vs Hour)
+router.get('/weekly-heatmap', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const since = new Date();
+        since.setDate(since.getDate() - 30); // Last 30 days for heatmap
+
+        const stats = await db.all(`
+            SELECT 
+                EXTRACT(DOW FROM m.created_at)::int as dow,
+                EXTRACT(HOUR FROM m.created_at)::int as hour,
+                COUNT(*)::int as count
+            FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            JOIN agents a ON c.agent_id = a.id
+            WHERE a.user_id = ? AND m.role = 'user' AND m.created_at >= ?
+            GROUP BY dow, hour
+            ORDER BY dow, hour
+        `, userId, since.toISOString());
+
+        const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const heatmap = [];
+
+        for (let d = 0; d < 7; d++) {
+            for (let h = 0; h < 24; h++) {
+                const found = stats.find(s => s.dow === d && s.hour === h);
+                heatmap.push({
+                    day: days[d],
+                    hour: h,
+                    count: found?.count || 0
+                });
+            }
+        }
+
+        res.json({ data: heatmap });
+    } catch (error) {
+        console.error('Get heatmap error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Get product sales timeline
+router.get('/products-timeline', authenticateToken, async (req, res) => {
+    try {
+        const { period = '7d' } = req.query;
+        let daysBack = 7;
+        if (period === '30d') daysBack = 30;
+        if (period === '90d') daysBack = 90;
+
+        const since = new Date();
+        since.setDate(since.getDate() - daysBack);
+
+        // First find top 5 products in this period
+        const top5 = await db.all(`
+            SELECT p.id, p.name
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.user_id = ? AND o.status = 'completed' AND o.created_at >= ?
+            GROUP BY p.id, p.name
+            ORDER BY SUM(oi.quantity) DESC
+            LIMIT 5
+        `, req.user.id, since.toISOString());
+
+        if (top5.length === 0) return res.json({ data: [], products: [] });
+
+        const productIds = top5.map(p => p.id);
+        const placeholders = productIds.map(() => '?').join(',');
+
+        // Then get daily sales for these products
+        const stats = await db.all(`
+            SELECT 
+                (o.created_at AT TIME ZONE 'UTC')::date as date,
+                p.name,
+                SUM(oi.quantity)::int as quantity
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN products p ON oi.product_id = p.id
+            WHERE o.user_id = ? AND o.status = 'completed' AND o.created_at >= ?
+            AND p.id IN (${placeholders})
+            GROUP BY date, p.name
+            ORDER BY date ASC
+        `, req.user.id, since.toISOString(), ...productIds);
+
+        // Reformat for chart (one entry per date with product names as keys)
+        const timelineObj = {};
+        stats.forEach(row => {
+            let dateStr;
+            if (row.date instanceof Date) {
+                dateStr = row.date.toISOString().split('T')[0];
+            } else {
+                // If it's already a string "YYYY-MM-DD", take it as is
+                dateStr = typeof row.date === 'string' ? row.date.split('T')[0] : String(row.date);
+            }
+            
+            if (!timelineObj[dateStr]) timelineObj[dateStr] = { date: dateStr };
+            timelineObj[dateStr][row.name] = row.quantity;
+        });
+
+        res.json({ 
+            data: Object.values(timelineObj),
+            products: top5.map(p => p.name)
+        });
+    } catch (error) {
+        console.error('Get products timeline error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 
 export default router;

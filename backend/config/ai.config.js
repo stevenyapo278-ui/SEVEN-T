@@ -17,12 +17,13 @@ export const AI_CONFIG = {
     // Model mappings for different providers
     models: {
         gemini: {
-            'gemini-1.5-flash': 'gemini-1.5-flash-latest',
-            'gemini-1.5-pro': 'gemini-1.5-pro-latest',
-            'gemini-pro': 'gemini-1.5-pro-latest',
-            'gemini-2.0-flash': 'gemini-1.5-flash-latest',
-            'models/gemini-2.5-flash': 'gemini-2.5-flash',
-            'default': 'gemini-1.5-flash-latest'
+            'gemini-1.5-flash': 'gemini-2.0-flash',  // 1.5-flash no longer available in v1beta → use 2.0
+            'gemini-1.5-pro': 'gemini-1.5-pro',
+            'gemini-pro': 'gemini-2.0-flash',
+            'gemini-2.0-flash': 'gemini-2.0-flash',
+            'gemini-2.5-flash': 'gemini-2.0-flash', // Map to 2.0 as it's the current latest
+            'models/gemini-2.5-flash': 'gemini-2.0-flash',
+            'default': 'gemini-2.0-flash'
         },
         openai: {
             'gpt-4o': 'gpt-4o',
@@ -38,9 +39,9 @@ export const AI_CONFIG = {
             'gemini-1.5-pro': 'google/gemini-2.0-flash-exp:free',
             // Free models (fallback order)
             freeFallbacks: [
-                'google/gemma-2-9b-it:free',
                 'meta-llama/llama-3.2-3b-instruct:free',
-                'microsoft/phi-3-mini-128k-instruct:free',
+                'mistralai/mistral-7b-instruct:free',
+                'google/gemma-2-9b-it:free',
                 'qwen/qwen-2-7b-instruct:free'
             ],
             default: 'meta-llama/llama-3.1-8b-instruct:free'

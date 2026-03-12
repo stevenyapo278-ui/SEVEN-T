@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Package, Edit, Trash2, History, Tag, Image, Maximize2 } from 'lucide-react'
+import { Package, Edit, Trash2, History, Tag, Image, Maximize2, ShoppingCart } from 'lucide-react'
 import { getProductImageUrl } from './utils'
 
 export default function ProductList({
@@ -60,21 +60,25 @@ export default function ProductList({
                 <span className="text-sm font-mono text-gray-400 truncate">{product.sku || '–'}</span>
               </div>
               <div 
-                className="md:col-span-2 flex flex-col gap-0.5 min-w-0"
+                className="md:col-span-2 flex flex-col min-w-0"
                 onClick={(e) => { e.stopPropagation(); onView(product) }}
               >
                 <span className="md:hidden text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{t('products.tablePrice')}</span>
-                <div className="group/price relative flex items-center gap-2 group">
-                  <span className="text-base sm:text-lg font-bold text-gold-400 break-words" title={formatPrice(product.price)}>
-                    {formatPrice(product.price)}
-                  </span>
-                  <Maximize2 className="w-3.5 h-3.5 text-gold-400/0 md:group-hover/price:text-gold-400/50 transition-all transform scale-75 group-hover/price:scale-100" />
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 font-medium md:hidden">{t('products.tablePrice')}:</span>
+                    <span className="text-base font-bold text-gold-400 whitespace-nowrap" title={formatPrice(product.price)}>
+                      {formatPrice(product.price)}
+                    </span>
+                  </div>
+                  {typeof product.cost_price === 'number' && product.cost_price > 0 && (
+                    <div className="flex flex-col border-t border-space-700/50 pt-1 mt-1 md:border-0 md:pt-0 md:mt-0">
+                      <span className="text-[10px] text-emerald-400 font-bold whitespace-nowrap" title={formatPrice((product.price || 0) - (product.cost_price || 0))}>
+                        <span className="opacity-50 text-gray-500 font-normal">{t('products.marginLabel')}:</span> {formatPrice((product.price || 0) - (product.cost_price || 0))}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {typeof product.cost_price === 'number' && product.cost_price > 0 && (
-                  <span className="hidden md:block text-xs text-gray-400 mt-0.5 truncate" title={formatPrice((product.price || 0) - (product.cost_price || 0))}>
-                    {t('products.marginLabel')} {formatPrice((product.price || 0) - (product.cost_price || 0))}
-                  </span>
-                )}
               </div>
               <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0 items-end md:items-start ml-auto md:ml-0">
                 <span className="md:hidden text-[10px] text-gray-500 uppercase font-bold tracking-wider mb-1">{t('products.tableStock')}</span>
@@ -87,6 +91,12 @@ export default function ProductList({
                 }`}>
                   {product.stock === 0 ? t('products.filterOutOfStock') : `${product.stock} ${t('products.units')}`}
                 </span>
+                {product.total_sold > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-gold-400/10 text-gold-400 border border-gold-400/20 mt-1">
+                    <ShoppingCart className="w-3 h-3" />
+                    {product.total_sold} vendus
+                  </span>
+                )}
               </div>
             </div>
             <div className="md:col-span-2 flex items-center justify-end gap-1 pt-2 md:pt-0 border-t border-space-700 md:border-t-0">

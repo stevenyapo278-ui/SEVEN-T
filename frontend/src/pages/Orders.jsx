@@ -40,7 +40,10 @@ import {
   Copy,
   ExternalLink,
   Download,
-  Plus
+  Plus,
+  Square,
+  CheckSquare,
+  ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { 
@@ -113,6 +116,7 @@ export default function Orders() {
   const [paymentLinkModal, setPaymentLinkModal] = useState({ open: false, order: null, message: '', url: '', loading: false })
   const [geniuspayConfigured, setGeniuspayConfigured] = useState(false)
   const [sendingInConversation, setSendingInConversation] = useState(null)
+  const [selectedOrderIds, setSelectedOrderIds] = useState([])
   const [showNewOrderModal, setShowNewOrderModal] = useState(false)
   const [products, setProducts] = useState([])
   const [newOrderLoading, setNewOrderLoading] = useState(false)
@@ -175,6 +179,7 @@ export default function Orders() {
     try {
       const response = await api.get('/orders')
       setOrders(response.data.orders || [])
+      setSelectedOrderIds([]) // Reset selection on reload
     } catch (error) {
       console.error('Error loading orders:', error)
       toast.error(t('messages.errorLoad'))
@@ -254,6 +259,9 @@ export default function Orders() {
       const response = await api.post(`/orders/${orderId}/validate`)
       if (response.data.success) {
         toast.success('Commande validée ! Stock mis à jour.')
+        if (selectedOrderView?.id === orderId) {
+          setSelectedOrderView(response.data.order)
+        }
         loadOrders()
         loadStats()
         loadLogs()
@@ -275,6 +283,9 @@ export default function Orders() {
       const response = await api.post(`/orders/${orderId}/mark-delivered`)
       if (response.data.success) {
         toast.success('Commande marquée comme livrée (paiement reçu).')
+        if (selectedOrderView?.id === orderId) {
+          setSelectedOrderView(response.data.order)
+        }
         loadOrders()
         loadStats()
       }
@@ -288,6 +299,9 @@ export default function Orders() {
       const response = await api.patch(`/orders/${orderId}/payment-method`, { payment_method: paymentMethod })
       if (response.data.success) {
         toast.success('Mode de paiement mis à jour.')
+        if (selectedOrderView?.id === orderId) {
+          setSelectedOrderView(response.data.order)
+        }
         loadOrders()
       }
     } catch (error) {
@@ -313,11 +327,95 @@ export default function Orders() {
     }
   }
 
+  const handleUnmarkDelivered = async (orderId) => {
+    try {
+      const response = await api.post(`/orders/${orderId}/unmark-delivered`)
+      if (response.data.success) {
+        toast.success('Livraison annulée (retour au statut validé)')
+        if (selectedOrderView?.id === orderId) {
+          setSelectedOrderView(response.data.order)
+        }
+        loadOrders()
+        loadStats()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur')
+    }
+  }
+
+  const handleRevertToPending = async (orderId) => {
+    const ok = await showConfirm({
+      title: 'Remettre en attente ?',
+      message: 'Cette action remettra les produits en stock et repassera la commande au statut "En attente".',
+      variant: 'warning',
+      confirmLabel: 'Confirmer'
+    })
+    if (!ok) return
+    try {
+      const response = await api.post(`/orders/${orderId}/revert-to-pending`)
+      if (response.data.success) {
+        toast.success('Commande remise en attente et stock restauré')
+        if (selectedOrderView?.id === orderId) {
+          setSelectedOrderView(response.data.order)
+        }
+        loadOrders()
+        loadStats()
+        loadLogs()
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur')
+    }
+  }
+
+  const toggleOrderSelection = (id, e) => {
+    e?.stopPropagation()
+    setSelectedOrderIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    )
+  }
+
+  const handleBulkValidate = async () => {
+    if (selectedOrderIds.length === 0) return
+    setActionLoading(true)
+    try {
+      const res = await api.post('/orders/bulk-validate', { orderIds: selectedOrderIds })
+      const count = res.data.success.length
+      const failed = res.data.failed.length
+      if (count > 0) toast.success(`${count} commande(s) validée(s)`)
+      if (failed > 0) toast.error(`${failed} erreur(s) (problème de stock ?)`)
+      loadOrders()
+      loadStats()
+    } catch (error) {
+      toast.error('Erreur lors de l\'action par lot')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleBulkMarkDelivered = async () => {
+    if (selectedOrderIds.length === 0) return
+    setActionLoading(true)
+    try {
+      const res = await api.post('/orders/bulk-mark-delivered', { orderIds: selectedOrderIds })
+      const count = res.data.success.length
+      if (count > 0) toast.success(`${count} commande(s) marquée(s) comme livrée(s)`)
+      loadOrders()
+      loadStats()
+    } catch (error) {
+      toast.error('Erreur lors de l\'action par lot')
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const handleReject = async (orderId) => {
     const reason = prompt('Raison du rejet (optionnel):')
     try {
-      await api.post(`/orders/${orderId}/reject`, { reason })
+      const response = await api.post(`/orders/${orderId}/reject`, { reason })
       toast.success('Commande rejetée')
+      if (selectedOrderView && selectedOrderView.id === orderId) {
+        setSelectedOrderView(response.data.order)
+      }
       loadOrders()
       loadStats()
     } catch (error) {
@@ -1202,16 +1300,96 @@ export default function Orders() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 relative pb-20 sm:pb-0">
+          {/* Intelligent Bulk Actions Bar */}
+          {selectedOrderIds.length > 0 && (() => {
+            const selectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+            const canValidateCount = selectedOrders.filter(o => o.status === 'pending').length;
+            const canDeliverCount = selectedOrders.filter(o => o.status === 'validated').length;
+            
+            return (
+              <div className={`fixed sm:sticky bottom-4 sm:bottom-auto sm:top-0 left-4 right-4 sm:left-0 sm:right-0 z-40 sm:z-30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-3 sm:p-4 mb-4 rounded-2xl sm:rounded-3xl border animate-slideUp sm:animate-slideDown shadow-2xl backdrop-blur-xl ${
+                isDark 
+                  ? 'bg-space-900/90 border-blue-500/30 ring-1 ring-blue-500/20' 
+                  : 'bg-white/95 border-blue-200 ring-1 ring-blue-100'
+              }`}>
+                <div className="flex items-center justify-between sm:justify-start gap-4 mb-3 sm:mb-0 px-2 sm:px-0">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => setSelectedOrderIds([])}
+                      className="p-2 hover:bg-red-500/10 rounded-xl text-red-500 transition-colors"
+                      title="Annuler la sélection"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <div className="flex flex-col">
+                      <span className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                        {selectedOrderIds.length} sélectionnée(s)
+                      </span>
+                      <button 
+                        onClick={() => {
+                          const allIds = filteredOrders.map(o => o.id);
+                          const allSelected = allIds.every(id => selectedOrderIds.includes(id));
+                          if (allSelected) {
+                            setSelectedOrderIds(prev => prev.filter(id => !allIds.includes(id)));
+                          } else {
+                            setSelectedOrderIds(prev => Array.from(new Set([...prev, ...allIds])));
+                          }
+                        }}
+                        className="text-[10px] text-gray-500 hover:text-blue-500 font-bold uppercase text-left transition-colors"
+                      >
+                        {filteredOrders.every(o => selectedOrderIds.includes(o.id)) ? 'Tout désélectionner' : 'Tout sélectionner'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {canValidateCount > 0 && (
+                    <button
+                      onClick={handleBulkValidate}
+                      disabled={actionLoading}
+                      className="flex-1 sm:flex-none btn-primary py-2.5 sm:py-2 px-4 shadow-lg shadow-blue-500/20 text-xs sm:text-sm flex items-center justify-center gap-2 group transition-all active:scale-95"
+                    >
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
+                      <span className="whitespace-nowrap">Valider ({canValidateCount})</span>
+                    </button>
+                  )}
+                  
+                  {canDeliverCount > 0 && (
+                    <button
+                      onClick={handleBulkMarkDelivered}
+                      disabled={actionLoading}
+                      className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 sm:py-2 px-4 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 group"
+                    >
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />}
+                      <span className="whitespace-nowrap">Livrer ({canDeliverCount})</span>
+                    </button>
+                  )}
+
+                  {canValidateCount === 0 && canDeliverCount === 0 && (
+                    <div className="flex-1 text-center sm:text-right px-4">
+                      <span className="text-[10px] sm:text-xs text-gray-500 font-medium italic">
+                        Aucune action disponible pour ces statuts
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {filteredOrders.map((order, index) => {
             const statusInfo = getStatusInfo(order.status)
             const StatusIcon = statusInfo.icon
+            const isSelected = selectedOrderIds.includes(order.id)
             return (
               <div 
                 key={order.id}
                 onClick={() => setSelectedOrderView(order)}
-                className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn cursor-pointer ${
-                  isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
+                className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn cursor-pointer relative ${
+                  isSelected ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200') 
+                  : isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
                 } ${
                   order.status === 'pending' ? 'border-l-2 border-l-amber-500' : 
                   order.status === 'delivered' ? 'border-l-2 border-l-emerald-500' : 
@@ -1221,6 +1399,14 @@ export default function Orders() {
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
+                    <div 
+                      onClick={(e) => toggleOrderSelection(order.id, e)}
+                      className={`p-1 rounded-lg transition-colors ${
+                        isSelected ? 'text-blue-500' : 'text-gray-600 hover:text-gray-400'
+                      }`}
+                    >
+                      {isSelected ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
+                    </div>
                     <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'} group-hover:scale-110 transition-transform duration-300`}>
                       <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
                     </div>
@@ -1400,37 +1586,57 @@ export default function Orders() {
 
             {/* Quick Action Footer inside Zoom */}
             <div className="pt-6 mt-6 border-t border-space-700 space-y-3">
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-2">
                 {selectedOrderView.status === 'pending' && (
                   <>
                     <button
-                      onClick={() => { setSelectedOrderView(null); handleValidate(selectedOrderView.id); }}
-                      className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                      onClick={() => handleValidate(selectedOrderView.id)}
+                      className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
                     >
                       Valider
                     </button>
                     <button
-                      onClick={() => { setSelectedOrderView(null); handleReject(selectedOrderView.id); }}
-                      className="flex-1 py-3.5 bg-red-500/20 text-red-500 rounded-2xl font-bold hover:bg-red-500/30 transition-all"
+                      onClick={() => handleReject(selectedOrderView.id)}
+                      className="flex-1 py-3.5 bg-red-500/20 text-red-500 rounded-2xl font-bold hover:bg-red-500/30 transition-all active:scale-95"
                     >
                       Rejeter
                     </button>
                   </>
                 )}
                 {selectedOrderView.status === 'validated' && (
+                  <>
+                    <button
+                      onClick={() => handleMarkDelivered(selectedOrderView.id)}
+                      className="flex-[2] py-4 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                    >
+                      Marquer comme Livrée
+                    </button>
+                    <button
+                      onClick={() => handleRevertToPending(selectedOrderView.id)}
+                      className="flex-1 px-3 py-3.5 bg-space-800 text-gray-400 rounded-2xl font-bold hover:bg-space-700 transition-all flex items-center justify-center gap-2 border border-space-700 active:scale-95 shadow-sm"
+                      title="Annuler la validation et remettre en stock"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      En attente
+                    </button>
+                  </>
+                )}
+                {selectedOrderView.status === 'delivered' && (
                   <button
-                    onClick={() => { setSelectedOrderView(null); handleMarkDelivered(selectedOrderView.id); }}
-                    className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                    onClick={() => handleUnmarkDelivered(selectedOrderView.id)}
+                    className="w-full py-3.5 bg-amber-500/20 text-amber-500 rounded-2xl font-bold hover:bg-amber-500/30 transition-all flex items-center justify-center gap-2 border border-amber-500/10 active:scale-95 shadow-sm"
                   >
-                    Marquer comme Livrée
+                    <ArrowLeft className="w-4 h-4" />
+                    Annuler livraison (Retour à Validé)
                   </button>
                 )}
-                {['delivered', 'rejected'].includes(selectedOrderView.status) && (
+                {selectedOrderView.status === 'rejected' && (
                   <button
-                    onClick={() => setSelectedOrderView(null)}
-                    className="w-full py-3.5 bg-space-800 text-gray-400 rounded-2xl font-bold hover:bg-space-700 transition-all"
+                    onClick={() => handleRevertToPending(selectedOrderView.id)}
+                    className="w-full py-3.5 bg-space-800 text-gray-400 rounded-2xl font-bold hover:bg-space-700 transition-all flex items-center justify-center gap-2 active:scale-95"
                   >
-                    Fermer l'aperçu
+                    <ArrowLeft className="w-4 h-4" />
+                    Ré-ouvrir (Remettre en attente)
                   </button>
                 )}
               </div>

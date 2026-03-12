@@ -54,6 +54,7 @@ export default function Products() {
   const [historyList, setHistoryList] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [selectedProductView, setSelectedProductView] = useState(null)
+  const [imageZoom, setImageZoom] = useState(null) // URL de l'image à afficher en grand
 
   const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory
   useLockBodyScroll(anyModalOpen)
@@ -298,7 +299,12 @@ export default function Products() {
         <DetailOverlay onClose={() => setSelectedProductView(null)}>
           <div className="flex flex-col p-2">
             <div className="flex items-center gap-6 mb-8">
-              <div className="w-24 h-24 bg-space-800 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xl ring-2 ring-white/5">
+              <div
+                className={`w-24 h-24 bg-space-800 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xl ring-2 ring-white/5 ${
+                  selectedProductView.image_url ? 'cursor-zoom-in hover:ring-gold-400/50 transition-all' : ''
+                }`}
+                onClick={() => selectedProductView.image_url && setImageZoom(getProductImageUrl(selectedProductView.image_url))}
+              >
                 {selectedProductView.image_url ? (
                   <img src={getProductImageUrl(selectedProductView.image_url)} alt={selectedProductView.name} className="w-full h-full object-cover" />
                 ) : (
@@ -381,14 +387,40 @@ export default function Products() {
           </div>
         </DetailOverlay>
       )}
+
+      {/* Lightbox — image produit en grand */}
+      {imageZoom && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out animate-fadeIn"
+          onClick={() => setImageZoom(null)}
+        >
+          <button
+            onClick={() => setImageZoom(null)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={imageZoom}
+            alt="Aperçu"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }
 
 function getProductImageUrl(url) {
   if (!url) return null
-  if (url.startsWith('http')) return url
-  return `${api.defaults.baseURL}/products/image/${url}`
+  const u = url.trim()
+  // URL absolue externe → retourner telle quelle
+  if (u.startsWith('http')) return u
+  // URL relative déjà complète (stockée comme /api/products/image/xxx) → retourner telle quelle
+  if (u.startsWith('/api/') || u.startsWith('/products/')) return u
+  // Juste un nom de fichier → construire l'URL complète
+  return `/api/products/image/${u}`
 }
 
 function DetailOverlay({ children, onClose }) {

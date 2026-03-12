@@ -41,10 +41,12 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
-  Globe
+  Globe,
+  Wrench
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import ToolAssignmentModal from '../components/ToolAssignmentModal'
 
 // Available tags for agents
 const AVAILABLE_TAGS = [
@@ -68,6 +70,7 @@ export default function Agents() {
   const [loadError, setLoadError] = useState(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showCreationWizard, setShowCreationWizard] = useState(false)
+  const [selectedAgentForTool, setSelectedAgentForTool] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [quotas, setQuotas] = useState(null)
   const [filter, setFilter] = useState('all')
@@ -680,6 +683,7 @@ export default function Agents() {
               bulkMode={bulkMode}
               index={index}
               isDark={isDark}
+              onAssignTool={() => setSelectedAgentForTool(agent)}
               {...(index === 0 ? { 'data-tour': 'agent-card' } : {})}
             />
           ))}
@@ -698,6 +702,7 @@ export default function Agents() {
               bulkMode={bulkMode}
               isLast={index === filteredAgents.length - 1}
               isDark={isDark}
+              onAssignTool={() => setSelectedAgentForTool(agent)}
               {...(index === 0 ? { 'data-tour': 'agent-card' } : {})}
             />
           ))}
@@ -736,11 +741,23 @@ export default function Agents() {
           }}
         />
       )}
+      {/* Modal Assigner Outil */}
+      {selectedAgentForTool && (
+        <ToolAssignmentModal
+          agentId={selectedAgentForTool.id}
+          currentToolId={selectedAgentForTool.tool_id}
+          onClose={() => setSelectedAgentForTool(null)}
+          onAssigned={() => {
+            setSelectedAgentForTool(null)
+            loadAgents()
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, index, isDark = true }) {
+function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, index, isDark = true, onAssignTool }) {
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
   const [showMenu, setShowMenu] = useState(false)
@@ -1006,6 +1023,16 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
             <Play className="w-4 h-4" />
             Tester
           </Link>
+
+          {!agent.tool_id && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAssignTool(); }}
+              className="px-3 flex items-center justify-center gap-2 py-2 bg-gold-400/10 text-gold-400 hover:bg-gold-400/20 rounded-lg text-sm font-medium transition-all border border-gold-400/20"
+            >
+              <Wrench className="w-4 h-4" />
+              Assigner
+            </button>
+          )}
         </div>
       </div>
 
@@ -1023,7 +1050,7 @@ function AgentCard({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, 
   )
 }
 
-function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, isLast, isDark = true }) {
+function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelected, onToggleSelect, bulkMode, isLast, isDark = true, onAssignTool }) {
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
   const [toggling, setToggling] = useState(false)
@@ -1180,6 +1207,15 @@ function AgentListItem({ agent, onUpdate, isFavorite, onToggleFavorite, isSelect
         >
           <Play className="w-4 h-4" />
         </Link>
+        {!agent.tool_id && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAssignTool(); }}
+            className="hidden sm:flex p-2 text-gold-400 hover:bg-gold-400/10 rounded-xl transition-colors border border-gold-400/20"
+            title="Assigner un outil"
+          >
+            <Wrench className="w-4 h-4" />
+          </button>
+        )}
         <div className="relative">
           <button
             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}

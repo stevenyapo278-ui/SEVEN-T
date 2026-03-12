@@ -4,7 +4,7 @@
  * batches multiple messages into a single AI response.
  */
 
-const DEFAULT_DEBOUNCE_MS = 1500;
+const DEFAULT_DEBOUNCE_MS = 500;
 const DEFAULT_MAX_BATCH_SIZE = 10;
 
 function getDebounceMs() {

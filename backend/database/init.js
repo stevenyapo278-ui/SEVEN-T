@@ -852,10 +852,14 @@ export async function initDatabase() {
             supports_tools INTEGER DEFAULT 0,
             category TEXT DEFAULT 'general',
             sort_order INTEGER DEFAULT 0,
+            api_key TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(provider, model_id)
         );
+
+        -- Ensure columns exist
+        ALTER TABLE ai_models ADD COLUMN IF NOT EXISTS api_key TEXT;
 
         CREATE TABLE IF NOT EXISTS ai_api_keys (
             id TEXT PRIMARY KEY,
@@ -938,7 +942,7 @@ export async function initDatabase() {
     if (modelCount === 0) {
         const defaultModels = [
             // Google Gemini
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', model_id: 'models/gemini-2.5-flash', description: 'Dernier modèle Google, très rapide', credits: 1, category: 'fast', order: 1 },
+            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', model_id: 'gemini-2.0-flash', description: 'Dernier modèle Google, très rapide', credits: 1, category: 'fast', order: 1 },
             { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'gemini', model_id: 'gemini-1.5-flash', description: 'Rapide et efficace', credits: 1, category: 'fast', order: 2 },
             { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini', model_id: 'gemini-1.5-pro', description: 'Intelligent et polyvalent', credits: 2, category: 'smart', order: 3 },
             // OpenAI

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../database/init.js';
 import { authenticateAdmin } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
+import aiService from '../services/ai.js';
 
 const router = Router();
 
@@ -115,13 +116,13 @@ router.get('/models/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Create new AI model
-router.post('/models', authenticateAdmin, (req, res) => {
+router.post('/models', authenticateAdmin, async (req, res) => {
     try {
         const { 
             name, provider, model_id, description, 
             credits_per_use, is_free, is_active,
             max_tokens, supports_vision, supports_tools,
-            category, sort_order
+            category, sort_order, api_key
         } = req.body;
 
         if (!name || !provider || !model_id) {
@@ -129,23 +130,27 @@ router.post('/models', authenticateAdmin, (req, res) => {
         }
 
         // Check if model already exists
-        const existing = db.prepare('SELECT id FROM ai_models WHERE provider = ? AND model_id = ?').get(provider, model_id);
+        const existing = await db.get('SELECT id FROM ai_models WHERE provider = ? AND model_id = ?', provider, model_id);
         if (existing) {
             return res.status(400).json({ error: 'Ce modèle existe déjà' });
         }
 
         const id = uuidv4();
-        db.prepare(`
-            INSERT INTO ai_models (id, name, provider, model_id, description, credits_per_use, is_free, is_active, max_tokens, supports_vision, supports_tools, category, sort_order)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
+        await db.run(`
+            INSERT INTO ai_models (
+                id, name, provider, model_id, description, 
+                credits_per_use, is_free, is_active, max_tokens, 
+                supports_vision, supports_tools, category, sort_order, api_key
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
             id, name, provider, model_id, description || '',
             credits_per_use || 1, is_free ? 1 : 0, is_active !== false ? 1 : 0,
             max_tokens || 4096, supports_vision ? 1 : 0, supports_tools ? 1 : 0,
-            category || 'general', sort_order || 0
+            category || 'general', sort_order || 0, api_key || null
         );
 
-        const model = db.prepare('SELECT * FROM ai_models WHERE id = ?').get(id);
+        const model = await db.get('SELECT * FROM ai_models WHERE id = ?', id);
         res.status(201).json({ model });
     } catch (error) {
         console.error('Create AI model error:', error);
@@ -154,19 +159,19 @@ router.post('/models', authenticateAdmin, (req, res) => {
 });
 
 // Update AI model
-router.put('/models/:id', authenticateAdmin, (req, res) => {
+router.put('/models/:id', authenticateAdmin, async (req, res) => {
     try {
-        const model = db.prepare('SELECT id FROM ai_models WHERE id = ?').get(req.params.id);
-        if (!model) {
+        const existing = await db.get('SELECT id FROM ai_models WHERE id = ?', req.params.id);
+        if (!existing) {
             return res.status(404).json({ error: 'Modèle non trouvé' });
         }
 
         const { 
             name, description, credits_per_use, is_free, is_active,
-            max_tokens, supports_vision, supports_tools, category, sort_order
+            max_tokens, supports_vision, supports_tools, category, sort_order, api_key
         } = req.body;
 
-        db.prepare(`
+        await db.run(`
             UPDATE ai_models SET
                 name = COALESCE(?, name),
                 description = COALESCE(?, description),
@@ -178,20 +183,21 @@ router.put('/models/:id', authenticateAdmin, (req, res) => {
                 supports_tools = COALESCE(?, supports_tools),
                 category = COALESCE(?, category),
                 sort_order = COALESCE(?, sort_order),
+                api_key = COALESCE(?, api_key),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `).run(
+        `,
             name, description, credits_per_use, 
             is_free !== undefined ? (is_free ? 1 : 0) : null,
             is_active !== undefined ? (is_active ? 1 : 0) : null,
             max_tokens, 
             supports_vision !== undefined ? (supports_vision ? 1 : 0) : null,
             supports_tools !== undefined ? (supports_tools ? 1 : 0) : null,
-            category, sort_order,
+            category, sort_order, api_key || null,
             req.params.id
         );
 
-        const updated = db.prepare('SELECT * FROM ai_models WHERE id = ?').get(req.params.id);
+        const updated = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
         res.json({ model: updated });
     } catch (error) {
         console.error('Update AI model error:', error);
@@ -200,17 +206,18 @@ router.put('/models/:id', authenticateAdmin, (req, res) => {
 });
 
 // Delete AI model
-router.delete('/models/:id', authenticateAdmin, (req, res) => {
+router.delete('/models/:id', authenticateAdmin, async (req, res) => {
     try {
-        const model = db.prepare('SELECT id, name FROM ai_models WHERE id = ?').get(req.params.id);
+        const model = await db.get('SELECT id, name FROM ai_models WHERE id = ?', req.params.id);
         if (!model) {
             return res.status(404).json({ error: 'Modèle non trouvé' });
         }
 
         // Check if model is used by any agents
-        const usageCount = db.prepare(`
+        const usageCountRow = await db.get(`
             SELECT COUNT(*) as count FROM agents WHERE model = ?
-        `).get(model.id)?.count || 0;
+        `, model.id);
+        const usageCount = usageCountRow?.count || 0;
 
         if (usageCount > 0) {
             return res.status(400).json({ 
@@ -218,7 +225,7 @@ router.delete('/models/:id', authenticateAdmin, (req, res) => {
             });
         }
 
-        db.prepare('DELETE FROM ai_models WHERE id = ?').run(req.params.id);
+        await db.run('DELETE FROM ai_models WHERE id = ?', req.params.id);
         res.json({ message: 'Modèle supprimé' });
     } catch (error) {
         console.error('Delete AI model error:', error);
@@ -310,7 +317,7 @@ router.get('/api-keys', authenticateAdmin, async (req, res) => {
 });
 
 // Set/Update API key for provider
-router.put('/api-keys/:provider', authenticateAdmin, (req, res) => {
+router.put('/api-keys/:provider', authenticateAdmin, async (req, res) => {
     try {
         const { api_key, is_active } = req.body;
         const { provider } = req.params;
@@ -319,25 +326,25 @@ router.put('/api-keys/:provider', authenticateAdmin, (req, res) => {
             return res.status(400).json({ error: 'Provider invalide' });
         }
 
-        const existing = db.prepare('SELECT id FROM ai_api_keys WHERE provider = ?').get(provider);
+        const existing = await db.get('SELECT id FROM ai_api_keys WHERE provider = ?', provider);
 
         if (existing) {
             // Update existing key
             if (api_key !== undefined && api_key !== '') {
-                db.prepare(`
+                await db.run(`
                     UPDATE ai_api_keys SET 
                         api_key = ?,
                         is_active = COALESCE(?, is_active),
                         updated_at = CURRENT_TIMESTAMP
                     WHERE provider = ?
-                `).run(api_key, is_active !== undefined ? (is_active ? 1 : 0) : null, provider);
+                `, api_key, is_active !== undefined ? (is_active ? 1 : 0) : null, provider);
             } else if (is_active !== undefined) {
-                db.prepare(`
+                await db.run(`
                     UPDATE ai_api_keys SET 
                         is_active = ?,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE provider = ?
-                `).run(is_active ? 1 : 0, provider);
+                `, is_active ? 1 : 0, provider);
             }
         } else {
             // Create new key
@@ -345,10 +352,10 @@ router.put('/api-keys/:provider', authenticateAdmin, (req, res) => {
                 return res.status(400).json({ error: 'Clé API requise' });
             }
             const id = uuidv4();
-            db.prepare(`
+            await db.run(`
                 INSERT INTO ai_api_keys (id, provider, api_key, is_active)
                 VALUES (?, ?, ?, ?)
-            `).run(id, provider, api_key, is_active !== false ? 1 : 0);
+            `, id, provider, api_key, is_active !== false ? 1 : 0);
         }
 
         // Update environment variable in memory (for immediate effect)
@@ -375,11 +382,13 @@ router.post('/api-keys/:provider/test', authenticateAdmin, async (req, res) => {
         const { provider } = req.params;
         
         const keyRecord = await db.get('SELECT api_key FROM ai_api_keys WHERE provider = ? AND is_active = 1', provider);
-        const apiKey = keyRecord?.api_key || process.env[{
+        let apiKey = keyRecord?.api_key || process.env[{
             gemini: 'GEMINI_API_KEY',
             openai: 'OPENAI_API_KEY',
             openrouter: 'OPENROUTER_API_KEY'
         }[provider]];
+
+        if (apiKey) apiKey = apiKey.trim();
 
         if (!apiKey) {
             return res.status(400).json({ success: false, error: 'Aucune clé API configurée' });
@@ -389,35 +398,80 @@ router.post('/api-keys/:provider/test', authenticateAdmin, async (req, res) => {
 
         if (provider === 'gemini') {
             try {
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                // Tentative avec Gemini 2.5 Flash (si disponible), 2.0 Flash, ou 1.5 Flash
+                let response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ contents: [{ parts: [{ text: 'Hello' }] }] })
                     }
                 );
-                testResult = { success: response.ok, message: response.ok ? 'Connexion réussie' : `Erreur: ${response.status}` };
+
+                // Fallback vers 2.0 si 2.5 n'est pas trouvé
+                if (response.status === 404) {
+                    response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: 'Hello' }] }] })
+                        }
+                    );
+                }
+
+                // Fallback vers 1.5-flash si 2.0 échoue ou n'est pas trouvé
+                if (!response.ok) {
+                    const fallback15 = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: 'Hello' }] }] })
+                        }
+                    );
+                    if (fallback15.ok || fallback15.status !== 404) response = fallback15;
+                }
+                
+                if (response.ok) {
+                    testResult = { success: true, message: 'Connexion réussie' };
+                } else {
+                    const errorBody = await response.json().catch(() => ({}));
+                    const detail = errorBody?.error?.message || `Status: ${response.status}`;
+                    testResult = { success: false, message: `Erreur Gemini: ${detail}` };
+                }
             } catch (e) {
-                testResult = { success: false, message: e.message };
+                testResult = { success: false, message: `Erreur réseau Gemini: ${e.message}` };
             }
         } else if (provider === 'openai') {
             try {
                 const response = await fetch('https://api.openai.com/v1/models', {
                     headers: { 'Authorization': `Bearer ${apiKey}` }
                 });
-                testResult = { success: response.ok, message: response.ok ? 'Connexion réussie' : `Erreur: ${response.status}` };
+                if (response.ok) {
+                    testResult = { success: true, message: 'Connexion réussie' };
+                } else {
+                    const errorBody = await response.json().catch(() => ({}));
+                    const detail = errorBody?.error?.message || `Status: ${response.status}`;
+                    testResult = { success: false, message: `Erreur OpenAI: ${detail}` };
+                }
             } catch (e) {
-                testResult = { success: false, message: e.message };
+                testResult = { success: false, message: `Erreur réseau OpenAI: ${e.message}` };
             }
         } else if (provider === 'openrouter') {
             try {
                 const response = await fetch('https://openrouter.ai/api/v1/models', {
                     headers: { 'Authorization': `Bearer ${apiKey}` }
                 });
-                testResult = { success: response.ok, message: response.ok ? 'Connexion réussie' : `Erreur: ${response.status}` };
+                if (response.ok) {
+                    testResult = { success: true, message: 'Connexion réussie' };
+                } else {
+                    const errorBody = await response.json().catch(() => ({}));
+                    const detail = errorBody?.error?.message || `Status: ${response.status}`;
+                    testResult = { success: false, message: `Erreur OpenRouter: ${detail}` };
+                }
             } catch (e) {
-                testResult = { success: false, message: e.message };
+                testResult = { success: false, message: `Erreur réseau OpenRouter: ${e.message}` };
             }
         }
 
@@ -568,6 +622,43 @@ router.get('/models/:id/users', authenticateAdmin, (req, res) => {
     } catch (error) {
         console.error('Get model users error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Test a specific AI model
+router.post('/models/:id/test', authenticateAdmin, async (req, res) => {
+    try {
+        const { message = 'Hello, this is a test message.' } = req.body;
+        const modelRecord = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
+        
+        if (!modelRecord) {
+            return res.status(404).json({ error: 'Modèle non trouvé' });
+        }
+
+        // Simulate an agent using this model
+        const mockAgent = {
+            id: 'admin_test',
+            name: 'Admin Test Agent',
+            model: modelRecord.id, // Will be resolved by AI service
+            personality: 'You are a helpful assistant for testing.',
+            behavior: 'test'
+        };
+
+        const response = await aiService.generateResponse(mockAgent, [], message);
+        
+        res.json({
+            success: true,
+            model: modelRecord.name,
+            provider: modelRecord.provider,
+            response
+        });
+    } catch (error) {
+        console.error('Test model error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 

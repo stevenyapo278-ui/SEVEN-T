@@ -14,8 +14,9 @@ export function setIO(socketIO) {
  * Notify a user that a conversation has new messages or was updated.
  * Call this after inserting/updating messages in the DB.
  * @param {string} conversationId
+ * @param {object|null} message - Optional message object to push instantly to frontend
  */
-export async function notifyConversationUpdate(conversationId) {
+export async function notifyConversationUpdate(conversationId, message = null) {
     if (!io || !conversationId) return;
     try {
         const row = await db.get(
@@ -23,7 +24,13 @@ export async function notifyConversationUpdate(conversationId) {
             conversationId
         );
         if (row?.user_id) {
-            io.to(String(row.user_id)).emit('conversation:update', { conversationId });
+            io.to(String(row.user_id)).emit('conversation:update', { 
+                conversationId,
+                message: message ? {
+                    ...message,
+                    conversation_id: conversationId
+                } : null
+            });
         }
     } catch (err) {
         console.error('[socketEmitter] notifyConversationUpdate error:', err?.message || err);
