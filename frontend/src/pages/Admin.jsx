@@ -38,7 +38,8 @@ import {
   Eye,
   EyeOff,
   Copy,
-  Ticket
+  Ticket,
+  Info
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, CouponsContent, getCreditsForPlan } from './Admin/index.js'
