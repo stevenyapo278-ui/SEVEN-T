@@ -52,6 +52,15 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5" }) => {
   }
 }
 
+const getTypeLabel = (type) => {
+  switch (type) {
+    case 'pdf': return 'PDF'
+    case 'youtube': return 'YouTube'
+    case 'website': return 'Site web'
+    default: return 'Texte'
+  }
+}
+
 export default function KnowledgeBase() {
   const { t } = useTranslation()
   const { startTour, completedTours } = useOnboardingTour()
@@ -109,15 +118,6 @@ export default function KnowledgeBase() {
       loadKnowledge()
     } catch (error) {
       toast.error('Erreur lors de la suppression')
-    }
-  }
-
-  const getTypeLabel = (type) => {
-    switch (type) {
-      case 'pdf': return 'PDF'
-      case 'youtube': return 'YouTube'
-      case 'website': return 'Site web'
-      default: return 'Texte'
     }
   }
 
