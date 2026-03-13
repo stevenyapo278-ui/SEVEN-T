@@ -948,22 +948,18 @@ export default function Workflows() {
                                   />
                                 </div>
                                 {['order_validated', 'order_created'].includes(form.trigger_type) && (
-                                  <>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={!!action.config.include_order_summary}
-                                        onChange={(e) => updateActionConfig(idx, { include_order_summary: e.target.checked })}
-                                        className="rounded border-space-500"
-                                      />
-                                      <span className="text-xs text-gray-400">
-                                        Inclure le récapitulatif de la commande (client, produits, total)
-                                      </span>
-                                    </label>
-                                    <p className="text-xs text-gray-500">
-                                      Variables : {'{customer_name}'} {'{customer_phone}'} {'{lieu_livraison}'} {'{delivery_phone}'} {'{order_items}'} {'{order_total}'} {'{currency}'} {'{order_id}'} {'{order_notes}'}
+                                  <div className="mt-2 p-3 bg-space-800 rounded-lg border border-space-700">
+                                    <p className="text-xs font-semibold text-gray-300 mb-2">
+                                      ✨ Variables disponibles pour formater votre message :
                                     </p>
-                                  </>
+                                    <div className="flex flex-wrap gap-2">
+                                      {['{customer_name}', '{customer_phone}', '{lieu_livraison}', '{delivery_phone}', '{order_items}', '{order_total}', '{currency}', '{order_id}', '{order_notes}'].map(variable => (
+                                        <code key={variable} className="text-[10px] bg-space-900 border border-space-600 px-1.5 py-0.5 rounded text-blue-400">
+                                          {variable}
+                                        </code>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             )}

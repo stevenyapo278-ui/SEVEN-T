@@ -266,12 +266,12 @@ class WorkflowExecutor {
         // Replace variables in message
         let processedMessage = this.replaceVariables(message, triggerData);
 
-        // Option: include automatic order summary (for order_validated / order_created)
+        // Option: include automatic order summary ONLY if message is empty (for retro-compatibility)
         if (config.include_order_summary && (triggerData.orderId || triggerData.orderItems)) {
             const summary = this.buildOrderSummary(triggerData);
-            processedMessage = processedMessage.trim()
-                ? `${processedMessage.trim()}\n\n${summary}`
-                : summary;
+            if (!processedMessage.trim()) {
+                processedMessage = summary;
+            }
         }
 
         if (!processedMessage.trim()) {

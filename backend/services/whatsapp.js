@@ -1461,6 +1461,7 @@ class WhatsAppManager {
                 // #endregion
                 let sendResult;
                 let sentAsVoice = false;
+                let sentProductImageUrls = [];
                 const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
                 const userVoiceRow = await db.get('SELECT plan, voice_responses_enabled FROM users WHERE id = ?', userId);
                 const planHasVoice = await hasFeature(userVoiceRow?.plan || 'free', 'voice_responses');
@@ -1481,7 +1482,6 @@ class WhatsAppManager {
                     try {
                         let textToSend = aiResponse.content;
                         let contentToSave = aiResponse.content;
-                        const sentProductImageUrls = [];
 
                         const apiBaseUrl = (process.env.API_BASE_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`).replace(/\/$/, '');
                         const sendOneProductImage = async (url) => {
