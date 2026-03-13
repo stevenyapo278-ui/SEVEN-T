@@ -61,8 +61,11 @@ export const aiLimiter = rateLimit({
 
 // ==================== HELMET SECURITY ====================
 
+// Désactiver les sécurités strictes seulement si on est en test local sans SSL
+const disableStrictSecurity = process.env.DISABLE_STRICT_SECURITY === 'true';
+
 export const helmetConfig = helmet({
-    contentSecurityPolicy: {
+    contentSecurityPolicy: (isProduction && !disableStrictSecurity) ? {
         directives: {
             defaultSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
@@ -71,10 +74,10 @@ export const helmetConfig = helmet({
             connectSrc: ["'self'", "https://api.openai.com", "https://generativelanguage.googleapis.com", "ws:", "wss:"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         },
-    },
+    } : false,
+    strictTransportSecurity: (isProduction && !disableStrictSecurity),
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
-    strictTransportSecurity: false, // Désactiver HSTS pour le local
 });
 
 // ==================== INPUT VALIDATION SCHEMAS ====================
