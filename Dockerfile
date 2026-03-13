@@ -47,8 +47,11 @@ RUN addgroup -g 1001 -S nodejs \
 # Copy backend package files
 COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+# Install production dependencies only (with DNS fix for local environments)
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf && \
+    npm ci --only=production && \
+    npm cache clean --force
 
 # Copy backend source
 COPY backend/ ./backend/
