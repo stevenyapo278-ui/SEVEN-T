@@ -176,13 +176,20 @@ app.get('/api/health', (req, res) => {
 
 // Serve frontend static files in production
 if (isProduction) {
-    const distPath = join(__dirname, '..', 'frontend', 'dist');
-    app.use(express.static(distPath));
+    // Robust path for Docker environments
+    const distPath = process.env.FRONTEND_DIST_PATH || join(__dirname, '..', 'frontend', 'dist');
     
-    // Support React Router (SPA) by serving index.html for unknown routes
-    app.get(/^((?!\/api).)*$/, (req, res) => {
-        res.sendFile(join(distPath, 'index.html'));
-    });
+    if (existsSync(distPath)) {
+        app.use(express.static(distPath));
+        
+        // Support React Router (SPA) by serving index.html for unknown routes
+        app.get(/^((?!\/api).)*$/, (req, res) => {
+            res.sendFile(join(distPath, 'index.html'));
+        });
+        console.log(`✅ Serving frontend from: ${distPath}`);
+    } else {
+        console.warn(`⚠️ Frontend dist directory not found at: ${distPath}`);
+    }
 }
 
 // Public route to get active subscription plans (for pricing page, settings, etc.)
