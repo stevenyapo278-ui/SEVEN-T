@@ -961,6 +961,11 @@ class MessageAnalyzer {
         if (productAnalysis.stockIssues.some(i => i.issue === 'insufficient_stock')) {
             reasons.push('Stock insuffisant pour la quantité demandée');
         }
+
+        // Appreciation handover (optional, but requested by user for "merci")
+        if (intent.primary === 'appreciation') {
+            reasons.push('Remerciements du client - passage au conseiller recommandé pour clôture');
+        }
         
         return {
             needed: reasons.length > 0,

@@ -936,7 +936,8 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_landing_chat_leads_created ON landing_chat_leads(created_at);
     `);
 
-    // Seed default AI models if needed (PostgreSQL may return count as string/bigint)
+    // Seed default AI models disabled - admin will configure models via UI
+    /*
     const modelCountRow = await db.get('SELECT COUNT(*) as count FROM ai_models');
     const modelCount = Number(modelCountRow?.count ?? 0);
     if (modelCount === 0) {
@@ -972,6 +973,7 @@ export async function initDatabase() {
             );
         }
     }
+    */
 
     // Seed default media model setting if missing
     const mediaSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'default_media_model');

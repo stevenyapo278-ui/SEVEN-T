@@ -1040,7 +1040,11 @@ class WhatsAppManager {
                 const keywords = (agent.human_transfer_keywords || '').toLowerCase().split(',').map(k => k.trim()).filter(k => k);
                 const lowerMessage = messageText.toLowerCase();
                 
-                const shouldTransfer = keywords.some(keyword => lowerMessage.includes(keyword));
+                const shouldTransfer = keywords.some(keyword => {
+                    const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+                    return regex.test(lowerMessage);
+                });
                 
                 if (shouldTransfer && !conversation.is_transferred) {
                     console.log(`[WhatsApp] Human transfer triggered for ${contactName}`);
@@ -1617,7 +1621,11 @@ class WhatsAppManager {
                 await db.run('UPDATE conversations SET human_takeover = 1 WHERE id = ?', conversation.id);
                 console.log(`[WhatsApp] Conversation ${conversation.id} set to human takeover (AI requested human)`);
                 if (decision.reason !== 'pre_processing_ignore') {
-                    const fallbackText = agent.fallback_message || 'Un conseiller vous répondra sous peu.';
+                    // Use AI response if available and not generic, otherwise fallback to agent setting or default
+                    const aiEscalationFallback = 'Merci pour votre message. Un conseiller vous répondra si nécessaire.';
+                    const aiContent = (aiResponse?.content && aiResponse.content !== aiEscalationFallback) ? aiResponse.content : null;
+                    const fallbackText = aiContent || agent.fallback_message || 'Un conseiller vous répondra sous peu.';
+                    
                     await sock.sendMessage(replyToJidForSend, { text: fallbackText });
                     const outMsgId = uuidv4();
                     await db.run(`

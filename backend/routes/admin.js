@@ -571,10 +571,26 @@ router.post('/users', authenticateAdmin, async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = uuidv4();
+
+        // Appliquer la période d'essai configurée si le plan est 'free'
+        let subscriptionStatus = 'active';
+        let subscriptionEndDate = null;
+
+        if (planToUse === 'free') {
+            const trialSetting = await db.get("SELECT value FROM platform_settings WHERE key = 'default_trial_days'");
+            const trialDays = trialSetting && trialSetting.value ? parseInt(trialSetting.value, 10) : 7;
+            
+            const trialDate = new Date();
+            trialDate.setDate(trialDate.getDate() + trialDays);
+            
+            subscriptionStatus = 'trialing';
+            subscriptionEndDate = trialDate.toISOString();
+        }
+
         await db.run(`
-            INSERT INTO users (id, name, email, password, company, plan, credits, is_admin)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0);
+            INSERT INTO users (id, name, email, password, company, plan, credits, is_admin, subscription_status, subscription_end_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, subscriptionStatus, subscriptionEndDate);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         const { password: pwd, ...userWithoutPassword } = user;

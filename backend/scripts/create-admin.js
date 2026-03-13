@@ -45,10 +45,18 @@ if (existing) {
 
 const id = uuidv4();
 const hashedPassword = await bcrypt.hash(password, 12);
+
+// Récupérer la durée d'essai configurée dans les paramètres de la plateforme
+const trialSetting = await db.get("SELECT value FROM platform_settings WHERE key = 'default_trial_days'");
+const trialDays = trialSetting && trialSetting.value ? parseInt(trialSetting.value, 10) : 7;
+
+const trialEndDate = new Date();
+trialEndDate.setDate(trialEndDate.getDate() + trialDays);
+
 await db.run(`
-  INSERT INTO users (id, email, password, name, company, plan, credits, is_admin)
-  VALUES (?, ?, ?, ?, '', 'free', 500, 1)
-`, id, email, hashedPassword, name);
+  INSERT INTO users (id, email, password, name, company, plan, subscription_status, subscription_end_date, credits, is_admin)
+  VALUES (?, ?, ?, ?, '', 'free', 'trialing', ?, 500, 1)
+`, id, email, hashedPassword, name, trialEndDate.toISOString());
 
 console.log('Admin créé avec succès.');
 console.log('  Email:', email);

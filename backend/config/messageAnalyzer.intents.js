@@ -74,6 +74,13 @@ const INTENT_PATTERNS = {
             'ne veux plus', 'plus besoin', 'laisse tomber'
         ],
         weight: 8
+    },
+    appreciation: {
+        keywords: [
+            'merci', 'merci beaucoup', 'thanks', 'thank you', 'c\'est gentil', 'parfait merci',
+            'super merci', 'ok merci', 'bien reçu merci', 'genial', 'génial', 'nickel'
+        ],
+        weight: 3
     }
 };
 
