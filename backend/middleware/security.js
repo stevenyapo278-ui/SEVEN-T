@@ -65,13 +65,16 @@ export const helmetConfig = helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https://api.openai.com", "https://generativelanguage.googleapis.com"],
+            connectSrc: ["'self'", "https://api.openai.com", "https://generativelanguage.googleapis.com", "ws:", "wss:"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         },
     },
-    crossOriginEmbedderPolicy: false, // Allow embedding for QR codes
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    strictTransportSecurity: false, // Désactiver HSTS pour le local
 });
 
 // ==================== INPUT VALIDATION SCHEMAS ====================
