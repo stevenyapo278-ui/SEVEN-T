@@ -96,12 +96,15 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, Postman, etc.)
-        if (!origin) return callback(null, true);
+        // Allow all origins in development or if DISABLE_STRICT_SECURITY is true
+        if (!origin || !isProduction || process.env.DISABLE_STRICT_SECURITY === 'true') {
+            return callback(null, true);
+        }
         
-        if (allowedOrigins.includes(origin) || !isProduction) {
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
+            console.warn(`🛑 CORS blocked origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
