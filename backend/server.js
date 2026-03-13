@@ -186,7 +186,12 @@ if (isProduction) {
         app.use(express.static(distPath));
         
         // Support React Router (SPA) by serving index.html for unknown routes
-        app.get(/^((?!\/api).)*$/, (req, res) => {
+        // Only fallback to index.html for requests that don't look like files (no dot in the last segment)
+        app.get('*', (req, res, next) => {
+            // If the request has an extension or starts with /api, pass it through (it's a 404 for a file or an API call)
+            if (req.url.startsWith('/api') || req.url.includes('.')) {
+                return next();
+            }
             res.sendFile(join(distPath, 'index.html'));
         });
         console.log(`✅ Serving frontend from: ${distPath}`);
