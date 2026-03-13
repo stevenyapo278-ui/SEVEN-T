@@ -2101,15 +2101,15 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
   ]
 
   const featureFields = [
-    { key: 'availability_hours', label: 'Heures de disponibilité' },
-    { key: 'voice_responses', label: 'Réponses vocales (TTS)' },
-    { key: 'payment_module', label: 'Module Moyens de paiement (PaymeTrust, etc.)' },
-    { key: 'next_best_action', label: 'Module 3 — Next Best Action (relances automatiques)' },
-    { key: 'conversion_score', label: 'Module 4 — Score de conversion (priorisation des leads)' },
-    { key: 'daily_briefing', label: 'Module 5 — Daily Briefing (résumé quotidien)' },
-    { key: 'sentiment_routing', label: 'Module 6 — Routage par sentiment (clients frustrés → humain)' },
-    { key: 'catalog_import', label: 'Module 7 — Import catalogue produits (URL / fichiers)' },
-    { key: 'human_handoff_alerts', label: 'Module 8 — Alertes de transfert humain et validation de commande' }
+    { key: 'availability_hours', label: 'Module 1 : Heures de disponibilité', desc: 'Permet de définir les horaires où l\'agent répond automatiquement.' },
+    { key: 'voice_responses', label: 'Module 2 : Réponses vocales', desc: 'L\'IA peut envoyer des notes vocales au lieu de texte.' },
+    { key: 'payment_module', label: 'Module 3 : Paiement & Encaissement', desc: 'Intégration des passerelles de paiement pour vendre via l\'IA.' },
+    { key: 'next_best_action', label: 'Module 4 : Next Best Action', desc: 'Relances automatiques intelligentes des prospects inactifs.' },
+    { key: 'conversion_score', label: 'Module 5 : Score de conversion', desc: 'Analyse la probabilité d\'achat de chaque prospect.' },
+    { key: 'daily_briefing', label: 'Module 6 : Daily Briefing', desc: 'Résumé quotidien des activités envoyé sur WhatsApp.' },
+    { key: 'sentiment_routing', label: 'Module 7 : Sentiment routing', desc: 'Transfère à un humain si le client semble frustré.' },
+    { key: 'catalog_import', label: 'Module 8 : Import catalogue', desc: 'L\'IA connaît vos produits via URL ou fichiers.' },
+    { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' }
   ]
 
   return (
@@ -2264,15 +2264,25 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                 <p className="text-sm text-gray-500">Heures de disponibilité : réglage dans les paramètres de l’agent (déjà fonctionnel). Modèles IA, Réponses vocales et Module paiement sont appliqués par le plan.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {featureFields.map(field => (
-                    <label key={field.key} className="flex items-center gap-3 p-3 bg-space-800 rounded-lg cursor-pointer hover:bg-space-700 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.features[field.key] || false}
-                        onChange={() => handleFeatureToggle(field.key)}
-                        className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
-                      />
-                      <span className="text-sm text-gray-300">{field.label}</span>
-                    </label>
+                    <div key={field.key} className="flex items-center gap-2 p-1.5 bg-space-800 rounded-lg group">
+                      <label className="flex-1 flex items-center gap-3 cursor-pointer py-1.5 px-1.5 rounded-md hover:bg-space-700 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={formData.features[field.key] || false}
+                          onChange={() => handleFeatureToggle(field.key)}
+                          className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
+                        />
+                        <span className="text-[13px] text-gray-300">{field.label}</span>
+                      </label>
+                      <div className="relative group/tooltip">
+                        <button type="button" className="p-1.5 text-gray-500 hover:text-gold-400 transition-colors">
+                          <Info className="w-4 h-4" />
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-space-950 border border-space-700 rounded-lg text-[10px] text-gray-400 pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-50">
+                          {field.desc}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
