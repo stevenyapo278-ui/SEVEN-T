@@ -13,8 +13,8 @@ export const CREDIT_COSTS = {
     // 1 AI Response = 1 Credit (Simplified for SaaS)
     'ai_message': 1,
     
-    // WhatsApp messages are free (included in response or manual)
-    'whatsapp_message_sent': 0,
+    // WhatsApp messages cost 1 credit (Platform, AI or Workflows)
+    'whatsapp_message_sent': 1,
     
     // AI models costs (Force all to 1 as per user requirement)
     'gemini-1.5-flash': 1,

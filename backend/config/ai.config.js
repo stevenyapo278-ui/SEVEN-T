@@ -50,9 +50,9 @@ export const AI_CONFIG = {
 
     // Conversation history limits
     conversationHistory: {
-        gemini: 5,      // Last N messages for Gemini
-        openai: 10,     // Last N messages for OpenAI
-        openrouter: 10  // Last N messages for OpenRouter
+        gemini: 20,      // Last N messages for Gemini
+        openai: 30,     // Last N messages for OpenAI
+        openrouter: 30  // Last N messages for OpenRouter
     },
 
     // Retry and timeout settings

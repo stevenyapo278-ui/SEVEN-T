@@ -107,19 +107,21 @@ export function compressHistory(history, summarizeThreshold = 20) {
         return history;
     }
 
-    // For now, just use smart selection
-    // In the future, this could use an AI model to generate summaries
-    const recent = history.slice(-10);
-    const older = history.slice(0, -10);
+    // Keep first 5 messages (original context/request)
+    const firstPart = history.slice(0, 5);
+    // Keep last 15 messages
+    const lastPart = history.slice(-15);
+    
+    const omittedCount = history.length - 20;
 
-    // Create a summary placeholder for older messages
+    // Create a context notice for the AI
     const summary = {
         role: 'system',
-        content: `[Résumé des ${older.length} messages précédents: La conversation a commencé et plusieurs échanges ont eu lieu.]`,
+        content: `[Note: ${omittedCount} messages intermédiaires ont été omis pour optimiser le contexte, mais les messages critiques du début et de la fin sont conservés.]`,
         isSummary: true
     };
 
-    return [summary, ...recent];
+    return [...firstPart, summary, ...lastPart];
 }
 
 /**

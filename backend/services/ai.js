@@ -538,7 +538,10 @@ class AIService {
         }
         
         // Order guidance
-        if (analysis.isLikelyOrder) {
+        if (analysis.orderCreated) {
+            parts.push('\n✅ COMMANDE CRÉÉE: Une commande vient d\'être enregistrée avec succès dans le système.');
+            parts.push('INSTRUCTION: Confirme au client que sa commande est bien reçue. Ne redemande pas de confirmation.');
+        } else if (analysis.isLikelyOrder) {
             const missing = [];
             if (!analysis.deliveryInfo?.city) missing.push('ville/commune');
             if (!analysis.deliveryInfo?.neighborhood) missing.push('quartier');

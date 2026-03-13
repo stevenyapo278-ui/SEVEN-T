@@ -1091,14 +1091,14 @@ class WhatsAppManager {
                 return;
             }
 
-            // Conversation context for AI: last 20 messages (same thread = same conversation_id)
+            // Conversation context for AI: last 50 messages (same thread = same conversation_id)
             const historyRows = await db.all(`
                 SELECT role, content FROM messages 
                 WHERE conversation_id = ?
-                ORDER BY created_at ASC
-                LIMIT 20
+                ORDER BY created_at DESC
+                LIMIT 50
             `, conversation.id);
-            const history = Array.isArray(historyRows) ? historyRows : [];
+            const history = Array.isArray(historyRows) ? historyRows.reverse() : [];
 
             // E-commerce pipeline: catalogue + order rules + order detection only for template === 'ecommerce'
             const isEcommerce = agent.template === 'ecommerce';
@@ -1261,75 +1261,37 @@ class WhatsAppManager {
                 }
             }
 
+
+            // POST-PROCESSING: Order detection (Move before AI to provide context)
+            let detectedOrder = null;
+            const shouldDetectOrder = isEcommerce && (
+                messageAnalysis.isLikelyOrder ||
+                messageAnalysis.intent?.primary === 'order' ||
+                messageAnalysis.intent?.primary === 'delivery_info'
+            );
+
+            if (shouldDetectOrder) {
+                try {
+                    detectedOrder = await orderDetector.analyzeMessage(messageText, userId, conversation);
+                    if (detectedOrder) {
+                         // Enrich messageAnalysis for the AI
+                         messageAnalysis.orderCreated = true;
+                         messageAnalysis.orderId = detectedOrder.id;
+                         console.log(`[WhatsApp] Order ${detectedOrder.id} detected before AI call`);
+                    }
+                } catch (err) {
+                    console.error('[WhatsApp] Order detection error (early):', err.message);
+                }
+            }
+
             const skipLlm = messageAnalysis.ignore === true || messageAnalysis.escalate === true;
             const intentHint = messageAnalysis.intent_hint ?? messageAnalysis.intent?.primary;
-            
-            // Fix: N'utiliser les réponses statiques que si AUCUN produit n'est mentionné
-            // Cela évite de répondre "Bonjour !" quand le client dit "Bonjour je veux Samsung"
             const hasProductsMentioned = messageAnalysis.products?.matchedProducts?.length > 0;
             const canUseStaticResponse = !skipLlm 
                 && intentHint 
                 && staticResponses[intentHint]
                 && !hasProductsMentioned
                 && !messageAnalysis.isLikelyOrder;
-
-            const isOrderConfirmation = isEcommerce && messageAnalysis.confirmation?.hasConfirmationProduct === true;
-            /* Désactivé: on laisse l'IA traiter avec le message actuel au lieu d'un template statique
-            if (isOrderConfirmation) {
-                const matchedProducts = messageAnalysis.products?.matchedProducts || [];
-                const lineItems = matchedProducts.map((p) => {
-                    const qty = p.requestedQuantity || 1;
-                    const total = (p.price || 0) * qty;
-                    return `- ${p.name} x${qty} = ${total.toLocaleString()} FCFA`;
-                });
-                const orderTotal = matchedProducts.reduce((sum, p) => {
-                    const qty = p.requestedQuantity || 1;
-                    return sum + (p.price || 0) * qty;
-                }, 0);
-                const deliveryMissing = [];
-                if (!messageAnalysis.deliveryInfo?.city) deliveryMissing.push('ville/commune');
-                if (!messageAnalysis.deliveryInfo?.neighborhood) deliveryMissing.push('quartier');
-                if (!messageAnalysis.deliveryInfo?.phone) deliveryMissing.push('numéro de téléphone');
-                const recap = lineItems.length > 0
-                    ? `Commande confirmée ✅\n${lineItems.join('\n')}\nTotal: ${orderTotal.toLocaleString()} FCFA`
-                    : 'Commande confirmée ✅';
-                const deliveryPrompt = deliveryMissing.length > 0
-                    ? `Pour finaliser la livraison, merci d’indiquer: ${deliveryMissing.join(', ')}.`
-                    : 'Merci, toutes les infos de livraison sont collectées.';
-                const confirmationReply = `${recap}\n\n${deliveryPrompt}`;
-
-                try {
-                    const responseDelay = agent.response_delay || 0;
-                    if (responseDelay > 0) {
-                        console.log(`[WhatsApp] Waiting ${responseDelay}s before sending confirmation response...`);
-                        await sock.sendPresenceUpdate('composing', replyToJidForSend);
-                        await new Promise(resolve => setTimeout(resolve, responseDelay * 1000));
-                        await sock.sendPresenceUpdate('paused', replyToJidForSend);
-                    }
-                    const sendResult = await sock.sendMessage(replyToJidForSend, { text: confirmationReply });
-                    const whatsappMsgId = sendResult?.key?.id;
-                    const outMsgId = uuidv4();
-                    await db.run(`
-                        INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, created_at)
-                        VALUES (?, ?, 'assistant', ?, 0, ?, 'ai', ?)
-                    `, outMsgId, conversation.id, confirmationReply, whatsappMsgId, new Date().toISOString());
-                    console.log(`[WhatsApp] Sent confirmation recap to ${contactName}`);
-                } catch (sendErr) {
-                    console.error('[WhatsApp] Confirmation send error:', sendErr.message);
-                }
-
-                try {
-                    await this.detectOrder(messageText, userId, conversation);
-                } catch (err) {
-                    console.error('[WhatsApp] Order detection error:', err.message);
-                }
-                console.log(`[WhatsApp] Skipping lead analysis - order confirmation detected`);
-                return;
-            }
-            */
-            if (isOrderConfirmation) {
-                console.log(`[WhatsApp] Order confirmation - passing to AI with message actuel`);
-            }
 
             if (canUseStaticResponse) {
                 const staticText = staticResponses[intentHint];
@@ -1668,60 +1630,7 @@ class WhatsAppManager {
                 }
             }
 
-            // ============================================
-            // POST-PROCESSING: Order/Lead detection with pre-analysis
-            // Order detection takes priority - don't create leads for orders
-            // ============================================
-            
-            // Expanded order detection conditions:
-            // 1. isLikelyOrder (product + order intent in current message)
-            // 2. intent.primary === 'order' (explicit order intent)
-            // 3. intent.primary === 'delivery_info' (delivery info often means order confirmation)
-            // 4. (REMOVED) AI response confirmation should NOT create orders
-            const shouldDetectOrder = isEcommerce && (
-                messageAnalysis.isLikelyOrder ||
-                messageAnalysis.intent?.primary === 'order' ||
-                messageAnalysis.intent?.primary === 'delivery_info'
-            );
-
-            // #region agent log
-            debugIngest({
-                location: 'whatsapp.js:1045',
-                message: 'shouldDetectOrder check',
-                data: {
-                    shouldDetectOrder,
-                    isEcommerce,
-                    isLikelyOrder: messageAnalysis.isLikelyOrder,
-                    intent_primary: messageAnalysis.intent?.primary,
-                    conversation_id: conversation.id
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                hypothesisId: 'H3'
-            });
-            // #endregion
-
-            if (shouldDetectOrder) {
-                // #region agent log
-                debugIngest({
-                    location: 'whatsapp.js:1046',
-                    message: 'Calling detectOrder',
-                    data: {
-                        messageText: messageText.substring(0, 100),
-                        userId,
-                        conversation_id: conversation.id
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    hypothesisId: 'H3'
-                });
-                // #endregion
-
-                this.detectOrder(messageText, userId, conversation).catch(err => {
-                    console.error('[WhatsApp] Order detection error:', err.message);
-                });
-                console.log(`[WhatsApp] Skipping lead analysis - order intent detected`);
-            } else {
+            if (!detectedOrder) {
                 this.analyzeForLead(conversation, agentId, userId).catch(err => {
                     console.error('[WhatsApp] Lead analysis error:', err.message);
                 });
@@ -2062,9 +1971,10 @@ class WhatsAppManager {
             const messages = await db.all(`
                 SELECT role, content FROM messages 
                 WHERE conversation_id = ?
-                ORDER BY created_at ASC
+                ORDER BY created_at DESC
                 LIMIT 20
             `, conversation.id);
+            messages.reverse();
 
             if (messages.length < 2) {
                 return; // Need at least 2 messages for meaningful analysis
