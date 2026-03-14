@@ -122,7 +122,6 @@ export function AuthProvider({ children }) {
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
       idleTimeoutRef.current = setTimeout(() => {
         logout()
-        window.location.href = '/login'
       }, SESSION_IDLE_MINUTES * 60 * 1000)
     }
 

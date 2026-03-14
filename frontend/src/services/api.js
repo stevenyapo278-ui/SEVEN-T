@@ -17,16 +17,13 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle errors: redirect to login only when a 401 happens on an authenticated request
-// (not when the login request itself fails with 401 - wrong password / unknown user)
+// Handle errors: we don't force a hard redirect here anymore because it causes infinite loops
+// The AuthProvider and ProtectedRoute handle the redirect logic cleanly via React state.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isLoginRequest = error.config?.url?.includes?.('auth/login') && (error.config?.method === 'post' || error.config?.method === 'POST')
-    if (error.response?.status === 401 && !isLoginRequest) {
-      // In cookie-based auth, we don't clear localStorage token, just redirect
-      window.location.href = '/login'
-    }
+    // If we get a 401, it means the session is invalid or expired.
+    // We let the calling function handle it (usually AuthContext will catch it and set user to null)
     return Promise.reject(error)
   }
 )
