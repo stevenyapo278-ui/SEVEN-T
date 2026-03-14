@@ -48,7 +48,7 @@ export default function Legal() {
     <div className="min-h-screen bg-space-950">
       {/* Header */}
       <header className="border-b border-space-700 sticky top-0 z-50 bg-space-950/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             <Link to="/" className="flex items-center gap-2 sm:gap-3 transition-transform hover:scale-105">
               <Logo />
@@ -64,7 +64,7 @@ export default function Legal() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
         {/* Tabs - Scrollable on mobile with hidden scrollbar */}
         <div className="flex flex-nowrap overflow-x-auto gap-2.5 mb-8 sm:mb-12 pb-4 sm:pb-0 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
           {TABS.map(tab => (

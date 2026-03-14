@@ -563,7 +563,7 @@ export default function Landing() {
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto text-center px-4">
+        <div className="relative z-10 max-w-7xl mx-auto text-center px-4">
           <div className="flex flex-col items-center">
             {/* Badge — Rhyming with the orange accent */}
             <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] mb-12 backdrop-blur-md border animate-fadeIn ${
@@ -674,7 +674,7 @@ export default function Landing() {
         {isDark && (
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/15 to-transparent pointer-events-none" />
         )}
-        <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
           <div className="grid md:grid-cols-2 gap-16 items-center mb-16">
             <div>
               <p className="text-amber-500 text-sm font-semibold uppercase tracking-widest mb-4">Voir en action</p>

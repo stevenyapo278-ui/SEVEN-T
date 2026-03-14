@@ -233,7 +233,7 @@ export default function Dashboard() {
 
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
+    <div className="max-w-7xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0">
       {/* Welcome Modal for first-time users */}
       <WelcomeModal 
         isOpen={showWelcome} 

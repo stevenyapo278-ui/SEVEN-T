@@ -34,7 +34,7 @@ export default function Services() {
   const [selectedServiceView, setSelectedServiceView] = useState(null)
 
   return (
-    <div className="max-w-6xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-20">
+    <div className="max-w-7xl mx-auto w-full space-y-6 px-3 sm:px-4 min-w-0 pb-20">
       {/* Header Hero */}
       <div className={`relative rounded-[2.5rem] border p-6 sm:p-10 mb-8 overflow-hidden ${
         isDark ? 'bg-space-900/40 border-space-700/50' : 'bg-gray-50 border-gray-200'

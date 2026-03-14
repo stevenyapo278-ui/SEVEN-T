@@ -166,7 +166,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false })
             onClick={onItemClick}
             data-tour={item.tourId}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+              `flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
 : isDark 
@@ -193,7 +193,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false })
       {isMobile ? (
         <button
           onClick={handleToggle}
-          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 ${
             isGroupActive
               ? isDark 
                 ? 'bg-blue-500/10 text-blue-400' 
@@ -212,7 +212,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false })
       ) : (
         <NavLink
           to={group.items[0]?.href || '#'}
-          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200 ${
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 ${
             isGroupActive
               ? isDark 
                 ? 'bg-blue-500/10 text-blue-400' 
@@ -222,7 +222,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false })
                 : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
           }`}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {group.icon && <group.icon className="w-5 h-5 text-icon" />}
             <span className="text-sm font-medium">{t(group.nameKey)}</span>
           </div>
@@ -990,7 +990,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col">
         <div className={`flex flex-col flex-grow border-r ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
           <div className={`flex h-16 items-center gap-2 px-4 border-b min-w-0 ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
             <Logo className="flex-shrink-0" />
@@ -1093,7 +1093,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* Main content */}
-      <div className={`lg:pl-64 min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
+      <div className={`lg:pl-60 min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
         {/* Mobile header — heure centrée, nom entreprise en dessous pour voir la totalité (Android / mobile) */}
         <div className={`relative sticky top-0 z-40 flex h-[4.5rem] min-h-16 items-center border-b backdrop-blur-md px-4 lg:hidden ${
           isDark ? 'border-space-700 bg-space-900/80' : 'border-gray-200 bg-white/90'
@@ -1181,7 +1181,7 @@ export default function DashboardLayout() {
         </div>
 
         {/* Page content - safe area bottom for Android gesture bar */}
-        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Outlet />
         </main>
       </div>
