@@ -828,6 +828,27 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_anomalies_severity ON admin_anomalies(severity);
         CREATE INDEX IF NOT EXISTS idx_anomalies_created ON admin_anomalies(created_at);
 
+        -- Performance indexes
+        CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_messages_conv_created ON messages(conversation_id, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_conversations_last_msg ON conversations(last_message_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_conversations_agent_last ON conversations(agent_id, last_message_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_leads_user_status ON leads(user_id, status, created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_credit_usage_user_date ON credit_usage(user_id, created_at DESC);
+
+        -- Refresh tokens for secure JWT rotation
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id TEXT NOT NULL,
+            token_hash TEXT NOT NULL UNIQUE,
+            expires_at TIMESTAMP NOT NULL,
+            revoked INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+        CREATE INDEX IF NOT EXISTS idx_refresh_tokens_hash ON refresh_tokens(token_hash);
+
         CREATE TABLE IF NOT EXISTS report_subscriptions (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,

@@ -1,26 +1,35 @@
+/**
+ * Authentication Middleware for SEVEN T
+ *
+ * Supports dual token transport:
+ *   1. httpOnly cookie `access_token` (preferred — browser)
+ *   2. Authorization: Bearer <token> header (API clients / mobile)
+ *
+ * Admin check always verified against DB (not just JWT payload)
+ * to prevent privilege escalation via tampered tokens.
+ */
+
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import db from '../database/init.js';
 
-// Generate a random secret for development, require explicit secret in production
 const isProduction = process.env.NODE_ENV === 'production';
 
+// ── Secret validation ────────────────────────────────────────
 if (isProduction && !process.env.JWT_SECRET) {
     console.error('❌ JWT_SECRET is required in production mode');
     process.exit(1);
 }
 
-// Reject known weak/placeholder secrets in production
 const WEAK_SECRETS = ['wazzap-clone-secret-key-2024', 'change-me', 'secret', 'jwt-secret', ''];
 if (process.env.JWT_SECRET && WEAK_SECRETS.includes(process.env.JWT_SECRET) && isProduction) {
-    console.error('❌ JWT_SECRET is set to an insecure placeholder value. Please set a strong random secret in .env before going to production.');
+    console.error('❌ JWT_SECRET is set to an insecure placeholder. Set a strong random secret before going to production.');
     process.exit(1);
 }
 if (process.env.JWT_SECRET && WEAK_SECRETS.includes(process.env.JWT_SECRET) && !isProduction) {
-    console.warn('⚠️  JWT_SECRET is using a weak placeholder. This is fine for development but MUST be changed before production!');
+    console.warn('⚠️  JWT_SECRET is using a weak placeholder. Change it before production!');
 }
 
-// In development, generate a consistent secret per process (warning will be shown)
 const devSecret = crypto.randomBytes(64).toString('hex');
 export const JWT_SECRET = process.env.JWT_SECRET || devSecret;
 
@@ -28,15 +37,26 @@ if (!process.env.JWT_SECRET) {
     console.warn('⚠️  Using auto-generated JWT_SECRET. Set JWT_SECRET in .env for persistent sessions.');
 }
 
-// Session / JWT expiration (configurable via env, e.g. '7d', '24h', '1h')
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-export function authenticateToken(req, res, next) {
+// ── Token extraction ─────────────────────────────────────────
+function extractToken(req) {
+    // 1. httpOnly cookie (primary — browser clients)
+    if (req.cookies?.access_token) {
+        return req.cookies.access_token;
+    }
+    // 2. Authorization header (API clients, mobile apps)
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    if (authHeader?.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+    }
+    return null;
+}
+
+// ── Middleware: authenticate any user ────────────────────────
+export function authenticateToken(req, res, next) {
+    const token = extractToken(req);
 
     if (!token) {
-        return res.status(401).json({ error: 'Token requis' });
+        return res.status(401).json({ error: 'Non authentifié' });
     }
 
     try {
@@ -44,58 +64,58 @@ export function authenticateToken(req, res, next) {
         req.user = decoded;
         next();
     } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expiré', code: 'TOKEN_EXPIRED' });
+        }
         return res.status(403).json({ error: 'Token invalide' });
     }
 }
 
+// ── Middleware: authenticate + verify admin in DB ────────────
 export async function authenticateAdmin(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = extractToken(req);
 
     if (!token) {
-        return res.status(401).json({ error: 'Token requis' });
+        return res.status(401).json({ error: 'Non authentifié' });
     }
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // Check if user is admin
+
+        // Always verify admin status in DB (not just in JWT payload)
         const user = await db.get('SELECT is_admin FROM users WHERE id = ?', decoded.id);
         if (!user || !user.is_admin) {
             return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
         }
-        
+
         req.user = decoded;
         next();
     } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ error: 'Token expiré', code: 'TOKEN_EXPIRED' });
+        }
         return res.status(403).json({ error: 'Token invalide' });
     }
 }
 
-export function generateToken(user) {
-    return jwt.sign(
-        { id: user.id, email: user.email, is_admin: user.is_admin || 0 },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-    );
-}
-
-/**
- * Middleware to require admin role (use AFTER authenticateToken)
- */
+// ── Middleware: require admin (use after authenticateToken) ──
 export async function requireAdmin(req, res, next) {
-    // Check if user is admin from the token or from the database
-    if (req.user?.is_admin) {
-        return next();
-    }
-    
-    // Double-check in database
+    // Always verify in DB — do not trust JWT payload alone
     const user = await db.get('SELECT is_admin FROM users WHERE id = ?', req.user?.id);
     if (!user || !user.is_admin) {
         return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
     }
-    
     next();
+}
+
+// ── Token generation (backwards-compatible) ─────────────────
+export function generateToken(user) {
+    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    return jwt.sign(
+        { id: user.id, email: user.email, is_admin: user.is_admin || 0 },
+        JWT_SECRET,
+        { expiresIn }
+    );
 }
 
 export default { authenticateToken, authenticateAdmin, requireAdmin, generateToken, JWT_SECRET };

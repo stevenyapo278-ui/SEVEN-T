@@ -1,0 +1,55 @@
+# ==========================================
+# SEVEN T - Backend Production Dockerfile
+# ==========================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies for potential build steps if any
+# (Baileys might need some build tools in some environments, but Alpine is usually fine)
+RUN npm ci
+
+# Copy backend source
+COPY backend/ ./backend/
+
+# ==========================================
+# Final Production Stage
+# ==========================================
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Install essential runtime tools
+RUN apk add --no-cache ca-certificates wget
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs \
+    && adduser -S nodejs -u 1001 -G nodejs
+
+# Install ONLY production dependencies
+COPY package*.json ./
+RUN npm ci --only=production --ignore-scripts \
+    && npm cache clean --force
+
+# Copy source from builder
+COPY --from=builder /app/backend ./backend
+
+# Create uploads directory and set permissions
+RUN mkdir -p uploads/messages uploads/products \
+    && chown -R nodejs:nodejs /app
+
+USER nodejs
+
+EXPOSE 3001
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
+
+# Start command
+CMD ["node", "--max-old-space-size=1024", "backend/server.js"]

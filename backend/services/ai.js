@@ -11,6 +11,7 @@ import { aiLogger } from '../utils/logger.js';
 import { geminiCircuitBreaker, openaiCircuitBreaker, openrouterCircuitBreaker } from '../utils/circuitBreaker.js';
 import { countTokensSync } from '../utils/tokenizer.js';
 import { getSmartWindow } from '../utils/conversationMemory.js';
+import { withExponentialBackoff } from '../utils/retryHelper.js';
 
 /**
  * Service IA unifié - Gère Gemini, OpenAI et OpenRouter
@@ -177,6 +178,9 @@ class AIService {
         this.initialize();
         await this.refreshClientsFromDb();
 
+        // Sanitize user message
+        const sanitizedUserMessage = userMessage ? userMessage.substring(0, 2000) : '';
+
         const agentModelId = agent.model || 'gemini-2.0-flash';
         let resolvedModelId = agentModelId;
 
@@ -207,20 +211,24 @@ class AIService {
 
         console.log(`[AI] Provider: ${provider} | Model: ${finalModelString} | User: ${userId || 'anonymous'}`);
 
-        // 3. Check Credits
-        if (userId && provider !== 'fallback') {
-            const hasCredits = await hasEnoughCredits(userId, resolvedModelId);
-            if (!hasCredits) {
-                if (skipFallback) throw new Error('Quota de crédits SEVEN-T épuisé pour cet utilisateur.');
-                const fallback = this.fallbackResponse(agent, userMessage);
-                fallback.credit_warning = 'Crédits insuffisants';
-                return fallback;
-            }
+        // Limit knowledge base size to prevent prompt bloat and keep costs down
+        let sanitizedKB = knowledgeBase || [];
+        if (sanitizedKB.length > 10) {
+            sanitizedKB = sanitizedKB.slice(0, 10); // Max 10 chunks
         }
+        
+        // Final token cap for KB (~2000 tokens estimate via chars)
+        let totalChars = 0;
+        sanitizedKB = sanitizedKB.filter(item => {
+            totalChars += (item.content || '').length;
+            return totalChars < 8000;
+        });
 
         try {
-            // 4. Try Primary Model
-            return await this.executeProviderCall(provider, agentWithResolvedModel, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey, userId, resolvedModelId);
+            // 4. Try Primary Model with exponential backoff
+            return await withExponentialBackoff(() => 
+                this.executeProviderCall(provider, agentWithResolvedModel, conversationHistory, sanitizedUserMessage, sanitizedKB, messageAnalysis, apiKey, userId, resolvedModelId)
+            );
             
         } catch (error) {
             console.error(`[AI] Primary model failed (${provider}):`, error.message);
@@ -246,7 +254,9 @@ class AIService {
                         const fbApiKey = await this.getApiKey(fbProvider, fbModelString);
                         const fbAgent = { ...agent, _resolvedModel: fbModelString };
                         
-                        return await this.executeProviderCall(fbProvider, fbAgent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, fbApiKey, userId, fallbackModel.model_id);
+                        return await withExponentialBackoff(() => 
+                            this.executeProviderCall(fbProvider, fbAgent, conversationHistory, sanitizedUserMessage, sanitizedKB, messageAnalysis, fbApiKey, userId, fallbackModel.model_id)
+                        );
                     } catch (fbErr) {
                         console.error(`[AI] Fallback to ${fallbackModel.name} also failed:`, fbErr.message);
                         continue; // Try next fallback
@@ -257,7 +267,7 @@ class AIService {
             }
 
             // Ultimate Fallback (Hardcoded polite message)
-            return this.fallbackResponse(agent, userMessage);
+            return this.fallbackResponse(agent, sanitizedUserMessage);
         }
     }
 
@@ -772,7 +782,15 @@ class AIService {
             if (c === '{') depth++;
             else if (c === '}') {
                 depth--;
-                if (depth === 0) return str.slice(0, i + 1);
+                if (depth === 0) {
+                    const candidate = str.slice(0, i + 1);
+                    try {
+                        JSON.parse(candidate);
+                        return candidate;
+                    } catch (e) {
+                        // Might be a fragment, keep looking
+                    }
+                }
             }
         }
         return null;

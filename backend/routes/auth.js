@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url';
 import db from '../database/init.js';
 import { getPlan, getEffectivePlanName } from '../config/plans.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
+import { generateAccessToken, generateRefreshToken, rotateRefreshToken, revokeAllUserTokens, setAuthCookies, clearAuthCookies } from '../utils/tokens.js';
+import { hashToken } from '../utils/crypto.js';
 import { validate, registerSchema, loginSchema } from '../middleware/security.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
 import { notificationService } from '../services/notifications.js';
@@ -26,10 +28,17 @@ const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const oauthStateStore = new Map();
 
+// Ephemeral codes for OAuth token exchange (30s TTL, single-use)
+// Prevents JWT from being exposed in redirect URLs
+const ephemeralCodes = new Map(); // code -> { userId, expiresAt }
+
 setInterval(() => {
     const now = Date.now();
     for (const [s, createdAt] of oauthStateStore.entries()) {
         if (now - createdAt > OAUTH_STATE_TTL_MS) oauthStateStore.delete(s);
+    }
+    for (const [code, record] of ephemeralCodes.entries()) {
+        if (now > record.expiresAt) ephemeralCodes.delete(code);
     }
 }, 60000);
 
@@ -196,8 +205,10 @@ router.get('/google/callback', async (req, res) => {
             return redirectError('account_disabled');
         }
 
-        const token = generateToken(user);
-        res.redirect(302, `${callbackUrl}?token=${encodeURIComponent(token)}`);
+        // SECURITY: Do not put JWT in URL — use ephemeral code instead
+        const ephCode = crypto.randomBytes(16).toString('hex');
+        ephemeralCodes.set(ephCode, { userId: user.id, expiresAt: Date.now() + 30_000 });
+        res.redirect(302, `${callbackUrl}?code=${ephCode}`);
     } catch (err) {
         // #region agent log
         const causeCode = err.cause && typeof err.cause === 'object' && err.cause.code;
@@ -253,13 +264,15 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
-        const token = generateToken(user);
+        const accessToken = generateAccessToken(user);
+        const refreshToken = await generateRefreshToken(user.id);
+        setAuthCookies(res, accessToken, refreshToken);
+
         sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
         notificationService.notifyWelcome(userId);
         res.status(201).json({
             message: 'Compte créé avec succès',
-            user: { ...user, plan: effectivePlan, plan_features },
-            token
+            user: { ...user, plan: effectivePlan, plan_features }
         });
     } catch (error) {
         console.error('Register error:', error);
@@ -290,8 +303,10 @@ router.post('/login', validate(loginSchema), async (req, res) => {
             return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
         }
 
-        // Generate token
-        const token = generateToken(user);
+        // Generate tokens and set cookies
+        const accessToken = generateAccessToken(user);
+        const refreshToken = await generateRefreshToken(user.id);
+        setAuthCookies(res, accessToken, refreshToken);
 
         // Remove password from response and attach plan_features (plan effectif si désactivé ou expiré)
         const { password: _, ...userWithoutPassword } = user;
@@ -300,8 +315,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         const plan_features = planConfig?.features || {};
         res.json({
             message: 'Connexion réussie',
-            user: { ...userWithoutPassword, plan: effectivePlan, plan_features },
-            token
+            user: { ...userWithoutPassword, plan: effectivePlan, plan_features }
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -417,16 +431,17 @@ router.post('/forgot-password', async (req, res) => {
         // Even if user doesn't exist, we return success to prevent email enumeration
         if (user && user.is_active !== 0) {
             const resetToken = crypto.randomBytes(32).toString('hex');
+            const hashedResetToken = hashToken(resetToken); // Store hash, send plaintext
             const tokenExpires = new Date(Date.now() + 3600000); // 1 hour
 
             await db.run(
                 'UPDATE users SET reset_token = ?, reset_token_expires = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                resetToken,
+                hashedResetToken,  // Only the hash is stored in DB
                 tokenExpires,
                 user.id
             );
 
-            await sendPasswordResetEmail(user, resetToken);
+            await sendPasswordResetEmail(user, resetToken); // Plaintext sent by email
         }
 
         res.json({ message: 'Si un compte correspond à cet email, vous recevrez un lien de réinitialisation.' });
@@ -444,9 +459,10 @@ router.post('/reset-password', async (req, res) => {
             return res.status(400).json({ error: 'Token et mot de passe requis' });
         }
 
+        const hashedToken = hashToken(token); // Hash the received token before lookup
         const user = await db.get(
             'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > CURRENT_TIMESTAMP',
-            token
+            hashedToken
         );
 
         if (!user) {
@@ -465,6 +481,74 @@ router.post('/reset-password', async (req, res) => {
     } catch (error) {
         console.error('Reset password error:', error);
         res.status(500).json({ error: 'Erreur lors de la réinitialisation du mot de passe' });
+    }
+});
+
+// ── OAuth code exchange (replaces JWT-in-URL) ────────────────
+router.post('/exchange-code', async (req, res) => {
+    try {
+        const { code } = req.body;
+        if (!code) return res.status(400).json({ error: 'Code manquant' });
+
+        const record = ephemeralCodes.get(code);
+        ephemeralCodes.delete(code); // Single-use
+
+        if (!record || Date.now() > record.expiresAt) {
+            return res.status(400).json({ error: 'Code invalide ou expiré' });
+        }
+
+        const user = await db.get(
+            'SELECT id, email, name, company, plan, credits, is_admin, subscription_status, subscription_end_date FROM users WHERE id = ? AND is_active = 1',
+            record.userId
+        );
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        const accessToken = generateAccessToken(user);
+        const refreshToken = await generateRefreshToken(user.id);
+        setAuthCookies(res, accessToken, refreshToken);
+
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        const planConfig = await getPlan(effectivePlan);
+        res.json({ user: { ...user, plan: effectivePlan, plan_features: planConfig?.features || {} } });
+    } catch (err) {
+        console.error('Exchange code error:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// ── Refresh access token ────────────────────────────────────
+router.post('/refresh', async (req, res) => {
+    try {
+        const refreshToken = req.cookies?.refresh_token;
+        if (!refreshToken) return res.status(401).json({ error: 'Refresh token manquant' });
+
+        const result = await rotateRefreshToken(refreshToken);
+        if (!result) {
+            clearAuthCookies(res);
+            return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter' });
+        }
+
+        setAuthCookies(res, result.accessToken, result.refreshToken);
+
+        const effectivePlan = await getEffectivePlanName(result.user.plan, result.user);
+        const planConfig = await getPlan(effectivePlan);
+        res.json({ user: { ...result.user, plan: effectivePlan, plan_features: planConfig?.features || {} } });
+    } catch (err) {
+        console.error('Refresh token error:', err);
+        clearAuthCookies(res);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// ── Logout (revokes all sessions) ──────────────────────────
+router.post('/logout', authenticateToken, async (req, res) => {
+    try {
+        await revokeAllUserTokens(req.user.id);
+        clearAuthCookies(res);
+        res.json({ message: 'Déconnecté avec succès' });
+    } catch (err) {
+        console.error('Logout error:', err);
+        res.status(500).json({ error: 'Erreur lors de la déconnexion' });
     }
 });
 

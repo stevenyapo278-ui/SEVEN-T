@@ -5,6 +5,7 @@
 
 import db from '../database/init.js';
 import geniuspay from './geniuspay.js';
+import { encrypt, decrypt } from '../utils/crypto.js';
 
 const PROVIDER_IDS = ['geniuspay'];
 
@@ -23,10 +24,32 @@ export async function getProviderConfig(userId, provider) {
     );
     if (!row || !row.credentials) return null;
     try {
-        return JSON.parse(row.credentials);
-    } catch {
-        return null;
+        // Try to decrypt; if it fails, it might be legacy plain text
+        const decrypted = decrypt(row.credentials);
+        return JSON.parse(decrypted);
+    } catch (e) {
+        // Fallback for legacy plain text during migration
+        try {
+            return JSON.parse(row.credentials);
+        } catch {
+            return null;
+        }
     }
+}
+
+/**
+ * Encrypt and save credentials for a user and provider.
+ */
+export async function saveProviderConfig(userId, provider, credentialsObj) {
+    if (!userId || !provider || !credentialsObj) return;
+    const plainText = JSON.stringify(credentialsObj);
+    const encrypted = encrypt(plainText);
+    
+    await db.run(`
+        INSERT INTO user_payment_providers (user_id, provider, credentials, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id, provider) DO UPDATE SET credentials = EXCLUDED.credentials, updated_at = CURRENT_TIMESTAMP
+    `, userId, provider, encrypted);
 }
 
 /**

@@ -103,4 +103,50 @@ router.get('/me/export', authenticateToken, async (req, res) => {
     }
 });
 
+// Get current user profile
+router.get('/me', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, payment_module_enabled FROM users WHERE id = ?', userId);
+        
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        
+        const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
+        
+        return res.json({ user: { ...user, plan: effectivePlan, plan_features } });
+    } catch (err) {
+        console.error('GET /api/users/me error:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Update user profile
+router.put('/me', authenticateToken, async (req, res) => {
+    try {
+        const { name, company, currency, media_model, notification_number } = req.body;
+        const updates = [];
+        const values = [];
+
+        if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+        if (company !== undefined) { updates.push('company = ?'); values.push(company); }
+        if (currency !== undefined) { updates.push('currency = ?'); values.push(currency); }
+        if (media_model !== undefined) { updates.push('media_model = ?'); values.push(media_model); }
+        if (notification_number !== undefined) { updates.push('notification_number = ?'); values.push(notification_number); }
+
+        if (updates.length > 0) {
+            values.push(req.user.id);
+            await db.run(`UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, ...values);
+        }
+
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        res.json({ user });
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 export default router;

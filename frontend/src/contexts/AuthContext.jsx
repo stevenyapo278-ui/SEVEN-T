@@ -23,26 +23,8 @@ function decodeUser(u) {
   }
 }
 
-// Durée d'inactivité avant déconnexion (minutes). 0 = désactivé. Définir VITE_SESSION_IDLE_MINUTES pour override.
+// Durée d'inactivité avant déconnexion (minutes). 0 = désactivé.
 const SESSION_IDLE_MINUTES = Number(import.meta.env.VITE_SESSION_IDLE_MINUTES) || 30
-
-/** Retourne l'horodatage d'expiration du JWT (ms) ou null si invalide */
-function getTokenExpiry(token) {
-  if (!token || typeof token !== 'string') return null
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp ? payload.exp * 1000 : null
-  } catch {
-    return null
-  }
-}
-
-/** true si le token est expiré (ou expire dans les 10 secondes) */
-function isTokenExpired(token) {
-  const exp = getTokenExpiry(token)
-  if (exp == null) return true
-  return Date.now() >= exp - 10000
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -54,52 +36,59 @@ export function AuthProvider({ children }) {
   }, [])
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      setLoading(false)
-      return
-    }
-    if (isTokenExpired(token)) {
-      localStorage.removeItem('token')
-      setLoading(false)
-      return
-    }
     try {
       const response = await api.get('/auth/me')
-      setUser(decodeUser(response.data.user))
+      if (response.data.user) {
+        setUser(decodeUser(response.data.user))
+      } else {
+        setUser(null)
+      }
     } catch (error) {
-      localStorage.removeItem('token')
+      setUser(null)
     }
     setLoading(false)
   }
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password })
-    localStorage.setItem('token', response.data.token)
     setUser(decodeUser(response.data.user))
     return response.data
   }
 
-  const loginWithToken = useCallback(async (token) => {
-    localStorage.setItem('token', token)
+  const exchangeCode = useCallback(async (code) => {
     try {
-      const response = await api.get('/auth/me')
+      const response = await api.post('/auth/exchange-code', { code })
+      setUser(decodeUser(response.data.user))
+      return response.data
+    } catch (error) {
+      throw error
+    }
+  }, [])
+
+  const loginWithToken = useCallback(async (token) => {
+    // Legacy support (if needed during migration)
+    try {
+      const response = await api.get('/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       setUser(decodeUser(response.data.user))
     } catch (error) {
-      localStorage.removeItem('token')
       throw error
     }
   }, [])
 
   const register = async (data) => {
     const response = await api.post('/auth/register', data)
-    localStorage.setItem('token', response.data.token)
     setUser(decodeUser(response.data.user))
     return response.data
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch (e) {
+      console.warn('Logout error:', e)
+    }
     setUser(null)
   }
 
@@ -108,39 +97,31 @@ export function AuthProvider({ children }) {
   }
 
   const refreshUser = useCallback(async () => {
-    const token = localStorage.getItem('token')
-    if (!token) return
     try {
       const response = await api.get('/auth/me')
       setUser(decodeUser(response.data.user))
     } catch {
-      // Keep current user on error (e.g. token expired will be handled on next nav)
+      // Keep current user on error
     }
   }, [])
 
-  // Vérification périodique de l'expiration du token (toutes les 60 s)
+  // Periodic check (optional with cookies)
   useEffect(() => {
     if (!user) return
     const interval = setInterval(() => {
-      const token = localStorage.getItem('token')
-      if (!token || isTokenExpired(token)) {
-        localStorage.removeItem('token')
-        setUser(null)
-        window.location.href = '/login'
-      }
-    }, 60000)
+      checkAuth()
+    }, 5 * 60000) // Every 5 minutes
     return () => clearInterval(interval)
   }, [user])
 
-  // Déconnexion après inactivité (optionnel, si SESSION_IDLE_MINUTES > 0)
+  // Idle logout
   useEffect(() => {
     if (!user || SESSION_IDLE_MINUTES <= 0) return
 
     const scheduleIdleLogout = () => {
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current)
       idleTimeoutRef.current = setTimeout(() => {
-        localStorage.removeItem('token')
-        setUser(null)
+        logout()
         window.location.href = '/login'
       }, SESSION_IDLE_MINUTES * 60 * 1000)
     }
@@ -155,7 +136,7 @@ export function AuthProvider({ children }) {
   }, [user])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithToken, register, logout, updateUser, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, exchangeCode, loginWithToken, register, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

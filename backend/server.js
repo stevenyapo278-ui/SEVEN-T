@@ -62,6 +62,7 @@ import { setIO } from './services/socketEmitter.js';
 import { runDailyBriefingJob } from './services/dailyBriefing.js';
 import { runNextBestActionJob } from './services/nextBestAction.js';
 import { runCampaignSchedulerJob } from './services/campaigns.js';
+import { startWorkflowWorker } from './workers/workflowWorker.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -71,7 +72,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Validate required environment variables in production
 if (isProduction) {
-    const required = ['JWT_SECRET', 'DATABASE_URL'];
+    const required = ['JWT_SECRET', 'DATABASE_URL', 'REDIS_URL'];
     const missing = required.filter(key => !process.env[key]);
     if (missing.length > 0) {
         console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
@@ -244,92 +245,30 @@ app.get('/api/plans', async (req, res) => {
     }
 });
 
-// User routes (alias for /auth/me) - Optional auth for currency context (never return 500)
-app.get('/api/users/me', async (req, res) => {
-    try {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        if (!token) {
-            return res.json({ user: null });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const userId = decoded?.id;
-        if (!userId) {
-            return res.json({ user: null });
-        }
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, payment_module_enabled FROM users WHERE id = ?', userId);
-        if (!user) return res.json({ user: null });
-        const { getPlan, getEffectivePlanName } = await import('./config/plans.js');
-        const effectivePlan = await getEffectivePlanName(user.plan, user);
-        const planConfig = await getPlan(effectivePlan);
-        const plan_features = planConfig?.features || {};
-        return res.json({ user: { ...user, plan: effectivePlan, plan_features } });
-    } catch (err) {
-        console.error('GET /api/users/me error:', err?.message || err);
-        if (!res.headersSent) {
-            return res.status(200).json({ user: null });
-        }
-    }
-});
-
-// Global error handler (must be after all routes)
-app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({ error: 'Erreur serveur' });
-});
-
-app.put('/api/users/me', authenticateToken, async (req, res) => {
-    try {
-        const { name, company, currency } = req.body;
-        const updates = [];
-        const values = [];
-        if (name !== undefined) { updates.push('name = ?'); values.push(name); }
-        if (company !== undefined) { updates.push('company = ?'); values.push(company); }
-        if (currency !== undefined) { updates.push('currency = ?'); values.push(currency); }
-        
-        if (updates.length > 0) {
-            values.push(req.user.id);
-            await db.run(`UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, ...values);
-        }
-        
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at FROM users WHERE id = ?', req.user.id);
-        res.json({ user });
-    } catch (error) {
-        console.error('Update user error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-});
-
-// Global error handlers to prevent server crashes
-process.on('uncaughtException', (error) => {
-    console.error('❌ Uncaught Exception:', error.message);
-    // Don't exit - keep server running
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason?.message || reason);
-    // Don't exit - keep server running
-});
-
-// Socket.IO (real-time conversation updates)
+// ── SOCKET.IO (Real-time updates) ───────────────────────────
 const io = new SocketIOServer(server, {
     cors: { origin: allowedOrigins, credentials: true },
     path: '/socket.io'
 });
-io.use((socket, next) => {
-    const token = socket.handshake.auth?.token || socket.handshake.query?.token;
-    if (!token) return next(new Error('Token requis'));
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) return next(new Error('Token invalide'));
-        socket.userId = String(decoded.id);
-        next();
-    });
+io.use(async (socket, next) => {
+    try {
+        const cookieStr = socket.handshake.headers.cookie;
+        if (!cookieStr) return next(new Error('Auth cookie manquant'));
+        
+        // Simple cookie parser for socket handshake
+        const cookies = Object.fromEntries(cookieStr.split(';').map(c => c.trim().split('=')));
+        const token = cookies.access_token || socket.handshake.auth?.token || socket.handshake.query?.token;
+        
+        if (!token) return next(new Error('Token requis'));
+        
+        jwt.verify(token, JWT_SECRET, (err, decoded) => {
+            if (err) return next(new Error('Token invalide'));
+            socket.userId = String(decoded.id);
+            next();
+        });
+    } catch (e) {
+        next(new Error('Erreur auth socket'));
+    }
 });
 io.on('connection', (socket) => {
     socket.join(socket.userId);
@@ -343,6 +282,9 @@ async function start() {
         // Initialize database
         await initDatabase();
         console.log('✅ Database initialized');
+
+        // Start Workflow Worker (BullMQ)
+        startWorkflowWorker();
 
         // Start server (use server from http.createServer for Socket.IO)
         server.listen(PORT, async () => {

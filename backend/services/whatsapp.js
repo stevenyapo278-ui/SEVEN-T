@@ -1,10 +1,11 @@
 import makeWASocket, {
     DisconnectReason,
-    useMultiFileAuthState,
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
     downloadMediaMessage
 } from 'baileys';
+import { createRedisClient } from '../utils/redisClient.js';
+import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeJid, resolveConversationJid, resolveJidForSend } from '../utils/whatsappUtils.js';
 import QRCode from 'qrcode';
@@ -36,9 +37,9 @@ import * as ttsService from './tts.js';
 import { conversationMessageQueue } from './conversationMessageQueue.js';
 import { notifyConversationUpdate } from './socketEmitter.js';
 import googleCalendarService from './googleCalendar.js';
+import { enqueueWorkflow } from '../queues/workflowQueue.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const sessionsDir = join(__dirname, '..', '..', 'sessions');
 const productImagesDir = join(__dirname, '..', '..', 'uploads', 'products');
 
 /** Load product image buffer from disk (no HTTP fetch to localhost). Returns null if not found or invalid. */
@@ -58,10 +59,6 @@ function loadProductImageBuffer(url) {
     }
 }
 
-// Ensure sessions directory exists
-if (!existsSync(sessionsDir)) {
-    mkdirSync(sessionsDir, { recursive: true });
-}
 
 // Silent logger for Baileys
 const silentLogger = {
@@ -140,7 +137,9 @@ class WhatsAppManager {
         this.lidToPhoneMap = new Map(); // toolId -> Map<lid, phoneJid> - track LID to phone mappings
         this.lastQrLogTime = new Map(); // toolId -> timestamp du dernier log QR (éviter le spam)
         this.pendingReconnects = new Map(); // toolId -> timeoutId (pour annuler la reconnexion si l'outil est supprimé)
+        this.storeIntervals = new Map(); // toolId -> intervalId
         this._queueDrainHandlerSet = false;
+        this.redis = createRedisClient();
     }
 
     /**
@@ -182,23 +181,30 @@ class WhatsAppManager {
     }
 
     /**
-     * Clear session files for an agent
+     * Clear session from Redis for an agent
      */
-    clearSession(toolId) {
+    async clearSession(toolId) {
         const pendingId = this.pendingReconnects.get(toolId);
         if (pendingId) {
             clearTimeout(pendingId);
             this.pendingReconnects.delete(toolId);
         }
-        const sessionPath = join(sessionsDir, toolId);
-        if (existsSync(sessionPath)) {
-            try {
-                rmSync(sessionPath, { recursive: true, force: true });
-                console.log(`[WhatsApp] Session cleared for tool ${toolId}`);
-            } catch (err) {
-                console.error(`[WhatsApp] Error clearing session:`, err);
-            }
+
+        // Clear interval for store saving
+        const intervalId = this.storeIntervals.get(toolId);
+        if (intervalId) {
+            clearInterval(intervalId);
+            this.storeIntervals.delete(toolId);
         }
+
+        try {
+            await clearBaileySession(this.redis, toolId);
+            await this.redis.del(`baileys:store:${toolId}`);
+            console.log(`[WhatsApp] Session and store cleared in Redis for tool ${toolId}`);
+        } catch (err) {
+            console.error(`[WhatsApp] Error clearing session in Redis:`, err.message);
+        }
+
         // Clear in-memory state
         this.connections.delete(toolId);
         this.stores.delete(toolId);
@@ -247,84 +253,23 @@ class WhatsAppManager {
 
             this.statuses.set(toolId, { status: 'connecting', message: 'Connexion en cours...' });
 
-            const sessionPath = join(sessionsDir, toolId);
-            
-            // Ensure session directory exists
-            if (!existsSync(sessionPath)) {
-                mkdirSync(sessionPath, { recursive: true });
-            }
-
-            // Check if we have write permissions to the session directory and existing files
-            try {
-                const fsPromises = await import('fs/promises');
-                
-                // Check creds.json if it exists - try to actually open for writing using promises
-                const credsFile = join(sessionPath, 'creds.json');
-                const credsExists = existsSync(credsFile);
-                console.log(`[WhatsApp] Checking write permissions for ${toolId}...`);
-                
-                if (credsExists) {
-                    // Try to open file for writing using the same method Baileys uses
-                    const handle = await fsPromises.open(credsFile, 'r+');
-                    await handle.close();
-                    console.log(`[WhatsApp] Write access verified for ${toolId}`);
-                } else {
-                    // Check we can create files in the directory
-                    const testFile = join(sessionPath, '.write_test');
-                    await fsPromises.writeFile(testFile, 'test');
-                    await fsPromises.unlink(testFile);
-                    console.log(`[WhatsApp] Directory write access verified for ${toolId}`);
-                }
-            } catch (permError) {
-                console.error(`[WhatsApp] Permission denied for session ${toolId}:`, permError.message);
-                this.statuses.set(toolId, { status: 'error', message: 'Erreur de permissions - impossible d\'écrire dans le dossier de session' });
-                await db.run('UPDATE tools SET status = ? WHERE id = ?', 'error', toolId);
-                const agent = await db.get('SELECT * FROM agents WHERE tool_id = ?', toolId);
-                if (agent) {
-                    await db.run('UPDATE agents SET whatsapp_connected = 0 WHERE id = ?', agent.id);
-                }
-                try {
-                    const tool = await db.get('SELECT * FROM tools WHERE id = ?', toolId);
-                    adminAnomaliesService.create({
-                        type: 'system_error',
-                        severity: 'high',
-                        title: 'Erreur de permissions WhatsApp',
-                        message: `Impossible d'écrire dans le dossier de session pour l'outil ${toolId}. Exécutez: sudo chown -R $(whoami) sessions/`,
-                        agentId: agent?.id,
-                        userId: tool?.user_id || agent?.user_id
-                    });
-                } catch (e) {}
-                
-                return { error: 'Permission denied on session files. Run: sudo chown -R $(whoami) sessions/' };
-            }
-
-            const { state, saveCreds: originalSaveCreds } = await useMultiFileAuthState(sessionPath);
+            const { state, saveCreds } = await useBaileyRedisState(this.redis, toolId);
             
             const { version } = await fetchLatestBaileysVersion();
-            
-            // Wrap saveCreds to handle permission errors gracefully
-            const saveCreds = async () => {
-                try {
-                    await originalSaveCreds();
-                } catch (error) {
-                    console.error(`[WhatsApp] Error saving credentials for tool ${toolId}:`, error.message);
-                    // Don't crash the server, just log the error
-                }
-            };
 
             // Create simple store for this agent
             const store = new SimpleStore();
-            const storeFilePath = join(sessionPath, 'store.json');
             
-            // Try to load existing store data
-            if (existsSync(storeFilePath)) {
-                try {
-                    const data = JSON.parse(readFileSync(storeFilePath, 'utf-8'));
-                    store.fromJSON(data);
-            console.log(`[WhatsApp] Loaded store for tool ${toolId}`);
-                } catch (err) {
-                    console.log(`[WhatsApp] Could not load store for tool ${toolId}`);
+            // Load store from Redis
+            try {
+                const storeKey = `baileys:store:${toolId}`;
+                const storeData = await this.redis.get(storeKey);
+                if (storeData) {
+                    store.fromJSON(JSON.parse(storeData));
+                    console.log(`[WhatsApp] Loaded store from Redis for tool ${toolId}`);
                 }
+            } catch (err) {
+                console.warn(`[WhatsApp] Could not load store from Redis for tool ${toolId}:`, err.message);
             }
 
             const sock = makeWASocket({
@@ -389,14 +334,16 @@ class WhatsAppManager {
             this.stores.set(toolId, store);
             this.connections.set(toolId, sock);
 
-            // Periodically save store
-            const storeInterval = setInterval(() => {
+            // Periodically save store to Redis
+            const storeInterval = setInterval(async () => {
                 try {
-                    writeFileSync(storeFilePath, JSON.stringify(store.toJSON()));
+                    const storeKey = `baileys:store:${toolId}`;
+                    await this.redis.set(storeKey, JSON.stringify(store.toJSON()), 'EX', 90 * 24 * 3600);
                 } catch (err) {
-                    // Ignore write errors
+                    console.error(`[WhatsApp] Error saving store to Redis for tool ${toolId}:`, err.message);
                 }
-            }, 30000);
+            }, 60000); // More relaxed interval for Redis
+            this.storeIntervals.set(toolId, storeInterval);
 
             // Listen for chat updates
             sock.ev.on('chats.upsert', (chats) => {
@@ -503,18 +450,12 @@ class WhatsAppManager {
                     const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
                     const errorMessage = lastDisconnect?.error?.message || 'Unknown reason';
 
-                    // Save store before closing
-                    try {
-                        const currentStore = this.stores.get(toolId);
-                        if (currentStore) {
-                            writeFileSync(storeFilePath, JSON.stringify(currentStore.toJSON()));
-                        }
-                    } catch (err) {
-                        // Ignore
-                    }
-                    
                     // Clear interval
-                    clearInterval(storeInterval);
+                    const intervalId = this.storeIntervals.get(toolId);
+                    if (intervalId) {
+                        clearInterval(intervalId);
+                        this.storeIntervals.delete(toolId);
+                    }
 
                     this.connections.delete(toolId);
                     this.qrCodes.delete(toolId);
@@ -701,7 +642,7 @@ class WhatsAppManager {
                 console.log(`[WhatsApp] New conversation created for ${contactName}`);
                 
                 // Trigger workflow: new_conversation
-                void workflowExecutor.executeMatchingWorkflowsSafe('new_conversation', {
+                void enqueueWorkflow('new_conversation', {
                     conversationId: convId,
                     agentId,
                     userId: agent.user_id,
@@ -894,7 +835,7 @@ class WhatsAppManager {
                     media_url: payload.mediaUrl,
                     created_at: payload.createdAt
                 });
-                void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
+                void enqueueWorkflow('new_message', {
                     conversationId: context.conversation.id,
                     messageId: payload.inMsgId,
                     agentId: context.agent.id,
@@ -931,7 +872,7 @@ class WhatsAppManager {
             this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
 
             // Trigger workflow: new_message
-            void workflowExecutor.executeMatchingWorkflowsSafe('new_message', {
+            void enqueueWorkflow('new_message', {
                 conversationId: context.conversation.id,
                 messageId: inMsgId,
                 agentId: context.agent.id,

@@ -6,10 +6,11 @@ import { Loader2 } from 'lucide-react'
 export default function AuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { loginWithToken } = useAuth()
+  const { exchangeCode, loginWithToken } = useAuth()
 
   useEffect(() => {
-    const token = searchParams.get('token')
+    const code = searchParams.get('code')
+    const token = searchParams.get('token') // Fallback during migration
     const error = searchParams.get('error')
 
     if (error) {
@@ -17,19 +18,18 @@ export default function AuthCallback() {
       return
     }
 
-    if (token) {
+    if (code || token) {
       const finish = async () => {
-        if (typeof loginWithToken === 'function') {
-          try {
+        try {
+          if (code) {
+            await exchangeCode(code)
+          } else if (token) {
             await loginWithToken(token)
-          } catch {
-            navigate('/login', { replace: true })
-            return
           }
-        } else {
-          localStorage.setItem('token', token)
+          navigate('/dashboard', { replace: true })
+        } catch {
+          navigate('/login', { replace: true })
         }
-        navigate('/dashboard', { replace: true })
       }
       finish()
     } else {

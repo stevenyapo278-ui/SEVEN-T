@@ -11,8 +11,8 @@ WORKDIR /app/frontend
 # Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install dependencies (include dev deps for build tools like Vite)
-RUN npm ci
+# Install all deps (including devDeps for Vite build)
+RUN npm ci --ignore-scripts
 
 # Copy frontend source
 COPY frontend/ ./
@@ -22,53 +22,42 @@ RUN npm run build
 
 # ==========================================
 # Stage 2: Production image
+# ==========================================
 FROM node:20-alpine AS production
 
-# Install required system packages
+# Only essential runtime packages (no Chromium/Puppeteer needed for Baileys)
 RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
     ca-certificates \
-    ttf-freefont \
+    wget \
     && rm -rf /var/cache/apk/*
-
-# Set environment variables for Puppeteer (used by some WhatsApp libs)
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 WORKDIR /app
 
-# Create non-root user for security
+# Non-root user for security
 RUN addgroup -g 1001 -S nodejs \
     && adduser -S nodejs -u 1001 -G nodejs
 
-# Copy backend package files
+# Install backend production dependencies
 COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production --ignore-scripts \
+    && npm cache clean --force
 
 # Copy backend source
 COPY backend/ ./backend/
 
-# Copy frontend build from previous stage
+# Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Create necessary directories
-RUN mkdir -p data sessions uploads \
+# Create upload directory (sessions go to Redis, no sessions dir needed)
+RUN mkdir -p uploads \
     && chown -R nodejs:nodejs /app
 
-# Switch to non-root user
 USER nodejs
 
-# Expose port
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 
-# Start the application
-CMD ["node", "backend/server.js"]
+# Memory limit for Node.js (adjust based on VPS RAM)
+CMD ["node", "--max-old-space-size=768", "backend/server.js"]

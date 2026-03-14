@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { io } from 'socket.io-client'
+import { useAuth } from '../contexts/AuthContext'
 
 // Shared socket so React Strict Mode's unmount/remount doesn't disconnect before connection is established
 let sharedSocket = null
@@ -14,6 +15,7 @@ const DISCONNECT_DELAY_MS = 100
  * Polling can be reduced or kept as fallback when socket is disconnected.
  */
 export function useConversationSocket(onUpdate) {
+  const { user } = useAuth()
   const socketRef = useRef(null)
   const [connected, setConnected] = useState(false)
   const onUpdateRef = useRef(onUpdate)
@@ -24,8 +26,7 @@ export function useConversationSocket(onUpdate) {
   }, [])
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) return
+    if (!user) return
 
     if (pendingDisconnectId) {
       clearTimeout(pendingDisconnectId)
@@ -36,7 +37,7 @@ export function useConversationSocket(onUpdate) {
       const baseUrl = window.location.origin
       sharedSocket = io(baseUrl, {
         path: '/socket.io',
-        auth: { token },
+        withCredentials: true,
         transports: ['websocket', 'polling']
       })
       sharedSocket.on('connect_error', () => {})

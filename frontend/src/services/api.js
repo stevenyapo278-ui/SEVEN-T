@@ -2,17 +2,15 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
 })
 
 // Add token to requests; allow FormData to set Content-Type (multipart)
+// allow FormData to set Content-Type (multipart)
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type']
   }
@@ -26,7 +24,7 @@ api.interceptors.response.use(
   (error) => {
     const isLoginRequest = error.config?.url?.includes?.('auth/login') && (error.config?.method === 'post' || error.config?.method === 'POST')
     if (error.response?.status === 401 && !isLoginRequest) {
-      localStorage.removeItem('token')
+      // In cookie-based auth, we don't clear localStorage token, just redirect
       window.location.href = '/login'
     }
     return Promise.reject(error)

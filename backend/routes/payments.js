@@ -178,16 +178,12 @@ router.put('/providers/:provider', authenticateToken, async (req, res) => {
         if (provider === 'geniuspay') {
             const { api_key, api_secret, webhook_secret } = req.body || {};
             if (!api_key || !api_secret) return res.status(400).json({ error: 'api_key et api_secret requis' });
-            const credentials = JSON.stringify({ 
+            const credentials = { 
                 api_key: api_key.trim(), 
                 api_secret: api_secret.trim(),
                 webhook_secret: webhook_secret?.trim() 
-            });
-            await db.run(`
-                INSERT INTO user_payment_providers (user_id, provider, credentials, updated_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT (user_id, provider) DO UPDATE SET credentials = EXCLUDED.credentials, updated_at = CURRENT_TIMESTAMP
-            `, req.user.id, provider, credentials);
+            };
+            await paymentProviders.saveProviderConfig(req.user.id, provider, credentials);
         } else {
             return res.status(400).json({ error: 'Provider non supporté' });
         }

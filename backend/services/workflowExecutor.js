@@ -3,6 +3,7 @@ import db from '../database/init.js';
 import { normalizeJid } from '../utils/whatsappUtils.js';
 import { aiLogger } from '../utils/logger.js';
 import { notificationService } from './notifications.js';
+import { enqueueDelayedWorkflow } from '../queues/workflowQueue.js';
 
 /**
  * Service d'exécution des workflows automatisés
@@ -76,6 +77,16 @@ class WorkflowExecutor {
             if (!userId) {
                 console.warn('[WorkflowExecutor] No userId found, skipping workflow execution');
                 return { executed: 0, results: [] };
+            }
+
+            // Support resuming a workflow from a BullMQ delayed job
+            if (triggerType === 'resume_workflow') {
+                const { workflowId, startIndex, actions: resumedActions } = triggerData;
+                const workflow = await db.get('SELECT * FROM workflows WHERE id = ?', workflowId);
+                if (!workflow || !workflow.is_active) return { executed: 0, results: [] };
+                
+                const result = await this.executeWorkflow(workflow, triggerData, startIndex, resumedActions);
+                return { executed: 1, results: [{ workflowId, success: true, result }] };
             }
 
             // is_active is INTEGER (0/1) in PostgreSQL — do not compare to boolean
@@ -156,20 +167,26 @@ class WorkflowExecutor {
 
     /**
      * Execute a single workflow
+     * @param {object} workflow - Workflow DB object
+     * @param {object} triggerData - Context data
+     * @param {number} startIndex - Index to start actions from (for resumed workflows)
+     * @param {array} resumedActions - Slice of actions to execute (if passed directly)
      */
-    async executeWorkflow(workflow, triggerData) {
-        console.log(`[WorkflowExecutor] Executing workflow: ${workflow.name} (${workflow.id})`);
+    async executeWorkflow(workflow, triggerData, startIndex = 0, resumedActions = null) {
+        console.log(`[WorkflowExecutor] Executing workflow: ${workflow.name} (${workflow.id}) starting at index ${startIndex}`);
 
         let actions;
         let triggerConfig;
         try {
             const rawActions = workflow.actions;
             const rawTrigger = workflow.trigger_config;
-            if (rawActions == null || rawActions === '' || rawActions === 'undefined') {
+            if (resumedActions) {
+                actions = resumedActions;
+            } else if (rawActions == null || rawActions === '' || rawActions === 'undefined') {
                 actions = [];
             } else {
                 const parsed = typeof rawActions === 'string' ? JSON.parse(rawActions) : rawActions;
-                actions = Array.isArray(parsed) ? parsed : [];
+                actions = Array.isArray(parsed) ? (startIndex > 0 ? parsed.slice(startIndex) : parsed) : [];
             }
             if (rawTrigger == null || rawTrigger === '' || rawTrigger === 'undefined') {
                 triggerConfig = {};
@@ -201,11 +218,37 @@ class WorkflowExecutor {
                 const result = await this.executeAction(action, triggerData, workflow);
                 actionResults.push({ action: action.type, success: true, result });
 
-                // Handle wait action
+                // Handle wait action — NON-BLOCKING ASYNC VERSION
                 if (action.type === 'wait') {
                     const minutes = action.config?.minutes || 5;
-                    console.log(`[WorkflowExecutor] Waiting ${minutes} minutes...`);
-                    await new Promise(resolve => setTimeout(resolve, minutes * 60 * 1000));
+                    const nextActionIndex = startIndex + i + 1;
+                    
+                    // If there are more actions, schedule a resumption
+                    const totalWorkflowActions = typeof workflow.actions === 'string' ? JSON.parse(workflow.actions).length : workflow.actions.length;
+                    
+                    if (nextActionIndex < totalWorkflowActions) {
+                        console.log(`[WorkflowExecutor] Scheduling resumption of workflow ${workflow.id} in ${minutes} minutes...`);
+                        await enqueueDelayedWorkflow(
+                            'resume_workflow',
+                            { 
+                                ...triggerData, 
+                                workflowId: workflow.id, 
+                                startIndex: nextActionIndex 
+                            },
+                            workflow.agent_id,
+                            workflow.user_id,
+                            minutes * 60 * 1000
+                        );
+                    }
+                    
+                    // Log partial execution and stop current loop
+                    await this.logExecution(workflow.id, triggerData, actionResults);
+                    return { 
+                        actionsExecuted: i + 1, 
+                        status: 'paused', 
+                        resumesIn: `${minutes}m`,
+                        results: actionResults 
+                    };
                 }
             } catch (error) {
                 console.error(`[WorkflowExecutor] Error executing action ${action.type}:`, error);
