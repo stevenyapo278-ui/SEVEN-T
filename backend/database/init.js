@@ -230,6 +230,8 @@ export async function initDatabase() {
             media_model TEXT,
             template TEXT,
             tool_id TEXT,
+            calendar_tool_id TEXT,
+            outlook_tool_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -393,6 +395,21 @@ export async function initDatabase() {
             is_active INTEGER DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS services (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            price DOUBLE PRECISION DEFAULT 0,
+            duration INTEGER DEFAULT 30,
+            category TEXT,
+            image_url TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS product_categories (
@@ -1139,6 +1156,16 @@ export async function initDatabase() {
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('subscription_plans migration:', e?.message);
+        }
+    }
+
+    // Migration: agents - calendar_tool_id and outlook_tool_id
+    try {
+        await db.run('ALTER TABLE agents ADD COLUMN IF NOT EXISTS calendar_tool_id TEXT');
+        await db.run('ALTER TABLE agents ADD COLUMN IF NOT EXISTS outlook_tool_id TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('agents tools columns migration:', e?.message);
         }
     }
 

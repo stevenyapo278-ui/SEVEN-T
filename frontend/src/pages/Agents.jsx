@@ -1297,46 +1297,25 @@ function CreateAgentModal({ onClose, onCreated }) {
 
   const TEMPLATES = [
     {
-      id: 'default',
-      name: 'Assistant Général',
-      description: 'Un assistant polyvalent qui répond à toutes les questions',
-      icon: '🤖',
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
       id: 'ecommerce',
       name: 'E-commerce',
-      description: 'Vente en ligne, catalogue, commandes et livraison',
+      description: 'Vente de produits, catalogue, commandes et livraison',
       icon: '🛒',
       color: 'from-gold-500 to-amber-600'
     },
     {
       id: 'commercial',
       name: 'Commercial',
-      description: 'Qualifie les prospects, présente les produits et guide vers la vente',
+      description: 'Vente de services, prestations et prise de rendez-vous',
       icon: '💼',
-      color: 'from-emerald-500 to-green-600'
+      color: 'from-blue-500 to-blue-600'
     },
     {
       id: 'support',
       name: 'Support Client',
-      description: 'Résout les problèmes et guide les utilisateurs pas à pas',
+      description: 'Assistance, aide technique et questions fréquentes (FAQ)',
       icon: '🛠️',
-      color: 'from-blue-500 to-cyan-600'
-    },
-    {
-      id: 'faq',
-      name: 'FAQ',
-      description: 'Répond aux questions fréquentes de manière concise',
-      icon: '❓',
-      color: 'from-amber-500 to-orange-600'
-    },
-    {
-      id: 'appointment',
-      name: 'Prise de RDV',
-      description: 'Collecte les informations et planifie des rendez-vous',
-      icon: '📅',
-      color: 'from-pink-500 to-rose-600'
+      color: 'from-emerald-500 to-emerald-600'
     }
   ]
 

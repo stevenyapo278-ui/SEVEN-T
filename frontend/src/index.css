@@ -1,59 +1,61 @@
-@import url("https://fonts.googleapis.com/css2?family=Audiowide&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Geist:wght@100;300;400;500;600;700;800;900&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables - Agent-bootstrap theme (Dark = default) */
+/* CSS Variables - Premium Modern Aesthetic */
 :root,
 .dark {
-  --space-950: #0d1117;
-  --space-900: #161b22;
-  --space-800: #1c2128;
-  --space-700: #30363d;
-  --space-600: #444d56;
-  --gold-300: #e3b341;
-  --gold-400: #d29922;
-  --gold-500: #d29922;
-  --blue-400: #58a6ff;
-  --blue-500: #58a6ff;
-  --blue-600: #58a6ff;
+  /* Core Palette - Deep Onyx & Slate */
+  --space-950: #0a0c10;
+  --space-900: #12141c;
+  --space-800: #1a1d27;
+  --space-700: #2d313f;
+  --space-600: #404555;
+  
+  /* Accents - Vibrant Gold & Electric Blue */
+  --gold-300: #fde68a;
+  --gold-400: #fbbf24;
+  --gold-500: #f59e0b;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
 
-  --bg-primary: #0d1117;
-  --bg-card: #161b22;
-  --bg-card-hover: #1c2128;
-  --bg-secondary: #161b22;
-  --bg-tertiary: #1c2128;
-  --bg-elevated: #1c2128;
-  --border: #30363d;
-  --border-color: #30363d;
-  --border-light: #444d56;
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --text-muted: #8b949e;
-  --text-label: #6e7681;
-  --shadow-color: rgba(0, 0, 0, 0.2);
+  /* Semantic System */
+  --bg-primary: #0a0c10;
+  --bg-card: #12141c;
+  --bg-card-hover: #1a1d27;
+  --bg-secondary: #0f111a;
+  --bg-tertiary: #161923;
+  --bg-elevated: #1e212d;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.04);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-label: #475569;
+  --shadow-color: rgba(0, 0, 0, 0.4);
 
-  --accent-blue: #58a6ff;
-  --accent-green: #3fb950;
-  --accent-orange: #d29922;
-  --accent-yellow: #e3b341;
-  --accent-primary: #58a6ff;
-  --accent-secondary: #d29922;
-  --accent-success: #3fb950;
-  --accent-warning: #d29922;
-  --accent-error: #f85149;
-  --accent-info: #58a6ff;
+  --accent-blue: #3b82f6;
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --accent-yellow: #fbbf24;
+  --accent-primary: #3b82f6;
+  --accent-secondary: #f59e0b;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --accent-info: #3b82f6;
 
-  --tag-green-bg: #1a4721;
-  --tag-green-text: #3fb950;
-  --tag-blue-bg: #1c3557;
-  --tag-blue-text: #58a6ff;
-  --tag-orange-bg: #3d2d0a;
-  --tag-orange-text: #d29922;
-  --step-bg: #1f3a5f;
+  --tag-green-bg: rgba(16, 185, 129, 0.1);
+  --tag-green-text: #34d399;
+  --tag-blue-bg: rgba(59, 130, 246, 0.1);
+  --tag-blue-text: #60a5fa;
+  --tag-orange-bg: rgba(245, 158, 11, 0.1);
+  --tag-orange-text: #fbbf24;
+  --step-bg: #1e293b;
 
-  /* Font stack — Anchor (Headline) + Supporting (UI/Body) */
   --font-brand: "Audiowide", monospace;
   --font-ui: "Geist", sans-serif;
   --font-body: "Geist", sans-serif;
@@ -61,59 +63,57 @@
   --font-code: "JetBrains Mono", monospace;
 }
 
-/* Agent-bootstrap Light Mode */
+/* Premium Light Mode */
 .light {
-  --space-950: #f6f8fa;
+  /* Airy & Clean Slate */
+  --space-950: #f8fafc;
   --space-900: #ffffff;
-  --space-800: #f0f2f5;
-  --space-700: #d0d7de;
-  --space-600: #c8d0d8;
-  --gold-300: #9a6700;
-  --gold-400: #9a6700;
-  --gold-500: #7d4e00;
-  --blue-400: #0969da;
-  --blue-500: #0969da;
-  --blue-600: #0550ae;
+  --space-800: #f1f5f9;
+  --space-700: #e2e8f0;
+  --space-600: #cbd5e1;
+  
+  --gold-300: #d97706;
+  --gold-400: #b45309;
+  --gold-500: #92400e;
+  --blue-400: #2563eb;
+  --blue-500: #1d4ed8;
+  --blue-600: #1e3a8a;
 
-  --bg-primary: #f6f8fa;
+  /* Semantic System */
+  --bg-primary: #f8fafc;
   --bg-card: #ffffff;
-  --bg-card-hover: #f0f2f5;
+  --bg-card-hover: #f1f5f9;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f0f2f5;
+  --bg-tertiary: #f8fafc;
   --bg-elevated: #ffffff;
-  --border: #d0d7de;
-  --border-color: #d0d7de;
-  --border-light: #c8d0d8;
-  --text-primary: #1f2328;
-  --text-secondary: #57606a;
-  --text-muted: #57606a;
-  --text-label: #6e7781;
-  --shadow-color: rgba(0, 0, 0, 0.08);
+  --border: #e2e8f0;
+  --border-color: #e2e8f0;
+  --border-light: #f1f5f9;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-label: #94a3b8;
+  --shadow-color: rgba(15, 23, 42, 0.08);
 
-  --accent-blue: #0969da;
-  --accent-green: #1a7f37;
-  --accent-orange: #9a6700;
-  --accent-yellow: #7d4e00;
-  --accent-primary: #0969da;
-  --accent-secondary: #9a6700;
-  --accent-success: #1a7f37;
-  --accent-warning: #9a6700;
-  --accent-error: #cf222e;
-  --accent-info: #0969da;
+  --accent-blue: #2563eb;
+  --accent-green: #059669;
+  --accent-orange: #d97706;
+  --accent-yellow: #b45309;
+  --accent-primary: #2563eb;
+  --accent-secondary: #d97706;
+  --accent-success: #059669;
+  --accent-warning: #d97706;
+  --accent-error: #dc2626;
+  --accent-info: #2563eb;
 
-  --tag-green-bg: #dafbe1;
-  --tag-green-text: #1a7f37;
-  --tag-blue-bg: #ddf4ff;
-  --tag-blue-text: #0969da;
-  --tag-orange-bg: #fff8c5;
-  --tag-orange-text: #9a6700;
-  --step-bg: #ddf4ff;
-
-  --font-brand: "Audiowide", monospace;
-  --font-ui: "Geist", sans-serif;
-  --font-body: "Geist", sans-serif;
-  --font-display: "Instrument Serif", serif;
-  --font-code: "JetBrains Mono", monospace;
+  --tag-green-bg: #ecfdf5;
+  --tag-green-text: #059669;
+  --tag-blue-bg: #eff6ff;
+  --tag-blue-text: #2563eb;
+  --tag-orange-bg: #fffbeb;
+  --tag-orange-text: #d97706;
+  --step-bg: #eff6ff;
 }
 
 body {
@@ -121,30 +121,22 @@ body {
   font-size: 0.875rem;
   line-height: 1.6;
   background-color: var(--bg-primary);
-  color: var(--text-muted);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  padding-bottom: env(safe-area-inset-bottom);
+  color: var(--text-secondary);
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
-/* Typography — uses --font-brand, --font-ui, --font-body, --font-code */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   color: var(--text-primary);
   letter-spacing: -0.02em;
 }
+
 h1 {
-  font-size: 2.25rem;
-  font-weight: 500; /* Instrument Serif looks better at 500/600 than 800 */
-  color: var(--text-primary);
+  font-size: 2.5rem;
+  font-weight: 500;
   line-height: 1.1;
 }
 h2 {
@@ -169,6 +161,118 @@ h3 {
   font-weight: 500;
 }
 
+/* GLOBAL TEXT COLOR CORRECTIONS FOR LIGHT MODE */
+.light .text-white,
+.light .text-gray-50,
+.light .text-gray-100,
+.light .text-gray-200,
+.light .text-slate-50,
+.light .text-slate-100,
+.light .text-slate-200,
+.light .text-zinc-50,
+.light .text-zinc-100,
+.light .text-zinc-200,
+.light .text-stone-50,
+.light .text-stone-100,
+.light .text-stone-200,
+.light .text-blue-50,
+.light .text-blue-100,
+.light .text-indigo-50,
+.light .text-indigo-100 {
+  color: var(--text-primary) !important;
+}
+
+.light .text-gray-300,
+.light .text-gray-400,
+.light .text-slate-300,
+.light .text-slate-400,
+.light .text-zinc-300,
+.light .text-zinc-400,
+.light .text-stone-300,
+.light .text-stone-400 {
+  color: var(--text-secondary) !important;
+}
+
+.light .text-gray-500,
+.light .text-slate-500,
+.light .text-zinc-500,
+.light .text-stone-500 {
+  color: var(--text-muted) !important;
+}
+
+/* Exceptions: Branded colors and status indicators */
+.light .text-emerald-400, .light .text-green-400 { color: #059669 !important; }
+.light .text-amber-400, .light .text-gold-400, .light .text-yellow-400 { color: #d97706 !important; }
+.light .text-red-400, .light .text-rose-400 { color: #dc2626 !important; }
+.light .text-blue-400, .light .text-indigo-400 { color: #2563eb !important; }
+
+/* Dashboard Premium Enhancements */
+.card {
+  @apply transition-all duration-300;
+  box-shadow: 0 4px 6px -1px var(--shadow-color);
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px var(--shadow-color);
+}
+
+.light .card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+/* Premium Gradients */
+.bg-premium-gradient {
+  background: linear-gradient(135deg, var(--space-950) 0%, var(--space-900) 100%);
+}
+
+.light .bg-premium-gradient {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+/* Input Consistency */
+.input-dark, .input {
+  @apply rounded-xl border border-transparent focus:ring-2 focus:ring-opacity-50 transition-all;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.light .input-dark, .light .input {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.light .input-dark:focus, .light .input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Keep white text on primary buttons and dark backgrounds */
+.light .btn-primary .text-white,
+.light .btn-primary,
+.light .bg-blue-600 .text-white,
+.light .bg-red-500 .text-white,
+.light .bg-emerald-500 .text-white,
+.light .bg-gold-500 .text-white,
+.light .bg-gradient-to-br .text-white,
+.light .bg-gradient-to-r .text-white,
+.light .badge-active .text-white {
+  color: #ffffff !important;
+}
+
+/* GLOBAL BACKGROUND OVERRIDES FOR LIGHT MODE */
+.light .bg-space-950 { background-color: var(--space-950) !important; }
+.light .bg-space-900 { background-color: var(--space-900) !important; }
+.light .bg-space-800 { background-color: var(--space-800) !important; }
+.light .bg-space-700 { background-color: var(--space-700) !important; }
+
+/* GLOBAL BORDER OVERRIDES FOR LIGHT MODE */
+.light .border-space-700,
+.light .border-space-800 {
+  border-color: var(--border) !important;
+}
+
 /* Loading screen — centré sur mobile et desktop */
 .loading-screen {
   min-height: 100vh;
@@ -190,7 +294,7 @@ h3 {
   }
   /* Tables: horizontal scroll on small screens */
   .table-responsive {
-    overflow-x: auto;
+    @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
     -webkit-overflow-scrolling: touch;
   }
   .table-responsive table {
@@ -211,85 +315,6 @@ h3 {
 }
 .light .text-icon {
   color: #6b7280 !important;
-}
-
-/* Light mode text color overrides - Agent-bootstrap light */
-.light .text-gray-100 {
-  color: #1f2328;
-}
-.light .text-gray-200 {
-  color: #1f2328;
-}
-.light .text-gray-300 {
-  color: #57606a;
-}
-.light .text-gray-400 {
-  color: #57606a;
-}
-.light .text-gray-500 {
-  color: #57606a;
-}
-.light .text-gray-600 {
-  color: #57606a;
-}
-.light .text-gray-700 {
-  color: #1f2328;
-}
-.light .text-gray-800 {
-  color: #1f2328;
-}
-.light .text-gray-900 {
-  color: #1f2328;
-}
-
-/* Light mode background overrides - Agent-bootstrap light */
-.light .bg-space-950 {
-  background-color: #f6f8fa;
-}
-.light .bg-space-900 {
-  background-color: #ffffff;
-}
-.light .bg-space-800 {
-  background-color: #f0f2f5;
-}
-.light .bg-space-700 {
-  background-color: #d0d7de;
-}
-
-/* Light mode border overrides */
-.light .border-space-700 {
-  border-color: #d0d7de;
-}
-.light .border-space-600 {
-  border-color: #d0d7de;
-}
-
-/* Light mode hover states */
-.light .hover\:bg-space-800:hover {
-  background-color: #f0f2f5;
-}
-.light .hover\:bg-space-700:hover {
-  background-color: #f0f2f5;
-}
-.light .hover\:bg-space-600:hover {
-  background-color: #f0f2f5;
-}
-.light .hover\:border-space-600:hover {
-  border-color: #c8d0d8;
-}
-
-/* Light mode gradient fixes */
-.light .from-space-800 {
-  --tw-gradient-from: #f6f8fa;
-}
-.light .to-space-800 {
-  --tw-gradient-to: #f6f8fa;
-}
-.light .to-space-950 {
-  --tw-gradient-to: #ffffff;
-}
-.light .via-space-900 {
-  --tw-gradient-via: #ffffff;
 }
 
 /* Light mode: masquer le motif SVG sombre sur les hero (Produits, Leads) */
@@ -382,23 +407,6 @@ h3 {
   background-color: rgba(234, 179, 8, 0.1);
 }
 
-/* Light mode text colors for accent elements - Agent-bootstrap light */
-.light .text-blue-400 {
-  color: #0969da;
-}
-.light .text-gold-400 {
-  color: #9a6700;
-}
-.light .text-emerald-400 {
-  color: #1a7f37;
-}
-.light .text-amber-400 {
-  color: #9a6700;
-}
-.light .text-red-400 {
-  color: #cf222e;
-}
-
 /* Light mode navigation active states */
 .light .border-blue-500\/30 {
   border-color: rgba(9, 105, 218, 0.35);
@@ -469,13 +477,24 @@ h3 {
   color: #cf222e;
 }
 
+/* Glassmorphism Refined */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light .glass {
+  background: rgba(15, 23, 42, 0.02);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+}
+
 /* Smooth theme transition for all elements */
-*,
-*::before,
-*::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes fadeIn {
@@ -791,23 +810,18 @@ select.input option {
   --font-code: "JetBrains Mono", monospace;
 }
 
-/* Glassmorphism & Depth Utils */
+/* Glassmorphism Refined */
 .glass {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.dark .glass {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px 0 var(--shadow-color);
 }
 
 .light .glass {
-  background: rgba(0, 0, 0, 0.02);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .noise-overlay {
@@ -1012,31 +1026,21 @@ select.input option {
   background-color: rgba(15, 23, 42, 0.6);
 }
 
-/* Light mode navigation sidebar - Agent-bootstrap light */
-.light .bg-space-900.border-r {
-  background-color: #ffffff;
-  border-color: #d0d7de;
+/* Navigation Overrides */
+.light .bg-space-900.border-r,
+.light .bg-space-950,
+.light .bg-space-900 {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border) !important;
 }
 
-/* Light mode header */
-.light .bg-space-900\/80.backdrop-blur-md {
-  background-color: rgba(255, 255, 255, 0.9);
+.light .bg-space-800 {
+  background-color: var(--bg-tertiary) !important;
 }
 
-/* Light mode hover states */
-.light .hover\:text-gray-100:hover {
-  color: #1f2328;
-}
-.light .hover\:text-gray-300:hover {
-  color: #57606a;
-}
-
-/* Light mode disabled states - Agent-bootstrap light */
-.light .bg-gray-700 {
-  background-color: #d0d7de;
-}
-.light .text-gray-500.cursor-not-allowed {
-  color: #6e7781;
+.light .hover\:bg-space-800:hover,
+.light .hover\:bg-space-700:hover {
+  background-color: var(--bg-card-hover) !important;
 }
 
 /* Light mode tooltip/popover */

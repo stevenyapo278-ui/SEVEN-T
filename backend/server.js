@@ -27,6 +27,7 @@ import agentRoutes from './routes/agents.js';
 import toolsRoutes from './routes/tools.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import outlookRoutes from './routes/outlook.js';
+import googleCalendarRoutes from './routes/googleCalendar.js';
 import conversationRoutes from './routes/conversations.js';
 import knowledgeRoutes from './routes/knowledge.js';
 import statsRoutes from './routes/stats.js';
@@ -50,6 +51,7 @@ import userRoutes from './routes/users.js';
 import subscriptionRoutes, { handleGeniusPaySubscriptionWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
 import settingsRoutes from './routes/settings.js';
+import serviceRoutes from './routes/services.js';
 
 // Database
 import db, { initDatabase } from './database/init.js';
@@ -139,6 +141,7 @@ app.use('/api/agents', agentRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/whatsapp', whatsappLimiter, whatsappRoutes);
 app.use('/api/outlook', outlookRoutes);
+app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/stats', statsRoutes);
@@ -151,6 +154,7 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/services', serviceRoutes);
 
 app.get('/api/health-db', async (req, res) => {
     try {

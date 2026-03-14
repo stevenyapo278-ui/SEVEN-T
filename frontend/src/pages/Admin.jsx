@@ -39,7 +39,8 @@ import {
   EyeOff,
   Copy,
   Ticket,
-  Info
+  Info,
+  Database
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, CouponsContent, getCreditsForPlan } from './Admin/index.js'
@@ -77,8 +78,14 @@ export default function Admin() {
   const [editingModel, setEditingModel] = useState(null)
   const [showKeyModal, setShowKeyModal] = useState(false)
   const [editingKey, setEditingKey] = useState(null)
-  const [platformSettings, setPlatformSettings] = useState({ default_media_model: 'gemini-1.5-flash', default_trial_days: '7' })
+  const [platformSettings, setPlatformSettings] = useState({ 
+    default_media_model: 'gemini-1.5-flash', 
+    default_trial_days: '7',
+    embedding_model: 'gemini-embedding-001'
+  })
   const [savingMediaModel, setSavingMediaModel] = useState(false)
+  const [savingEmbeddingModel, setSavingEmbeddingModel] = useState(false)
+  const [reindexingAll, setReindexingAll] = useState(false)
   const [savingTrialDays, setSavingTrialDays] = useState(false)
   const [testingModel, setTestingModel] = useState(null)
 
@@ -165,6 +172,19 @@ export default function Admin() {
       toast.error('Erreur lors de l\'enregistrement')
     }
   }
+  
+  const saveEmbeddingModel = async (value) => {
+    setSavingEmbeddingModel(true)
+    try {
+      const res = await api.put('/admin/ai/settings', { embedding_model: value })
+      setPlatformSettings(prev => ({ ...prev, ...res.data.settings }))
+      toast.success('Modèle d\'embeddings mis à jour')
+    } catch (error) {
+      toast.error('Erreur lors de l\'enregistrement')
+    } finally {
+      setSavingEmbeddingModel(false)
+    }
+  }
 
   const saveTrialDays = async (days) => {
     const parsed = parseInt(days, 10)
@@ -181,6 +201,27 @@ export default function Admin() {
       toast.error('Erreur lors de l\'enregistrement')
     } finally {
       setSavingTrialDays(false)
+    }
+  }
+
+  const handleReindexAll = async () => {
+    const ok = await showConfirm({
+      title: 'Ré-indexer toute la base',
+      message: 'Cette opération va régénérer tous les vecteurs avec le modèle actuel. Cela peut prendre du temps et consommer des crédits API.',
+      variant: 'warning',
+      confirmLabel: 'Lancer la ré-indexation'
+    })
+    if (!ok) return
+
+    setReindexingAll(true)
+    const toastId = toast.loading('Ré-indexation en cours...')
+    try {
+      const response = await api.post('/admin/ai/reindex')
+      toast.success(response.data.message, { id: toastId, duration: 5000 })
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur lors de la ré-indexation', { id: toastId })
+    } finally {
+      setReindexingAll(false)
     }
   }
 
@@ -645,6 +686,10 @@ export default function Admin() {
           platformSettings={platformSettings}
           savingMediaModel={savingMediaModel}
           onSaveMediaModel={saveDefaultMediaModel}
+          savingEmbeddingModel={savingEmbeddingModel}
+          onSaveEmbeddingModel={saveEmbeddingModel}
+          reindexingAll={reindexingAll}
+          onReindexAll={handleReindexAll}
           onSaveVoiceResponsesEnabled={saveVoiceResponsesEnabled}
           onSaveTrialDays={saveTrialDays}
           savingTrialDays={savingTrialDays}
@@ -1385,7 +1430,10 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
 
 function AIModelsContent({ 
   models, apiKeys, stats, loading, 
-  platformSettings = {}, savingMediaModel, onSaveMediaModel, onSaveVoiceResponsesEnabled,
+  platformSettings = {}, savingMediaModel, onSaveMediaModel, 
+  savingEmbeddingModel, onSaveEmbeddingModel,
+  reindexingAll, onReindexAll,
+  onSaveVoiceResponsesEnabled,
   onSaveTrialDays, savingTrialDays,
   onToggleModel, onDeleteModel, onEditModel, onCreateModel,
   onEditKey, onTestKey, onTestModel, onRefresh 
@@ -1393,17 +1441,22 @@ function AIModelsContent({
   const [showKeys, setShowKeys] = useState({})
   const [trialDaysInput, setTrialDaysInput] = useState(platformSettings.default_trial_days || '7')
   const mediaModelValue = platformSettings.default_media_model || 'gemini-1.5-flash'
+  const embeddingModelValue = platformSettings.embedding_model || 'gemini-embedding-001'
   const voiceResponsesEnabled = platformSettings.voice_responses_enabled === '1'
 
   // Sync input if platformSettings changes externally
-  useState(() => {
+  useEffect(() => {
     setTrialDaysInput(platformSettings.default_trial_days || '7')
-  })
+  }, [platformSettings.default_trial_days])
   const MEDIA_MODEL_OPTIONS = [
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash - Ultrapide ⚡' },
     { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash - Dernier modèle ⭐' },
     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash - Très rapide' },
     { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro - Plus précis' }
+  ]
+  const EMBEDDING_MODEL_OPTIONS = [
+    { value: 'gemini-embedding-001', label: 'Gemini Embedding 001 (Standard)' },
+    { value: 'text-embedding-004', label: 'Text Embedding 004 (Performance)' }
   ]
 
   const getProviderColor = (provider) => {
@@ -1495,6 +1548,39 @@ function AIModelsContent({
             ))}
           </select>
           {savingMediaModel && <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />}
+        </div>
+      </div>
+
+      {/* Embedding model for RAG */}
+      <div className="card p-6 border-blue-500/20 bg-blue-500/5">
+        <h3 className="text-lg font-semibold text-gray-100 mb-2 flex items-center gap-2">
+          <Database className="w-5 h-5 text-blue-400" />
+          Modèle d&apos;Embeddings (RAG)
+        </h3>
+        <p className="text-gray-400 text-sm mb-4">
+          Modèle utilisé pour vectoriser la base de connaissance. <span className="text-amber-400">Attention :</span> changer ce modèle nécessitera de ré-indexer toutes les connaissances existantes pour rester compatible.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={embeddingModelValue}
+            onChange={(e) => onSaveEmbeddingModel(e.target.value)}
+            disabled={savingEmbeddingModel}
+            className="input-dark max-w-md border-blue-500/30"
+          >
+            {EMBEDDING_MODEL_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {savingEmbeddingModel && <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />}
+          
+          <button
+            onClick={onReindexAll}
+            disabled={reindexingAll}
+            className="btn-secondary ml-auto flex items-center gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+          >
+            {reindexingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            Ré-indexer toute la base
+          </button>
         </div>
       </div>
 
@@ -2027,6 +2113,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
       agents: 1,
       whatsapp_accounts: 1,
       outlook_accounts: 0,
+      google_calendar_accounts: 0,
       conversations_per_month: 100,
       messages_per_month: 500,
       credits_per_month: 500,
@@ -2095,6 +2182,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'agents', label: 'Agents', desc: '-1 = illimité' },
     { key: 'whatsapp_accounts', label: 'Comptes WhatsApp', desc: '-1 = illimité' },
     { key: 'outlook_accounts', label: 'Comptes Outlook', desc: '-1 = illimité' },
+    { key: 'google_calendar_accounts', label: 'Comptes Google Calendar', desc: '-1 = illimité' },
     { key: 'conversations_per_month', label: 'Conversations/mois', desc: '-1 = illimité' },
     { key: 'credits_per_month', label: 'Messages IA / mois', desc: 'Nombre max de réponses IA par mois (1 message IA = 1 crédit). -1 = illimité.' },
     { key: 'knowledge_items', label: 'Items base de connaissance', desc: '-1 = illimité' },
@@ -2264,7 +2352,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
               <div className="space-y-4">
                 <p className="text-sm text-gray-500">Heures de disponibilité : réglage dans les paramètres de l’agent (déjà fonctionnel). Modèles IA, Réponses vocales et Module paiement sont appliqués par le plan.</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {featureFields.map(field => (
+                  {featureFields.map((field, idx) => (
                     <div key={field.key} className="flex items-center gap-2 p-1.5 bg-space-800 rounded-lg group">
                       <label className="flex-1 flex items-center gap-3 cursor-pointer py-1.5 px-1.5 rounded-md hover:bg-space-700 transition-colors">
                         <input
@@ -2275,12 +2363,22 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                         />
                         <span className="text-[13px] text-gray-300">{field.label}</span>
                       </label>
-                      <div className="relative group/tooltip">
-                        <button type="button" className="p-1.5 text-gray-500 hover:text-gold-400 transition-colors">
+                      <div className="relative group/tooltip flex-shrink-0">
+                        <button type="button" className="p-1.5 text-gray-400 hover:text-gold-400 transition-colors">
                           <Info className="w-4 h-4" />
                         </button>
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-space-950 border border-space-700 rounded-lg text-[10px] text-gray-400 pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-50">
-                          {field.desc}
+                        <div className={`absolute bottom-full mb-2 w-56 p-2.5 bg-space-900/95 backdrop-blur-md border border-space-700/50 rounded-xl text-[11px] leading-relaxed text-gray-200 shadow-2xl pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-all duration-200 z-[100] translate-y-1 group-hover/tooltip:translate-y-0 ${
+                          idx % 2 === 0 
+                            ? 'left-1/2 -translate-x-1/2' 
+                            : 'right-0 translate-x-0'
+                        }`}>
+                          <div className="relative z-10">
+                            {field.desc}
+                          </div>
+                          {/* Arrow */}
+                          <div className={`absolute top-full -mt-1 border-8 border-transparent border-t-space-900/95 ${
+                            idx % 2 === 0 ? 'left-1/2 -translate-x-1/2' : 'right-4 translate-x-0'
+                          }`} />
                         </div>
                       </div>
                     </div>

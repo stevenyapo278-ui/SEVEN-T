@@ -1132,6 +1132,8 @@ function SettingsTab({ agent, onUpdate }) {
     response_delay: agent.response_delay || 0,
     auto_reply: agent.auto_reply !== 0 && agent.auto_reply !== false,
     tool_id: agent.tool_id || '',
+    calendar_tool_id: agent.calendar_tool_id || '',
+    outlook_tool_id: agent.outlook_tool_id || '',
     // Availability settings
     availability_enabled: agent.availability_enabled === 1,
     availability_start: agent.availability_start || '09:00',
@@ -1272,7 +1274,9 @@ function SettingsTab({ agent, onUpdate }) {
         tool_id: formData.tool_id || null,
         auto_reply: formData.auto_reply ? 1 : 0,
         availability_enabled: formData.availability_enabled ? 1 : 0,
-        human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0
+        human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0,
+        calendar_tool_id: formData.calendar_tool_id || null,
+        outlook_tool_id: formData.outlook_tool_id || null
       })
       toast.success(t('agents.detail.settings.success', 'Settings saved'))
       onUpdate()
@@ -1306,7 +1310,9 @@ function SettingsTab({ agent, onUpdate }) {
         tool_id: formData.tool_id || null,
         auto_reply: formData.auto_reply ? 1 : 0,
         availability_enabled: formData.availability_enabled ? 1 : 0,
-        human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0
+        human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0,
+        calendar_tool_id: formData.calendar_tool_id || null,
+        outlook_tool_id: formData.outlook_tool_id || null
       })
       toast.success('Paramètres sauvegardés')
       onUpdate()
@@ -1413,8 +1419,50 @@ function SettingsTab({ agent, onUpdate }) {
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {t('agents.detail.settings.toolHint', 'Tool connections are managed in the Tools page.')}{' '}
-                  <Link to="/dashboard/tools" className="text-gold-400 hover:text-gold-300">{t('common.tabs.tools', 'Tools')}</Link>.
+                  {t('agents.detail.settings.toolHint', 'The main tool (WhatsApp) used by this agent.')}
+                </p>
+              </div>
+
+              {/* Calendrier Tool */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.calendarTool', 'Calendar Tool (Booking)')}</label>
+                <select
+                  value={formData.calendar_tool_id || ''}
+                  onChange={(e) => setFormData({ ...formData, calendar_tool_id: e.target.value })}
+                  className="input-dark w-full"
+                  disabled={toolsLoading}
+                >
+                  <option value="">{t('agents.detail.settings.noTool', 'No tool (Use default)')}</option>
+                  {tools.filter(t => t.type === 'google_calendar').map((tool) => (
+                    <option key={tool.id} value={tool.id}>
+                      {tool.label || 'Google Calendar'} — {tool.status}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('agents.detail.settings.calendarToolHint', 'Specific Google Calendar for appointments. If empty, it will use the default one.')}{' '}
+                  <Link to="/dashboard/tools" className="text-gold-400 hover:text-gold-300">{t('common.tabs.tools', 'Manage tools')}</Link>.
+                </p>
+              </div>
+
+              {/* Outlook Tool */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.outlookTool', 'Outlook Tool (Booking)')}</label>
+                <select
+                  value={formData.outlook_tool_id || ''}
+                  onChange={(e) => setFormData({ ...formData, outlook_tool_id: e.target.value })}
+                  className="input-dark w-full"
+                  disabled={toolsLoading}
+                >
+                  <option value="">{t('agents.detail.settings.noTool', 'No tool')}</option>
+                  {tools.filter(t => t.type === 'outlook').map((tool) => (
+                    <option key={tool.id} value={tool.id}>
+                      {tool.label || 'Outlook'} — {tool.status}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('agents.detail.settings.outlookToolHint', 'Specific Outlook Calendar for appointments.')}
                 </p>
               </div>
               <div>
@@ -2020,17 +2068,17 @@ function KnowledgeTab({ agentId }) {
       </div>
 
       {/* Global Knowledge Section */}
-      <div className="card p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-br from-blue-500/10 to-blue-500/10 border-blue-500/20 min-w-0">
+      <div className="card p-4 sm:p-6 mb-4 sm:mb-6 bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border-blue-500/20 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div className="p-2 bg-blue-500/20 rounded-xl flex-shrink-0">
               <Globe className="w-5 h-5 text-blue-400" />
             </div>
             <div className="min-w-0">
-              <h4 className="font-medium text-gray-100 mb-1">
+              <h4 className="font-bold text-gray-100 mb-1 uppercase tracking-tight text-sm">
                 {t('agents.detail.knowledge.global', 'Global Knowledge Base')}
               </h4>
-              <p className="text-sm text-gray-400">
+              <p className="text-xs text-gray-400">
                 {assignedGlobalIds.length === 0 ? (
                   t('agents.detail.knowledge.noGlobal', 'No global knowledge assigned')
                 ) : (
@@ -2047,9 +2095,45 @@ function KnowledgeTab({ agentId }) {
             {t('agents.detail.knowledge.manage', 'Manage')}
           </button>
         </div>
+
+        {/* Assigned Items List */}
+        {assignedGlobalIds.length > 0 && (
+          <div className="mt-6 space-y-2 border-t border-blue-500/10 pt-4">
+            <p className="text-[10px] font-bold text-blue-400/80 uppercase tracking-widest mb-3">
+              {t('agents.detail.knowledge.assignedItems', 'Assigned Knowledge Bases')}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {globalKnowledge
+                .filter(kb => assignedGlobalIds.includes(kb.id))
+                .map(kb => (
+                  <div key={kb.id} className="flex items-center gap-3 p-3 bg-space-950/40 rounded-xl border border-space-700/50 group hover:border-blue-500/30 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-space-800 flex items-center justify-center flex-shrink-0">
+                      <KnowledgeTypeIcon type={kb.type} className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h5 className="text-sm font-semibold text-gray-100 truncate uppercase tracking-tight">{kb.title}</h5>
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                        <span>{getTypeLabel(kb.type)}</span>
+                        <span className="opacity-30">•</span>
+                        <span>{(kb.content?.length || 0).toLocaleString()} car.</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {items.length === 0 ? (
+      {items.length > 0 && (
+        <div className="mb-4 px-1">
+          <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+            {t('agents.detail.knowledge.specific', 'Agent-Specific Knowledge')}
+          </h4>
+        </div>
+      )}
+
+      {items.length === 0 && assignedGlobalIds.length === 0 ? (
         <div className="card p-6 sm:p-12 text-center">
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-space-700 to-space-800 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
             <BookOpen className="w-8 h-8 sm:w-10 sm:h-10 text-gray-500" />

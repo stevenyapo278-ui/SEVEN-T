@@ -285,6 +285,18 @@ class LeadAnalyzer {
             const agentId = conversation?.agent_id || null;
             const phone = order.customer_phone || conversation?.contact_number || null;
             const name = order.customer_name || conversation?.saved_contact_name || conversation?.contact_name || conversation?.push_name || 'Contact';
+            
+            // Critical check: avoid unique constraint violation on (user_id, phone)
+            if (phone) {
+                const existingByPhone = await db.get('SELECT id FROM leads WHERE user_id = ? AND phone = ?', order.user_id, phone);
+                if (existingByPhone) {
+                    console.log(`[LeadAnalyzer] Lead already exists for phone ${phone}, skipping creation from order`);
+                    // Optionally update the existing lead with the new conversation_id if it's missing
+                    await db.run('UPDATE leads SET conversation_id = COALESCE(conversation_id, ?) WHERE id = ?', order.conversation_id, existingByPhone.id);
+                    return await db.get('SELECT * FROM leads WHERE id = ?', existingByPhone.id);
+                }
+            }
+
             const leadId = uuidv4();
             await db.run(`
                 INSERT INTO leads (

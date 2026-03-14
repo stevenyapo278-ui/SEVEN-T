@@ -214,7 +214,7 @@ export const deleteMessagesSchema = z.object({
 
 // Tools schema
 export const createToolSchema = z.object({
-    type: z.enum(['whatsapp', 'outlook']),
+    type: z.enum(['whatsapp', 'outlook', 'google_calendar']),
     label: z.string().max(100, 'Label trop long').optional().nullable()
 });
 
@@ -263,6 +263,21 @@ export const productUpdateSchema = z.object({
     category: z.string().max(200).optional().nullable(),
     description: z.string().max(10000).optional().nullable(),
     image_url: z.string().max(2000).optional().nullable(),
+    is_active: z.number().min(0).max(1).optional(),
+});
+
+// Service create (POST /services)
+export const serviceCreateSchema = z.object({
+    name: z.string().min(1, 'Le nom est requis').max(500, 'Nom trop long'),
+    price: z.coerce.number().min(0, 'Le prix doit être positif').optional().default(0),
+    duration: z.coerce.number().int().min(1, 'La durée doit être d\'au moins 1 minute').optional().default(30),
+    category: z.string().max(200, 'Catégorie trop longue').optional().nullable(),
+    description: z.string().max(10000, 'Description trop longue').optional().nullable(),
+    image_url: z.string().max(2000, 'URL image trop longue').optional().nullable(),
+});
+
+// Service update (PUT /services/:id)
+export const serviceUpdateSchema = serviceCreateSchema.partial().extend({
     is_active: z.number().min(0).max(1).optional(),
 });
 
@@ -364,4 +379,6 @@ export default {
     orderPaymentLinkSchema,
     productCreateSchema,
     productUpdateSchema,
+    serviceCreateSchema,
+    serviceUpdateSchema,
 };

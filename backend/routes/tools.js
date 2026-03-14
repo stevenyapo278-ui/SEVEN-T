@@ -8,7 +8,7 @@ import { whatsappManager } from '../services/whatsapp.js';
 
 const router = Router();
 
-const TOOL_TYPES = ['whatsapp', 'outlook'];
+const TOOL_TYPES = ['whatsapp', 'outlook', 'google_calendar'];
 
 function getLimitKeyForType(type) {
     return `${type}_accounts`;

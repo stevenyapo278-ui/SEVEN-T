@@ -176,6 +176,8 @@ router.post('/plans', async (req, res) => {
         const defaultLimits = {
             agents: 1,
             whatsapp_accounts: 1,
+            outlook_accounts: 0,
+            google_calendar_accounts: 0,
             conversations_per_month: 100,
             messages_per_month: 500,
             credits_per_month: 500,

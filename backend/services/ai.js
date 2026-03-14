@@ -396,6 +396,38 @@ class AIService {
         systemGlobal += '\n\n⚠️ RÈGLE — CONTEXTE: Utilise la CONVERSATION RÉCENTE fournie. Si le client a déjà été salué (échange précédent avec "Bonjour" ou salut), NE REDIS PAS "Bonjour" ni "Bonjour !" au début de ta réponse. Réponds directement à sa question ou demande (ex: produit, commande). Tu ne salues qu\'une seule fois au tout premier message du client.';
         systemGlobal += '\n\n⚠️ RÈGLE — FORMULATION: Quand tu transmets des informations du catalogue ou de la base de connaissances, utilise des formulations professionnelles comme "Voici les informations disponibles", "D\'après notre catalogue, ...", "Voici ce qui est indiqué : ...". Ne dis JAMAIS "C\'est tout ce que j\'ai comme information", "Je n\'ai que ça", ou des formulations qui sous-entendent un manque. Reste factuel et rassurant.';
 
+        // 🎭 Règles de tonalité humaine — appliquées à TOUS les agents
+        systemGlobal += `\n\n🎭 RÈGLES DE TONALITÉ NATURELLE (applique toujours ces règles):
+
+1. VARIE TES ACCUSÉS DE RÉCEPTION — Ne dis JAMAIS deux fois de suite le même mot.
+   Au lieu de toujours "Parfait ! 🎉", utilise une sélection naturelle:
+   Court: "Noté !", "Super !", "Bien sûr !", "Avec plaisir !", "C\'est bon.", "Entendu.", "Ok !"
+   Chaleureux: "Très bien !", "Excellent choix !", "Je comprends.", "Bien reçu !"
+   Neutre: "D\'accord.", "Certainement !", "Je m\'en occupe.", "Vu."
+
+2. ADAPTE LA LONGUEUR DE TA RÉPONSE au type de message reçu:
+   - Message court ("ok", "merci", 👍, émoji seul) → réponse ULTRA-COURTE: 1 phrase max ou juste un émoji de retour
+   - Question simple → 1-2 phrases
+   - Question complexe ou commande → 2-4 phrases maximum
+   - Ne rédige JAMAIS des paragraphes entiers si le client pose une question simple
+
+3. RÉAGIS AUX EXPRESSIONS HUMAINES:
+   - "Je suis pressé" → "Pas de souci, je fais vite ! [réponse directe]"
+   - "Bonne soirée" → "Merci, bonne soirée à vous aussi ! [si fin de conversation]"
+   - "Vous êtes super" / "Merci" en fin de transaction → réponse courte et chaleureuse, pass le relais à un humain (need_human: true)
+   - "Je suis déçu" / frustration → empathie courte avant la réponse
+
+4. MESSAGES TRÈS COURTS (emojis, "ok", "ouais", "top", nombre seul, 1-3 mots sans question):
+   → Réponds en 1-3 mots maximum. Pas de paragraphe. Sois aussi bref que le client.
+   Exemple client: "👍" → toi: "Super ! 😊"
+   Exemple client: "Ok" → toi: "Parfait !"
+   Exemple client: "Merci" → toi: "De rien ! 😊" (+ need_human: true si commande vient d\'être finalisée)
+
+5. TON VARIABLE selon le contexte:
+   - Premier message du client: légèrement plus formel et accueillant
+   - Conversation déjà entamée: plus naturel et direct
+   - Client régulier: familier et personnalisé`;
+
         // 📅 Amélioration #4 : Contexte temporel pour l'agent
         const now = new Date();
         const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -439,19 +471,18 @@ class AIService {
      * Get default prompt for agent without custom prompt
      */
     getDefaultPrompt(agent) {
-        return `Tu es un assistant commercial professionnel pour une boutique. Tu aides les clients avec leurs achats.
+        return `Tu es un assistant commercial attentif et naturel. Tu aides les clients comme le ferait un vrai conseiller humain.
 
 ## ⚠️ PRÉSENTATION — RÈGLE CRITIQUE
-- NE JAMAIS te présenter en disant ton nom ou ton rôle (ex: "Je suis [nom], votre assistant...", "Je m'appelle..."). Le client sait qu'il parle à un assistant.
-- En cas de salut ("Bonjour", "Salut"), réponds par un salut court puis propose ton aide. Ex: "Bonjour ! Comment puis-je vous aider ?"
-- Va TOUJOURS droit au but.
+- NE JAMAIS te présenter en disant ton nom ou ton rôle. Le client sait qu'il parle à un assistant.
+- En cas de salut, réponds brièvement et propose ton aide. Ex: "Bonjour ! Qu'est-ce que je peux faire pour vous ?"
+- Va DIRECTEMENT au but, sans introduction inutile.
 
 ## RÈGLES FONDAMENTALES
 - Réponds TOUJOURS dans la langue du client
-- Sois CONCIS: 2-3 phrases maximum
-- Va DROIT AU BUT, pas de formules longues
-- Utilise les informations de contexte fournies
-- Ne JAMAIS inventer d'informations`;
+- ADAPTE ta longueur: court si la question est simple, plus développé si c'est complexe
+- Ne JAMAIS inventer d'informations
+- Utilise le contexte de la conversation`;
     }
 
     /**
@@ -460,10 +491,11 @@ class AIService {
     getDefaultInstructions() {
         return `\n\n📋 INSTRUCTIONS IMPORTANTES:
 - Réponds dans la langue de l'utilisateur
-- Maximum 2-3 phrases pour les réponses simples
-- Si tu ne sais pas, dis-le honnêtement
+- Adapte la longueur: ultra-court pour les messages courts, normal pour les questions
+- Si tu ne sais pas, dis-le honnêtement en 1 phrase
 - Utilise le contexte et la base de connaissances
-- Ne répète pas les informations déjà données`;
+- Ne répète pas les informations déjà données
+- Varie tes formulations: évite de toujours commencer par "Parfait" ou "Super"`;
     }
 
     /**
@@ -527,7 +559,17 @@ class AIService {
             } else if (h.isNewCustomer) {
                 parts.push('\n👤 Nouveau client');
             }
+            if (analysis.isNewConversation) {
+                parts.push('📍 Nouvelle conversation avec un nouveau client.');
+            }
         }
+
+        // Current time for scheduling/rdv
+        const now = new Date();
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' };
+        parts.push(`\n🕒 DATE ET HEURE ACTUELLE: ${now.toLocaleString('fr-FR', dateOptions)}`);
+        parts.push(`- ISO Timestamp: ${now.toISOString()}`);
+        parts.push(`- Fuseau horaire: Africa/Abidjan (UTC+0)`);
         
         // Delivery info collected
         if (analysis.deliveryInfo?.hasDeliveryInfo) {
@@ -536,21 +578,55 @@ class AIService {
             if (analysis.deliveryInfo.neighborhood) parts.push(`- Quartier: ${analysis.deliveryInfo.neighborhood}`);
             if (analysis.deliveryInfo.phone) parts.push(`- Tél: ${analysis.deliveryInfo.phone}`);
         }
+
+        // Support context
+        if (analysis.support?.ticketIntent) {
+            const s = analysis.support;
+            const catLabels = { technical: 'TECHNIQUE', delivery: 'LIVRAISON', refund: 'REMBOURSEMENT', complaint: 'RÉCLAMATION', account: 'COMPTE', other: 'AUTRE' };
+            parts.push(`\n🆘 INTENTION SUPPORT DÉTECTÉE:`);
+            parts.push(`- Catégorie: ${catLabels[s.category] || s.category}`);
+            parts.push(`- Urgence: ${s.urgency === 'high' ? '🔴 HAUTE (Prioritaire)' : '⚪ Normale'}`);
+            if (s.urgency === 'high') parts.push('→ INSTRUCTION: Sois particulièrement empathique et rassurant.');
+        }
+
+        // Appointment context
+        if (analysis.appointment?.rdvIntent) {
+            const a = analysis.appointment;
+            parts.push(`\n📅 INTENTION RENDEZ-VOUS DÉTECTÉE:`);
+            if (a.serviceType) parts.push(`- Type de service: ${a.serviceType}`);
+            if (a.extractedSlots?.length > 0) parts.push(`- Créneaux mentionnés: ${a.extractedSlots.join(', ')}`);
+            parts.push('→ INSTRUCTION: Si des créneaux sont mentionnés, ne les redemande pas. Valide-les ou demande les infos manquantes (nom, motif si absent).');
+        }
         
-        // Order guidance
+        // Order guidance — INTELLIGENT FLOW
         if (analysis.orderCreated) {
-            parts.push('\n✅ COMMANDE CRÉÉE: Une commande vient d\'être enregistrée avec succès dans le système.');
-            parts.push('INSTRUCTION: Confirme au client que sa commande est bien reçue. Ne redemande pas de confirmation.');
+            parts.push('\n✅ COMMANDE ENREGISTRÉE: La commande a bien été créée dans le système.');
+            parts.push('INSTRUCTION CRITIQUE: Confirme simplement que la commande est reçue avec un message chaleureux. Ne redemande JAMAIS de confirmation.');
+            parts.push('Demande ensuite les infos de livraison manquantes si nécessaire (ville, quartier, téléphone).');
         } else if (analysis.isLikelyOrder) {
             const missing = [];
-            if (!analysis.deliveryInfo?.city) missing.push('ville/commune');
-            if (!analysis.deliveryInfo?.neighborhood) missing.push('quartier');
-            if (!analysis.deliveryInfo?.phone) missing.push('numéro de téléphone');
-            
-            if (missing.length > 0) {
-                parts.push(`\n📝 POUR FINALISER LA COMMANDE, demande: ${missing.join(', ')}`);
+            if (!analysis.deliveryInfo?.city) missing.push('ville/commune de livraison');
+            if (!analysis.deliveryInfo?.neighborhood) missing.push('quartier précis');
+            if (!analysis.deliveryInfo?.phone) missing.push('numéro de téléphone de contact');
+
+            if (analysis.confirmation?.isConfirmation || analysis.confirmation?.hasConfirmationProduct) {
+                // Client a confirmé ("oui", "je veux", "oui oui", etc.) → NE PAS redemander une confirmation !
+                parts.push('\n🎯 INTENTION CONFIRMÉE: Le client a déjà exprimé son intention d\'achat clairement.');
+                parts.push('INSTRUCTION CRITIQUE: NE REDEMANDE JAMAIS "Confirmez-vous la commande ?". Le client a déjà dit OUI.');
+                if (missing.length > 0) {
+                    parts.push(`PROCHAINE ÉTAPE: Passe directement à la collecte des infos de livraison. Demande de façon naturelle et directe: ${missing.join(', ')}.`);
+                    parts.push('Exemple de réponse CORRECTE: "Parfait ! 🎉 Pour finaliser votre livraison, j\'ai besoin de votre ville et quartier, ainsi qu\'un numéro de contact."');
+                    parts.push('INTERDIT: Proposer un récapitulatif suivi d\'une question de confirmation.');
+                } else {
+                    parts.push('Toutes les infos de livraison sont collectées. Synthétise-les et confirme que la commande est en cours de traitement.');
+                }
             } else {
-                parts.push('\n✅ Toutes les infos de livraison sont collectées!');
+                // Client exprime une intention mais sans confirmation explicite → demander les infos ou confirmer
+                if (missing.length > 0) {
+                    parts.push(`\n📝 POUR FINALISER LA COMMANDE: Présente un bref récapitulatif et demande: ${missing.join(', ')}.`);
+                } else {
+                    parts.push('\n✅ Toutes les infos de livraison sont collectées! Confirme la commande.');
+                }
             }
         }
         
@@ -643,7 +719,7 @@ class AIService {
         }
 
         const messageActuelLabel = '\n\n---\n📩 MESSAGE ACTUEL DU CLIENT (réponds à ce message en priorité):\n';
-        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec: "response" (string: ton message au client), "need_human" (boolean: true si tu recommandes de transférer à un humain), et optionnellement "confidence" (number 0-1). Exemple: {"response": "Bonjour, voici les informations...", "need_human": false, "confidence": 0.9}';
+        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
         const fullPrompt = `${systemPrompt}${conversationText}${messageActuelLabel}${userMessage}\n---\n\n🤖 Assistant:${structuredInstruction}`;
 
         const result = await model.generateContent(fullPrompt);
@@ -734,6 +810,10 @@ class AIService {
                 errors.push('Field "confidence" must be between 0 and 1');
             }
         }
+
+        if ('booking' in obj && typeof obj.booking !== 'object') {
+            errors.push('Field "booking" must be an object');
+        }
         
         return { valid: errors.length === 0, errors };
     }
@@ -755,7 +835,8 @@ class AIService {
         const normalizeParsed = (obj) => ({
             response: obj.response,
             need_human: Boolean(obj.need_human ?? obj.need_confirmation),
-            confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined
+            confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined,
+            booking: obj.booking || null
         });
 
         // Try 1: Direct JSON parse
@@ -1129,7 +1210,7 @@ class AIService {
             throw new Error('OpenAI non initialisé (clé manquante)');
         }
         const { prompt: systemPrompt } = this.buildSystemPrompt(agent, knowledgeBase, messageAnalysis);
-        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec: "response" (string: ton message au client), "need_human" (boolean: true si tu recommandes de transférer à un humain), et optionnellement "confidence" (number 0-1). Exemple: {"response": "Bonjour, voici les informations...", "need_human": false, "confidence": 0.9}';
+        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
 
         // Construire les messages
         const messages = [
@@ -1208,7 +1289,7 @@ class AIService {
             throw new Error('OpenRouter non initialisé (clé API manquante ou non configurée dans Admin → Clés API)');
         }
         const { prompt: systemPrompt } = this.buildSystemPrompt(agent, knowledgeBase, messageAnalysis);
-        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec: "response" (string: ton message au client), "need_human" (boolean: true si tu recommandes de transférer à un humain), et optionnellement "confidence" (number 0-1). Exemple: {"response": "Bonjour, voici les informations...", "need_human": false, "confidence": 0.9}';
+        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
 
         // Construire les messages
         const messages = [

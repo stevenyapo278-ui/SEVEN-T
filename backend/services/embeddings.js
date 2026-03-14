@@ -1,25 +1,33 @@
-/**
- * Embedding service for RAG (vectorization of knowledge base).
- * Uses Google Gemini Embedding API (gemini-embedding-001).
- * Legacy text-embedding-004 is deprecated / removed in v1beta.
- */
+import db from '../database/init.js';
 
-const EMBEDDING_MODEL = 'gemini-embedding-001';
+const DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
 const MAX_INPUT_TOKENS = 2048;
 const FETCH_TIMEOUT_MS = 15_000;
 
-export async function getEmbedding(text) {
+export async function getEmbedding(text, modelOverride = null) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
         console.warn('[Embeddings] GEMINI_API_KEY not set, skipping embedding');
         return null;
     }
+
+    // Try to get model from DB if not provided
+    let embeddingModel = modelOverride;
+    if (!embeddingModel) {
+        try {
+            const setting = await db.get('SELECT value FROM platform_settings WHERE key = ?', 'embedding_model');
+            embeddingModel = setting?.value || DEFAULT_EMBEDDING_MODEL;
+        } catch (e) {
+            embeddingModel = DEFAULT_EMBEDDING_MODEL;
+        }
+    }
+
     const truncated = typeof text === 'string' && text.length > MAX_INPUT_TOKENS * 4
         ? text.slice(0, MAX_INPUT_TOKENS * 4)
         : (text || '');
     if (!truncated.trim()) return null;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${embeddingModel}:embedContent?key=${apiKey}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -28,7 +36,7 @@ export async function getEmbedding(text) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                model: `models/${EMBEDDING_MODEL}`,
+                model: `models/${embeddingModel}`,
                 content: {
                     parts: [{ text: truncated }]
                 }

@@ -19,6 +19,7 @@ export const defaultPlans = [
             whatsapp_accounts: 1,
 
             outlook_accounts: 0,
+            google_calendar_accounts: 0,
             conversations_per_month: 50,
             messages_per_month: 500,
             credits_per_month: 500,
@@ -53,6 +54,7 @@ export const defaultPlans = [
             whatsapp_accounts: 1,
 
             outlook_accounts: 1,
+            google_calendar_accounts: 1,
             conversations_per_month: 300,
             messages_per_month: 1500,
             credits_per_month: 1500,
@@ -87,6 +89,7 @@ export const defaultPlans = [
             whatsapp_accounts: 2,
 
             outlook_accounts: 2,
+            google_calendar_accounts: 2,
             conversations_per_month: 1500,
             messages_per_month: 5000,
             credits_per_month: 5000,
@@ -121,6 +124,7 @@ export const defaultPlans = [
             whatsapp_accounts: 4,
 
             outlook_accounts: 4,
+            google_calendar_accounts: 4,
             conversations_per_month: 5000,
             messages_per_month: 20000,
             credits_per_month: 20000,
@@ -155,6 +159,7 @@ export const defaultPlans = [
             whatsapp_accounts: -1,
 
             outlook_accounts: -1,
+            google_calendar_accounts: -1,
             conversations_per_month: -1,
             messages_per_month: -1,
             credits_per_month: -1,

@@ -38,34 +38,18 @@ const TEMPLATES = [
   {
     id: 'commercial',
     name: 'Commercial',
-    description: 'Prospection, vente, conversion de leads',
+    description: 'Vente de services, prestations, prise de rendez-vous',
     icon: Target,
     color: 'blue',
-    features: ['Qualification de prospects', 'Présentation des offres', 'Gestion des objections', 'Prise de RDV']
+    features: ['Qualification de prospects', 'Catalogue services', 'Tarifs et durées', 'Prise de RDV']
   },
   {
     id: 'support',
     name: 'Support Client',
-    description: 'Aide, dépannage, résolution de problèmes',
+    description: 'Aide, FAQ, résolution de problèmes',
     icon: MessageSquare,
     color: 'emerald',
-    features: ['Résolution de problèmes', 'Instructions étape par étape', 'Transfert humain', 'Suivi satisfaction']
-  },
-  {
-    id: 'faq',
-    name: 'FAQ / Informations',
-    description: 'Réponses aux questions fréquentes',
-    icon: HelpCircle,
-    color: 'purple',
-    features: ['Réponses rapides', 'Base de connaissances', 'Redirection ressources', 'Factuel et concis']
-  },
-  {
-    id: 'appointment',
-    name: 'Prise de RDV',
-    description: 'Gestion des rendez-vous et calendrier',
-    icon: Calendar,
-    color: 'orange',
-    features: ['Disponibilités', 'Confirmation RDV', 'Rappels', 'Reports et annulations']
+    features: ['Réponses aux questions (FAQ)', 'Instructions étape par étape', 'Transfert humain', 'Base de connaissances']
   }
 ]
 

@@ -80,6 +80,7 @@ export default function PlansContent({
                 <div className="flex justify-between"><span className="text-gray-500">Agents</span><span className="text-gray-300">{formatLimit(plan.limits?.agents)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">WhatsApp</span><span className="text-gray-300">{formatLimit(plan.limits?.whatsapp_accounts)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Outlook</span><span className="text-gray-300">{formatLimit(plan.limits?.outlook_accounts)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Google Calendar</span><span className="text-gray-300">{formatLimit(plan.limits?.google_calendar_accounts)}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Messages IA / mois</span><span className="text-gray-300">{formatLimit(plan.limits?.credits_per_month)}</span></div>
               </div>
             </div>

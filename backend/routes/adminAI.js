@@ -253,6 +253,9 @@ router.get('/settings', authenticateAdmin, async (req, res) => {
         if (settings.default_trial_days == null) {
             settings.default_trial_days = '7';
         }
+        if (settings.embedding_model == null) {
+            settings.embedding_model = 'gemini-embedding-001';
+        }
         res.json({ settings });
     } catch (error) {
         console.error('Get platform settings error:', error);
@@ -263,7 +266,7 @@ router.get('/settings', authenticateAdmin, async (req, res) => {
 // Update platform settings
 router.put('/settings', authenticateAdmin, async (req, res) => {
     try {
-        const { default_media_model, voice_responses_enabled, default_trial_days } = req.body;
+        const { default_media_model, voice_responses_enabled, default_trial_days, embedding_model } = req.body;
         if (default_media_model !== undefined) {
             await db.run(`
                 INSERT INTO platform_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
@@ -283,6 +286,12 @@ router.put('/settings', authenticateAdmin, async (req, res) => {
                 INSERT INTO platform_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             `, 'default_trial_days', val);
+        }
+        if (embedding_model !== undefined) {
+            await db.run(`
+                INSERT INTO platform_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            `, 'embedding_model', embedding_model === '' ? null : embedding_model);
         }
         const rows = await db.all('SELECT key, value FROM platform_settings');
         const arr = Array.isArray(rows) ? rows : [];
@@ -659,6 +668,51 @@ router.post('/models/:id/test', authenticateAdmin, async (req, res) => {
             error: error.message,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
+    }
+});
+
+// ==================== GLOBAL RE-INDEXING ====================
+
+let isReindexing = false;
+
+router.post('/reindex', authenticateAdmin, async (req, res) => {
+    if (isReindexing) {
+        return res.status(400).json({ error: 'Une ré-indexation est déjà en cours' });
+    }
+
+    isReindexing = true;
+    try {
+        const { indexAgentKnowledge, indexGlobalKnowledge } = (await import('../services/knowledgeRetrieval.js')).default;
+        
+        // 1. Get all agent-specific knowledge
+        const agentKnowledge = await db.all('SELECT id, agent_id, title, content FROM knowledge_base');
+        
+        // 2. Get all global knowledge
+        const globalKnowledge = await db.all('SELECT id, title, content FROM global_knowledge');
+        
+        const total = agentKnowledge.length + globalKnowledge.length;
+        let processed = 0;
+
+        // Process sequentially to avoid hitting rate limits too hard
+        for (const item of agentKnowledge) {
+            await indexAgentKnowledge(item.agent_id, item.id, item.title, item.content);
+            processed++;
+        }
+
+        for (const item of globalKnowledge) {
+            await indexGlobalKnowledge(item.id, item.title, item.content);
+            processed++;
+        }
+
+        isReindexing = false;
+        res.json({ 
+            success: true, 
+            message: `Ré-indexation terminée : ${processed}/${total} éléments traités.` 
+        });
+    } catch (error) {
+        isReindexing = false;
+        console.error('Re-indexing error:', error);
+        res.status(500).json({ error: 'Erreur lors de la ré-indexation : ' + error.message });
     }
 });
 

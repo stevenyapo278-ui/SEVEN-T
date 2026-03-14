@@ -39,7 +39,8 @@ import {
   Wrench,
   Building,
   Clock,
-  Wallet
+  Wallet,
+  Briefcase
 } from 'lucide-react'
 
 // Navigation avec sous-menus (nameKey = clé i18n pour la traduction)
@@ -67,6 +68,7 @@ const navigationGroups = [
     icon: Store,
     items: [
       { nameKey: 'nav.products', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
       { nameKey: 'nav.orders', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
       { nameKey: 'nav.payments', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
       { nameKey: 'nav.leads', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
@@ -787,6 +789,7 @@ const pathToTitle = (pathname) => {
     orders: 'Commandes',
     payments: 'Paiements',
     products: 'Produits',
+    services: 'Services',
     reports: 'Rapports',
     settings: 'Paramètres',
     help: 'Aide',

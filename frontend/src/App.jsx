@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Agents = lazy(() => import('./pages/Agents'))
 const AgentDetail = lazy(() => import('./pages/AgentDetail'))
 const Products = lazy(() => import('./pages/Products'))
+const Services = lazy(() => import('./pages/Services'))
 const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase'))
 const Leads = lazy(() => import('./pages/Leads'))
 const Orders = lazy(() => import('./pages/Orders'))
@@ -122,6 +123,7 @@ function App() {
           <Route path="agents" element={<Suspense fallback={<PageFallback />}><Agents /></Suspense>} />
           <Route path="agents/:id" element={<Suspense fallback={<PageFallback />}><AgentDetail /></Suspense>} />
           <Route path="products" element={<Suspense fallback={<PageFallback />}><Products /></Suspense>} />
+          <Route path="services" element={<Suspense fallback={<PageFallback />}><Services /></Suspense>} />
           <Route path="knowledge" element={<Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense>} />
           <Route path="leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
           <Route path="orders" element={<Suspense fallback={<PageFallback />}><Orders /></Suspense>} />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo, forwardRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useOnboardingTour } from '../components/Onboarding'
@@ -365,14 +365,14 @@ export default function KnowledgeBase() {
   )
 }
 
-function KnowledgeCard({ item, index, viewMode, onEdit, onDelete, isExpanded, onToggleExpand, isDark }) {
+const KnowledgeCard = forwardRef(({ item, index, viewMode, onEdit, onDelete, isExpanded, onToggleExpand, isDark }, ref) => {
   const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {})
   
   const cardBase = "card p-4 transition-all hover:bg-space-800/80 group cursor-pointer animate-fadeIn";
 
   if (viewMode === 'list') {
     return (
-      <div className={`${cardBase} flex flex-col sm:flex-row sm:items-center gap-3`} onClick={onToggleExpand}>
+      <div ref={ref} className={`${cardBase} flex flex-col sm:flex-row sm:items-center gap-3`} onClick={onToggleExpand}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-space-950/50' : 'bg-gray-50'}`}>
             <KnowledgeTypeIcon type={item.type} className="w-5 h-5" isDark={isDark} />
@@ -402,7 +402,7 @@ function KnowledgeCard({ item, index, viewMode, onEdit, onDelete, isExpanded, on
   }
 
   return (
-    <div className={`${cardBase} flex flex-col h-full`} onClick={onToggleExpand}>
+    <div ref={ref} className={`${cardBase} flex flex-col h-full`} onClick={onToggleExpand}>
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isDark ? 'bg-space-950/50 border-space-700/50' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
           <KnowledgeTypeIcon type={item.type} className="w-6 h-6" isDark={isDark} />
@@ -435,7 +435,7 @@ function KnowledgeCard({ item, index, viewMode, onEdit, onDelete, isExpanded, on
       )}
     </div>
   )
-}
+})
 
 function KnowledgeModal({ item, onClose, onSaved }) {
   const { theme } = useTheme()
@@ -586,7 +586,8 @@ function KnowledgeModal({ item, onClose, onSaved }) {
                </div>
                <input
                  type="url" required value={url} onChange={(e) => setUrl(e.target.value)}
-                 placeholder="Lien de la page ou vidéo" className="input-dark w-full"
+                 placeholder={activeType === 'youtube' ? "Lien de la vidéo YouTube" : "Lien de la page web"} 
+                 className="input-dark w-full"
                />
                <button disabled={loading} className="btn-primary w-full py-4 text-base">
                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Extraire le contenu'}

@@ -3,13 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
-import { MessageSquare, Mail, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check, MessageCircle } from 'lucide-react'
+import { MessageSquare, Mail, Calendar, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useOnboardingTour } from '../components/Onboarding'
 
 const TOOL_LABELS = {
   whatsapp: 'WhatsApp',
-  outlook: 'Outlook'
+  outlook: 'Outlook',
+  google_calendar: 'Google Calendar'
 }
 
 const POLL_INTERVAL_MS = 2000
@@ -73,6 +74,7 @@ export default function Tools() {
   }, [connectingToolId, isStepActive, nextStep])
 
   useEffect(() => {
+    // Check for Outlook OAuth results
     const outlook = searchParams.get('outlook')
     const outlookError = searchParams.get('outlook_error')
     if (outlook === 'connected') {
@@ -83,6 +85,20 @@ export default function Tools() {
     } else if (outlookError) {
       toast.error(decodeURIComponent(outlookError))
       searchParams.delete('outlook_error')
+      setSearchParams(searchParams, { replace: true })
+    }
+
+    // Check for Google OAuth results
+    const google = searchParams.get('google')
+    const googleError = searchParams.get('google_error')
+    if (google === 'connected') {
+      toast.success('Compte Google Calendar connecté')
+      searchParams.delete('google')
+      setSearchParams(searchParams, { replace: true })
+      loadTools()
+    } else if (googleError) {
+      toast.error(decodeURIComponent(googleError))
+      searchParams.delete('google_error')
       setSearchParams(searchParams, { replace: true })
     }
   }, [searchParams])
@@ -215,6 +231,60 @@ export default function Tools() {
     }
   }
 
+  const saveGoogleConfig = async (e) => {
+    e.preventDefault();
+    if (!configTool?.id || !configTool.draftConfig) return;
+    try {
+      setBusyToolId(configTool.id);
+      const { clientId, clientSecret } = configTool.draftConfig;
+      if (!clientId || !clientSecret) {
+        toast.error('Client ID et Secret requis');
+        return;
+      }
+      await api.patch(`/tools/${configTool.id}`, {
+        config: configTool.draftConfig
+      });
+      const savedToolId = configTool.id;
+      setConfigTool(null);
+      toast.success('Configuration sauvegardée, redirection vers Google…');
+      await connectGoogleAuth(savedToolId);
+    } catch (err) {
+      toast.error('Erreur configuration Google Calendar');
+    } finally {
+      setBusyToolId(null);
+    }
+  };
+
+  const connectGoogleAuth = async (toolId) => {
+    try {
+      setBusyToolId(toolId)
+      const res = await api.post('/google-calendar/connect-url', { toolId })
+      if (res.data?.url) {
+        window.location.href = res.data.url
+        return
+      }
+      toast.error('Impossible d’obtenir l’URL de connexion Google')
+    } catch (error) {
+      const message = error.response?.data?.error || 'Connexion Google Calendar échouée'
+      toast.error(message)
+    } finally {
+      setBusyToolId(null)
+    }
+  }
+
+  const disconnectGoogle = async (toolId) => {
+    try {
+      setBusyToolId(toolId)
+      await api.post(`/google-calendar/disconnect/${toolId}`)
+      await loadTools()
+      toast.success('Google Calendar déconnecté')
+    } catch (error) {
+      toast.error('Déconnexion Google Calendar échouée')
+    } finally {
+      setBusyToolId(null)
+    }
+  }
+
   const startEditLabel = (tool) => {
     setEditingToolId(tool.id)
     setEditingLabel(tool.label || TOOL_LABELS[tool.type] || tool.type)
@@ -244,11 +314,11 @@ export default function Tools() {
       const tool = res.data.tool
       if (type === 'whatsapp') {
         await connectWhatsApp(tool.id)
-      } else if (type === 'outlook') {
+      } else if (type === 'outlook' || type === 'google_calendar') {
         await loadTools()
         const newTool = (await api.get(`/tools/${tool.id}`)).data.tool
         setConfigTool({ ...newTool, draftConfig: { clientId: newTool.config?.clientId || '', clientSecret: newTool.config?.clientSecret || '' } })
-        toast.success('Outil créé, renseignez vos identifiants Microsoft.')
+        toast.success(`Outil créé, renseignez vos identifiants ${type === 'outlook' ? 'Microsoft' : 'Google'}.`)
         return
       }
       await loadTools()
@@ -285,6 +355,7 @@ export default function Tools() {
 
   const whatsappRemaining = getRemaining('whatsapp')
   const outlookRemaining = getRemaining('outlook')
+  const googleRemaining = getRemaining('google_calendar')
 
   if (loading && tools.length === 0) {
     return (
@@ -418,6 +489,38 @@ export default function Tools() {
             )}
           </div>
 
+          <div className={`relative overflow-hidden rounded-xl sm:rounded-2xl border p-5 sm:p-6 ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-200'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 bg-rose-500/10 rounded-xl">
+                <Calendar className="w-6 h-6 text-rose-400" />
+              </div>
+              <div className="min-w-0">
+                <h2 className={`text-lg font-display font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Google Calendar</h2>
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Restant: {googleRemaining.text}</p>
+              </div>
+            </div>
+            {googleRemaining.canAdd ? (
+              <button
+                onClick={() => createTool('google_calendar')}
+                disabled={loading}
+                className="btn-secondary w-full flex items-center justify-center gap-2 min-h-[48px] border-rose-500/30 hover:border-rose-500/50"
+              >
+                <Plus className="w-5 h-5" />
+                Connecter Calendar
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-amber-400">Aucun compte Google inclus dans votre plan.</p>
+                <Link
+                  to="/dashboard/settings?tab=subscription"
+                  className="btn-primary w-full block text-center min-h-[48px]"
+                >
+                  Améliorer mon plan
+                </Link>
+              </div>
+            )}
+          </div>
+
         </div>
 
       {/* List of tools */}
@@ -475,9 +578,13 @@ export default function Tools() {
                       <div className="p-2 bg-emerald-500/10 rounded-lg flex-shrink-0">
                         <MessageSquare className="w-5 h-5 text-emerald-400" />
                       </div>
-                    ) : (
+                    ) : tool.type === 'outlook' ? (
                       <div className="p-2 bg-blue-500/10 rounded-lg flex-shrink-0">
                         <Mail className="w-5 h-5 text-blue-400" />
+                      </div>
+                    ) : (
+                      <div className="p-2 bg-rose-500/10 rounded-lg flex-shrink-0">
+                        <Calendar className="w-5 h-5 text-rose-400" />
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
@@ -620,6 +727,45 @@ export default function Tools() {
                   </div>
                 )}
 
+                {tool.type === 'google_calendar' && (
+                  <div className="mt-4 pt-4 border-t border-space-700/50">
+                    {tool.status === 'connected' ? (
+                      <>
+                        {tool.meta?.email && (
+                          <p className="text-sm text-gray-400 mb-3">{tool.meta.email}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => disconnectGoogle(tool.id)}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            disabled={busyToolId === tool.id}
+                          >
+                            <PowerOff className="w-4 h-4" />
+                            Déconnecter
+                          </button>
+                          <button
+                            onClick={() => setConfigTool({ ...tool, draftConfig: { clientId: tool.config?.clientId || '', clientSecret: tool.config?.clientSecret || '' } })}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            disabled={busyToolId === tool.id}
+                          >
+                            <Wrench className="w-4 h-4" />
+                            Modifier
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setConfigTool({ ...tool, draftConfig: { clientId: tool.config?.clientId || '', clientSecret: tool.config?.clientSecret || '' } })}
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-medium bg-rose-600 hover:bg-rose-500 text-white transition-colors"
+                        disabled={busyToolId === tool.id}
+                      >
+                        <Wrench className="w-4 h-4" />
+                        Configurer Google
+                      </button>
+                    )}
+                  </div>
+                )}
+
               </div>
             ))}
           </div>
@@ -680,8 +826,8 @@ export default function Tools() {
       )}
 
 
-      {/* Configuration Modal (Outlook) */}
-      {configTool && configTool.type === 'outlook' && (
+      {/* Configuration Modal (Outlook / Google) */}
+      {configTool && (configTool.type === 'outlook' || configTool.type === 'google_calendar') && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setConfigTool(null)}
@@ -698,25 +844,33 @@ export default function Tools() {
               <X className="w-5 h-5" />
             </button>
             <h3 className="text-xl font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
-              <Mail className="w-5 h-5 text-blue-500" />
-              Configuration Outlook
+              {configTool.type === 'outlook' ? (
+                <Mail className="w-5 h-5 text-blue-500" />
+              ) : (
+                <Calendar className="w-5 h-5 text-rose-500" />
+              )}
+              {configTool.type === 'outlook' ? 'Configuration Outlook' : 'Configuration Google Calendar'}
             </h3>
             
-            <form onSubmit={saveOutlookConfig} className="space-y-4">
+            <form onSubmit={configTool.type === 'outlook' ? saveOutlookConfig : saveGoogleConfig} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Microsoft App Client ID</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  {configTool.type === 'outlook' ? 'Microsoft App Client ID' : 'Google Client ID'}
+                </label>
                 <input
                   type="text"
                   required
                   value={configTool.draftConfig?.clientId || ''}
                   onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientId: e.target.value } })}
                   className="input-dark w-full font-mono text-sm"
-                  placeholder="ex: 8bxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  placeholder={configTool.type === 'outlook' ? 'ex: 8bxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' : 'ex: xxxx.apps.googleusercontent.com'}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Client Secret</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  {configTool.type === 'outlook' ? 'Client Secret' : 'Client Secret'}
+                </label>
                 <input
                   type="password"
                   required
@@ -726,7 +880,11 @@ export default function Tools() {
                   placeholder="Secret de l'application..."
                 />
                 <p className="mt-2 text-xs text-gray-400">
-                  Besoin d'aide ? Créez une application dans Azure Active Directory, ajoutez l'URI de redirection <code>HTTPS://.../api/outlook/callback</code>, et générez un secret.
+                  {configTool.type === 'outlook' ? (
+                    <>Besoin d'aide ? Créez une application dans Azure Active Directory, ajoutez l'URI de redirection <code>HTTPS://.../api/outlook/callback</code>, et générez un secret.</>
+                  ) : (
+                    <>Besoin d'aide ? Créez un projet dans Google Cloud Console, activez l'API Calendar, ajoutez l'URI de redirection <code>HTTPS://.../api/google-calendar/callback</code> dans vos identifiants OAuth 2.0.</>
+                  )}
                 </p>
               </div>
 
@@ -741,7 +899,9 @@ export default function Tools() {
                 <button
                   type="submit"
                   disabled={busyToolId === configTool.id}
-                  className="flex-1 px-4 py-2.5 rounded-xl font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                  className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-white transition-colors ${
+                    configTool.type === 'outlook' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-rose-600 hover:bg-rose-500'
+                  }`}
                 >
                   Suivant (Connexion)
                 </button>

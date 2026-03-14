@@ -222,7 +222,9 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 (SELECT status FROM tools WHERE id = a.tool_id AND user_id = a.user_id LIMIT 1) as tool_status,
                 (SELECT label FROM tools WHERE id = a.tool_id AND user_id = a.user_id LIMIT 1) as tool_label,
                 (SELECT meta FROM tools WHERE id = a.tool_id AND user_id = a.user_id LIMIT 1) as tool_meta,
-                (SELECT type FROM tools WHERE id = a.tool_id AND user_id = a.user_id LIMIT 1) as tool_type
+                (SELECT type FROM tools WHERE id = a.tool_id AND user_id = a.user_id LIMIT 1) as tool_type,
+                (SELECT label FROM tools WHERE id = a.calendar_tool_id AND user_id = a.user_id LIMIT 1) as calendar_tool_label,
+                (SELECT status FROM tools WHERE id = a.calendar_tool_id AND user_id = a.user_id LIMIT 1) as calendar_tool_status
             FROM agents a
             WHERE a.id = ? AND a.user_id = ?
         `, req.params.id, req.user.id);
@@ -266,7 +268,10 @@ router.post('/', authenticateToken, async (req, res) => {
             temperature, 
             max_tokens,
             language,
-            template // New: template type for quick setup
+            template, // New: template type for quick setup
+            tool_id,
+            calendar_tool_id,
+            outlook_tool_id
         } = req.body;
 
         if (!name) {
@@ -313,9 +318,9 @@ router.post('/', authenticateToken, async (req, res) => {
         const agentId = uuidv4();
 
         await db.run(`
-            INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, template)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, agentId, req.user.id, name, description || promptConfig.description, system_prompt || promptConfig.prompt, finalModel, temperature || promptConfig.temperature, max_tokens || 500, language || 'fr', 10, template || null);
+            INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, template, tool_id, calendar_tool_id, outlook_tool_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, agentId, req.user.id, name, description || promptConfig.description, system_prompt || promptConfig.prompt, finalModel, temperature || promptConfig.temperature, max_tokens || 500, language || 'fr', 10, template || null, tool_id || null, calendar_tool_id || null, outlook_tool_id || null);
 
         const agent = await db.get('SELECT * FROM agents WHERE id = ?', agentId);
 
@@ -358,9 +363,9 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
         const duplicateName = new_name || `${original.name} (copie)`;
 
         await db.run(`
-            INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, auto_reply, availability_enabled, availability_start, availability_end, availability_days, availability_timezone, absence_message, human_transfer_enabled, human_transfer_keywords, human_transfer_message, max_messages_per_day, template)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, agentId, req.user.id, duplicateName, original.description, original.system_prompt, original.model, original.temperature, original.max_tokens, original.language, original.response_delay || 0, original.auto_reply ?? 1, original.availability_enabled || 0, original.availability_start || '09:00', original.availability_end || '18:00', original.availability_days || '1,2,3,4,5', original.availability_timezone || 'Europe/Paris', original.absence_message, original.human_transfer_enabled || 0, original.human_transfer_keywords, original.human_transfer_message, original.max_messages_per_day || 0, original.template ?? null);
+            INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, auto_reply, availability_enabled, availability_start, availability_end, availability_days, availability_timezone, absence_message, human_transfer_enabled, human_transfer_keywords, human_transfer_message, max_messages_per_day, template, tool_id, calendar_tool_id, outlook_tool_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, agentId, req.user.id, duplicateName, original.description, original.system_prompt, original.model, original.temperature, original.max_tokens, original.language, original.response_delay || 0, original.auto_reply ?? 1, original.availability_enabled || 0, original.availability_start || '09:00', original.availability_end || '18:00', original.availability_days || '1,2,3,4,5', original.availability_timezone || 'Europe/Paris', original.absence_message, original.human_transfer_enabled || 0, original.human_transfer_keywords, original.human_transfer_message, original.max_messages_per_day || 0, original.template ?? null, original.tool_id, original.calendar_tool_id, original.outlook_tool_id);
 
         // Copy knowledge base items
         const knowledgeItems = await db.all('SELECT * FROM knowledge_base WHERE agent_id = ?', req.params.id);
@@ -399,207 +404,13 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
 /**
  * Get pre-configured prompt based on template type
  */
-function getTemplatePrompt(template, agentName) {
-    const templates = {
-        ecommerce: {
-            description: 'Assistant e-commerce pour la vente de produits',
-            prompt: `Tu es un assistant e-commerce efficace et direct. Tu aides les clients à commander. Réponds directement.
-
-⚡ RÈGLES ESSENTIELLES:
-- Réponds en 2-3 phrases MAXIMUM
-- Ne pose qu'UNE question à la fois
-- Dès qu'un client confirme = c'est une COMMANDE
-- Prix toujours en FCFA
-
-🛒 PRISE DE COMMANDE RAPIDE:
-1. Client demande un produit → Donne prix + confirme dispo
-2. Client confirme → Demande livraison: "Commune/ville, quartier et numéro de téléphone ?"
-3. Client donne infos → "Commande confirmée ✅ Vous serez contacté pour le paiement."
-
-📍 INFOS LIVRAISON (demande en UNE question):
-"Pour la livraison, indiquez: votre commune/ville, quartier et numéro de téléphone"
-
-📦 STOCK:
-- En stock ✅: "[Produit] à [Prix] FCFA, disponible !"
-- Rupture ❌: "Désolé, rupture de stock. Je transfère à un conseiller."
-- Stock limité ⚠️: "Il reste X unités."
-
-❌ INTERDIT:
-- Ne répète PAS "Bonjour" si déjà salué
-- Ne pose PAS plusieurs questions à la fois
-- Ne fais PAS de longs discours
-- Ne redemande PAS confirmation plusieurs fois
-
-✅ EXEMPLE:
-Client: "Je veux 2 montre K20"
-Toi: "2 Montres K20 à 12 000 FCFA/unité = 24 000 FCFA ✅ Disponibles ! Confirmez-vous ?"
-Client: "Oui, livrez-moi"
-Toi: "Parfait ! Commune/ville, quartier et numéro de téléphone pour la livraison ?"
-Client: "Bingerville, Cité, 0701020304"
-Toi: "Commande confirmée ✅ 2 Montres K20 - 24 000 FCFA - Livraison Bingerville. On vous contacte bientôt !"`,
-            temperature: 0.4
-        },
-        commercial: {
-            description: 'Assistant commercial pour la vente et la prospection',
-            prompt: `Tu es un assistant commercial professionnel et persuasif. Réponds directement.
-
-🎯 TON OBJECTIF:
-- Qualifier les prospects et comprendre leurs besoins
-- Présenter les produits/services de manière attractive
-- Répondre aux objections avec tact
-- Guider vers la conversion (achat, rdv, devis)
-
-💬 TON STYLE:
-- Professionnel mais chaleureux
-- Utilise des questions ouvertes pour qualifier
-- Mets en avant les bénéfices, pas les caractéristiques
-- Crée un sentiment d'urgence sans être agressif
-
-📦 GESTION DU STOCK (si e-commerce):
-- Consulte le catalogue avant de parler d'un produit
-- Informe sur la disponibilité réelle
-- Propose des alternatives en cas de rupture
-
-📋 PROCESS:
-1. Salue et qualifie le besoin
-2. Présente la solution adaptée
-3. Traite les objections
-4. Propose une action concrète`,
-            temperature: 0.7
-        },
-        support: {
-            description: 'Assistant support client pour l\'aide et le dépannage',
-            prompt: `Tu es un assistant support client patient et efficace. Réponds directement au message du client.
-
-🎯 TON OBJECTIF:
-- Résoudre les problèmes des clients rapidement
-- Fournir des instructions claires étape par étape
-- Escalader vers un humain si nécessaire
-- Assurer la satisfaction client
-
-💬 TON STYLE:
-- Empathique et rassurant
-- Instructions numérotées et claires
-- Confirme la résolution avant de clôturer
-- Utilise un langage simple, évite le jargon
-
-🆘 TRANSFERT HUMAIN:
-Dis "Je transfère votre demande à un conseiller" si:
-- Réclamation sur une commande
-- Demande de remboursement
-- Problème technique complexe
-- Client mécontent
-
-📋 PROCESS:
-1. Accueille et identifie le problème
-2. Pose des questions de diagnostic
-3. Propose une solution pas à pas
-4. Vérifie que le problème est résolu`,
-            temperature: 0.5
-        },
-        faq: {
-            description: 'Assistant FAQ pour répondre aux questions fréquentes',
-            prompt: `Tu es un assistant qui répond aux questions fréquentes. Réponds directement à la question.
-
-🎯 TON OBJECTIF:
-- Répondre rapidement et précisément aux questions courantes
-- Rediriger vers les bonnes ressources
-- Collecter les questions non couvertes pour amélioration
-
-💬 TON STYLE:
-- Concis et direct
-- Utilise des listes et des points clés
-- Propose des liens ou ressources complémentaires
-- Reste factuel
-
-📦 PRODUITS:
-- Consulte le catalogue pour les questions sur les produits
-- Donne les prix en FCFA
-- Mentionne la disponibilité
-
-📋 SI TU NE SAIS PAS:
-Dis honnêtement que tu n'as pas cette information et propose de transférer vers un humain.`,
-            temperature: 0.3
-        },
-        appointment: {
-            description: 'Assistant pour la prise de rendez-vous',
-            prompt: `Tu es un assistant spécialisé dans la prise de rendez-vous. Réponds directement.
-
-🎯 TON OBJECTIF:
-- Qualifier le besoin du client
-- Proposer des créneaux disponibles
-- Confirmer et rappeler les détails du rdv
-- Gérer les reports et annulations
-
-💬 TON STYLE:
-- Efficace et organisé
-- Propose toujours plusieurs options de créneaux
-- Récapitule systématiquement les informations
-- Envoie des rappels
-
-📋 INFORMATIONS À COLLECTER:
-1. Nom complet
-2. Numéro de téléphone
-3. Motif du rendez-vous
-4. Créneau souhaité`,
-            temperature: 0.4
-        },
-        default: {
-            description: '',
-            prompt: `Tu es un assistant virtuel professionnel et amical. Réponds directement au message.
-
-Tu réponds aux questions de manière concise et utile.
-Tu utilises des emojis avec modération pour rendre la conversation plus naturelle.
-Tu es toujours poli et tu essaies d'aider au maximum.
-
-📦 PRODUITS:
-- Si on te demande des produits, consulte le catalogue dans ta base de connaissance
-- Indique les prix en FCFA et la disponibilité
-
-🆘 TRANSFERT:
-Si tu ne peux pas aider, dis: "Je transfère votre demande à un conseiller."
-
-Si tu ne connais pas la réponse, dis-le honnêtement plutôt que d'inventer.`,
-            temperature: 0.7
-        },
-        info: {
-            description: 'Agent pour répondre aux questions générales',
-            prompt: `Tu es un assistant d'information précis et concis. Réponds directement à la question.
-
-🎯 TES OBJECTIFS:
-- Répondre aux questions rapidement
-- Utiliser la base de connaissances
-- Rediriger si hors périmètre
-
-📋 RÈGLES:
-- Réponds dans la langue du client
-- Sois FACTUEL et PRÉCIS
-- Maximum 2-3 phrases
-- Dis "Je ne sais pas" si tu n'as pas l'info
-- Ne JAMAIS inventer d'informations
-
-🔄 REDIRECTION:
-- Commande → "Pour les commandes, contactez notre service commercial"
-- Problème technique → "Pour l'assistance technique, écrivez à [contact]"`,
-            temperature: 0.3
-        },
-        custom: {
-            description: 'Template vide pour une configuration personnalisée',
-            prompt: `Tu es un assistant virtuel professionnel. Réponds directement au message.
-
-RÈGLES GÉNÉRALES:
-- Réponds dans la langue du client
-- Sois concis (2-3 phrases max)
-- Sois professionnel et courtois
-- Utilise la base de connaissances fournie
-- Va droit au but, une question à la fois
-
-[Personnalisez ce template selon vos besoins]`,
-            temperature: 0.7
-        }
+function getTemplatePrompt(templateId, agentName) {
+    const template = getTemplate(templateId);
+    return {
+        description: template.description,
+        prompt: template.system_prompt,
+        temperature: template.temperature || 0.7
     };
-
-    return templates[template] || templates.default;
 }
 
 // Update agent
@@ -631,7 +442,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
             // Rate limiting
             max_messages_per_day,
             template,
-            tool_id
+            tool_id,
+            calendar_tool_id,
+            outlook_tool_id
         } = req.body;
 
         // Check ownership and current model
@@ -661,6 +474,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         const templateValue = req.body.template !== undefined ? (req.body.template || null) : existing.template ?? null;
         const toolIdValue = req.body.tool_id !== undefined ? (req.body.tool_id || null) : undefined;
+        const calendarToolIdValue = req.body.calendar_tool_id !== undefined ? (req.body.calendar_tool_id || null) : undefined;
+        const outlookToolIdValue = req.body.outlook_tool_id !== undefined ? (req.body.outlook_tool_id || null) : undefined;
 
         const updates = [
             'name = COALESCE(?, name)',
@@ -698,6 +513,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
         if (toolIdValue !== undefined) {
             updates.push('tool_id = ?');
             values.push(toolIdValue);
+        }
+        if (calendarToolIdValue !== undefined) {
+            updates.push('calendar_tool_id = ?');
+            values.push(calendarToolIdValue);
+        }
+        if (outlookToolIdValue !== undefined) {
+            updates.push('outlook_tool_id = ?');
+            values.push(outlookToolIdValue);
         }
         values.push(req.params.id);
         await db.run(`UPDATE agents SET ${updates.join(', ')} WHERE id = ?`, ...values);

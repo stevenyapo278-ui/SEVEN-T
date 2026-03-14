@@ -7,7 +7,9 @@ import fs from 'fs';
 import path from 'path';
 import * as cheerio from 'cheerio';
 import { YoutubeTranscript } from 'youtube-transcript';
-import { PDFParse } from 'pdf-parse';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const pdf = require('pdf-parse');
 
 class ContentExtractor {
     /**
@@ -27,29 +29,20 @@ class ContentExtractor {
                 throw new Error('Invalid input: expected Buffer or file path');
             }
 
-            // Use the new PDFParse class API
-            const parser = new PDFParse({ data: dataBuffer });
-            const textResult = await parser.getText();
-            
-            // Get document info
-            const info = await parser.getInfo();
-            const numPages = textResult.total;
+            const data = await pdf(dataBuffer);
             
             // Clean up the text
-            let content = textResult.text
+            let content = data.text
                 .replace(/\s+/g, ' ')  // Multiple spaces to single
                 .replace(/\n\s*\n/g, '\n\n')  // Multiple newlines to double
                 .trim();
-
-            // Clean up resources
-            await parser.destroy();
 
             return {
                 content,
                 metadata: {
                     type: 'pdf',
-                    pages: numPages,
-                    info: info,
+                    pages: data.numpages,
+                    info: data.info,
                     characters: content.length
                 }
             };
@@ -197,15 +190,23 @@ class ContentExtractor {
 
             console.log(`[ContentExtractor] Scraping website: ${url}`);
 
-            // Fetch the page
-            const response = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (compatible; SEVEN-T Bot/1.0; +https://seven-t.com)',
-                    'Accept': 'text/html,application/xhtml+xml',
-                    'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8'
-                },
-                timeout: 10000
-            });
+            // Fetch the page with a real timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout
+
+            let response;
+            try {
+                response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8'
+                    },
+                    signal: controller.signal
+                });
+            } finally {
+                clearTimeout(timeoutId);
+            }
 
             if (!response.ok) {
                 throw new Error(`Erreur HTTP ${response.status}`);

@@ -57,10 +57,15 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
         `, req.params.agentId);
 
         // Parse metadata for each item
-        const parsedItems = items.map(item => ({
-            ...item,
-            metadata: item.metadata ? JSON.parse(item.metadata) : {}
-        }));
+        const parsedItems = items.map(item => {
+            let metadata = {};
+            try {
+                metadata = item.metadata ? JSON.parse(item.metadata) : {};
+            } catch (e) {
+                console.warn(`[Knowledge] Failed to parse metadata for item ${item.id}:`, e.message);
+            }
+            return { ...item, metadata };
+        });
 
         // Calculate total characters
         const totalChars = items.reduce((acc, item) => acc + (item.content?.length || 0), 0);
@@ -126,6 +131,12 @@ router.post('/agent/:agentId', authenticateToken, async (req, res) => {
         `, itemId, req.params.agentId, finalTitle, finalContent, finalType, JSON.stringify(finalMetadata));
 
         const item = await db.get('SELECT * FROM knowledge_base WHERE id = ?', itemId);
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(item.metadata || '{}');
+        } catch (e) {
+            console.warn(`[Knowledge] Failed to parse metadata for new item ${itemId}`);
+        }
 
         indexAgentKnowledge(req.params.agentId, itemId, finalTitle, finalContent).catch(err =>
             console.warn('[Knowledge] Vector index error:', err?.message)
@@ -135,7 +146,7 @@ router.post('/agent/:agentId', authenticateToken, async (req, res) => {
             message: 'Élément ajouté à la base de connaissances',
             item: {
                 ...item,
-                metadata: JSON.parse(item.metadata || '{}')
+                metadata: parsedMetadata
             }
         });
     } catch (error) {
@@ -208,6 +219,12 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
         `, itemId, req.params.agentId, finalTitle, content, metadata.type || 'pdf', JSON.stringify(metadata));
 
         const item = await db.get('SELECT * FROM knowledge_base WHERE id = ?', itemId);
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(item.metadata || '{}');
+        } catch (e) {
+            console.warn(`[Knowledge] Failed to parse metadata for uploaded item ${itemId}`);
+        }
 
         indexAgentKnowledge(req.params.agentId, itemId, finalTitle, content).catch(err =>
             console.warn('[Knowledge] Vector index error:', err?.message)
@@ -217,7 +234,7 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
             message: 'Fichier ajouté à la base de connaissances',
             item: {
                 ...item,
-                metadata: JSON.parse(item.metadata || '{}')
+                metadata: parsedMetadata
             }
         });
     } catch (error) {
@@ -273,7 +290,12 @@ router.post('/agent/:agentId/extract-url', authenticateToken, async (req, res) =
         );
 
         const item = await db.get('SELECT * FROM knowledge_base WHERE id = ?', itemId);
-        const parsedMetadata = JSON.parse(item.metadata || '{}');
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(item.metadata || '{}');
+        } catch (e) {
+            console.warn(`[Knowledge] Failed to parse metadata for extracted item ${itemId}`);
+        }
 
         // Customize message based on whether we got full content or fallback
         let message;
@@ -327,6 +349,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
         `, title, content, type, req.params.id);
 
         const updated = await db.get('SELECT * FROM knowledge_base WHERE id = ?', req.params.id);
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(updated.metadata || '{}');
+        } catch (e) {
+            console.warn(`[Knowledge] Failed to parse metadata for updated item ${req.params.id}`);
+        }
+
         if (updated && (title != null || content != null)) {
             indexAgentKnowledge(updated.agent_id, req.params.id, updated.title, updated.content).catch(err =>
                 console.warn('[Knowledge] Vector index error:', err?.message)
@@ -336,7 +365,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         res.json({ 
             item: {
                 ...updated,
-                metadata: JSON.parse(updated.metadata || '{}')
+                metadata: parsedMetadata
             }
         });
     } catch (error) {
@@ -388,10 +417,15 @@ router.get('/global', authenticateToken, async (req, res) => {
             ORDER BY created_at DESC
         `, req.user.id);
 
-        const parsedItems = items.map(item => ({
-            ...item,
-            metadata: JSON.parse(item.metadata || '{}')
-        }));
+        const parsedItems = items.map(item => {
+            let metadata = {};
+            try {
+                metadata = JSON.parse(item.metadata || '{}');
+            } catch (e) {
+                console.warn(`[GlobalKnowledge] Failed to parse metadata for item ${item.id}`);
+            }
+            return { ...item, metadata };
+        });
 
         res.json({ items: parsedItems });
     } catch (error) {
@@ -416,6 +450,12 @@ router.post('/global', authenticateToken, async (req, res) => {
         `, itemId, req.user.id, title, content, type || 'text', JSON.stringify({ characters: content.length }));
 
         const item = await db.get('SELECT * FROM global_knowledge WHERE id = ?', itemId);
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(item.metadata || '{}');
+        } catch (e) {
+            console.warn(`[GlobalKnowledge] Failed to parse metadata for item ${itemId}`);
+        }
 
         indexGlobalKnowledge(itemId, title, content).catch(err =>
             console.warn('[Knowledge] Vector index error:', err?.message)
@@ -425,7 +465,7 @@ router.post('/global', authenticateToken, async (req, res) => {
             message: 'Ajouté à la base de connaissances',
             item: {
                 ...item,
-                metadata: JSON.parse(item.metadata || '{}')
+                metadata: parsedMetadata
             }
         });
     } catch (error) {
@@ -481,6 +521,12 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
         `, itemId, req.user.id, title, content, metadata.type, JSON.stringify(metadata));
 
         const item = await db.get('SELECT * FROM global_knowledge WHERE id = ?', itemId);
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(item.metadata || '{}');
+        } catch (e) {
+            console.warn(`[GlobalKnowledge] Failed to parse metadata for item ${itemId}`);
+        }
 
         indexGlobalKnowledge(itemId, title, content).catch(err =>
             console.warn('[Knowledge] Vector index error:', err?.message)
@@ -490,7 +536,7 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
             message: 'Fichier ajouté',
             item: {
                 ...item,
-                metadata: JSON.parse(item.metadata || '{}')
+                metadata: parsedMetadata
             }
         });
     } catch (error) {
@@ -539,7 +585,12 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
         );
 
         const item = await db.get('SELECT * FROM global_knowledge WHERE id = ?', itemId);
-        const parsedMetadata = JSON.parse(item.metadata || '{}');
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(item.metadata || '{}');
+        } catch (e) {
+            console.warn(`[GlobalKnowledge] Failed to parse metadata for item ${itemId}`);
+        }
 
         indexGlobalKnowledge(itemId, finalTitle, result.content).catch(err =>
             console.warn('[Knowledge] Vector index error:', err?.message)
@@ -591,6 +642,12 @@ router.put('/global/:id', authenticateToken, async (req, res) => {
         `, title, content, type, req.params.id);
 
         const updated = await db.get('SELECT * FROM global_knowledge WHERE id = ?', req.params.id);
+        let parsedMetadata = {};
+        try {
+            parsedMetadata = JSON.parse(updated.metadata || '{}');
+        } catch (e) {
+            console.warn(`[GlobalKnowledge] Failed to parse metadata for updated item ${req.params.id}`);
+        }
         
         if (updated && (title != null || content != null)) {
             indexGlobalKnowledge(req.params.id, updated.title, updated.content).catch(err =>
@@ -601,7 +658,7 @@ router.put('/global/:id', authenticateToken, async (req, res) => {
         res.json({ 
             item: {
                 ...updated,
-                metadata: JSON.parse(updated.metadata || '{}')
+                metadata: parsedMetadata
             }
         });
     } catch (error) {

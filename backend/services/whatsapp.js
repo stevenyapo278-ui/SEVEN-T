@@ -27,7 +27,7 @@ import { decisionEngine } from './decisionEngine.js';
 import { messageAiLogService } from './messageAiLog.js';
 import { autoQaService } from './autoQa.js';
 import { notificationService } from './notifications.js';
-import { staticResponses } from '../config/staticResponses.js';
+import { staticResponses, shortMessagePatterns, pickResponse } from '../config/staticResponses.js';
 import { hasFeature, hasModule } from '../config/plans.js';
 import { updateConversionScore } from './conversionScore.js';
 import { debugIngest } from '../utils/debugIngest.js';
@@ -35,6 +35,7 @@ import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
 import * as ttsService from './tts.js';
 import { conversationMessageQueue } from './conversationMessageQueue.js';
 import { notifyConversationUpdate } from './socketEmitter.js';
+import googleCalendarService from './googleCalendar.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
@@ -1105,7 +1106,9 @@ class WhatsAppManager {
             const history = Array.isArray(historyRows) ? historyRows.reverse() : [];
 
             // E-commerce pipeline: catalogue + order rules + order detection only for template === 'ecommerce'
+            // E-commerce & Commercial pipelines: selective knowledge injection based on template
             const isEcommerce = agent.template === 'ecommerce';
+            const isCommercial = agent.template === 'commercial';
 
             // Payload for downstream pipeline (same shape as param; uses DB conversation.id)
             const pipelinePayload = {
@@ -1207,10 +1210,29 @@ class WhatsAppManager {
                     }])
                 : [];
 
-            // Combine all knowledge bases
-            const knowledge = [...globalKnowledge, ...agentKnowledge, ...productKnowledge];
+            // Commercial only: inject services catalogue
+            const services = isCommercial && userId
+                ? await db.all('SELECT id, name, description, price, duration, category, image_url FROM services WHERE user_id = ? AND is_active = 1', userId)
+                : [];
+            
+            const serviceKnowledge = isCommercial
+                ? (services.length > 0
+                    ? [{
+                        title: '💼 CATALOGUE DES SERVICES',
+                        content: services.map(s => {
+                            return `- ${s.name}: ${s.price} FCFA${s.duration ? ` (${s.duration})` : ''}${s.category ? ` | ${s.category}` : ''}${s.description ? `\n  ${s.description}` : ''}${s.image_url ? `\n  Image: ${s.image_url}` : ''}`;
+                        }).join('\n')
+                    }]
+                    : [{
+                        title: '💼 CATALOGUE DES SERVICES',
+                        content: "Le catalogue des services est actuellement vide. Tu ne peux proposer aucune prestation pour le moment."
+                    }])
+                : [];
 
-            console.log(`[WhatsApp] Knowledge: ${globalKnowledge.length} global + ${agentKnowledge.length} agent + ${isEcommerce ? products.length : 0} products = ${knowledge.length} items`);
+            // Combine all knowledge bases
+            const knowledge = [...globalKnowledge, ...agentKnowledge, ...productKnowledge, ...serviceKnowledge];
+
+            console.log(`[WhatsApp] Knowledge: ${globalKnowledge.length} global + ${agentKnowledge.length} agent + ${isEcommerce ? products.length : 0} products + ${isCommercial ? services.length : 0} services = ${knowledge.length} items`);
 
             // ============================================
             // PRE-ANALYSIS: Analyze message BEFORE AI response
@@ -1291,6 +1313,48 @@ class WhatsAppManager {
             const skipLlm = messageAnalysis.ignore === true || messageAnalysis.escalate === true;
             const intentHint = messageAnalysis.intent_hint ?? messageAnalysis.intent?.primary;
             const hasProductsMentioned = messageAnalysis.products?.matchedProducts?.length > 0;
+
+            // ── Short/emoji message: ultra-fast static reply without LLM ──────
+            if (!skipLlm && !hasProductsMentioned && !messageAnalysis.isLikelyOrder) {
+                const trimmedMsg = messageText.trim();
+                // Only apply for very short messages (≤ 30 chars)
+                if (trimmedMsg.length <= 30) {
+                    const matchedPattern = shortMessagePatterns.find(p => p.pattern.test(trimmedMsg));
+                    if (matchedPattern) {
+                        const shortText = pickResponse(matchedPattern.responses);
+                        console.log(`[WhatsApp] Short message matched pattern → static reply: "${shortText}"`);
+                        messageAiLogService.logMessageAi({
+                            conversation_id: conversation.id,
+                            tenant_id: userId,
+                            direction: 'in',
+                            payload: pipelinePayload,
+                            prompt_version: null,
+                            llm_output_summary: `Short message static: ${shortText}`,
+                            auto_qa_result: null,
+                            decision: 'short_message_static',
+                            decision_reason: null,
+                            response_time_ms: Date.now() - pipelineStartMs
+                        });
+                        // Small natural delay (300–800ms)
+                        const shortDelay = 300 + Math.random() * 500;
+                        await sock.sendPresenceUpdate('composing', replyToJidForSend);
+                        await new Promise(r => setTimeout(r, shortDelay));
+                        await sock.sendPresenceUpdate('paused', replyToJidForSend);
+                        const sendResult = await sock.sendMessage(replyToJidForSend, { text: shortText });
+                        const outMsgId = uuidv4();
+                        await db.run(`
+                            INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, created_at)
+                            VALUES (?, ?, 'assistant', ?, 0, ?, 'ai', ?)
+                        `, outMsgId, conversation.id, shortText, sendResult?.key?.id, new Date().toISOString());
+                        void notifyConversationUpdate(conversation.id, {
+                            id: outMsgId, role: 'assistant', content: shortText,
+                            whatsapp_id: sendResult?.key?.id, created_at: new Date().toISOString()
+                        });
+                        return;
+                    }
+                }
+            }
+
             const canUseStaticResponse = !skipLlm 
                 && intentHint 
                 && staticResponses[intentHint]
@@ -1298,7 +1362,7 @@ class WhatsAppManager {
                 && !messageAnalysis.isLikelyOrder;
 
             if (canUseStaticResponse) {
-                const staticText = staticResponses[intentHint];
+                const staticText = pickResponse(staticResponses[intentHint]);
                 messageAiLogService.logMessageAi({
                     conversation_id: conversation.id,
                     tenant_id: userId,
@@ -1311,13 +1375,11 @@ class WhatsAppManager {
                     decision_reason: null,
                     response_time_ms: Date.now() - pipelineStartMs
                 });
-                const responseDelay = agent.response_delay || 0;
-                if (responseDelay > 0) {
-                    console.log(`[WhatsApp] Waiting ${responseDelay}s before sending static response...`);
-                    await sock.sendPresenceUpdate('composing', replyToJidForSend);
-                    await new Promise(resolve => setTimeout(resolve, responseDelay * 1000));
-                    await sock.sendPresenceUpdate('paused', replyToJidForSend);
-                }
+                // Adaptive delay for static responses too
+                const staticTypingDelay = Math.min(Math.max(staticText.length * 40, 300), 3000);
+                await sock.sendPresenceUpdate('composing', replyToJidForSend);
+                await new Promise(resolve => setTimeout(resolve, staticTypingDelay));
+                await sock.sendPresenceUpdate('paused', replyToJidForSend);
                 const sendResult = await sock.sendMessage(replyToJidForSend, { text: staticText });
                 const whatsappMsgId = sendResult?.key?.id;
                 const outMsgId = uuidv4();
@@ -1384,6 +1446,45 @@ class WhatsAppManager {
             if (aiResponse?.content && autoQaService.isAutoQaEnabled(userId)) {
                 autoQaResult = await autoQaService.runAutoQa(aiResponse.content, { userMessage: messageText });
             }
+            // Handle Google Calendar booking if requested by AI
+            if (aiResponse?.booking && userId) {
+                try {
+                    // 1. Priorité à l'outil calendrier spécifique de l'agent
+                    let calendarToolId = agent.calendar_tool_id;
+                    
+                    // 2. Fallback sur le premier outil Google Calendar connecté de l'utilisateur
+                    if (!calendarToolId) {
+                        const globalCalendarTool = await db.get(
+                            "SELECT id FROM tools WHERE user_id = ? AND type = 'google_calendar' AND status = 'connected' LIMIT 1",
+                            userId
+                        );
+                        calendarToolId = globalCalendarTool?.id;
+                    }
+
+                    if (calendarToolId) {
+                        // Vérifier si l'outil est bien connecté (surtout pour l'outil spécifique)
+                        const tool = await db.get("SELECT status FROM tools WHERE id = ?", calendarToolId);
+                        if (tool?.status !== 'connected') {
+                            console.warn(`[WhatsApp] Calendar tool ${calendarToolId} is not connected. Status: ${tool?.status}`);
+                        } else {
+                            console.log(`[WhatsApp] Booking requested: ${JSON.stringify(aiResponse.booking)} using tool ${calendarToolId}`);
+                            const event = await googleCalendarService.createEvent(calendarToolId, {
+                                summary: aiResponse.booking.summary,
+                                startTime: aiResponse.booking.startTime,
+                                endTime: aiResponse.booking.endTime,
+                                description: `Rdv avec ${contactName} (${sender.split('@')[0]}) via WhatsApp`
+                            });
+                            console.log(`[WhatsApp] Calendrier mis à jour: ${event.htmlLink}`);
+                            aiResponse.calendar_event_id = event.id;
+                        }
+                    } else {
+                        console.warn(`[WhatsApp] Booking requested but no Google Calendar tool connected for user ${userId}`);
+                    }
+                } catch (bookingErr) {
+                    console.error('[WhatsApp] Erreur lors de la création de l\'événement Calendar:', bookingErr.message);
+                }
+            }
+
             const decision = decisionEngine.decide(preProcessing, llmOutput, autoQaResult);
 
             messageAiLogService.logMessageAi({
@@ -1399,12 +1500,16 @@ class WhatsAppManager {
                 response_time_ms: Date.now() - pipelineStartMs
             });
 
-            // Apply response delay if configured (only when we will send)
-            const responseDelay = agent.response_delay || 0;
-            if (responseDelay > 0 && decision.action === 'send') {
-                console.log(`[WhatsApp] Waiting ${responseDelay}s before sending response...`);
+            // Apply adaptive response delay (simulates natural human typing speed)
+            if (decision.action === 'send') {
+                const configuredDelay = (agent.response_delay || 0) * 1000; // ms
+                const responseLength = aiResponse?.content?.length || 0;
+                // Typing speed: ~25ms per character (more natural/fast), capped at 10s, minimum 300ms
+                const typingDelay = Math.min(Math.max(responseLength * 25, 300), 10000);
+                const totalDelay = Math.min(configuredDelay + typingDelay, 12000); // cap at 12s
+                console.log(`[WhatsApp] Adaptive delay: ${totalDelay}ms (config ${configuredDelay}ms + typing ${typingDelay}ms for ${responseLength} chars)`);
                 await sock.sendPresenceUpdate('composing', replyToJidForSend);
-                await new Promise(resolve => setTimeout(resolve, responseDelay * 1000));
+                await new Promise(resolve => setTimeout(resolve, totalDelay));
                 await sock.sendPresenceUpdate('paused', replyToJidForSend);
             }
 
