@@ -98,9 +98,10 @@ router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) =>
         let originalAmount = amount;
         let discountAmount = 0;
         let finalCouponCode = null;
+        let couponRes = null;
 
         if (couponCode) {
-            const couponRes = await validateAndApplyCoupon(couponCode, amount);
+            couponRes = await validateAndApplyCoupon(couponCode, amount);
             if (!couponRes.valid) return res.status(400).json({ error: couponRes.error });
             amount = couponRes.finalAmount;
             discountAmount = couponRes.discountAmount;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import api, { syncChats, getSyncStatus, getContacts } from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -1511,8 +1512,8 @@ function SettingsTab({ agent, onUpdate }) {
               </div>
 
               {/* Modal focus pour éditer le system prompt en grand */}
-              {systemPromptFocusOpen && (
-                <div className="fixed inset-0 z-50 flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
+              {systemPromptFocusOpen && createPortal(
+                <div className="fixed inset-0 z-[100] flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-semibold text-gray-100">{t('agents.detail.settings.systemPrompt', 'System Prompt')}</h3>
                     <div className="flex items-center gap-2">
@@ -1545,7 +1546,8 @@ function SettingsTab({ agent, onUpdate }) {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">{t('agents.detail.settings.systemPromptHint', 'Changes are saved temporarily. Save agent to apply.')}</p>
-                </div>
+                </div>,
+                document.body
               )}
               {user?.is_admin && (
                 <div className="mb-4">

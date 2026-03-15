@@ -17,13 +17,16 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Handle errors: we don't force a hard redirect here anymore because it causes infinite loops
-// The AuthProvider and ProtectedRoute handle the redirect logic cleanly via React state.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If we get a 401, it means the session is invalid or expired.
-    // We let the calling function handle it (usually AuthContext will catch it and set user to null)
+    // If we get a 401 on a route OTHER than login/register, it means the session is invalid or expired.
+    if (error.response && error.response.status === 401) {
+      const url = error.config?.url;
+      if (url && !url.includes('/auth/login') && !url.includes('/auth/register')) {
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      }
+    }
     return Promise.reject(error)
   }
 )

@@ -138,6 +138,7 @@ class WhatsAppManager {
         this.lastQrLogTime = new Map(); // toolId -> timestamp du dernier log QR (éviter le spam)
         this.pendingReconnects = new Map(); // toolId -> timeoutId (pour annuler la reconnexion si l'outil est supprimé)
         this.storeIntervals = new Map(); // toolId -> intervalId
+        this.connectingInProgress = new Set(); // toolId -> boolean (prevent simultaneous connects)
         this._queueDrainHandlerSet = false;
         this.redis = createRedisClient();
     }
@@ -184,6 +185,17 @@ class WhatsAppManager {
      * Clear session from Redis for an agent
      */
     async clearSession(toolId) {
+        // Formally close existing socket if any
+        const existingSock = this.connections.get(toolId);
+        if (existingSock) {
+            try {
+                existingSock.ev.removeAllListeners();
+                existingSock.ws?.close();
+                existingSock.end?.();
+            } catch (e) { /* ignore */ }
+            this.connections.delete(toolId);
+        }
+
         const pendingId = this.pendingReconnects.get(toolId);
         if (pendingId) {
             clearTimeout(pendingId);
@@ -206,11 +218,11 @@ class WhatsAppManager {
         }
 
         // Clear in-memory state
-        this.connections.delete(toolId);
         this.stores.delete(toolId);
         this.qrCodes.delete(toolId);
         this.lastQrLogTime.delete(toolId);
         this.statuses.delete(toolId);
+        this.connectingInProgress.delete(toolId);
     }
 
     async connect(toolId, forceNew = false) {
@@ -238,19 +250,26 @@ class WhatsAppManager {
 
             // If forceNew, clear the existing session first
             if (forceNew) {
-                this.clearSession(toolId);
+                await this.clearSession(toolId);
             }
 
-            // Check if already connecting/connected
+            // Ensure we don't have multiple sockets for the same toolId
             if (this.connections.has(toolId)) {
-                const currentStatus = this.statuses.get(toolId);
-                // If reconnecting, wait for it
-                if (currentStatus?.status === 'reconnecting') {
-                    return { message: 'Reconnexion en cours...', status: 'reconnecting' };
+                if (forceNew) {
+                    const oldSock = this.connections.get(toolId);
+                    try { oldSock.ev.removeAllListeners(); oldSock.ws?.close(); } catch(e){}
+                    this.connections.delete(toolId);
+                } else {
+                    return { message: 'Déjà connecté ou en cours de connexion' };
                 }
-                return { message: 'Déjà connecté ou en cours de connexion' };
             }
 
+            // Check if already connecting (prevent overlapping)
+            if (!forceNew && this.connectingInProgress.has(toolId)) {
+                return { message: 'Connexion en cours...', status: 'connecting' };
+            }
+
+            this.connectingInProgress.add(toolId);
             this.statuses.set(toolId, { status: 'connecting', message: 'Connexion en cours...' });
 
             const { state, saveCreds } = await useBaileyRedisState(this.redis, toolId);
@@ -286,6 +305,7 @@ class WhatsAppManager {
                 keepAliveIntervalMs: 30000,
                 markOnlineOnConnect: true,
                 syncFullHistory: false,
+                retryRequestDelayMs: 5000,
             });
 
             // Wrap sendMessage to check and deduct credits
@@ -447,10 +467,18 @@ class WhatsAppManager {
 
                 if (connection === 'close') {
                     const statusCode = lastDisconnect?.error?.output?.statusCode;
-                    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
                     const errorMessage = lastDisconnect?.error?.message || 'Unknown reason';
+                    
+                    // ONLY reconnect if it's a legitimate connection drop (code is present) 
+                    // and NOT a logout/auth failure. If statusCode is undefined, it's a crash.
+                    const shouldReconnect = statusCode && 
+                                           statusCode !== DisconnectReason.loggedOut && 
+                                           statusCode !== 401 &&
+                                           !errorMessage.includes('reading \'public\'');
 
-                    // Clear interval
+                    console.log(`[WhatsApp] Connection closed for tool ${toolId}. Status: ${statusCode || 'CRASH'}, ShouldReconnect: ${shouldReconnect}, Reason: ${errorMessage}`);
+
+                    // Clear interval for store saving
                     const intervalId = this.storeIntervals.get(toolId);
                     if (intervalId) {
                         clearInterval(intervalId);
@@ -463,16 +491,31 @@ class WhatsAppManager {
 
                     if (shouldReconnect) {
                         const toolIdForTimeout = toolId;
+                        
+                        // IMPORTANT: Clear any existing pending reconnect for this tool ID
+                        const existingTimeout = this.pendingReconnects.get(toolIdForTimeout);
+                        if (existingTimeout) {
+                            clearTimeout(existingTimeout);
+                            this.pendingReconnects.delete(toolIdForTimeout);
+                        }
+
+                        // If we already manually trigger a new connect, don't overlap with reconnect loop
+                        if (this.connectingInProgress.has(toolIdForTimeout)) {
+                            console.log(`[WhatsApp] Skipping reconnect for tool ${toolIdForTimeout} (connection already in progress)`);
+                            return;
+                        }
+
                         const valid = await this.isToolStillValid(toolIdForTimeout);
                         if (!valid) {
                             this.statuses.delete(toolIdForTimeout);
                             this.stores.delete(toolIdForTimeout);
                             return;
                         }
+
                         this.statuses.set(toolId, { status: 'reconnecting', message: 'Reconnexion...' });
-                        // So the frontend (tools list) shows reconnecting instead of "connected" while we retry
                         await db.run('UPDATE tools SET status = ? WHERE id = ?', 'reconnecting', toolId);
-                        console.log(`[WhatsApp] Reconnecting tool ${toolId}...`);
+                        console.log(`[WhatsApp] Reconnecting tool ${toolId} in 5s...`);
+
                         const timeoutId = setTimeout(async () => {
                             this.pendingReconnects.delete(toolIdForTimeout);
                             const stillValid = await this.isToolStillValid(toolIdForTimeout);
@@ -537,8 +580,10 @@ class WhatsAppManager {
                 }
             });
 
+            this.connectingInProgress.delete(toolId);
             return { message: 'Connexion initiée', status: 'connecting' };
         } catch (error) {
+            this.connectingInProgress.delete(toolId);
             console.error(`[WhatsApp] Connection error for tool ${toolId}:`, error);
             this.statuses.set(toolId, { status: 'error', message: error.message });
             throw error;
@@ -1348,10 +1393,10 @@ class WhatsAppManager {
                         aiResponse = await aiService.generateResponseFromImage(effectiveAgent, history, imageBase64, mimeType, caption, knowledge, userId);
                     } catch (imgErr) {
                         console.warn('[WhatsApp] Téléchargement/vision image échoué, fallback texte:', imgErr.message);
-                        aiResponse = await aiService.generateResponse(agent, history, pipelinePayload, knowledge, messageAnalysis);
+                        aiResponse = await aiService.generateResponse(agent, history, pipelinePayload.message, knowledge, messageAnalysis, userId);
                     }
                 } else {
-                    aiResponse = await aiService.generateResponse(agent, history, pipelinePayload, knowledge, messageAnalysis);
+                    aiResponse = await aiService.generateResponse(agent, history, pipelinePayload.message, knowledge, messageAnalysis, userId);
                 }
                 if (aiResponse?.credit_warning) {
                     console.log(`[WhatsApp] Credit warning for user ${userId}: ${aiResponse.credit_warning}`);
@@ -1473,7 +1518,11 @@ class WhatsAppManager {
                 // #endregion
                 let sendResult;
                 let sentAsVoice = false;
-                let sentProductImageUrls = [];
+                const sentProductImageUrls = [];
+                const toMediaPath = (url) => {
+                    const m = /\/api\/products\/image\/[^/?\s)]+/.exec(url);
+                    return m ? (m[0].startsWith('/') ? m[0] : '/' + m[0]) : url;
+                };
                 const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
                 const userVoiceRow = await db.get('SELECT plan, voice_responses_enabled FROM users WHERE id = ?', userId);
                 const planHasVoice = await hasFeature(userVoiceRow?.plan || 'free', 'voice_responses');
@@ -1532,10 +1581,6 @@ class WhatsAppManager {
                         };
 
                         /** Path utilisable en front (ex: /api/products/image/xxx.png) */
-                        const toMediaPath = (url) => {
-                            const m = /\/api\/products\/image\/[^/?\s)]+/.exec(url);
-                            return m ? (m[0].startsWith('/') ? m[0] : '/' + m[0]) : url;
-                        };
 
                         // 1) Format explicite [ENVOYER_IMAGES:url1,url2,...] (virgules ou retours à la ligne ; accepte espaces/newlines au début)
                         const imageMatch = /^\s*\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(aiResponse.content);

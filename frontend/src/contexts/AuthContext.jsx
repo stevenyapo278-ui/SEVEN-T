@@ -111,7 +111,16 @@ export function AuthProvider({ children }) {
     const interval = setInterval(() => {
       checkAuth()
     }, 5 * 60000) // Every 5 minutes
-    return () => clearInterval(interval)
+
+    const handleUnauthorized = () => {
+      setUser(null);
+    }
+    window.addEventListener('auth:unauthorized', handleUnauthorized)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('auth:unauthorized', handleUnauthorized)
+    }
   }, [user])
 
   // Idle logout

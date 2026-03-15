@@ -574,7 +574,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto min-h-screen overflow-y-auto">
+    <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0 pb-12">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-gray-100">Administration</h1>

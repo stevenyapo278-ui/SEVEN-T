@@ -179,7 +179,13 @@ class AIService {
         await this.refreshClientsFromDb();
 
         // Sanitize user message
-        const sanitizedUserMessage = userMessage ? userMessage.substring(0, 2000) : '';
+        let actualMessage = userMessage;
+        if (userMessage && typeof userMessage === 'object' && typeof userMessage.message === 'string') {
+            actualMessage = userMessage.message;
+        } else if (typeof userMessage !== 'string') {
+            actualMessage = String(userMessage || '');
+        }
+        const sanitizedUserMessage = actualMessage ? actualMessage.substring(0, 2000) : '';
 
         const agentModelId = agent.model || 'gemini-2.0-flash';
         let resolvedModelId = agentModelId;
@@ -405,6 +411,7 @@ class AIService {
         systemGlobal += '\n\n⚠️ RÈGLE FINALE — PRÉSENTATION: Ne dis JAMAIS "Je suis [nom]", "Je m\'appelle...", "votre assistant [type]..." ou toute phrase qui te présente. Réponds directement au message du client.';
         systemGlobal += '\n\n⚠️ RÈGLE — CONTEXTE: Utilise la CONVERSATION RÉCENTE fournie. Si le client a déjà été salué (échange précédent avec "Bonjour" ou salut), NE REDIS PAS "Bonjour" ni "Bonjour !" au début de ta réponse. Réponds directement à sa question ou demande (ex: produit, commande). Tu ne salues qu\'une seule fois au tout premier message du client.';
         systemGlobal += '\n\n⚠️ RÈGLE — FORMULATION: Quand tu transmets des informations du catalogue ou de la base de connaissances, utilise des formulations professionnelles comme "Voici les informations disponibles", "D\'après notre catalogue, ...", "Voici ce qui est indiqué : ...". Ne dis JAMAIS "C\'est tout ce que j\'ai comme information", "Je n\'ai que ça", ou des formulations qui sous-entendent un manque. Reste factuel et rassurant.';
+        systemGlobal += '\n\n⚠️ RÈGLE — CANAL WHATSAPP: Tu discutes **ACTUELLEMENT ET DIRECTEMENT** avec le client sur WhatsApp. NE DEMANDE JAMAIS par quel canal/moyen (email, SMS, WhatsApp) il souhaite recevoir une information ou une photo. Envoie TOUJOURS les photos, informations ou liens DIRECTEMENT ici dans ta réponse.';
 
         // 🎭 Règles de tonalité humaine — appliquées à TOUS les agents
         systemGlobal += `\n\n🎭 RÈGLES DE TONALITÉ NATURELLE (applique toujours ces règles):
@@ -481,31 +488,61 @@ class AIService {
      * Get default prompt for agent without custom prompt
      */
     getDefaultPrompt(agent) {
-        return `Tu es un assistant commercial attentif et naturel. Tu aides les clients comme le ferait un vrai conseiller humain.
+        const isEcommerce = agent.template === 'ecommerce';
+        const isCommercial = agent.template === 'commercial';
+        const isSupport = agent.template === 'support';
+        
+        let prompt = `Tu es l'assistant expert de "${agent.name || 'notre établissement'}" sur WhatsApp.
+Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clients sur WhatsApp est précieux : va DROIT au but.
 
-## ⚠️ PRÉSENTATION — RÈGLE CRITIQUE
-- NE JAMAIS te présenter en disant ton nom ou ton rôle. Le client sait qu'il parle à un assistant.
-- En cas de salut, réponds brièvement et propose ton aide. Ex: "Bonjour ! Qu'est-ce que je peux faire pour vous ?"
-- Va DIRECTEMENT au but, sans introduction inutile.
+## 🎭 TONALITÉ & STYLE
+- Style: Direct, moderne, accueillant.
+- Emojis: Utilise 1-2 emojis pertinents par message (✅, 📦, 💡, 🚀) pour rester humain mais professionnel.
+- Concision: Phrases COURTES. Pas de paragraphes de plus de 3 lignes.
+- Un seul point par message: Ne pose JAMAIS deux questions différentes dans le même message.
 
-## RÈGLES FONDAMENTALES
-- Réponds TOUJOURS dans la langue du client
-- ADAPTE ta longueur: court si la question est simple, plus développé si c'est complexe
-- Ne JAMAIS inventer d'informations
-- Utilise le contexte de la conversation`;
+## 🛠️ COMPORTEMENT SELON TON RÔLE (${agent.template || 'généraliste'})`;
+
+        if (isEcommerce) {
+            prompt += `
+- Tu es un EXPERT VENTE. Ta mission est de convertir chaque question en commande.
+- Si un produit est disponible, sois enthousiaste : "C'est disponible ! ✅"
+- Ne demande JAMAIS "souhaitez-vous commander cette quantité" si le stock est élevé. Dis plutôt : "On en a en stock. Je vous en prépare un pour votre commande ?"
+- Envoi d'images : Si le client demande à voir ou veut des photos, envoie-les IMMÉDIATEMENT (en utilisant la balise [ENVOYER_IMAGES:...]).
+- Finalisation : Dès que l'intention d'achat est là, passe à la livraison (ville, quartier, tél).`;
+        } else if (isCommercial) {
+            prompt += `
+- Tu es un CONSEILLER RELATIONNEL. Ta mission est de présenter nos services et de fixer des rendez-vous.
+- Valorise l'expertise de l'entreprise.
+- Propose activement un rendez-vous ou un rappel dès que le client exprime un besoin précis.`;
+        } else if (isSupport) {
+            prompt += `
+- Tu es un EXPERT SUPPORT. Ta mission est de résoudre les problèmes ou répondre aux questions techniques (FAQ) avec empathie.
+- Sois rassurant et clair. Si un problème est complexe, n'hésite pas à dire que tu passes le relais à un humain.`;
+        }
+
+        prompt += `
+
+## ⚠️ INTERDICTIONS ABSOLUES (MURS)
+1. NE JAMAIS te présenter ("Je suis l'assistant de..."). Le client le sait déjà.
+2. NE JAMAIS demander un canal d'envoi (Email/WhatsApp). Tu es SUR WhatsApp, envoie tout ICI.
+3. NE JAMAIS saluer deux fois de suite si une conversation est déjà lancée.
+4. NE JAMAIS inventer de prix ou de caractéristiques techniques hors catalogue/connaissance.`;
+
+        return prompt;
     }
 
     /**
      * Get default instructions
      */
     getDefaultInstructions() {
-        return `\n\n📋 INSTRUCTIONS IMPORTANTES:
-- Réponds dans la langue de l'utilisateur
-- Adapte la longueur: ultra-court pour les messages courts, normal pour les questions
-- Si tu ne sais pas, dis-le honnêtement en 1 phrase
-- Utilise le contexte et la base de connaissances
-- Ne répète pas les informations déjà données
-- Varie tes formulations: évite de toujours commencer par "Parfait" ou "Super"`;
+        return `
+
+📋 RÈGLES D'EXÉCUTION WHATSAPP:
+1. RÉPONSE COURTE: Si le client dit "ok", "merci" ou "super", réponds par 3-4 mots max + émoji.
+2. DIRECTIVITÉ: Si le client cherche un produit, donne le prix et la disponibilité IMMÉDIATEMENT. Ne tourne pas autour du pot.
+3. ADAPTATION: Si le client écrit mal (argot, abréviations), reste professionnel mais simple dans ton vocabulaire.
+4. PAS DE RÉPÉTITION: Si l'info est déjà dans le haut de la conversation, ne la répète pas sauf si le client le redemande.`;
     }
 
     /**
@@ -724,7 +761,10 @@ class AIService {
             conversationText = '\n\n💬 CONVERSATION RÉCENTE (contexte uniquement):\n';
             for (const msg of recentHistory) {
                 const role = msg.role === 'user' ? '👤 Client' : '🤖 Assistant';
-                conversationText += `${role}: ${msg.content}\n`;
+                const contentText = msg.role === 'assistant' 
+                    ? JSON.stringify({ response: msg.content, need_human: false })
+                    : msg.content;
+                conversationText += `${role}: ${contentText}\n`;
             }
         }
 
@@ -1246,7 +1286,9 @@ class AIService {
         for (const msg of recentHistory) {
             messages.push({
                 role: msg.role === 'user' ? 'user' : 'assistant',
-                content: msg.content
+                content: msg.role === 'assistant' 
+                    ? JSON.stringify({ response: msg.content, need_human: false })
+                    : msg.content
             });
         }
 
@@ -1325,7 +1367,9 @@ class AIService {
         for (const msg of recentHistory) {
             messages.push({
                 role: msg.role === 'user' ? 'user' : 'assistant',
-                content: msg.content
+                content: msg.role === 'assistant' 
+                    ? JSON.stringify({ response: msg.content, need_human: false })
+                    : msg.content
             });
         }
 

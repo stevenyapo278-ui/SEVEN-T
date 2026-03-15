@@ -8,7 +8,7 @@
  *   - Sessions auto-expire after 90 days of inactivity
  */
 
-import { proto } from 'baileys';
+import { proto, initAuthCreds, BufferJSON } from 'baileys';
 
 /**
  * Create a Baileys auth state backed by Redis.
@@ -26,7 +26,7 @@ export async function useBaileyRedisState(redis, toolId) {
         try {
             const raw = await redis.get(`${keyPrefix}:${key}`);
             if (!raw) return null;
-            return JSON.parse(raw);
+            return JSON.parse(raw, BufferJSON ? BufferJSON.reviver : undefined);
         } catch {
             return null;
         }
@@ -39,7 +39,7 @@ export async function useBaileyRedisState(redis, toolId) {
             } else {
                 await redis.set(
                     `${keyPrefix}:${key}`,
-                    JSON.stringify(data),
+                    JSON.stringify(data, BufferJSON ? BufferJSON.replacer : undefined),
                     'EX',
                     SESSION_TTL_SECONDS
                 );
@@ -49,8 +49,8 @@ export async function useBaileyRedisState(redis, toolId) {
         }
     };
 
-    // Load credentials
-    const creds = (await readData('creds')) || {};
+    // Load credentials or initialize new ones
+    const creds = (await readData('creds')) || initAuthCreds();
 
     const state = {
         creds,
