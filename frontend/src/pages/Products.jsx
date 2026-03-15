@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp, Phone, User, Trash2, CheckCircle, ArrowLeft } from 'lucide-react'
+import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp, Phone, User, Trash2, CheckCircle, ArrowLeft, Layers } from 'lucide-react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../contexts/CurrencyContext'
@@ -16,6 +16,7 @@ import ProductList from './products/ProductList'
 import ProductModal from './products/ProductModal'
 import ImportModal from './products/ImportModal'
 import HistoryModal from './products/HistoryModal'
+import CategoryModal from './products/CategoryModal'
 import { useOnboardingTour } from '../components/Onboarding'
 
 export default function Products() {
@@ -41,7 +42,13 @@ export default function Products() {
     categories,
     filteredProducts,
     stats,
-    handleDelete
+    handleDelete,
+    addCategory,
+    deleteCategory,
+    selectedIds,
+    toggleSelect,
+    toggleSelectAll,
+    handleBulkDelete
   } = useProducts()
 
   const [showAddModal, setShowAddModal] = useState(false)
@@ -55,9 +62,10 @@ export default function Products() {
   const [historyList, setHistoryList] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [selectedProductView, setSelectedProductView] = useState(null)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [imageZoom, setImageZoom] = useState(null)
 
-  const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory || !!selectedProductView
+  const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory || !!selectedProductView || showCategoryModal
   useLockBodyScroll(anyModalOpen)
 
   const loadHistory = async (productId = null) => {
@@ -150,6 +158,12 @@ export default function Products() {
                 <History className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">{t('products.btnHistory')}</span>
               </button>
+              <button type="button" onClick={() => setShowCategoryModal(true)} className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}>
+                <Layers className="w-4 h-4" aria-hidden />
+                <span className="hidden sm:inline">Catégories</span>
+              </button>
               <button type="button" onClick={() => setShowImportModal(true)} className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
                 isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}>
@@ -219,23 +233,70 @@ export default function Products() {
           )}
         </div>
       ) : !loadError ? (
-        <ProductList
-          products={filteredProducts}
-          formatPrice={formatPrice}
-          onEdit={setEditingProduct}
-          onDelete={handleDelete}
-          onHistory={loadHistory}
-          onView={setSelectedProductView}
-          data-tour="products-list"
-        />
+        <>
+          {/* Bulk Action Bar - Improved for Mobile */}
+          {selectedIds.length > 0 && (
+            <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-6 rounded-2xl shadow-2xl animate-slideUp border ${
+              isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+            }`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                  {selectedIds.length}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-xs sm:text-sm truncate">Sélectionné(s)</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => toggleSelectAll()}
+                  className="hidden sm:block px-4 py-2 text-sm font-medium hover:bg-white/5 rounded-xl transition-colors"
+                >
+                  Désélectionner
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden xs:inline">Supprimer</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <ProductList
+            products={filteredProducts}
+            formatPrice={formatPrice}
+            onEdit={setEditingProduct}
+            onDelete={handleDelete}
+            onHistory={loadHistory}
+            onView={setSelectedProductView}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            data-tour="products-list"
+          />
+        </>
       ) : null}
 
       {(showAddModal || editingProduct) && (
         <ProductModal
           product={editingProduct}
+          categories={categories}
           getSymbol={getSymbol}
           onClose={() => { setShowAddModal(false); setEditingProduct(null) }}
           onSaved={() => { closeModals(); loadProducts() }}
+        />
+      )}
+
+      {showCategoryModal && (
+        <CategoryModal
+          categories={categories}
+          loading={false}
+          onAdd={addCategory}
+          onDelete={deleteCategory}
+          onClose={() => setShowCategoryModal(false)}
         />
       )}
 

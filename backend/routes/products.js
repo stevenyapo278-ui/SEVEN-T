@@ -381,17 +381,41 @@ router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req,
 // Delete product
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
-        if (!product) {
-            return res.status(404).json({ error: 'Produit non trouvé' });
-        }
-
         await db.run('DELETE FROM products WHERE id = ?', req.params.id);
         messageAnalyzer.invalidateProductCache(req.user.id);
         res.json({ message: 'Produit supprimé' });
     } catch (error) {
         console.error('Delete product error:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression' });
+    }
+});
+
+// Bulk delete products
+router.post('/bulk-delete', authenticateToken, async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Liste d\'identifiants requise' });
+        }
+
+        // Verify all products belong to user
+        const placeholders = ids.map(() => '?').join(',');
+        const count = await db.get(`
+            SELECT COUNT(*) as c FROM products 
+            WHERE id IN (${placeholders}) AND user_id = ?
+        `, ...ids, req.user.id);
+
+        if (Number(count.c) !== ids.length) {
+            return res.status(403).json({ error: 'Certains produits ne vous appartiennent pas ou n\'existent plus' });
+        }
+
+        await db.run(`DELETE FROM products WHERE id IN (${placeholders})`, ...ids);
+        messageAnalyzer.invalidateProductCache(req.user.id);
+        
+        res.json({ message: `${ids.length} produits supprimés` });
+    } catch (error) {
+        console.error('Bulk delete error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression en masse' });
     }
 });
 
@@ -412,10 +436,24 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
         let imported = 0;
         let errors = [];
 
+        // Pre-fetch existing categories to avoid redundant inserts
+        const existingCats = await db.all('SELECT name FROM product_categories WHERE user_id = ?', req.user.id);
+        const catSet = new Set(existingCats.map(c => c.name.toLowerCase()));
+
         for (const record of records) {
             try {
                 if (!record.name?.trim()) {
                     continue;
+                }
+
+                const catName = record.category?.trim();
+                if (catName && !catSet.has(catName.toLowerCase())) {
+                    const catId = uuidv4();
+                    await db.run(`
+                        INSERT INTO product_categories (id, user_id, name)
+                        VALUES (?, ?, ?)
+                    `, catId, req.user.id, catName);
+                    catSet.add(catName.toLowerCase());
                 }
 
                 const parsedPrice = record.price !== undefined && record.price !== null
@@ -440,7 +478,7 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
                     safePrice, 
                     safeCostPrice,
                     parseInt(record.stock) || 0, 
-                    record.category || null, 
+                    catName || null, 
                     record.description || null, 
                     record.image_url || null
                 );

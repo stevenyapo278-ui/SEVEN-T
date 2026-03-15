@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { XCircle, Loader2, Image as ImageIcon, Check, Clock, Tag, CreditCard } from 'lucide-react'
+import { XCircle, Loader2, Image as ImageIcon, Check, Clock, Tag, CreditCard, Layers } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
@@ -104,7 +104,7 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                       required
                       value={formData.name}
                       onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                       placeholder="Ex: Consultation Stratégique"
                     />
                   </div>
@@ -113,11 +113,12 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('common.category')}</label>
                   <div className="relative">
+                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                     <input
                       type="text"
                       value={formData.category}
                       onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                      className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                       placeholder="ex: Consulting"
                     />
                   </div>
@@ -132,7 +133,8 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                         type="number"
                         value={formData.price}
                         onChange={e => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                        className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl font-mono"
+                        className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl font-mono"
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -144,7 +146,8 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                         type="number"
                         value={formData.duration}
                         onChange={e => setFormData(prev => ({ ...prev, duration: e.target.value }))}
-                        className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl font-mono"
+                        className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl font-mono"
+                        placeholder="30"
                       />
                     </div>
                   </div>
@@ -161,7 +164,7 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                       type="url"
                       value={formData.image_url}
                       onChange={e => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                      className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                       placeholder="https://..."
                     />
                   </div>

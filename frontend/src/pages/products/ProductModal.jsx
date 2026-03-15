@@ -8,7 +8,7 @@ import { getProductImageUrl } from './utils'
 
 const MAX_PRODUCT_IMAGES = 4
 
-export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
+export default function ProductModal({ product, categories = [], onClose, onSaved, getSymbol }) {
   const { t } = useTranslation()
   const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
@@ -181,7 +181,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
+                    className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                     placeholder="Ex: iPhone 15 Pro Max"
                   />
                 </div>
@@ -196,7 +196,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
                       type="text"
                       value={formData.sku}
                       onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                      className="input-dark w-full pl-12 py-4 px-5 font-mono text-sm rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 font-mono text-sm rounded-2xl"
                       placeholder="IPH15-PRO-BK"
                     />
                   </div>
@@ -205,13 +205,19 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Catégorie</label>
                   <div className="relative">
                     <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                    <input
-                      type="text"
+                    <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
-                      placeholder="High-Tech, Mode..."
-                    />
+                      className="input-dark w-full pl-12 py-4 pr-10 text-base rounded-2xl appearance-none"
+                    >
+                      <option value="">Aucune catégorie</option>
+                      {categories.map(cat => (
+                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                      <Plus className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -227,7 +233,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
                       min="0"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      className="input-dark w-full pl-12 py-4 px-5 font-mono font-bold text-emerald-400 rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 font-mono font-bold text-emerald-400 rounded-2xl"
                       placeholder={`0 ${currencySymbol}`}
                     />
                   </div>
@@ -242,7 +248,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
                       min="0"
                       value={formData.cost_price}
                       onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                      className="input-dark w-full pl-12 py-4 px-5 font-mono rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 font-mono rounded-2xl"
                       placeholder={`0 ${currencySymbol}`}
                     />
                   </div>
@@ -256,7 +262,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
                       min="0"
                       value={formData.stock}
                       onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
-                      className="input-dark w-full pl-12 py-4 px-5 font-mono rounded-2xl"
+                      className="input-dark w-full pl-12 py-4 pr-5 font-mono rounded-2xl"
                       placeholder="0"
                     />
                   </div>

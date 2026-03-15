@@ -799,53 +799,66 @@ function LeadModal({ lead, onClose, onSaved }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="sm:col-span-2 space-y-2">
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nom complet *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex: Jean Dupont"
-                  className="input-dark w-full py-4 px-5 text-base rounded-2xl"
-                />
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Ex: Jean Dupont"
+                    className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Téléphone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+33 6 12 34 56 78"
-                  className="input-dark w-full py-4 px-5 text-base rounded-2xl font-mono"
-                />
+                <div className="relative group">
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+33 6 12 34 56 78"
+                    className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl font-mono"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="jean.dupont@exemple.com"
-                  className="input-dark w-full py-4 px-5 text-base rounded-2xl"
-                />
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="jean.dupont@exemple.com"
+                    className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Entreprise / Organisation</label>
-                <input
-                  type="text"
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  placeholder="Nom de l'entreprise"
-                  className="input-dark w-full py-4 px-5 text-base rounded-2xl"
-                />
+                <div className="relative group">
+                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    placeholder="Nom de l'entreprise"
+                    className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Source d'acquisition</label>
-                <div className="relative">
-                  <select
-                    value={formData.source}
-                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="input-dark w-full py-4 pl-5 pr-12 text-base rounded-2xl appearance-none bg-transparent"
-                  >
+                  <div className="relative group">
+                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <select
+                      value={formData.source}
+                      onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                      className="input-dark w-full py-4 pl-12 pr-12 text-base rounded-2xl appearance-none bg-transparent"
+                    >
                     {LEAD_SOURCES.map(source => (
                       <option key={source.id} value={source.id} className="bg-[#0B0F1A]">{source.label}</option>
                     ))}

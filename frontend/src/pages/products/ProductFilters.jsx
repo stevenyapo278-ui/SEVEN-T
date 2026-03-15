@@ -42,9 +42,11 @@ export default function ProductFilters({
           aria-label={t('products.filterAllCategories')}
         >
           <option value="all">{t('products.filterAllCategories')}</option>
-          {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
+          {categories.map(cat => {
+            const name = typeof cat === 'object' ? cat.name : cat
+            const id = typeof cat === 'object' ? cat.id : cat
+            return <option key={id} value={name}>{name}</option>
+          })}
         </select>
         <select
           id="products-stock"

@@ -185,7 +185,7 @@ export default function LandingChatbot() {
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-[380px] h-[580px] flex flex-col bg-space-950 border border-space-700/50 rounded-3xl shadow-2xl overflow-hidden animate-zoom-in"
+      className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-[380px] h-[580px] flex flex-col bg-space-950 border border-space-700/50 rounded-3xl shadow-2xl overflow-hidden animate-zoomIn"
       style={{ boxShadow: '0 30px 60px -12px rgba(0,0,0,0.6)' }}
     >
       {/* Header */}

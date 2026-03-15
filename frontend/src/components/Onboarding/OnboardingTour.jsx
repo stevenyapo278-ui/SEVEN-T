@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronRight, ChevronLeft } from 'lucide-react'
@@ -269,7 +269,7 @@ export function OnboardingTourProvider({ children, userId }) {
     setGuidedTask(null)
   }, [])
 
-  const value = {
+  const value = useMemo(() => ({
     activeTour,
     currentStep,
     currentStepIndex,
@@ -286,7 +286,23 @@ export function OnboardingTourProvider({ children, userId }) {
     startGuidedTask,
     completeGuidedTask,
     isStepActive: (stepId) => currentStep?.id === stepId
-  }
+  }), [
+    activeTour,
+    currentStep,
+    currentStepIndex,
+    totalSteps,
+    isTourActive,
+    completedTours,
+    guidedTask,
+    startTour,
+    endTour,
+    skipAllTours,
+    nextStep,
+    prevStep,
+    resetTours,
+    startGuidedTask,
+    completeGuidedTask
+  ])
 
   return (
     <OnboardingTourContext.Provider value={value}>
@@ -625,8 +641,10 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
   )
   if (isBlockingModalOpen) return null
 
-  // Mobile : bottom sheet toujours visible, spotlight conditionnel
+  // Mobile : ne rien afficher si la cible est introuvable
   if (isMobile) {
+    if (!targetRect || !targetVisible) return null
+
     return (
       <MobileBottomSheet
         step={step}
@@ -635,7 +653,7 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
         onNext={onNext}
         onPrev={onPrev}
         onDismiss={onDismiss}
-        targetRect={targetVisible ? targetRect : null}  // Pas de spotlight si cible invisible
+        targetRect={targetVisible ? targetRect : null}
       />
     )
   }

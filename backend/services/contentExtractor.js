@@ -10,6 +10,7 @@ import { YoutubeTranscript } from 'youtube-transcript';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const pdf = require('pdf-parse');
+const mammoth = require('mammoth');
 
 class ContentExtractor {
     /**
@@ -49,6 +50,43 @@ class ContentExtractor {
         } catch (error) {
             console.error('[ContentExtractor] PDF extraction error:', error.message);
             throw new Error(`Erreur lors de l'extraction du PDF: ${error.message}`);
+        }
+    }
+
+    /**
+     * Extract content from a Word document (.docx/.doc)
+     * @param {Buffer|string} input - Word buffer or file path
+     * @returns {Promise<{content: string, metadata: object}>}
+     */
+    async extractFromWord(input) {
+        try {
+            let options = {};
+            if (Buffer.isBuffer(input)) {
+                options = { buffer: input };
+            } else if (typeof input === 'string') {
+                options = { path: input };
+            } else {
+                throw new Error('Invalid input: expected Buffer or file path');
+            }
+
+            const result = await mammoth.extractRawText(options);
+            
+            // Clean up the text
+            let content = result.value
+                .replace(/\s+/g, ' ')  // Multiple spaces to single
+                .replace(/\n\s*\n/g, '\n\n')  // Multiple newlines to double
+                .trim();
+
+            return {
+                content,
+                metadata: {
+                    type: 'docx',
+                    characters: content.length
+                }
+            };
+        } catch (error) {
+            console.error('[ContentExtractor] Word extraction error:', error.message);
+            throw new Error(`Erreur lors de l'extraction du fichier Word: ${error.message}`);
         }
     }
 
@@ -262,9 +300,9 @@ class ContentExtractor {
                 .replace(/\n\s*\n/g, '\n\n')  // Multiple newlines to double
                 .trim();
 
-            // Limit content length (max 50k characters)
-            if (content.length > 50000) {
-                content = content.substring(0, 50000) + '... [contenu tronqué]';
+            // Limit content length (max 100k characters)
+            if (content.length > 100000) {
+                content = content.substring(0, 100000) + '... [contenu tronqué]';
             }
 
             // Add description at the beginning if available

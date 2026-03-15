@@ -9,6 +9,7 @@ import { contentExtractor } from '../services/contentExtractor.js';
 import { indexAgentKnowledge, indexGlobalKnowledge, deleteChunksBySource } from '../services/knowledgeRetrieval.js';
 
 const router = Router();
+const MAX_KNOWLEDGE_CHARS = 150000; // ~150k characters max per item
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -124,6 +125,11 @@ router.post('/agent/:agentId', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Titre et contenu requis' });
         }
 
+        if (finalContent.length > MAX_KNOWLEDGE_CHARS) {
+            finalContent = finalContent.substring(0, MAX_KNOWLEDGE_CHARS) + '\n\n... [Contenu tronqué]';
+            finalMetadata.characters = finalContent.length;
+        }
+
         const itemId = uuidv4();
         await db.run(`
             INSERT INTO knowledge_base (id, agent_id, title, content, type, metadata)
@@ -185,6 +191,10 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
             const result = await contentExtractor.extractFromPDF(req.file.path);
             content = result.content;
             metadata = { ...metadata, ...result.metadata };
+        } else if (['.doc', '.docx'].includes(ext)) {
+            const result = await contentExtractor.extractFromWord(req.file.path);
+            content = result.content;
+            metadata = { ...metadata, ...result.metadata };
         } else if (['.txt', '.md'].includes(ext)) {
             content = fs.readFileSync(req.file.path, 'utf-8');
             metadata.type = ext === '.md' ? 'markdown' : 'text';
@@ -207,6 +217,11 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
 
         if (!content || content.trim().length === 0) {
             return res.status(400).json({ error: 'Le fichier ne contient pas de texte extractible' });
+        }
+
+        if (content.length > MAX_KNOWLEDGE_CHARS) {
+            content = content.substring(0, MAX_KNOWLEDGE_CHARS) + '\n\n... [Contenu tronqué]';
+            metadata.characters = content.length;
         }
 
         // Use original filename as title if not provided
@@ -271,6 +286,10 @@ router.post('/agent/:agentId/extract-url', authenticateToken, async (req, res) =
             result = await contentExtractor.extractFromYouTube(url);
         } else {
             result = await contentExtractor.extractFromWebsite(url);
+        }
+
+        if (result.content && result.content.length > MAX_KNOWLEDGE_CHARS) {
+            result.content = result.content.substring(0, MAX_KNOWLEDGE_CHARS) + '\n\n... [Contenu tronqué]';
         }
 
         // Use provided title or extracted title
@@ -443,11 +462,16 @@ router.post('/global', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Titre et contenu requis' });
         }
 
+        let finalContent = content;
+        if (finalContent.length > MAX_KNOWLEDGE_CHARS) {
+            finalContent = finalContent.substring(0, MAX_KNOWLEDGE_CHARS) + '\n\n... [Contenu tronqué]';
+        }
+
         const itemId = uuidv4();
         await db.run(`
             INSERT INTO global_knowledge (id, user_id, title, content, type, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, itemId, req.user.id, title, content, type || 'text', JSON.stringify({ characters: content.length }));
+        `, itemId, req.user.id, title, finalContent, type || 'text', JSON.stringify({ characters: finalContent.length }));
 
         const item = await db.get('SELECT * FROM global_knowledge WHERE id = ?', itemId);
         let parsedMetadata = {};
@@ -495,6 +519,10 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
             const result = await contentExtractor.extractFromPDF(filePath);
             content = result.content;
             metadata = { ...metadata, ...result.metadata, type: 'pdf' };
+        } else if (['.doc', '.docx'].includes(ext)) {
+            const result = await contentExtractor.extractFromWord(filePath);
+            content = result.content;
+            metadata = { ...metadata, ...result.metadata, type: 'docx' };
         } else if (['.txt', '.md'].includes(ext)) {
             content = fs.readFileSync(filePath, 'utf-8');
             metadata.type = 'text';
@@ -510,6 +538,11 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
 
         if (!content?.trim()) {
             return res.status(400).json({ error: 'Aucun contenu extrait du fichier' });
+        }
+
+        if (content.length > MAX_KNOWLEDGE_CHARS) {
+            content = content.substring(0, MAX_KNOWLEDGE_CHARS) + '\n\n... [Contenu tronqué]';
+            metadata.characters = content.length;
         }
 
         const title = req.body.title || originalName.replace(ext, '');
@@ -567,6 +600,10 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
             result = await contentExtractor.extractFromYouTube(url);
         } else {
             result = await contentExtractor.extractFromWebsite(url);
+        }
+
+        if (result.content && result.content.length > MAX_KNOWLEDGE_CHARS) {
+            result.content = result.content.substring(0, MAX_KNOWLEDGE_CHARS) + '\n\n... [Contenu tronqué]';
         }
 
         const finalTitle = title || result.title || result.metadata?.title || url;

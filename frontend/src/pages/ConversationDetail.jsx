@@ -307,7 +307,12 @@ export default function ConversationDetail() {
   }, [id])
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Only scroll smoothly if messages are few or it's not a flood
+    const behavior = messages.length > 50 ? 'auto' : 'smooth'
+    const timeout = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior })
+    }, 100)
+    return () => clearTimeout(timeout)
   }, [messages])
 
   // Start polling for new messages
@@ -343,7 +348,7 @@ export default function ConversationDetail() {
           console.error('Polling error:', error)
         }
       }
-      pollIntervalRef.current = setInterval(tick, 1000)
+      pollIntervalRef.current = setInterval(tick, 10000)
     }
     return () => {
       if (pollIntervalRef.current) {

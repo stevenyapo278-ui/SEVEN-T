@@ -1,13 +1,17 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Package, Check, AlertTriangle, Archive, DollarSign, XCircle } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 
 export default function ProductStats({ stats, formatPrice }) {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const [focusStat, setFocusStat] = useState(null)
+
+  useLockBodyScroll(!!focusStat)
 
   const items = [
     { id: 'total', value: stats.total, label: t('products.statsTotal'), icon: Package, color: 'blue' },
@@ -54,14 +58,14 @@ export default function ProductStats({ stats, formatPrice }) {
         })}
       </div>
 
-      {focusStat && (
+      {focusStat && createPortal(
         <div 
           className="fixed inset-0 z-[70] flex items-center justify-center p-4 animate-fadeIn"
           onClick={() => setFocusStat(null)}
         >
           <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm" />
           <div 
-            className="relative z-10 w-full max-w-sm bg-space-900/90 border border-white/10 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 animate-zoom-in"
+            className="relative z-10 w-full max-w-sm bg-space-900/90 border border-white/10 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 animate-zoomIn"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -82,7 +86,8 @@ export default function ProductStats({ stats, formatPrice }) {
               <button onClick={() => setFocusStat(null)} className="btn-secondary w-full mt-8">Fermer</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

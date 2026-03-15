@@ -13,7 +13,20 @@ export function useProducts() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [stockFilter, setStockFilter] = useState('all')
-  const [categories, setCategories] = useState([])
+  const [categories, setCategories] = useState([]) // These are the full category objects from DB
+  const [loadingCategories, setLoadingCategories] = useState(false)
+
+  const loadCategories = useCallback(async () => {
+    setLoadingCategories(true)
+    try {
+      const response = await api.get('/products/categories/all')
+      setCategories(response.data.categories || [])
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    } finally {
+      setLoadingCategories(false)
+    }
+  }, [])
 
   const loadProducts = useCallback(async () => {
     setLoadError(null)
@@ -21,8 +34,8 @@ export function useProducts() {
     try {
       const response = await api.get('/products')
       setProducts(response.data.products || [])
-      const uniqueCategories = [...new Set(response.data.products?.map(p => p.category).filter(Boolean))]
-      setCategories(uniqueCategories)
+      // Also refresh categories to ensure we have the latest
+      loadCategories()
     } catch (error) {
       const message = error.response?.data?.error || error.message || t('messages.errorLoad')
       setLoadError(message)
@@ -30,7 +43,7 @@ export function useProducts() {
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [t, loadCategories])
 
   useEffect(() => {
     loadProducts()
@@ -75,11 +88,78 @@ export function useProducts() {
     }
   }
 
+  const addCategory = async (name) => {
+    try {
+      const response = await api.post('/products/categories', { name })
+      toast.success('Catégorie ajoutée')
+      loadCategories()
+      return response.data.category
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'ajout')
+      throw error
+    }
+  }
+
+  const deleteCategory = async (id) => {
+    const ok = await showConfirm({
+      title: 'Supprimer la catégorie',
+      message: 'Voulez-vous vraiment supprimer cette catégorie ? Cela ne supprimera pas les produits associés.',
+      variant: 'danger',
+      confirmLabel: 'Supprimer'
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/products/categories/${id}`)
+      toast.success('Catégorie supprimée')
+      loadCategories()
+    } catch (error) {
+      toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  const [selectedIds, setSelectedIds] = useState([])
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredProducts.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filteredProducts.map(p => p.id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return
+    const ok = await showConfirm({
+      title: 'Suppression en masse',
+      message: `Voulez-vous vraiment supprimer les ${selectedIds.length} produits sélectionnés ?`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer tout'
+    })
+    if (!ok) return
+
+    try {
+      await api.post('/products/bulk-delete', { ids: selectedIds })
+      toast.success(`${selectedIds.length} produits supprimés`)
+      setSelectedIds([])
+      loadProducts()
+    } catch (error) {
+      toast.error('Erreur lors de la suppression en masse')
+    }
+  }
+
   return {
     products,
     loading,
+    loadingCategories,
     loadError,
     loadProducts,
+    loadCategories,
     searchQuery,
     setSearchQuery,
     categoryFilter,
@@ -89,6 +169,12 @@ export function useProducts() {
     categories,
     filteredProducts,
     stats: { ...stats, totalMargin },
-    handleDelete
+    handleDelete,
+    addCategory,
+    deleteCategory,
+    selectedIds,
+    toggleSelect,
+    toggleSelectAll,
+    handleBulkDelete
   }
 }

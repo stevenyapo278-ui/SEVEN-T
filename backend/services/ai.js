@@ -223,11 +223,11 @@ class AIService {
             sanitizedKB = sanitizedKB.slice(0, 10); // Max 10 chunks
         }
         
-        // Final token cap for KB (~2000 tokens estimate via chars)
+        // Final token cap for KB (~25000 chars = ~6000 tokens, safe for GEMINI/OPENAI)
         let totalChars = 0;
         sanitizedKB = sanitizedKB.filter(item => {
             totalChars += (item.content || '').length;
-            return totalChars < 8000;
+            return totalChars < 25000;
         });
 
         try {
@@ -465,7 +465,10 @@ class AIService {
         if (knowledgeBase && knowledgeBase.length > 0) {
             businessTenant += '\n\n📚 BASE DE CONNAISSANCES:\n';
             for (const item of knowledgeBase) {
-                const content = item.content.length > 2000 ? item.content.substring(0, 2000) + '...' : item.content;
+                // Do not aggressively truncate catalogues to ensure AI sees all products and categories
+                const isCatalogue = item.title && item.title.includes('CATALOGUE PRODUITS');
+                const maxLength = isCatalogue ? 25000 : 2000;
+                const content = item.content.length > maxLength ? item.content.substring(0, maxLength) + '...' : item.content;
                 businessTenant += `### ${item.title}\n${content}\n\n`;
             }
             const hasCatalogue = knowledgeBase.some(item => item.title === '📦 CATALOGUE PRODUITS');

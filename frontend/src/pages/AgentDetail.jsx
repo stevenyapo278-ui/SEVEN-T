@@ -1015,10 +1015,10 @@ function ConversationsTab({ agent }) {
   useEffect(() => {
     loadConversations()
     
-    // Start polling for new conversations every 5 seconds
+    // Start polling for new conversations every 15 seconds
     pollIntervalRef.current = setInterval(() => {
       loadConversations(true) // silent refresh
-    }, 5000)
+    }, 15000)
     
     return () => {
       if (pollIntervalRef.current) {
@@ -1029,13 +1029,7 @@ function ConversationsTab({ agent }) {
 
   const loadConversations = async (silent = false) => {
     try {
-      // #region agent log
-      console.log(`[Polling] Fetching conversations for agent ${agent.id}, silent=${silent}`)
-      // #endregion
       const response = await api.get(`/conversations/agent/${agent.id}`)
-      // #region agent log
-      console.log(`[Polling] Got ${response.data.conversations?.length || 0} conversations`)
-      // #endregion
       setConversations(response.data.conversations)
     } catch (error) {
       if (!silent) console.error('Error loading conversations:', error)

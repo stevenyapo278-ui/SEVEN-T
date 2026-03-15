@@ -149,7 +149,17 @@ export default function Conversations() {
     if (!completedTours.includes('conversations')) startTour('conversations')
   }, [completedTours, startTour])
 
-  useConversationSocket(() => loadConversationsRef.current?.())
+  const lastFetchTimeRef = useRef(0)
+  const throttledLoadConversations = useCallback(() => {
+    const now = Date.now()
+    // Throttle to once every 3 seconds to avoid freezing on message flood
+    if (now - lastFetchTimeRef.current > 3000) {
+      lastFetchTimeRef.current = now
+      loadConversationsRef.current?.()
+    }
+  }, [])
+
+  useConversationSocket(throttledLoadConversations)
 
   const loadConversations = useCallback(async () => {
     setLoadError(null)
