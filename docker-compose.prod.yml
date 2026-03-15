@@ -101,7 +101,7 @@ services:
   # ──────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: seven-t-redis
+    container_name: seven-t-redis-prod
     restart: always
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --appendonly yes
     volumes:
