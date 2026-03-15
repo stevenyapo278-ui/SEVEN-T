@@ -592,18 +592,21 @@ function OverviewTab({ agent, onUpdate }) {
       setStatus(response.data)
       
       if (response.data.status === 'qr') {
-        setConnecting(false)
-        setLoading(false) // QR received, stop showing loading animation
         const qrRes = await api.get(`/whatsapp/qr/${agent.id}`)
         if (qrRes.data.qr) {
+          setConnecting(false)
+          setLoading(false)
           setQrCode(qrRes.data.qr)
+        } else {
+          // Status is QR but code is not ready yet or was cleared
+          setQrCode(null)
+          if (!loading) setConnecting(true) // Show "Initialisation..."
         }
       } else if (response.data.status === 'connecting') {
-        // WhatsApp is connecting after QR scan - show connecting animation
         setConnecting(true)
-        // Keep QR code visible but dimmed - don't clear it yet
+        // Keep QR if it was already there for a split second
       } else if (response.data.status === 'connected') {
-        // Stop polling
+        // ... rest of connected logic ...
         if (intervalRef.current) {
           clearInterval(intervalRef.current)
           intervalRef.current = null
@@ -613,7 +616,6 @@ function OverviewTab({ agent, onUpdate }) {
           countdownRef.current = null
         }
         
-        // Only show success animation and toast if user initiated the connection
         if (isUserConnecting.current) {
           setConnecting(true)
           toast.success(t('agents.connection.success'))
@@ -626,14 +628,16 @@ function OverviewTab({ agent, onUpdate }) {
             onUpdate()
           }, 1500)
         } else {
-          // Just update the status without animation
           setStatus(response.data)
         }
       } else {
-        // Disconnected or other state
-        if (!loading) {
-          setQrCode(null)
-          setConnecting(false)
+        // Disconnected, error, etc.
+        setQrCode(null)
+        setConnecting(false)
+        if (loading && response.data.status === 'disconnected') {
+           // Still waiting for the first connect event to trigger a QR the right way?
+        } else {
+           setLoading(false)
         }
       }
     } catch (error) {
@@ -797,37 +801,112 @@ function OverviewTab({ agent, onUpdate }) {
           </h2>
           {agent.tool_id ? (
             <div className="p-4 bg-space-800 rounded-xl border border-space-700">
-              <p className="text-sm text-gray-300">
-                Outil: {agent.tool_label || agent.tool_id}
-                {agent.tool_phone && (
-                  <span className="text-gray-400 ml-1"> — {agent.tool_phone}</span>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-300">
+                  Outil: {agent.tool_label || agent.tool_id}
+                  {agent.tool_phone && (
+                    <span className="text-gray-400 ml-1"> — {agent.tool_phone}</span>
+                  )}
+                </p>
+                {status?.status === 'connected' ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                    <Wifi className="w-3 h-3" /> Connecté
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 bg-gray-500/10 px-2 py-0.5 rounded-full">
+                    <WifiOff className="w-3 h-3" /> Déconnecté
+                  </span>
                 )}
-              </p>
-              {status?.status && (
-                <p className="text-xs text-gray-500 mt-1">Statut: {status.status}</p>
+              </div>
+              
+              {status?.status && status.status !== 'connected' && status.status !== 'disconnected' && (
+                <div className="flex items-center gap-2 mb-3">
+                  <RefreshCw className="w-3 h-3 text-gold-400 animate-spin" />
+                  <p className="text-xs text-gray-400">Statut: {status.message || status.status}</p>
+                </div>
               )}
-              <p className="text-xs text-gray-500 mt-2">
-                Pour connecter ou déconnecter un outil, utilisez la page Outils.
-              </p>
+
+              {/* QR Code Display Section */}
+              {qrCode && !agent.whatsapp_connected && (
+                <div className="mt-4 p-4 bg-white rounded-xl flex flex-col items-center">
+                  <img src={qrCode} alt="WhatsApp QR Code" className="w-48 h-48 sm:w-64 sm:h-64 mb-3" />
+                  <div className="text-center">
+                    <p className="text-xs text-gray-900 font-medium mb-1">Scannez avec WhatsApp</p>
+                    <p className="text-[10px] text-gray-500">Expire dans {qrCountdown}s</p>
+                  </div>
+                  <button 
+                    onClick={handleCancelQr}
+                    className="mt-3 text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {status?.status === 'connected' ? (
+                  <button
+                    onClick={handleDisconnect}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors text-xs font-medium"
+                  >
+                    <PowerOff className="w-3.5 h-3.5" />
+                    Déconnecter
+                  </button>
+                ) : (
+                  <>
+                    {!qrCode && (
+                      <button
+                        onClick={() => handleConnect(false)}
+                        disabled={loading || !canConnectWhatsApp()}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors text-xs font-medium disabled:opacity-50"
+                      >
+                        {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Power className="w-3.5 h-3.5" />}
+                        Connecter
+                      </button>
+                    )}
+                    <button
+                      onClick={handleForceReconnect}
+                      disabled={loading}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-space-700 text-gray-300 hover:bg-space-600 transition-colors text-xs font-medium"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Réinitialiser la session
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Aucun outil assigné à cet agent.</p>
+            <div className="p-8 border-2 border-dashed border-space-700 rounded-2xl text-center">
+              <Bot className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-sm text-gray-400 mb-4">Aucun outil WhatsApp n'est assigné à cet agent.</p>
+              <button
+                onClick={() => setShowToolModal(true)}
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Assigner un outil
+              </button>
+            </div>
           )}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              onClick={() => setShowToolModal(true)}
-              className="btn-primary inline-flex items-center gap-2"
-            >
-              <Wrench className="w-4 h-4" />
-              {agent.tool_id ? t('agents.detail.tool.change', 'Change tool') : t('agents.detail.tool.assign', 'Assign tool')}
-            </button>
-            <Link
-              to="/dashboard/tools"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-space-700 hover:bg-space-600 text-gray-200 transition-colors"
-            >
-              {t('agents.detail.tool.manage', 'Gérer les outils')}
-            </Link>
-          </div>
+
+          {agent.tool_id && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={() => setShowToolModal(true)}
+                className="text-xs text-gray-400 hover:text-gold-400 flex items-center gap-1 transition-colors"
+              >
+                <Wrench className="w-3.5 h-3.5" />
+                {t('agents.detail.tool.change', 'Changer d\'outil')}
+              </button>
+              <Link
+                to="/dashboard/tools"
+                className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1 transition-colors"
+              >
+                {t('agents.detail.tool.manage', 'Gérer les outils')} →
+              </Link>
+            </div>
+          )}
         </div>
 
         {showToolModal && (
@@ -1513,15 +1592,15 @@ function SettingsTab({ agent, onUpdate }) {
 
               {/* Modal focus pour éditer le system prompt en grand */}
               {systemPromptFocusOpen && createPortal(
-                <div className="fixed inset-0 z-[100] flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="fixed inset-0 z-[100] flex flex-col bg-space-950/95 backdrop-blur-sm overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+                  <div className="flex items-center justify-between mb-3 px-4 pt-2">
                     <h3 className="text-lg font-semibold text-gray-100">{t('agents.detail.settings.systemPrompt', 'System Prompt')}</h3>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={handleSaveFromModal}
                         disabled={saving}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white bg-gold-500 hover:bg-gold-400 border border-gold-400/30 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white bg-gold-500 hover:bg-gold-400 border border-gold-400/30 transition-all disabled:opacity-50 min-h-[44px]"
                       >
                         <Save className="w-4 h-4" />
                         {saving ? t('agents.detail.actions.saving', 'Saving...') : t('agents.detail.actions.save', 'Save')}
@@ -1529,14 +1608,14 @@ function SettingsTab({ agent, onUpdate }) {
                       <button
                         type="button"
                         onClick={() => setSystemPromptFocusOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-space-800 hover:bg-space-700 border border-space-600 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-space-800 hover:bg-space-700 border border-space-600 transition-all min-h-[44px]"
                       >
                         <Minimize2 className="w-4 h-4" />
                         {t('agents.detail.settings.minimize', 'Minimize')}
                       </button>
                     </div>
                   </div>
-                  <div className="flex-1 min-h-0 rounded-xl border border-space-600 bg-space-900 overflow-hidden flex flex-col">
+                  <div className="flex-1 min-h-0 mx-4 mb-4 rounded-xl border border-space-600 bg-space-900 overflow-hidden flex flex-col">
                     <textarea
                       value={formData.system_prompt}
                       onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
@@ -2252,19 +2331,19 @@ function KnowledgeTab({ agentId }) {
       )}
 
       {/* Global Knowledge Selector Modal */}
-      {showGlobalSelector && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => setShowGlobalSelector(false)} />
-          <div className="relative z-10 w-full max-w-3xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
+      {showGlobalSelector && createPortal(
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+          <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => setShowGlobalSelector(false)} aria-hidden />
+          <div className="relative z-10 w-full max-w-3xl bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90dvh] sm:max-h-[80vh] flex flex-col animate-fadeIn max-sm:rounded-b-none">
             {/* Header */}
-            <div className="p-4 sm:p-6 border-b border-space-700 flex-shrink-0">
+            <div className="p-4 sm:p-6 border-b border-space-700 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
               <div className="flex items-start justify-between gap-3 mb-2">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-100 min-w-0">
                   {t('agents.detail.knowledge.assignedGlobal', 'Assign Global Knowledge')}
                 </h2>
                 <button 
                   onClick={() => setShowGlobalSelector(false)}
-                  className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target flex-shrink-0"
+                  className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label={t('agents.detail.actions.cancel', 'Close')}
                 >
                   <X className="w-5 h-5" />
@@ -2276,7 +2355,7 @@ function KnowledgeTab({ agentId }) {
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0 overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
               {globalKnowledge.length === 0 ? (
                 <div className="text-center py-8 sm:py-12">
                   <Globe className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600 mx-auto mb-4" />
@@ -2368,7 +2447,8 @@ function KnowledgeTab({ agentId }) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -2455,16 +2535,16 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90dvh] sm:max-h-[80vh] flex flex-col animate-fadeIn max-sm:rounded-b-none" role="dialog" aria-modal="true">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between">
             <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
               {t('agents.detail.knowledge.modal.title', 'Add to knowledge base')}
             </h2>
-            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target" aria-label={t('agents.detail.actions.cancel', 'Close')}>
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 touch-target min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={t('agents.detail.actions.cancel', 'Close')}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -2483,227 +2563,71 @@ function AddKnowledgeModal({ agentId, onClose, onAdded }) {
                   key={option.id}
                   type="button"
                   onClick={() => setActiveType(option.id)}
-                  className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-medium transition-all border ${
-                    isActive
-                      ? colorClasses[option.color]
-                      : 'bg-space-800 text-gray-400 hover:text-gray-300 border-transparent hover:border-space-600'
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-h-[64px] ${
+                    isActive ? colorClasses[option.color] : 'bg-space-950/50 border-transparent hover:border-space-700'
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${
-                    option.id === 'youtube' ? 'text-red-500' : 
-                    option.id === 'pdf' ? 'text-red-400' : 
-                    option.id === 'website' ? 'text-blue-400' : ''
-                  }`} />
-                  {option.label}
+                  <Icon className={`w-5 h-5 ${isActive ? (option.color === 'blue' ? 'text-blue-400' : 'text-red-400') : 'text-gray-500'}`} />
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-gray-100' : 'text-gray-500'}`}>{option.label}</span>
                 </button>
               )
             })}
           </div>
         </div>
 
-        <div className="p-6">
-          {/* Text input */}
-          {activeType === 'text' && (
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scrollbar overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+          {activeType === 'text' ? (
             <form onSubmit={handleTextSubmit} className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
-                <FileText className="w-6 h-6 text-blue-400" />
-                <div>
-                  <p className="text-sm font-medium text-blue-400">{t('agents.detail.knowledge.types.text', 'Custom Text')}</p>
-                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.textDesc', 'Add information that your agent should know')}</p>
-                </div>
-              </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')} *</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')}</label>
                 <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t('agents.detail.knowledge.modal.titlePlaceholder', 'Ex: Opening hours')}
-                  className="input-dark w-full"
+                  type="text" required value={title} onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Ex: Politique de livraison" className="input-dark w-full min-h-[44px]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.contentLabel', 'Content')} *</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">{t('agents.detail.knowledge.modal.contentLabel', 'Content')}</label>
                 <textarea
-                  required
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder={t('agents.detail.knowledge.modal.contentPlaceholder', 'Information that the assistant should know...')}
-                  rows={8}
-                  className="input-dark w-full resize-none"
+                  required value={content} onChange={(e) => setContent(e.target.value)}
+                  placeholder="Décrivez votre savoir ici..." rows={10} className="input-dark w-full resize-none min-h-[150px]"
                 />
                 <p className="text-xs text-gray-500 mt-1">{content.length.toLocaleString()} {t('agents.detail.knowledge.characters', 'characters')}</p>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  {t('agents.detail.actions.cancel', 'Cancel')}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={loading || !title.trim() || !content.trim()} 
-                  className="btn-primary flex-1 disabled:opacity-50"
-                >
-                  {loading ? t('agents.detail.actions.adding', 'Adding...') : t('agents.detail.actions.add', 'Add')}
-                </button>
-              </div>
+              <button disabled={loading || !title.trim() || !content.trim()} className="btn-primary w-full py-4 text-base shadow-xl active:scale-[0.98] min-h-[56px] mt-2">
+                {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('agents.detail.knowledge.modal.submit', 'Add knowledge')}
+              </button>
             </form>
-          )}
-
-          {/* YouTube input */}
-          {activeType === 'youtube' && (
-            <form onSubmit={handleUrlSubmit} className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
-                <Video className="w-6 h-6 text-red-500" />
-                <div>
-                  <p className="text-sm font-medium text-red-400">{t('agents.detail.knowledge.modal.youtubeTitle', 'YouTube Video')}</p>
-                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.youtubeDesc', 'The video transcript will be automatically extracted')}</p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.youtubeUrlLabel', 'YouTube URL')} *</label>
-                <input
-                  type="url"
-                  required
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder={t('agents.detail.knowledge.modal.youtubeUrlPlaceholder', 'https://youtube.com/watch?v=... or https://youtu.be/...')}
-                  className="input-dark w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Titre (optionnel)</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Sera extrait automatiquement si non fourni"
-                  className="input-dark w-full"
-                />
-              </div>
-              
-              {/* Note about YouTube transcripts */}
-              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                <p className="text-xs text-amber-400">
-                  <strong>Note:</strong> {t('agents.detail.knowledge.modal.youtubeNote', 'Only videos with subtitles (automatic or manual) can be extracted. Videos without subtitles or with disabled subtitles are not supported.')}
-                </p>
-              </div>
-              
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  {t('agents.detail.actions.cancel', 'Cancel')}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={loading || !url.trim()} 
-                  className="btn-primary flex-1 disabled:opacity-50"
-                >
-                  {loading ? t('agents.detail.knowledge.modal.extracting', 'Extracting...') : t('agents.detail.knowledge.modal.extract', 'Extract')}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* Website input */}
-          {activeType === 'website' && (
-            <form onSubmit={handleUrlSubmit} className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-4">
-                <Globe className="w-6 h-6 text-blue-500" />
-                <div>
-                  <p className="text-sm font-medium text-blue-400">{t('agents.detail.knowledge.modal.websiteTitle', 'Web Page')}</p>
-                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.websiteDesc', 'The textual content of the page will be automatically extracted')}</p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.websiteUrlLabel', 'Site URL')} *</label>
-                <input
-                  type="url"
-                  required
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder={t('agents.detail.knowledge.modal.websiteUrlPlaceholder', 'https://example.com/page-to-extract')}
-                  className="input-dark w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')} {t('agents.detail.knowledge.modal.optional', '(optional)')}</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t('agents.detail.knowledge.modal.autoTitleHint', 'Will be automatically extracted if not provided')}
-                  className="input-dark w-full"
-                />
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  {t('agents.detail.actions.cancel', 'Cancel')}
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={loading || !url.trim()} 
-                  className="btn-primary flex-1 disabled:opacity-50"
-                >
-                  {loading ? t('agents.detail.knowledge.modal.extracting', 'Extracting...') : t('agents.detail.knowledge.modal.extract', 'Extract')}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* PDF upload */}
-          {activeType === 'pdf' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
-                <FileText className="w-6 h-6 text-red-400" />
-                <div>
-                  <p className="text-sm font-medium text-red-400">{t('agents.detail.knowledge.modal.pdfTitle', 'PDF Document')}</p>
-                  <p className="text-xs text-gray-400">{t('agents.detail.knowledge.modal.pdfDesc', 'PDF text will be automatically extracted')}</p>
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">{t('agents.detail.knowledge.modal.titleLabel', 'Title')} {t('agents.detail.knowledge.modal.optional', '(optional)')}</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t('agents.detail.knowledge.modal.pdfTitlePlaceholder', 'Will be extracted from filename if not provided')}
-                  className="input-dark w-full"
-                />
-              </div>
-              
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-red-500/30 hover:border-red-500/50 rounded-2xl p-8 text-center cursor-pointer transition-colors bg-red-500/5"
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-red-400" />
-                </div>
-                <p className="text-gray-300 font-medium mb-2">
-                  {loading ? t('agents.detail.knowledge.modal.extracting', 'Extracting...') : t('agents.detail.knowledge.modal.pdfClick', 'Click to select a PDF')}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {t('agents.detail.knowledge.modal.pdfMax', 'PDF Format • Maximum 10 MB')}
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1">
-                  {t('agents.detail.actions.cancel', 'Cancel')}
-                </button>
-              </div>
+          ) : activeType === 'pdf' ? (
+            <div className="space-y-6">
+               <button onClick={() => fileInputRef.current?.click()} className="w-full py-12 sm:py-20 border-2 border-dashed border-space-700 rounded-3xl bg-space-950/50 hover:bg-space-800 transition-all flex flex-col items-center justify-center gap-4">
+                  <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
+                  <Upload className="w-12 h-12 text-gold-400" />
+                  <div className="text-center p-4">
+                    <p className="text-lg font-bold text-gray-100">{t('agents.detail.knowledge.modal.importPdf', 'Import PDF')}</p>
+                    <p className="text-xs text-gray-500">Maximum 10 Mo</p>
+                  </div>
+               </button>
             </div>
+          ) : (
+            <form onSubmit={handleUrlSubmit} className="space-y-6">
+               <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                 <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">{t('agents.detail.knowledge.modal.extractionTitle', 'Intelligent Extraction')}</p>
+                 <p className="text-sm text-gray-400">{t('agents.detail.knowledge.modal.extractionDesc', 'We will analyze this source to extract relevant knowledge.')}</p>
+               </div>
+               <input
+                 type="url" required value={url} onChange={(e) => setUrl(e.target.value)}
+                 placeholder={activeType === 'youtube' ? "Lien de la vidéo YouTube" : "Lien de la page web"} 
+                 className="input-dark w-full min-h-[44px]"
+               />
+               <button disabled={loading || !url.trim()} className="btn-primary w-full py-4 text-base min-h-[56px]">
+                 {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : t('agents.detail.knowledge.modal.extract', 'Extract content')}
+               </button>
+            </form>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -2896,9 +2820,9 @@ function TemplatesTab({ agentId }) {
   const CATEGORIES = {
     general: { label: t('agents.detail.templates.categories.general', 'General'), color: 'bg-gray-500' },
     greeting: { label: t('agents.detail.templates.categories.greeting', 'Greeting'), color: 'bg-emerald-500' },
-    closing: { label: t('agents.detail.templates.categories.closing', 'Closing'), color: 'bg-blue-500' },
-    faq: { label: t('agents.detail.templates.categories.faq', 'FAQ'), color: 'bg-blue-500' },
-    promotion: { label: t('agents.detail.templates.categories.promotion', 'Promotion'), color: 'bg-amber-500' }
+    product: { label: t('agents.detail.templates.categories.product', 'Product'), color: 'bg-purple-500' },
+    support: { label: t('agents.detail.templates.categories.support', 'Support'), color: 'bg-blue-500' },
+    sales: { label: t('agents.detail.templates.categories.sales', 'Sales'), color: 'bg-red-500' },
   }
 
   if (loading) {
@@ -3026,16 +2950,19 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 card w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
-            {template ? t('agents.detail.templates.modal.edit', 'Edit template') : t('agents.detail.templates.modal.new', 'New template')}
-          </h2>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90dvh] sm:max-h-[85vh] flex flex-col animate-fadeIn max-sm:rounded-b-none overflow-hidden">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
+              {template ? t('agents.detail.templates.modal.edit', 'Edit template') : t('agents.detail.templates.modal.new', 'New template')}
+            </h2>
+            <button type="button" onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 min-w-[44px] min-h-[44px] flex items-center justify-center"><X className="w-5 h-5" /></button>
+          </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.name', 'Name')}</label>
             <input
@@ -3043,11 +2970,11 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={t('agents.detail.templates.modal.namePlaceholder', 'Ex: Client greeting')}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.templates.modal.shortcut', 'Shortcut')}</label>
               <div className="input-with-icon">
@@ -3057,6 +2984,7 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
                   value={formData.shortcut}
                   onChange={(e) => setFormData({ ...formData, shortcut: e.target.value.replace(/[^a-z0-9]/gi, '') })}
                   placeholder="bonjour"
+                  className="min-h-[44px]"
                 />
               </div>
             </div>
@@ -3065,13 +2993,13 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="input-dark w-full"
+                className="input-dark w-full min-h-[44px]"
               >
                 <option value="general">{t('agents.detail.templates.categories.general', 'General')}</option>
                 <option value="greeting">{t('agents.detail.templates.categories.greeting', 'Greeting')}</option>
-                <option value="closing">{t('agents.detail.templates.categories.closing', 'Closing')}</option>
-                <option value="faq">{t('agents.detail.templates.categories.faq', 'FAQ')}</option>
-                <option value="promotion">{t('agents.detail.templates.categories.promotion', 'Promotion')}</option>
+                <option value="product">{t('agents.detail.templates.categories.product', 'Product')}</option>
+                <option value="support">{t('agents.detail.templates.categories.support', 'Support')}</option>
+                <option value="sales">{t('agents.detail.templates.categories.sales', 'Sales')}</option>
               </select>
             </div>
           </div>
@@ -3080,23 +3008,24 @@ function TemplateModal({ template, agentId, onClose, onSaved }) {
             <textarea
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              rows={5}
-              placeholder={t('agents.detail.playground.placeholder', 'Message text...')}
-              className="input-dark w-full"
+              placeholder={t('agents.detail.templates.modal.contentPlaceholder', 'Type the content here...')}
+              rows={6}
+              className="input-dark w-full resize-none min-h-[120px]"
               required
             />
           </div>
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 min-h-[48px]">
               {t('agents.detail.actions.cancel', 'Cancel')}
             </button>
-            <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
-              {saving ? t('agents.detail.actions.saving', 'Saving...') : template ? t('agents.detail.actions.save', 'Update') : t('agents.detail.actions.add', 'Create')}
+            <button type="submit" disabled={saving} className="btn-primary flex-1 min-h-[48px] disabled:opacity-50">
+              {saving ? t('agents.detail.actions.saving', 'Saving...') : t('agents.detail.actions.save', 'Save')}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -3269,14 +3198,17 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 card w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-          <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">{t('agents.detail.blacklist.add', 'Block a contact')}</h2>
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl max-h-[90dvh] sm:max-h-[85vh] flex flex-col animate-fadeIn max-sm:rounded-b-none overflow-hidden">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">{t('agents.detail.blacklist.add', 'Block a contact')}</h2>
+            <button type="button" onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 min-w-[44px] min-h-[44px] flex items-center justify-center"><X className="w-5 h-5" /></button>
+          </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               {t('contacts.list.number', 'Phone number')}
@@ -3286,7 +3218,7 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
               placeholder="Ex: 33612345678"
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
               required
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -3302,19 +3234,20 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Ex: Spam, Harcèlement..."
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
           <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 min-h-[48px]">
               {t('agents.detail.actions.cancel', 'Cancel')}
             </button>
-            <button type="submit" disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
+            <button type="submit" disabled={saving} className="btn-primary flex-1 min-h-[48px] disabled:opacity-50">
               {saving ? t('agents.detail.actions.adding', 'Adding...') : t('agents.detail.actions.add', 'Block')}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

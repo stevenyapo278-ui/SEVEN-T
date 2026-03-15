@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, forwardRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useOnboardingTour } from '../components/Onboarding'
@@ -150,8 +151,6 @@ export default function KnowledgeBase() {
     website: items.filter(i => i.type === 'website').length,
     totalChars: items.reduce((sum, i) => sum + (i.content?.length || 0), 0)
   }), [items])
-
-  const emptyStateImage = "/home/styapo/.gemini/antigravity/brain/49851c83-10b6-4846-b0d6-b6a4c8496585/knowledge_base_empty_state_premium_1773417080252.png";
 
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
@@ -517,16 +516,16 @@ function KnowledgeModal({ item, onClose, onSaved }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90dvh] sm:max-h-[80vh] flex flex-col animate-fadeIn max-sm:rounded-b-none" role="dialog" aria-modal="true">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
               {isEditing ? 'Modifier le savoir' : 'Ajouter un savoir'}
             </h2>
-            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300"><X className="w-5 h-5" /></button>
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 min-w-[44px] min-h-[44px] flex items-center justify-center"><X className="w-5 h-5" /></button>
           </div>
           {!isEditing && (
             <div className="grid grid-cols-4 gap-2">
@@ -534,7 +533,7 @@ function KnowledgeModal({ item, onClose, onSaved }) {
                 <button
                   key={opt.id}
                   onClick={() => setActiveType(opt.id)}
-                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-h-[64px] ${
                     activeType === opt.id ? 'bg-gold-400/10 border-gold-400/30 ring-2 ring-gold-400/10' : 'bg-space-950/50 border-transparent hover:border-space-700'
                   }`}
                 >
@@ -546,33 +545,33 @@ function KnowledgeModal({ item, onClose, onSaved }) {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scrollbar overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           {activeType === 'text' || isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Titre du sujet</label>
                 <input
                   type="text" required value={title} onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Politique de livraison" className="input-dark w-full"
+                  placeholder="Ex: Politique de livraison" className="input-dark w-full min-h-[44px]"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contenu textuel</label>
                 <textarea
                   required value={content} onChange={(e) => setContent(e.target.value)}
-                  placeholder="Décrivez votre savoir ici..." rows={10} className="input-dark w-full resize-none"
+                  placeholder="Décrivez votre savoir ici..." rows={10} className="input-dark w-full resize-none min-h-[150px]"
                 />
               </div>
-              <button disabled={loading} className="btn-primary w-full py-4 text-base shadow-xl active:scale-[0.98]">
+              <button disabled={loading} className="btn-primary w-full py-4 text-base shadow-xl active:scale-[0.98] min-h-[56px] mt-4">
                 {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Enregistrer dans le cerveau'}
               </button>
             </form>
           ) : activeType === 'pdf' ? (
             <div className="space-y-6">
-               <button onClick={() => fileInputRef.current?.click()} className="w-full py-20 border-2 border-dashed border-space-700 rounded-3xl bg-space-950/50 hover:bg-space-800 transition-all flex flex-col items-center justify-center gap-4">
+               <button onClick={() => fileInputRef.current?.click()} className="w-full py-12 sm:py-20 border-2 border-dashed border-space-700 rounded-3xl bg-space-950/50 hover:bg-space-800 transition-all flex flex-col items-center justify-center gap-4">
                   <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
                   <Upload className="w-12 h-12 text-gold-400" />
-                  <div className="text-center">
+                  <div className="text-center p-4">
                     <p className="text-lg font-bold text-gray-100">Importer un PDF</p>
                     <p className="text-xs text-gray-500">Maximum 10 Mo</p>
                   </div>
@@ -587,15 +586,16 @@ function KnowledgeModal({ item, onClose, onSaved }) {
                <input
                  type="url" required value={url} onChange={(e) => setUrl(e.target.value)}
                  placeholder={activeType === 'youtube' ? "Lien de la vidéo YouTube" : "Lien de la page web"} 
-                 className="input-dark w-full"
+                 className="input-dark w-full min-h-[44px]"
                />
-               <button disabled={loading} className="btn-primary w-full py-4 text-base">
+               <button disabled={loading} className="btn-primary w-full py-4 text-base min-h-[56px]">
                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Extraire le contenu'}
                </button>
             </form>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

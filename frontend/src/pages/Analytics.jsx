@@ -131,13 +131,6 @@ export default function Analytics() {
     )
   }
 
-  if (loading && !overview) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
-      </div>
-    )
-  }
 
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
@@ -230,34 +223,42 @@ export default function Analytics() {
 
           {/* Key Stats Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
-            <StatSmall
-              title="Conversations"
-              value={overview?.conversations?.value}
-              growth={overview?.conversations?.growth}
-              icon={MessageSquare}
-              color="blue"
-            />
-            <StatSmall
-              title="Messages"
-              value={overview?.messages?.value}
-              growth={overview?.messages?.growth}
-              icon={BarChart3}
-              color="gold"
-            />
-            <StatSmall
-              title="Leads"
-              value={overview?.leads?.value}
-              growth={overview?.leads?.growth}
-              icon={Users}
-              color="emerald"
-            />
-            <StatSmall
-              title="Commandes"
-              value={overview?.orders?.value}
-              growth={overview?.orders?.growth}
-              icon={ShoppingCart}
-              color="amber"
-            />
+            {loading && !overview ? (
+              [1, 2, 3, 4].map(i => (
+                <div key={i} className={`h-24 rounded-xl border animate-pulse ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-gray-100 border-gray-200'}`} />
+              ))
+            ) : (
+              <>
+                <StatSmall
+                  title="Conversations"
+                  value={overview?.conversations?.value}
+                  growth={overview?.conversations?.growth}
+                  icon={MessageSquare}
+                  color="blue"
+                />
+                <StatSmall
+                  title="Messages"
+                  value={overview?.messages?.value}
+                  growth={overview?.messages?.growth}
+                  icon={BarChart3}
+                  color="gold"
+                />
+                <StatSmall
+                  title="Leads"
+                  value={overview?.leads?.value}
+                  growth={overview?.leads?.growth}
+                  icon={Users}
+                  color="emerald"
+                />
+                <StatSmall
+                  title="Commandes"
+                  value={overview?.orders?.value}
+                  growth={overview?.orders?.growth}
+                  icon={ShoppingCart}
+                  color="amber"
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

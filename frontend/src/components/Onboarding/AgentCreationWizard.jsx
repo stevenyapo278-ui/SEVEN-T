@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
@@ -159,14 +160,251 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
     exit: (direction) => ({ x: direction < 0 ? 50 : -50, opacity: 0 })
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <MotionDiv 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="fixed inset-0 bg-space-950/95 backdrop-blur-xl" 
-        onClick={onClose} 
+  // createPortal : contourne le transform de Framer Motion (DashboardLayout)
+  // sans ça, `fixed inset-0` est relatif au wrapper animé, pas à la viewport
+  return createPortal(
+    <div className="fixed inset-0 z-50">
+      {/* Backdrop */}
+      <MotionDiv
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-space-950/95 backdrop-blur-xl"
+        onClick={onClose}
       />
+
+      {/* ── MOBILE : Bottom Sheet ── */}
+      <MotionDiv
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 380, damping: 40 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_, info) => { if (info.offset.y > 100) onClose() }}
+        className="sm:hidden fixed inset-x-0 bottom-0 z-10 flex flex-col bg-[#0B0F1A] rounded-t-[2rem] border-t border-white/10 shadow-2xl overflow-hidden"
+        style={{ height: '92dvh', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        {/* Drag handle */}
+        <div className="flex-shrink-0 flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
+        {/* Mobile Header */}
+        <div className="flex-shrink-0 px-6 pb-4 flex items-center justify-between border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gold-400 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-black" />
+            </div>
+            <span className="font-bold text-white">{STEPS[currentStep].title}</span>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white"><X /></button>
+        </div>
+
+        {/* Mobile Step dots */}
+        <div className="flex-shrink-0 flex justify-center gap-1.5 py-3">
+          {STEPS.map((_, idx) => (
+            <div key={idx} className={`h-1 rounded-full transition-all duration-500 ${
+              idx === currentStep ? 'w-6 bg-gold-400' : idx < currentStep ? 'w-2 bg-emerald-400' : 'w-2 bg-white/10'
+            }`} />
+          ))}
+        </div>
+
+        {/* Mobile Scrollable Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-2 custom-scrollbar">
+          <AnimatePresence mode="wait" custom={direction}>
+            <MotionDiv
+              key={currentStep}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25 }}
+              className="space-y-6 pb-4"
+            >
+              {/* Step 1: Template */}
+              {currentStepId === 'template' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-syne font-black text-white italic">Choisissez son expertise</h2>
+                    <p className="text-sm text-gray-400 mt-1">Quel sera le rôle de votre agent ?</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {TEMPLATES.map((template) => {
+                      const Icon = template.icon
+                      const isSelected = formData.template === template.id
+                      return (
+                        <MotionDiv
+                          key={template.id}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setFormData({ ...formData, template: template.id, name: template.name })}
+                          className={`p-5 rounded-[1.5rem] border-2 cursor-pointer transition-all relative ${
+                            isSelected ? 'bg-white/5 border-gold-400 shadow-[0_0_20px_rgba(245,212,122,0.1)]' : 'bg-white/[0.02] border-white/5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center ${
+                              isSelected ? 'bg-gold-400 text-black' : 'bg-white/5 text-gray-500'
+                            }`}><Icon className="w-6 h-6" /></div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-syne font-bold text-white">{template.name}</h4>
+                              <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                            </div>
+                            {isSelected && (
+                              <div className="w-7 h-7 rounded-full bg-gold-400 flex items-center justify-center flex-shrink-0">
+                                <Check className="w-4 h-4 text-black" />
+                              </div>
+                            )}
+                          </div>
+                        </MotionDiv>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Name */}
+              {currentStepId === 'name' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-syne font-black text-white italic">Son identité</h2>
+                    <p className="text-sm text-gray-400 mt-1">Comment vos clients l'appelleront ?</p>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Nom de l'expert</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Ex: Sophie, Assistant Commercial..."
+                        className="w-full bg-white/[0.02] border-white/10 border-2 rounded-2xl py-4 px-5 text-lg font-bold text-white placeholder:text-white/20 focus:border-gold-400 transition-all outline-none"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">Personnalité (optionnel)</label>
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Ex: Très poli, passionné par la mode..."
+                        className="w-full bg-white/[0.02] border-white/10 border-2 rounded-2xl p-4 h-24 text-base text-white placeholder:text-white/20 focus:border-gold-400 transition-all outline-none resize-none"
+                      />
+                    </div>
+                    <div className="p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10 flex items-start gap-3">
+                      <MessageSquare className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-white italic">
+                        "Bonjour ! 👋 Je suis <span className="text-gold-400">{formData.name || 'votre assistant'}</span>. Comment puis-je vous aider ?"
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Model (admin only) */}
+              {currentStepId === 'model' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-syne font-black text-white italic">Son cerveau</h2>
+                    <p className="text-sm text-gray-400 mt-1">L'IA qui pilote les réponses.</p>
+                  </div>
+                  <div className="space-y-3">
+                    {loadingModels ? (
+                      <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gold-400" /></div>
+                    ) : aiModels.map((model, idx) => {
+                      const isSelected = formData.model === model.id
+                      return (
+                        <div key={model.id} onClick={() => setFormData({ ...formData, model: model.id })}
+                          className={`p-4 rounded-2xl border-2 cursor-pointer flex items-center gap-3 transition-all ${
+                            isSelected ? 'bg-white/5 border-gold-400' : 'bg-white/[0.02] border-white/5'
+                          }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            isSelected ? 'bg-gold-400 text-black' : 'bg-white/5 text-gray-500'
+                          }`}><Sparkles className="w-5 h-5" /></div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-bold text-white text-sm">{model.name}</h4>
+                              {idx === 0 && <span className="text-[10px] font-black uppercase text-gold-400 bg-gold-400/10 px-1.5 py-0.5 rounded">Recommandé</span>}
+                            </div>
+                            <p className="text-xs text-gray-500 line-clamp-1">{model.description}</p>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 text-gold-400 flex-shrink-0" />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Confirm */}
+              {currentStepId === 'confirm' && (
+                <div className="space-y-6">
+                  <div className="text-center pt-2">
+                    <MotionDiv
+                      animate={{ y: [0, -8, 0] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="w-20 h-20 mx-auto bg-gradient-to-br from-gold-400 to-amber-600 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-[0_0_40px_rgba(245,212,122,0.2)]"
+                    >
+                      <Rocket className="w-10 h-10 text-black" />
+                    </MotionDiv>
+                    <h2 className="text-2xl font-syne font-black text-white italic">Prêt pour le décollage ?</h2>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                      <span className="text-[10px] font-black uppercase text-white/20 block mb-2">Mission</span>
+                      <p className="text-white font-black text-sm">{selectedTemplate?.name}</p>
+                    </div>
+                    <div className="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
+                      <span className="text-[10px] font-black uppercase text-white/20 block mb-2">Identité</span>
+                      <p className="text-white font-black text-sm">{formData.name}</p>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-gold-400/5 rounded-2xl border border-gold-400/10">
+                    <h4 className="font-bold text-gold-400 text-xs uppercase mb-3 flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" />Prochaines étapes</h4>
+                    <ul className="space-y-2">
+                      {['Connexion WhatsApp Business', 'Enrichir la base de connaissances', 'Mettre en ligne l\'expert'].map((s, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm text-gray-400">
+                          <div className="w-5 h-5 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-[10px] font-black flex-shrink-0">{i+1}</div>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </MotionDiv>
+          </AnimatePresence>
+        </div>
+
+        {/* Mobile Footer */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-white/5 bg-[#0B0F1A] flex items-center justify-between gap-3">
+          <button
+            onClick={handleBack}
+            disabled={creating || isFirstStep}
+            className={`flex items-center gap-1.5 font-bold py-3.5 px-5 rounded-xl transition-all text-sm ${
+              isFirstStep ? 'opacity-0 pointer-events-none' : 'text-gray-500 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={!canProceed() || creating}
+            className="flex-1 flex items-center justify-center gap-2 bg-white text-black py-3.5 px-6 rounded-xl font-syne font-bold transition-all active:scale-95 disabled:opacity-50 disabled:grayscale text-sm"
+          >
+            {creating ? (<><Loader2 className="w-4 h-4 animate-spin" />Initialisation...</>) :
+             isLastStep ? (<><Rocket className="w-4 h-4" />Générer l'expert</>) :
+             (<>Étape suivante <ChevronRight className="w-4 h-4" /></>)}
+          </button>
+        </div>
+      </MotionDiv>
+
+      {/* ── DESKTOP : Modal centré (inchangé) ── */}
+      <div className="hidden sm:flex fixed inset-0 z-10 items-center justify-center p-4">
+
       
       <MotionDiv 
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
@@ -211,7 +449,15 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
         </div>
 
         {/* content Area */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 relative">
+          {/* Close button Desktop */}
+          <button 
+            onClick={onClose} 
+            className="hidden lg:flex absolute top-8 right-8 p-2 text-gray-500 hover:text-white hover:bg-white/5 rounded-full transition-all z-10"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
           {/* Header Mobile */}
           <div className="lg:hidden p-6 border-b border-white/5 flex items-center justify-between">
              <div className="flex items-center gap-3">
@@ -484,6 +730,8 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
           </div>
         </div>
       </MotionDiv>
-    </div>
+      </div>
+    </div>,
+    document.body
   )
 }

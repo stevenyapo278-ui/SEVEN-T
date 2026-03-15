@@ -43,11 +43,7 @@ import CookieConsentBanner from './components/CookieConsentBanner'
 import DashboardLayout from './layouts/DashboardLayout'
 
 function PageFallback() {
-  return (
-    <div className="min-h-[50vh] flex items-center justify-center" aria-busy="true" aria-label="Chargement">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" />
-    </div>
-  )
+  return <div className="min-h-[50vh] w-full" aria-busy="true" />
 }
 
 // Protected Route Component

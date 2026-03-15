@@ -5,6 +5,8 @@ import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import api from '../services/api'
 import { MessageSquare, Mail, Calendar, Plus, RefreshCw, Trash2, Power, PowerOff, Wrench, Crown, X, Pencil, Check, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
+import { useConfirm } from '../contexts/ConfirmContext'
 import { useOnboardingTour } from '../components/Onboarding'
 
 const TOOL_LABELS = {
@@ -17,6 +19,8 @@ const POLL_INTERVAL_MS = 2000
 const POLL_TIMEOUT_MS = 5 * 60 * 1000 // 5 min max
 
 export default function Tools() {
+  const { t } = useTranslation()
+  const { showConfirm } = useConfirm()
   const { startTour, completedTours, nextStep, isStepActive } = useOnboardingTour()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -332,6 +336,14 @@ export default function Tools() {
   }
 
   const deleteTool = async (toolId) => {
+    const ok = await showConfirm({
+      title: 'Supprimer l\'outil',
+      message: 'Êtes-vous sûr de vouloir supprimer cet outil ? Cette action est irréversible.',
+      variant: 'danger',
+      confirmLabel: 'Supprimer'
+    })
+    if (!ok) return
+
     try {
       setBusyToolId(toolId)
       await api.delete(`/tools/${toolId}`)

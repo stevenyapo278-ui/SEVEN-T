@@ -14,7 +14,7 @@ import { importFromUrl } from '../services/catalogImport.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
-const upload = multer({
+const uploadImage = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
@@ -23,6 +23,19 @@ const upload = multer({
             cb(null, true);
         } else {
             cb(new Error('Type de fichier non supporté. Utilisez JPEG, PNG, WebP ou GIF.'));
+        }
+    }
+});
+
+const uploadCsv = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for CSV
+    fileFilter: (req, file, cb) => {
+        const allowed = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
+        if (allowed.includes(file.mimetype) || file.originalname.endsWith('.csv')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Type de fichier non supporté. Utilisez un fichier CSV.'));
         }
     }
 });
@@ -179,7 +192,7 @@ router.get('/image/:filename', (req, res) => {
 });
 
 // Upload product image (returns URL to use as image_url)
-router.post('/upload-image', authenticateToken, upload.single('image'), async (req, res) => {
+router.post('/upload-image', authenticateToken, uploadImage.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Fichier image requis' });
@@ -383,7 +396,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // Import products from CSV
-router.post('/import', authenticateToken, upload.single('file'), async (req, res) => {
+router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Fichier CSV requis' });

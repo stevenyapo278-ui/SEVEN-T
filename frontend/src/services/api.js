@@ -8,17 +8,70 @@ const api = axios.create({
   }
 })
 
-// Add token to requests; allow FormData to set Content-Type (multipart)
-// allow FormData to set Content-Type (multipart)
+// Cache storage for GET requests
+const cache = new Map()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+// Routes de polling temps-réel → jamais mises en cache
+// Le QR code WhatsApp change toutes les ~20-60s, les messages arrivent en continu
+const NO_CACHE_PATTERNS = [
+  /\/whatsapp\/status\//,
+  /\/whatsapp\/qr\//,
+  /\/whatsapp\/new-messages\//,
+  /\/whatsapp\/sync-status\//,
+  /\/conversations\/updates/,
+  /\/conversations\/.*\/new-messages/,
+]
+
+const shouldSkipCache = (url) =>
+  NO_CACHE_PATTERNS.some((pattern) => pattern.test(url))
+
 api.interceptors.request.use((config) => {
+  // Add token to requests; allow FormData to set Content-Type (multipart)
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type']
+  }
+
+  // Basic Cache logic for GET requests (exclut les routes temps-réel)
+  if (config.method?.toLowerCase() === 'get' && !shouldSkipCache(config.url)) {
+    const cacheKey = config.url + JSON.stringify(config.params || {})
+    const cachedData = cache.get(cacheKey)
+    
+    if (cachedData && (Date.now() - cachedData.timestamp < CACHE_DURATION)) {
+      // Return a custom object that the response interceptor will handle
+      config.adapter = () => {
+        return Promise.resolve({
+          data: cachedData.data,
+          status: 200,
+          statusText: 'OK',
+          headers: config.headers,
+          config: config,
+          request: {}
+        })
+      }
+    }
   }
   return config
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Store in cache if it's a GET request (et pas une route temps-réel)
+    if (
+      response.config.method?.toLowerCase() === 'get' &&
+      !shouldSkipCache(response.config.url)
+    ) {
+      const cacheKey = response.config.url + JSON.stringify(response.config.params || {})
+      cache.set(cacheKey, {
+        data: response.data,
+        timestamp: Date.now()
+      })
+    } else if (['post', 'put', 'delete', 'patch'].includes(response.config.method?.toLowerCase())) {
+      // Clear cache on successful state-changing requests
+      cache.clear()
+    }
+    return response
+  },
   (error) => {
     // If we get a 401 on a route OTHER than login/register, it means the session is invalid or expired.
     if (error.response && error.response.status === 401) {

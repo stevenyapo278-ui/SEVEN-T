@@ -100,8 +100,11 @@ export async function clearBaileySession(redis, toolId) {
     try {
         const keys = await redis.keys(`baileys:${toolId}:*`);
         if (keys.length > 0) {
+            console.log(`[BaileyRedis] Found ${keys.length} keys to clear for tool ${toolId}: ${keys.slice(0, 3).join(', ')}...`);
             await redis.del(...keys);
             console.log(`[BaileyRedis] Cleared ${keys.length} session keys for tool ${toolId}`);
+        } else {
+            console.log(`[BaileyRedis] No session keys found to clear for tool ${toolId}`);
         }
     } catch (err) {
         console.error(`[BaileyRedis] Error clearing session for ${toolId}:`, err.message);

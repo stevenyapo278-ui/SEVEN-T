@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp } from 'lucide-react'
@@ -56,7 +57,7 @@ export default function Products() {
   const [selectedProductView, setSelectedProductView] = useState(null)
   const [imageZoom, setImageZoom] = useState(null) // URL de l'image à afficher en grand
 
-  const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory
+  const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory || !!selectedProductView
   useLockBodyScroll(anyModalOpen)
 
   const loadHistory = async (productId = null) => {
@@ -193,11 +194,7 @@ export default function Products() {
         </div>
       )}
 
-      {!loadError && loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" aria-hidden />
-        </div>
-      ) : !loadError && filteredProducts.length === 0 ? (
+      {!loadError && !loading && filteredProducts.length === 0 ? (
         <div className="text-center py-20">
           <div className="w-20 h-20 bg-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
             <Package className="w-10 h-10 text-gray-600" aria-hidden />
@@ -424,7 +421,7 @@ function getProductImageUrl(url) {
 }
 
 function DetailOverlay({ children, onClose }) {
-  return (
+  return createPortal(
     <div 
       className="fixed inset-0 z-[60] flex items-center justify-center p-4"
       onClick={onClose}
@@ -442,6 +439,7 @@ function DetailOverlay({ children, onClose }) {
         </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

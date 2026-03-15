@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { X, Upload, Loader2 } from 'lucide-react'
 import api from '../../services/api'
@@ -141,7 +142,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
     return () => { document.body.style.overflow = 'unset' }
   }, [])
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div className="relative z-10 w-full max-w-xl max-h-[90vh] sm:max-h-[80vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl min-w-0 animate-fadeIn max-sm:rounded-b-none" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
@@ -236,6 +237,7 @@ export default function ProductModal({ product, onClose, onSaved, getSymbol }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

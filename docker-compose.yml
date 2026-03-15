@@ -92,6 +92,8 @@ services:
   # ==========================================
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     container_name: seven-t-redis
     restart: unless-stopped
     command: >

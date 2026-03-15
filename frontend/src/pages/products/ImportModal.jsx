@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { X, Download, Upload } from 'lucide-react'
 import api from '../../services/api'
@@ -42,7 +43,7 @@ export default function ImportModal({ onClose, onImported }) {
     URL.revokeObjectURL(url)
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div className="relative z-10 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl animate-fadeIn" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
@@ -79,6 +80,7 @@ export default function ImportModal({ onClose, onImported }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -194,6 +194,7 @@ export async function initDatabase() {
             notification_number TEXT,
             reset_token TEXT,
             reset_token_expires TIMESTAMP,
+            payment_module_enabled INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -201,6 +202,7 @@ export async function initDatabase() {
         -- Add columns if they don't exist (for existing databases)
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER DEFAULT 0;
 
         CREATE TABLE IF NOT EXISTS agents (
             id TEXT PRIMARY KEY,

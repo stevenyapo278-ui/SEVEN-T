@@ -14,17 +14,11 @@ import {
   ArrowRight,
   AlertTriangle,
   Zap,
-  Users,
-  Clock,
-  RefreshCw,
   Crown,
   Rocket,
-  WifiOff,
-  CheckCircle2,
-  UserPlus,
-  ShoppingCart,
-  XCircle,
-  AlertCircle
+  RefreshCw,
+  AlertCircle,
+  XCircle
 } from 'lucide-react'
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
@@ -54,70 +48,31 @@ export default function Dashboard() {
   }, [location.key])
 
   useEffect(() => {
-    // Check if first visit for THIS user (user-specific key)
     if (user?.id) {
       const welcomeKey = `has_seen_welcome_${user.id}`
       const hasSeenWelcome = localStorage.getItem(welcomeKey)
       if (!hasSeenWelcome) {
         setShowWelcome(true)
-        // Mark as seen immediately to prevent reappearing on navigation
         localStorage.setItem(welcomeKey, 'true')
       }
     }
 
-    // Refresh data when tab becomes visible (user returns from another page)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        loadData()
-      }
+      if (document.visibilityState === 'visible') loadData()
     }
-
-    // Refresh data when window gets focus
-    const handleFocus = () => {
-      loadData()
-    }
-
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleFocus)
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleFocus)
-      if (tourTimerRef.current) clearTimeout(tourTimerRef.current)
-    }
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [user?.id])
 
   const handleWelcomeComplete = (skipTour = false) => {
-    if (user?.id) {
-      localStorage.setItem(`has_seen_welcome_${user.id}`, 'true')
-    }
     setShowWelcome(false)
-    
     if (skipTour) return
-
-    // Start sidebar tour after welcome modal IF not already completed
     if (!completedTours.includes('sidebar')) {
-      tourTimerRef.current = setTimeout(() => {
-        startTour('sidebar')
-      }, 500)
+      tourTimerRef.current = setTimeout(() => startTour('sidebar'), 500)
     } else if (!completedTours.includes('dashboard')) {
-      // If sidebar already completed, start dashboard tour after a short delay
-      tourTimerRef.current = setTimeout(() => {
-        startTour('dashboard')
-      }, 800)
+      tourTimerRef.current = setTimeout(() => startTour('dashboard'), 800)
     }
   }
-
-  // Chain tours: dashboard tour starts after sidebar tour is completed
-  useEffect(() => {
-    // Only start automatically if no other tour is running and welcome modal is closed
-    if (!showWelcome && !activeTour && completedTours.includes('sidebar') && !completedTours.includes('dashboard')) {
-      const timer = setTimeout(() => {
-        startTour('dashboard')
-      }, 1000)
-      return () => clearTimeout(timer)
-    }
-  }, [completedTours, startTour, activeTour, showWelcome])
 
   const loadData = async () => {
     try {
@@ -139,88 +94,24 @@ export default function Dashboard() {
   }
 
   const alerts = []
-  
   if (quotas?.credit_warning?.level === 'critical') {
-    alerts.push({ 
-      type: 'error', 
-      message: quotas.credit_warning.warning,
-      action: t('dashboard.alerts.upgrade'),
-      link: '/dashboard/settings'
-    })
+    alerts.push({ type: 'error', message: quotas.credit_warning.warning, action: t('dashboard.alerts.upgrade'), link: '/dashboard/settings' })
   } else if (quotas?.credit_warning?.level === 'warning') {
-    alerts.push({ 
-      type: 'warning', 
-      message: quotas.credit_warning.warning,
-      action: t('dashboard.alerts.view'),
-      link: '/dashboard/settings'
-    })
+    alerts.push({ type: 'warning', message: quotas.credit_warning.warning, action: t('dashboard.alerts.view'), link: '/dashboard/settings' })
   }
 
-  
   if (user?.plan === 'free_expired') {
-    alerts.unshift({
-      type: 'error',
-      message: t('dashboard.alerts.trialExpired', 'Votre période d\'essai gratuit est terminée. Vos agents WhatsApp ont été désactivés. Veuillez mettre à niveau votre plan pour réactiver vos services.'),
-      action: 'Mettre à niveau',
-      link: '/dashboard/settings'
-    })
+    alerts.unshift({ type: 'error', message: t('dashboard.alerts.trialExpired'), action: 'Mettre à niveau', link: '/dashboard/settings' })
   } else if (user?.plan === 'free' && user?.subscription_end_date) {
     const end = new Date(user.subscription_end_date)
     if (end > new Date()) {
       const diffMs = end - new Date()
       const days = Math.floor(diffMs / 86400000)
       const hours = Math.floor((diffMs % 86400000) / 3600000)
-      
-      let text = ''
-      if (days > 0) text = `Il vous reste ${days} jour(s) et ${hours} heure(s) sur votre essai gratuit. Profitez-en pour configurer votre agent !`
-      else text = `Attention, il vous reste moins de ${hours} heure(s) ou quelques minutes sur votre essai !`
-
-      alerts.unshift({
-        type: 'warning',
-        message: text,
-        action: 'Voir les plans',
-        link: '/dashboard/settings'
-      })
+      alerts.unshift({ type: 'warning', message: days > 0 ? `Il vous reste ${days}j et ${hours}h d'essai.` : `Moins de ${hours}h d'essai restants !`, action: 'Voir les plans', link: '/dashboard/settings' })
     }
   }
 
-  
-  const disconnectedAgents = agents.filter(a => a.is_active && !a.whatsapp_connected)
-  if (disconnectedAgents.length > 0) {
-    alerts.push({
-      type: 'warning',
-      message: t('dashboard.alerts.disconnectedAgents', { count: disconnectedAgents.length }),
-      action: t('dashboard.alerts.reconnect'),
-      link: `/dashboard/agents/${disconnectedAgents[0].id}`
-    })
-  }
-
-  const inactiveAgents = agents.filter(a => !a.is_active)
-  if (inactiveAgents.length > 0 && agents.length > 1) {
-    alerts.push({
-      type: 'info',
-      message: t('dashboard.alerts.inactiveAgents', { count: inactiveAgents.length }),
-      action: t('dashboard.alerts.manage'),
-      link: '/dashboard/agents'
-    })
-  }
-
-  // Stats for pie chart
-  const agentStatusData = [
-    { name: t('common.connected'), value: agents.filter(a => a.whatsapp_connected).length, color: '#22c55e' },
-    { name: t('common.disconnected'), value: agents.filter(a => !a.whatsapp_connected && a.is_active).length, color: '#f59e0b' },
-    { name: t('common.inactive'), value: agents.filter(a => !a.is_active).length, color: '#6b7280' },
-  ].filter(d => d.value > 0)
-
-  if (loading) {
-    return (
-      <div className="w-full flex items-center justify-center min-h-64 py-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
-      </div>
-    )
-  }
-
-  // Prepare onboarding data
   const onboardingData = {
     agentsCount: agents?.length || 0,
     whatsappConnected: agents?.filter(a => a.whatsapp_connected)?.length || 0,
@@ -229,404 +120,185 @@ export default function Dashboard() {
     messagesCount: stats?.messages?.total || 0
   }
 
-
-
-
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
-      {/* Welcome Modal for first-time users */}
-      <WelcomeModal 
-        isOpen={showWelcome} 
-        onClose={() => setShowWelcome(false)}
-        onComplete={handleWelcomeComplete}
-      />
+      <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} onComplete={handleWelcomeComplete} />
 
-      {/* Header Hero */}
+      {/* Header Hero (Always visible for smooth transition) */}
       <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
-          aria-hidden
-        />
+        <div className="absolute inset-0 opacity-50" style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }} />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
-              <div className="flex items-center gap-3 mb-2 min-w-0">
-                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
-                  <Sparkles className="w-6 h-6 text-gold-400" />
-                </div>
-                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
-                </h1>
-                {agents.length === 0 && (
-                  <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 bg-gold-400 text-black text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">
-                    <Rocket className="w-3 h-3" />
-                    Onboarding
-                  </span>
-                )}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-gold-400/10 rounded-xl"><Sparkles className="w-6 h-6 text-gold-400" /></div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}</h1>
               </div>
-              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
-                {t('dashboard.welcomeSubtitle')}
-              </p>
+              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('dashboard.welcomeSubtitle')}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
-              <button
-                type="button"
-                onClick={loadData}
-                disabled={loading}
-                className={`p-2 rounded-xl transition-all duration-200 ${
-                  isDark ? 'bg-space-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+            <button onClick={loadData} disabled={loading} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
 
-          {/* Key Stats Row inside Hero */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8" data-tour="stats">
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <Bot className="w-5 h-5 text-blue-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.agents?.total || 0}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.agents')}</p>
-                </div>
-              </div>
-            </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
-                  <MessageSquare className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.conversations?.total || 0}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.conversations')}</p>
-                </div>
-              </div>
-            </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <TrendingUp className="w-5 h-5 text-blue-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.messages?.total || 0}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.messages')}</p>
-                </div>
-              </div>
-            </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
-                  <Zap className="w-5 h-5 text-gold-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats?.credits || quotas?.credits || 0}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('dashboard.stats.credits')}</p>
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
+            {!loading && stats ? (
+              <>
+                <StatCard icon={Bot} color="blue" value={stats.agents?.total || 0} label={t('dashboard.stats.agents')} isDark={isDark} />
+                <StatCard icon={MessageSquare} color="emerald" value={stats.conversations?.total || 0} label={t('dashboard.stats.conversations')} isDark={isDark} />
+                <StatCard icon={TrendingUp} color="blue" value={stats.messages?.total || 0} label={t('dashboard.stats.messages')} isDark={isDark} />
+                <StatCard icon={Zap} color="gold" value={stats.credits || quotas?.credits || 0} label={t('dashboard.stats.credits')} isDark={isDark} />
+              </>
+            ) : (
+              [1, 2, 3, 4].map(i => <SkeletonStatCard key={i} isDark={isDark} />)
+            )}
           </div>
         </div>
       </div>
 
-      {/* Onboarding Checklist */}
-      <div data-tour="checklist">
-        <OnboardingChecklist data={onboardingData} />
-      </div>
-
-      {/* Alerts Section */}
-      {alerts.length > 0 && (
-        <div className="space-y-3">
-          {alerts.map((alert, index) => (
-            <div 
-              key={index}
-              onClick={() => setSelectedAlertView(alert)}
-              className={`flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl border animate-fadeIn cursor-pointer hover:scale-[1.02] transition-all ${
-                alert.type === 'error' 
-                  ? 'bg-red-500/10 border-red-500/30' 
-                  : alert.type === 'warning'
-                    ? 'bg-amber-500/10 border-amber-500/30'
-                    : 'bg-blue-500/10 border-blue-500/30'
-              }`}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                <AlertCircle className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${
-                  alert.type === 'error' ? 'text-red-400' : 
-                  alert.type === 'warning' ? 'text-amber-400' : 'text-blue-400'
-                }`} />
-                <span className={`text-sm sm:text-base truncate ${
-                  alert.type === 'error' ? 'text-red-400' : 
-                  alert.type === 'warning' ? 'text-amber-400' : 'text-blue-400'
-                }`}>
-                  {alert.message}
-                </span>
-              </div>
-              <div className={`px-2 py-1 rounded-lg text-[10px] sm:text-sm font-medium ${
-                alert.type === 'error' 
-                  ? 'bg-red-500/20 text-red-400' 
-                  : alert.type === 'warning'
-                    ? 'bg-amber-500/20 text-amber-400'
-                    : 'bg-blue-500/20 text-blue-400'
-              }`}>
-                {t('common.details')}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Agents Section */}
-        <div className="lg:col-span-2 card" data-tour="agents-list">
-          <div className="p-6 border-b border-space-700 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">{t('dashboard.agents.title')}</h2>
-            <Link
-              to="/dashboard/agents"
-              className="text-gold-400 hover:text-gold-300 text-sm font-medium flex items-center justify-center gap-1 transition-colors touch-target flex-shrink-0"
-            >
-              {t('dashboard.agents.viewAll')}
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          {agents.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-space-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bot className="w-8 h-8 text-gray-500" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-100 mb-2">
-                {t('dashboard.agents.none')}
-              </h3>
-              <p className="text-gray-400 mb-4">
-                {t('dashboard.agents.createFirst')}
-              </p>
-              <Link
-                to="/dashboard/agents"
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                {t('dashboard.agents.create')}
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-space-700">
-              {agents.slice(0, 4).map((agent) => (
-                <div
-                  key={agent.id}
-                  onClick={() => setSelectedAgentView(agent)}
-                  className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-space-800 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                    <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      !agent.is_active 
-                        ? 'bg-gray-500/20' 
-                        : agent.whatsapp_connected 
-                          ? 'bg-emerald-500/20' 
-                          : 'bg-orange-500/20'
-                    }`}>
-                      <Bot className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                        !agent.is_active 
-                          ? 'text-gray-500' 
-                          : agent.whatsapp_connected 
-                            ? 'text-emerald-400' 
-                            : 'text-orange-400'
-                      }`} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-medium text-gray-100 truncate group-hover:text-gold-400 transition-colors">{agent.name}</h3>
-                        {!agent.is_active && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400">
-                            {t('dashboard.agents.inactive')}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {agent.total_conversations || 0} {t('dashboard.agents.conv')}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    {agent.is_active ? (
-                      agent.whatsapp_connected ? (
-                        <div className="w-2 h-2 rounded-full bg-emerald-400" title="Connecté" />
-                      ) : (
-                        <div className="w-2 h-2 rounded-full bg-orange-400" title="Déconnecté" />
-                      )
-                    ) : null}
-                    <ArrowRight className="w-4 h-4 text-gray-500 group-hover:translate-x-1 transition-transform" />
-                  </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400" /></div>
+      ) : (
+        <>
+          <OnboardingChecklist data={onboardingData} />
+          {alerts.length > 0 && (
+            <div className="space-y-3">
+              {alerts.map((alert, i) => (
+                <div key={i} onClick={() => setSelectedAlertView(alert)} className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] ${alert.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-400' : alert.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'}`}>
+                  <div className="flex items-center gap-3 truncate"><AlertCircle className="w-5 h-5 flex-shrink-0" /><span className="truncate text-sm sm:text-base">{alert.message}</span></div>
+                  <div className="px-2 py-1 bg-white/10 rounded text-xs font-medium">{t('common.details')}</div>
                 </div>
               ))}
             </div>
           )}
-        </div>
 
-        {/* Quick Actions Column */}
-        <div className="space-y-6">
-          <div className="card p-6">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Actions</h2>
-            <div className="grid grid-cols-1 gap-3">
-              <Link 
-                to="/dashboard/conversations"
-                className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-emerald-400" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 card overflow-hidden">
+              <div className="p-6 border-b border-space-700/60 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-100">{t('dashboard.agents.title')}</h2>
+                <Link to="/dashboard/agents" className="text-gold-400 hover:text-gold-300 text-sm font-medium flex items-center gap-1">{t('dashboard.agents.viewAll')} <ArrowRight className="w-4 h-4" /></Link>
+              </div>
+              {agents.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Bot className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 mb-4">{t('dashboard.agents.none')}</p>
+                  <Link to="/dashboard/agents" className="btn-primary inline-flex items-center gap-2"><Plus className="w-4 h-4" /> {t('dashboard.agents.create')}</Link>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-100">{t('nav.conversations')}</p>
-                  <p className="text-xs text-gray-500">{t('dashboard.agents.manage')}</p>
+              ) : (
+                <div className="divide-y divide-space-700/40">
+                  {agents.slice(0, 5).map(agent => (
+                    <div key={agent.id} onClick={() => setSelectedAgentView(agent)} className="flex items-center justify-between p-4 hover:bg-space-800/50 transition-colors cursor-pointer group">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${agent.whatsapp_connected ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-400/10 text-orange-400'}`}><Bot className="w-5 h-5" /></div>
+                        <div>
+                          <p className="font-medium text-gray-200 group-hover:text-gold-400 transition-colors">{agent.name}</p>
+                          <p className="text-xs text-gray-500">{agent.total_conversations || 0} conversations</p>
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-600 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  ))}
                 </div>
-              </Link>
-              <Link 
-                to="/dashboard/settings"
-                className="flex items-center gap-3 p-3 bg-space-800/50 rounded-xl hover:bg-space-800 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gold-400/20 flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-gold-400" />
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div className="card p-6">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Raccourcis</h3>
+                <div className="grid gap-3">
+                  <QuickActionLink to="/dashboard/conversations" icon={MessageSquare} color="emerald" title={t('nav.conversations')} subtitle="Gérer les chats" isDark={isDark} />
+                  <QuickActionLink to="/dashboard/settings" icon={Crown} color="gold" title={t('nav.settings')} subtitle={quotas?.plan?.displayName} isDark={isDark} />
                 </div>
-                <div>
-                  <p className="font-medium text-gray-100">{t('nav.settings')}</p>
-                  <p className="text-xs text-gray-500">{quotas?.plan?.displayName || t('settings.free')}</p>
-                </div>
-              </Link>
+              </div>
             </div>
           </div>
+        </>
+      )}
+
+      {selectedAlertView && <DetailOverlay onClose={() => setSelectedAlertView(null)}><AlertContent alert={selectedAlertView} onClose={() => setSelectedAlertView(null)} t={t} /></DetailOverlay>}
+      {selectedAgentView && <DetailOverlay onClose={() => setSelectedAgentView(null)}><AgentContent agent={selectedAgentView} onClose={() => setSelectedAgentView(null)} t={t} /></DetailOverlay>}
+    </div>
+  )
+}
+
+function StatCard({ icon: Icon, color, value, label, isDark }) {
+  const colorMap = { blue: 'text-blue-400 bg-blue-400/10', emerald: 'text-emerald-400 bg-emerald-400/10', gold: 'text-gold-400 bg-gold-400/10' }
+  return (
+    <div className={`rounded-xl p-4 border transition-all ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 shadow-sm'}`}>
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-xl flex-shrink-0 ${colorMap[color] || colorMap.blue}`}><Icon className="w-5 h-5" /></div>
+        <div className="min-w-0 flex-1">
+          <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</p>
+          <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{label}</p>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* Credit usage info */}
-      {quotas && quotas.usage && (
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-display font-semibold text-gray-100">{t('dashboard.usage.title')}</h2>
-            <Link to="/dashboard/settings" className="text-gold-400 hover:text-gold-300 text-sm">
-              {t('common.details')} →
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.aiMessages')}</p>
-              <p className="text-2xl font-bold text-gray-100">{quotas.usage.ai_messages_this_month || 0}</p>
-            </div>
-            <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.creditsUsed')}</p>
-              <p className="text-2xl font-bold text-gray-100">{quotas.usage.credits_used_this_month || 0}</p>
-            </div>
-            <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.conversations')}</p>
-              <p className="text-2xl font-bold text-gray-100">{quotas.usage.conversations_this_month || 0}</p>
-            </div>
-            <div className="bg-space-800/50 rounded-xl p-4">
-              <p className="text-sm text-gray-500 mb-1">{t('dashboard.usage.totalMessages')}</p>
-              <p className="text-2xl font-bold text-gray-100">{quotas.usage.messages_this_month || 0}</p>
-            </div>
-          </div>
+function SkeletonStatCard({ isDark }) {
+  return (
+    <div className={`rounded-xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-100'}`}>
+      <div className="animate-pulse flex items-center space-x-3">
+        <div className="rounded-lg bg-gray-700/50 h-9 w-9"></div>
+        <div className="flex-1 space-y-2 py-1">
+          <div className="h-4 bg-gray-700/50 rounded w-1/2"></div>
+          <div className="h-2 bg-gray-700/50 rounded w-3/4"></div>
         </div>
-      )}
+      </div>
+    </div>
+  )
+}
 
-      {/* Alert Detail Zoom View */}
-      {selectedAlertView && (
-        <DetailOverlay onClose={() => setSelectedAlertView(null)}>
-          <div className="flex flex-col items-center text-center">
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mb-6 shadow-lg ${
-              selectedAlertView.type === 'error' ? 'bg-red-500/20' : 
-              selectedAlertView.type === 'warning' ? 'bg-amber-500/20' : 'bg-blue-500/20'
-            }`}>
-              <AlertCircle className={`w-10 h-10 ${
-                selectedAlertView.type === 'error' ? 'text-red-400' : 
-                selectedAlertView.type === 'warning' ? 'text-amber-400' : 'text-blue-400'
-              }`} />
-            </div>
-            <h3 className="text-2xl font-display font-bold text-gray-100 mb-4">Notification</h3>
-            <p className="text-gray-300 mb-8 leading-relaxed">{selectedAlertView.message}</p>
-            
-            <div className="flex flex-col w-full gap-3">
-              {selectedAlertView.link && (
-                <Link 
-                  to={selectedAlertView.link}
-                  onClick={() => setSelectedAlertView(null)}
-                  className="btn-primary w-full text-center"
-                >
-                  {selectedAlertView.action}
-                </Link>
-              )}
-              <button onClick={() => setSelectedAlertView(null)} className="btn-secondary w-full">
-                {t('common.close')}
-              </button>
-            </div>
-          </div>
-        </DetailOverlay>
-      )}
+function QuickActionLink({ to, icon: Icon, color, title, subtitle, isDark }) {
+  const colorMap = { emerald: 'bg-emerald-500/10 text-emerald-400', gold: 'bg-gold-400/10 text-gold-400' }
+  return (
+    <Link to={to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${isDark ? 'bg-space-800/50 hover:bg-space-800' : 'bg-gray-50 hover:bg-gray-100'}`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}><Icon className="w-5 h-5" /></div>
+      <div>
+        <p className="font-medium text-gray-200">{title}</p>
+        <p className="text-[10px] text-gray-500">{subtitle}</p>
+      </div>
+    </Link>
+  )
+}
 
-      {/* Agent Quick View */}
-      {selectedAgentView && (
-        <DetailOverlay onClose={() => setSelectedAgentView(null)}>
-          <div className="flex flex-col items-center text-center">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-xl ring-4 ${
-              selectedAgentView.whatsapp_connected ? 'bg-emerald-500/20 ring-emerald-500/20' : 'bg-orange-500/20 ring-orange-500/20'
-            }`}>
-              <Bot className={`w-10 h-10 ${
-                selectedAgentView.whatsapp_connected ? 'text-emerald-400' : 'text-orange-400'
-              }`} />
-            </div>
-            <h3 className="text-2xl sm:text-4xl font-display font-black text-gray-100 mb-2">{selectedAgentView.name}</h3>
-            <div className="flex items-center gap-2 mb-8">
-              <div className={`w-2 h-2 rounded-full ${selectedAgentView.whatsapp_connected ? 'bg-emerald-400' : 'bg-orange-400'}`} />
-              <span className={`text-sm font-medium ${selectedAgentView.whatsapp_connected ? 'text-emerald-400' : 'text-orange-400'}`}>
-                {selectedAgentView.whatsapp_connected ? 'Connecté à WhatsApp' : 'Déconnecté'}
-              </span>
-            </div>
+function AlertContent({ alert, onClose, t }) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${alert.type === 'error' ? 'bg-red-500/20 text-red-400' : alert.type === 'warning' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}><AlertCircle className="w-8 h-8" /></div>
+      <h3 className="text-xl font-bold text-gray-100 mb-2">Notification</h3>
+      <p className="text-gray-400 mb-8 text-sm">{alert.message}</p>
+      <div className="flex flex-col w-full gap-2">
+        {alert.link && <Link to={alert.link} onClick={onClose} className="btn-primary py-2 text-sm">{alert.action}</Link>}
+        <button onClick={onClose} className="text-gray-500 hover:text-white text-sm py-2">{t('common.close')}</button>
+      </div>
+    </div>
+  )
+}
 
-            <div className="grid grid-cols-2 gap-4 w-full mb-8">
-              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Conversations</p>
-                <p className="text-xl font-bold text-gray-100">{selectedAgentView.total_conversations || 0}</p>
-              </div>
-              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Messages</p>
-                <p className="text-xl font-bold text-gray-100">{selectedAgentView.total_messages || 0}</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col w-full gap-3">
-              <Link 
-                to={`/dashboard/agents/${selectedAgentView.id}`}
-                className="btn-primary w-full text-center"
-              >
-                {t('dashboard.agents.create')}
-              </Link>
-              <button onClick={() => setSelectedAgentView(null)} className="btn-secondary w-full">
-                {t('common.close')}
-              </button>
-            </div>
-          </div>
-        </DetailOverlay>
-      )}
+function AgentContent({ agent, onClose, t }) {
+  return (
+    <div className="flex flex-col items-center text-center">
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${agent.whatsapp_connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-400/10 text-orange-400'}`}><Bot className="w-8 h-8" /></div>
+      <h3 className="text-2xl font-bold text-gray-100 mb-1">{agent.name}</h3>
+      <p className={`text-sm mb-8 ${agent.whatsapp_connected ? 'text-emerald-400' : 'text-orange-400'}`}>{agent.whatsapp_connected ? 'Connecté' : 'Déconnecté'}</p>
+      <div className="flex flex-col w-full gap-2">
+        <Link to={`/dashboard/agents/${agent.id}`} className="btn-primary py-2 text-sm">Ouvrir l'agent</Link>
+        <button onClick={onClose} className="text-gray-500 hover:text-white text-sm py-2">{t('common.close')}</button>
+      </div>
     </div>
   )
 }
 
 function DetailOverlay({ children, onClose }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
-      <div 
-        className="relative z-10 w-full max-w-sm bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 animate-zoom-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white">
-          <XCircle className="w-6 h-6" />
-        </button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-[101] w-full max-w-sm bg-space-900 border border-space-700/50 rounded-3xl shadow-2xl p-8 animate-in zoom-in duration-200">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
         {children}
       </div>
     </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { Mail, Lock, ArrowRight, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import AnimatedBackground from '../components/AnimatedBackground'
 import toast from 'react-hot-toast'
 
 const GOOGLE_LOGIN_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') ? `${import.meta.env.VITE_API_URL}/auth/google` : '/api/auth/google'
@@ -23,6 +25,7 @@ const ERROR_MESSAGES = {
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loginError, setLoginError] = useState(null)
   const { user, login } = useAuth()
@@ -65,133 +68,147 @@ export default function Login() {
 
   const clearError = () => setLoginError(null)
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } }
+  }
+
   return (
     <div
-      className="min-h-screen bg-space-950 flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden overflow-y-auto"
+      className="min-h-screen bg-space-950/50 flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
     >
-      {/* Background effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-64 sm:w-96 h-64 sm:h-96 bg-gold-400/5 rounded-full blur-3xl" />
-      </div>
+      <AnimatedBackground />
 
-      <div className="w-full max-w-md mx-auto relative z-10 min-w-0">
-        <Link to="/" className="flex items-center justify-center mb-6 sm:mb-8">
-          <Logo />
-        </Link>
-        <h2 className="text-center text-2xl sm:text-3xl font-display font-bold text-gray-100">
-          Connexion
-        </h2>
-        <p className="mt-2 text-center text-sm sm:text-base text-gray-400 px-1">
-          Pas encore de compte?{' '}
-          <Link to="/register" className="text-gold-400 hover:text-gold-300 font-medium transition-colors">
-            Inscrivez-vous
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative z-10 w-full max-w-md mx-auto"
+      >
+        <motion.div variants={itemVariants} className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center justify-center mb-6 hover:scale-105 transition-transform duration-300">
+            <Logo />
           </Link>
-        </p>
-      </div>
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-white tracking-tight">
+            Heureux de vous revoir
+          </h2>
+          <p className="mt-3 text-gray-400">
+            Gérez vos agents IA en toute simplicité
+          </p>
+        </motion.div>
 
-      <div className="mt-6 sm:mt-8 w-full max-w-md mx-auto relative z-10 min-w-0">
-        {loginError && (
-          <div
-            role="alert"
-            className="mb-4 sm:mb-6 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-red-500/40 bg-red-500/10 flex items-start gap-3 sm:gap-4 animate-fadeIn"
-          >
-            <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="min-w-0 flex-1">
-              <p className="text-base sm:text-lg font-semibold text-red-300 break-words">
-                {loginError}
-              </p>
-              <p className="mt-1 text-xs sm:text-sm text-red-400/90">
-                Vérifiez votre email et votre mot de passe, puis réessayez.
-              </p>
-              <button
-                type="button"
-                onClick={clearError}
-                className="mt-3 text-sm font-medium text-red-400 hover:text-red-300 underline min-h-[44px] touch-target -ml-2 pl-2"
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        )}
-        <div className="card py-6 sm:py-8 px-4 sm:px-10">
-          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-                Email
+        <AnimatePresence mode="wait">
+          {loginError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, scale: 0.95 }}
+              animate={{ opacity: 1, height: 'auto', scale: 1 }}
+              exit={{ opacity: 0, height: 0, scale: 0.95 }}
+              className="mb-6 overflow-hidden"
+            >
+              <div className="p-4 rounded-2xl border border-red-500/30 bg-red-500/5 backdrop-blur-md flex items-start gap-4">
+                <div className="p-2 bg-red-500/20 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-200">{loginError}</p>
+                  <button onClick={clearError} className="mt-1 text-xs text-red-400/80 hover:text-red-300 underline underline-offset-2">Fermer</button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.div 
+          variants={itemVariants}
+          className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-[2rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden group"
+        >
+          {/* Subtle inner glow */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-400/20 to-transparent" />
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="block text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
+                Email Professionnel
               </label>
-              <div className="input-with-icon">
-                <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
+              <div className="group/input relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/input:text-gold-400 transition-colors pointer-events-none">
                   <Mail className="w-5 h-5" />
                 </div>
                 <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
+                  id="email" type="email" required value={email}
                   onChange={(e) => { setEmail(e.target.value); clearError(); }}
-                  placeholder="vous@exemple.com"
-                  className="min-h-[44px] touch-target"
+                  placeholder="nom@entreprise.com"
+                  className="w-full pl-12 pr-4 py-3.5 bg-space-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all"
                 />
               </div>
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-                Mot de passe
-              </label>
-              <div className="input-with-icon">
-                <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center ml-1">
+                <label htmlFor="password" className="block text-xs font-bold uppercase tracking-widest text-gray-500">
+                  Mot de passe
+                </label>
+                <Link to="/forgot-password" size="sm" className="text-xs font-semibold text-gold-400 hover:text-gold-300 transition-colors">
+                  Oublié ?
+                </Link>
+              </div>
+              <div className="group/input relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/input:text-gold-400 transition-colors pointer-events-none">
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
+                  id="password" type={showPassword ? "text" : "password"} required value={password}
                   onChange={(e) => { setPassword(e.target.value); clearError(); }}
                   placeholder="••••••••"
-                  className="min-h-[44px] touch-target"
+                  className="w-full pl-12 pr-12 py-3.5 bg-space-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all"
                 />
-              </div>
-              <div className="flex justify-end mt-2">
-                <Link 
-                  to="/forgot-password" 
-                  className="text-sm font-medium text-gold-400 hover:text-gold-300 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gold-400 transition-colors focus:outline-none"
                 >
-                  Mot de passe oublié ?
-                </Link>
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full flex items-center justify-center gap-2 min-h-[44px] touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 bg-gradient-to-r from-gold-400 to-gold-500 text-black font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 transition-all disabled:opacity-50"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-space-950 border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   Se connecter
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
-            </button>
+            </motion.button>
 
-            <div className="relative my-4 sm:my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-space-600" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-space-800 text-gray-500">ou</span>
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
+              <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest text-gray-600">
+                <span className="px-3 bg-transparent">Ou continuer avec</span>
               </div>
             </div>
 
-            <a
+            <motion.a
+              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
               href={GOOGLE_LOGIN_URL}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 min-h-[44px] touch-target rounded-xl border border-space-600 bg-space-800/50 text-gray-200 hover:bg-space-700/50 hover:border-space-500 transition-colors text-sm sm:text-base"
+              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 rounded-2xl border border-white/10 bg-transparent text-gray-200 font-medium transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -199,11 +216,19 @@ export default function Login() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Se connecter avec Google
-            </a>
+              <span>Continuer avec Google</span>
+            </motion.a>
           </form>
-        </div>
-      </div>
+        </motion.div>
+
+        <motion.p variants={itemVariants} className="mt-8 text-center text-sm text-gray-500">
+          Pas encore de compte?{' '}
+          <Link to="/register" className="text-gold-400 hover:text-gold-300 font-bold transition-colors inline-flex items-center gap-1 group">
+            Commencez l'essai gratuit
+            <Sparkles className="w-3.5 h-3.5 group-hover:animate-pulse" />
+          </Link>
+        </motion.p>
+      </motion.div>
     </div>
   )
 }

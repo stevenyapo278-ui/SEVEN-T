@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Outlet, NavLink, useNavigate, Link, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import CurrencyContext from '../contexts/CurrencyContext'
+import AnimatedBackground from '../components/AnimatedBackground'
 import { useAuth } from '../contexts/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
-import { OnboardingTourProvider, useOnboardingTour } from '../components/Onboarding'
+import { useOnboardingTour } from '../components/Onboarding'
+import { AnimatePresence, motion } from 'framer-motion'
 import api from '../services/api'
 import {
   LayoutDashboard,
@@ -23,7 +26,6 @@ import {
   User,
   CreditCard,
   HelpCircle,
-  ExternalLink,
   Zap,
   Package,
   BookOpen,
@@ -37,13 +39,12 @@ import {
   Store,
   Send,
   Wrench,
-  Building,
-  Clock,
   Wallet,
-  Briefcase
+  Briefcase,
+  ChevronLeft,
 } from 'lucide-react'
 
-// Navigation avec sous-menus (nameKey = clé i18n pour la traduction)
+// ─── Navigation config ───────────────────────────────────────────────────────
 const navigationGroups = [
   {
     nameKey: 'nav.main',
@@ -96,87 +97,143 @@ const navigationGroups = [
 
 const bottomNavigation = [
   { nameKey: 'nav.settings', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
+  { nameKey: 'nav.help' , href: '/dashboard/help', icon: HelpCircle, tourId: 'nav-help' },
 ]
 
 const adminNavigation = [
   { nameKey: 'nav.admin', href: '/dashboard/admin', icon: Shield },
 ]
 
-// Composant pour un groupe de navigation avec sous-menu (ouverture au survol)
-const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false }) => {
+// ─── Page title map ──────────────────────────────────────────────────────────
+const pathToTitle = (pathname) => {
+  if (pathname === '/dashboard' || pathname === '/dashboard/') return 'Dashboard'
+  if (pathname.startsWith('/dashboard/agents/') && pathname !== '/dashboard/agents') return 'Agent'
+  if (pathname.startsWith('/dashboard/conversations/') && pathname !== '/dashboard/conversations') return 'Conversation'
+  const segments = pathname.replace(/^\/dashboard\/?/, '').split('/')
+  const first = segments[0] || 'dashboard'
+  const map = {
+    agents: 'Agents', analytics: 'Analytics', campaigns: 'Campagnes',
+    conversations: 'Conversations', flows: 'Flows', knowledge: 'Base de connaissances',
+    leads: 'Leads', notifications: 'Notifications', orders: 'Commandes',
+    payments: 'Paiements', products: 'Produits', services: 'Services',
+    reports: 'Rapports', settings: 'Paramètres', help: 'Aide',
+    templates: 'Templates', tools: 'Outils', workflows: 'Workflows',
+    admin: 'Admin', expenses: 'Dépenses',
+  }
+  return map[first] || first
+}
+
+// ─── Logo ────────────────────────────────────────────────────────────────────
+const Logo = ({ className = '' }) => (
+  <img src="/logo.svg" alt="SEVEN T" className={`h-7 w-auto object-contain object-left ${className}`} />
+)
+
+// ─── Language Switcher ───────────────────────────────────────────────────────
+const LanguageSwitcher = ({ className = '' }) => {
+  const { i18n } = useTranslation()
+  const lang = (i18n.resolvedLanguage || i18n.language || 'fr').split('-')[0]
+  const setLang = (lng) => {
+    if (typeof localStorage !== 'undefined') localStorage.setItem('locale', lng)
+    i18n.changeLanguage(lng)
+  }
+  return (
+    <div className={`flex items-center gap-0.5 rounded-lg overflow-hidden border ${className}`} style={{ borderColor: 'var(--border-color)' }}>
+      <button type="button" onClick={() => setLang('fr')} className={`px-2 py-1 text-xs font-medium ${lang === 'fr' ? 'bg-blue-500/20 text-blue-400' : 'opacity-60 hover:opacity-100'}`}>FR</button>
+      <button type="button" onClick={() => setLang('en')} className={`px-2 py-1 text-xs font-medium ${lang === 'en' ? 'bg-blue-500/20 text-blue-400' : 'opacity-60 hover:opacity-100'}`}>EN</button>
+    </div>
+  )
+}
+
+// ─── Prefetch utils ──────────────────────────────────────────────────────────
+const prefetchRouteData = (href) => {
+  if (href === '/dashboard' || href === '/dashboard/') {
+    api.get('/analytics/overview?period=7d').catch(() => {})
+    api.get('/analytics/messages-timeline?period=7d').catch(() => {})
+    import('../pages/Dashboard')
+  } else if (href === '/dashboard/agents') {
+    api.get('/agents').catch(() => {})
+    import('../pages/Agents')
+  } else if (href === '/dashboard/conversations') {
+    api.get('/conversations').catch(() => {})
+    import('../pages/Conversations')
+  } else if (href === '/dashboard/products') {
+    api.get('/products').catch(() => {})
+    import('../pages/Products')
+  } else if (href === '/dashboard/analytics') {
+    api.get('/analytics/overview?period=7d').catch(() => {})
+    import('../pages/Analytics')
+  } else if (href === '/dashboard/settings') {
+    import('../pages/Settings')
+  }
+}
+
+// ─── Theme Toggle ────────────────────────────────────────────────────────────
+const ThemeToggle = ({ className = '', size = 'md' }) => {
+  const { theme, toggleTheme } = useTheme()
+  const sizeClass = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9'
+  const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-4 h-4'
+  return (
+    <button
+      onClick={toggleTheme}
+      className={`relative flex items-center justify-center ${sizeClass} rounded-lg transition-all duration-300 ${
+        theme === 'dark' ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+      } ${className}`}
+      title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+    >
+      <div className={`relative ${iconSize}`}>
+        <Sun className={`absolute inset-0 ${iconSize} transition-all duration-300 ${theme === 'dark' ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'}`} />
+        <Moon className={`absolute inset-0 ${iconSize} transition-all duration-300 ${theme === 'dark' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'}`} />
+      </div>
+    </button>
+  )
+}
+
+// ─── Nav Group (sidebar) ─────────────────────────────────────────────────────
+const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, collapsed = false }) => {
   const { t } = useTranslation()
   const { isDark } = useTheme()
   const location = useLocation()
-  const [isHovered, setIsHovered] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false) // Pour mobile
-  const timeoutRef = useRef(null)
-  
-  // Vérifier si un élément du groupe est actif
-  const isGroupActive = group.items.some(item => location.pathname === item.href)
-  
-  // Premier groupe (Principal) toujours ouvert
+  const [isExpanded, setIsExpanded] = useState(false)
+  const isGroupActive = group.items.some(item => location.pathname === item.href || location.pathname.startsWith(item.href + '/'))
   const isFirstGroup = group.nameKey === 'nav.main'
-  
-  // Ouvrir le groupe quand le tour d'onboarding cible un item de ce groupe (sidebar visible)
+
   useEffect(() => {
     if (forceExpand && isMobile) setIsExpanded(true)
   }, [forceExpand, isMobile])
-  
-  // En mobile: clic pour ouvrir. En desktop: survol. forceExpand pour le tour sidebar.
-  const shouldBeOpen = isFirstGroup || isGroupActive || forceExpand || (isMobile ? isExpanded : isHovered)
 
-  // Gestion du survol avec délai pour éviter les fermetures accidentelles
-  const handleMouseEnter = () => {
-    if (isMobile) return
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    setIsHovered(true)
-  }
-
-  const handleMouseLeave = () => {
-    if (isMobile) return
-    timeoutRef.current = setTimeout(() => {
-      setIsHovered(false)
-    }, 200) // Délai de 200ms avant fermeture
-  }
-
-  // Toggle pour mobile
-  const handleToggle = (e) => {
-    if (isMobile) {
-      e.preventDefault()
-      setIsExpanded(!isExpanded)
-    }
-  }
-
-  // Cleanup du timeout
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [])
+  const shouldBeOpen = isFirstGroup || isGroupActive || forceExpand || isExpanded
 
   if (isFirstGroup) {
-    // Afficher directement les items sans header de groupe
     return (
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {group.items.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
+            viewTransition
+            onMouseEnter={() => prefetchRouteData(item.href)}
             end={item.href === '/dashboard'}
             onClick={onItemClick}
             data-tour={item.tourId}
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+              `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                 isActive
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-: isDark 
-                    ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                    : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-              }`
+                  ? isDark
+                    ? 'bg-blue-500/15 text-blue-400'
+                    : 'bg-blue-50 text-blue-600'
+                  : isDark
+                    ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
             }
           >
-            <item.icon className="w-5 h-5 text-icon" />
-            {t(item.nameKey)}
+            {({ isActive }) => (
+              <>
+                <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
+                <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+              </>
+            )}
           </NavLink>
         ))}
       </div>
@@ -184,81 +241,48 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false })
   }
 
   return (
-    <div
-      className="space-y-0.5"
-      onMouseEnter={!isMobile ? handleMouseEnter : undefined}
-      onMouseLeave={!isMobile ? handleMouseLeave : undefined}
-    >
-      {/* Header du groupe - En desktop: navigue vers le premier item. En mobile: toggle */}
-      {isMobile ? (
+    <div className="space-y-0.5">
+      {/* Group label */}
+      {(!collapsed || isMobile) && (
         <button
-          onClick={handleToggle}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 ${
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg transition-all duration-150 ${
             isGroupActive
-              ? isDark 
-                ? 'bg-blue-500/10 text-blue-400' 
-                : 'bg-blue-50 text-blue-600'
-              : isDark 
-                ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100' 
-                : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
+              ? isDark ? 'text-blue-400' : 'text-blue-600'
+              : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          <div className="flex items-center gap-3">
-            {group.icon && <group.icon className="w-5 h-5 text-icon" />}
-            <span className="text-sm font-medium">{t(group.nameKey)}</span>
-          </div>
-          <ChevronDown className={`w-4 h-4 text-icon transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
+          <span className="text-[10px] font-semibold uppercase tracking-widest">{t(group.nameKey)}</span>
+          <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${shouldBeOpen ? 'rotate-90' : ''}`} />
         </button>
-      ) : (
-        <NavLink
-          to={group.items[0]?.href || '#'}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 ${
-            isGroupActive
-              ? isDark 
-                ? 'bg-blue-500/10 text-blue-400' 
-                : 'bg-blue-50 text-blue-600'
-              : isDark 
-                ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100' 
-                : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            {group.icon && <group.icon className="w-5 h-5 text-icon" />}
-            <span className="text-sm font-medium">{t(group.nameKey)}</span>
-          </div>
-          <ChevronDown className={`w-4 h-4 text-icon transition-transform duration-200 ${shouldBeOpen ? 'rotate-180' : ''}`} />
-        </NavLink>
       )}
 
-      {/* Items du groupe - s'affiche au survol */}
-      <div 
-        className={`overflow-hidden transition-all duration-200 ease-out ${
-          shouldBeOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}
-      >
-        <div className={`ml-3 pl-3 space-y-0.5 border-l-2 ${
-          isDark ? 'border-space-700' : 'border-gray-200'
-        }`}>
+      {/* Items */}
+      <div className={`overflow-hidden transition-all duration-200 ease-out ${shouldBeOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} ${collapsed && !isMobile ? 'max-h-96 opacity-100' : ''}`}>
+        <div className={collapsed && !isMobile ? 'space-y-0.5' : 'ml-2 space-y-0.5'}>
           {group.items.map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
+              viewTransition
+              onMouseEnter={() => prefetchRouteData(item.href)}
               onClick={onItemClick}
               data-tour={item.tourId}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
                   isActive
-                    ? isDark
-                      ? 'bg-blue-500/20 text-blue-400'
-                      : 'bg-blue-100 text-blue-700'
-                    : isDark 
-                      ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                      : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-                }`
+                    ? isDark ? 'bg-blue-500/15 text-blue-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
+                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
-              <item.icon className="w-4 h-4 text-icon" />
-              {t(item.nameKey)}
+              {({ isActive }) => (
+                <>
+                  <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
+                  <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
@@ -267,8 +291,8 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false })
   )
 }
 
-// Rendu des groupes de nav avec ouverture forcée pour l’étape courante du tour sidebar
-function SidebarNavGroups({ navGroups, onItemClick, isMobile }) {
+// ─── Sidebar nav groups (with onboarding support) ────────────────────────────
+function SidebarNavGroups({ navGroups, onItemClick, isMobile, collapsed }) {
   const { activeTour, currentStep } = useOnboardingTour()
   const expandForStep = activeTour === 'sidebar' ? currentStep?.id : null
   return (
@@ -279,6 +303,7 @@ function SidebarNavGroups({ navGroups, onItemClick, isMobile }) {
           group={group}
           onItemClick={onItemClick}
           isMobile={isMobile}
+          collapsed={collapsed}
           forceExpand={expandForStep != null && group.items.some(item => item.tourId === expandForStep)}
         />
       ))}
@@ -286,72 +311,7 @@ function SidebarNavGroups({ navGroups, onItemClick, isMobile }) {
   )
 }
 
-// Logo du SaaS (fichier public/logo.svg)
-const Logo = ({ className = '' }) => (
-  <img
-    src="/logo.svg"
-    alt="SEVEN T"
-    className={`h-8 w-auto object-contain object-left sm:h-9 ${className}`}
-  />
-)
-
-// Language switcher (FR | EN)
-const LanguageSwitcher = ({ className = '' }) => {
-  const { i18n } = useTranslation()
-  const lang = (i18n.resolvedLanguage || i18n.language || 'fr').split('-')[0]
-  const setLang = (lng) => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem('locale', lng)
-    i18n.changeLanguage(lng)
-  }
-  return (
-    <div className={`flex items-center gap-0.5 rounded-lg overflow-hidden border ${className}`} style={{ borderColor: 'var(--border-color)' }}>
-      <button
-        type="button"
-        onClick={() => setLang('fr')}
-        className={`px-2 py-1 text-xs font-medium ${lang === 'fr' ? 'bg-blue-500/20 text-blue-400' : 'opacity-70 hover:opacity-100'}`}
-      >
-        FR
-      </button>
-      <button
-        type="button"
-        onClick={() => setLang('en')}
-        className={`px-2 py-1 text-xs font-medium ${lang === 'en' ? 'bg-blue-500/20 text-blue-400' : 'opacity-70 hover:opacity-100'}`}
-      >
-        EN
-      </button>
-    </div>
-  )
-}
-
-// Theme Toggle Component
-const ThemeToggle = ({ className = '', size = 'md' }) => {
-  const { theme, toggleTheme } = useTheme()
-  const sizeClass = size === 'sm' ? 'w-8 h-8' : 'w-10 h-10'
-  const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-5 h-5'
-  
-  return (
-    <button
-      onClick={toggleTheme}
-      className={`relative flex items-center justify-center ${sizeClass} rounded-xl transition-all duration-300 ${
-        theme === 'dark' 
-          ? 'bg-space-800 hover:bg-space-700 text-gold-400' 
-          : 'bg-amber-100 hover:bg-amber-200 text-amber-600'
-      } ${className}`}
-      title={theme === 'dark' ? 'Activer le mode clair' : 'Activer le mode sombre'}
-    >
-      <div className={`relative ${iconSize}`}>
-        <Sun className={`absolute inset-0 ${iconSize} transition-all duration-300 ${
-          theme === 'dark' ? 'opacity-0 rotate-90 scale-0' : 'opacity-100 rotate-0 scale-100'
-        }`} />
-        <Moon className={`absolute inset-0 ${iconSize} transition-all duration-300 ${
-          theme === 'dark' ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-0'
-        }`} />
-      </div>
-    </button>
-  )
-}
-
-// User Dropdown Menu Component
+// ─── User Dropdown ────────────────────────────────────────────────────────────
 const UserMenu = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
@@ -359,168 +319,73 @@ const UserMenu = ({ user, onLogout }) => {
   const { t, i18n } = useTranslation()
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setIsOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
-          isDark 
-            ? 'hover:bg-space-800' 
-            : 'hover:bg-gray-100'
-        }`}
+        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}
       >
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-          user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
-        }`}>
-          {user?.is_admin ? (
-            <Shield className="w-4 h-4 icon-on-gradient" />
-          ) : (
-            <span className="text-space-950 font-bold text-xs">
-              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-            </span>
-          )}
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+          {user?.is_admin
+            ? <Shield className="w-3.5 h-3.5 text-white" />
+            : <span className="text-white font-bold text-xs">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+          }
         </div>
-        <div className="hidden md:block text-left">
-          <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-            {user?.name?.split(' ')[0]}
-          </p>
+        <div className="hidden md:block text-left min-w-0 max-w-[120px]">
+          <p className={`text-xs font-medium truncate leading-tight ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{user?.name?.split(' ')[0]}</p>
         </div>
-        <ChevronDown className={`w-4 h-4 text-icon transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 top-full mt-2 w-72 rounded-2xl shadow-xl border z-50 overflow-hidden ${
-          isDark 
-            ? 'bg-space-800 border-space-700' 
-            : 'bg-white border-gray-200'
-        }`}>
-          {/* User Info Header */}
+        <div className={`absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          {/* User Info */}
           <div className={`p-4 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
-              }`}>
-                {user?.is_admin ? (
-                  <Shield className="w-6 h-6 icon-on-gradient" />
-                ) : (
-                  <span className="text-space-950 font-bold text-lg">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                )}
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+                {user?.is_admin ? <Shield className="w-5 h-5 text-white" /> : <span className="text-white font-bold">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className={`font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    {user?.name}
-                  </p>
-                  {user?.is_admin === 1 && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded">
-                      {i18n.language === 'en' ? 'Admin' : 'Admin'}
-                    </span>
-                  )}
+                  <p className={`font-medium truncate text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{user?.name}</p>
+                  {user?.is_admin === 1 && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded">Admin</span>}
                 </div>
-                <p className={`text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                  {user?.email}
-                </p>
-                {user?.company?.trim() ? (
-                  <p className={`text-xs mt-1 truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                    {user.company.trim()}
-                  </p>
-                ) : (
-                  <Link
-                    to="/dashboard/settings"
-                    className={`text-xs mt-1 inline-block ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
-                  >
-                    {t('settings.addCompany')}
-                  </Link>
-                )}
+                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user?.email}</p>
               </div>
             </div>
-            
-            {/* Credits Display */}
-            <div className={`mt-3 p-3 rounded-xl ${isDark ? 'bg-space-900' : 'bg-gray-50'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-gold-400" />
-                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Crédits</span>
-                </div>
-                <span className="font-bold text-gold-400">{user?.credits || 0}</span>
+            {/* Credits */}
+            <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg ${isDark ? 'bg-space-900' : 'bg-gray-50'}`}>
+              <div className="flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5 text-gold-400" />
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Crédits</span>
               </div>
+              <span className="font-bold text-sm text-gold-400">{user?.credits || 0}</span>
             </div>
           </div>
-
-          {/* Menu Items */}
-          <div className="p-2">
-            <Link
-              to="/dashboard/settings"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                isDark 
-                  ? 'text-gray-300 hover:bg-space-700' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <User className="w-4 h-4 text-icon" />
-              Mon profil
-            </Link>
-            <Link
-              to="/dashboard/settings"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                isDark 
-                  ? 'text-gray-300 hover:bg-space-700' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <CreditCard className="w-4 h-4 text-icon" />
-              Abonnement
-            </Link>
-            <Link
-              to="/dashboard/settings"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                isDark 
-                  ? 'text-gray-300 hover:bg-space-700' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <Settings className="w-4 h-4 text-icon" />
-              Paramètres
-            </Link>
-            <Link
-              to="/dashboard/help"
-              onClick={() => setIsOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
-                isDark 
-                  ? 'text-gray-300 hover:bg-space-700' 
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              <HelpCircle className="w-4 h-4 text-icon" />
-              Aide
-            </Link>
+          {/* Links */}
+          <div className="p-1.5">
+            {[
+              { to: '/dashboard/settings', icon: User, label: 'Mon profil' },
+              { to: '/dashboard/settings', icon: CreditCard, label: 'Abonnement' },
+              { to: '/dashboard/settings', icon: Settings, label: 'Paramètres' },
+              { to: '/dashboard/help', icon: HelpCircle, label: 'Aide' },
+            ].map(({ to, icon: Icon, label }) => (
+              <Link key={label} to={to} onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm ${isDark ? 'text-gray-300 hover:bg-space-700' : 'text-gray-700 hover:bg-gray-100'}`}>
+                <Icon className="w-4 h-4 text-gray-400" />
+                {label}
+              </Link>
+            ))}
           </div>
-
-          {/* Logout */}
-          <div className={`p-2 border-t ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
-            <button
-              onClick={() => { setIsOpen(false); onLogout(); }}
-              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl transition-colors ${
-                isDark 
-                  ? 'text-red-400 hover:bg-red-500/10' 
-                  : 'text-red-500 hover:bg-red-50'
-              }`}
-            >
-              <LogOut className="w-4 h-4 text-icon" />
+          <div className={`p-1.5 border-t ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
+            <button onClick={() => { setIsOpen(false); onLogout() }}
+              className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-sm ${isDark ? 'text-red-400 hover:bg-red-500/10' : 'text-red-500 hover:bg-red-50'}`}>
+              <LogOut className="w-4 h-4" />
               Déconnexion
             </button>
           </div>
@@ -530,16 +395,14 @@ const UserMenu = ({ user, onLogout }) => {
   )
 }
 
-// Notifications Menu Component
+// ─── Notifications Menu ───────────────────────────────────────────────────────
 const NotificationsMenu = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(false)
   const menuRef = useRef(null)
   const { isDark } = useTheme()
 
-  // Format relative time
   const formatRelativeTime = (dateStr) => {
     const date = new Date(dateStr)
     const now = new Date()
@@ -547,7 +410,6 @@ const NotificationsMenu = () => {
     const diffMins = Math.floor(diffMs / 60000)
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
-
     if (diffMins < 1) return 'À l\'instant'
     if (diffMins < 60) return `Il y a ${diffMins} min`
     if (diffHours < 24) return `Il y a ${diffHours}h`
@@ -555,33 +417,24 @@ const NotificationsMenu = () => {
     return date.toLocaleDateString('fr-FR')
   }
 
-  // Fetch notifications
   const fetchNotifications = async () => {
     try {
       const response = await api.get('/notifications?limit=20')
       setNotifications(response.data.notifications || [])
       setUnreadCount(response.data.unreadCount || 0)
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    }
+    } catch (error) { console.error('Error fetching notifications:', error) }
   }
 
-  // Initial fetch and polling
   useEffect(() => {
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000) // Poll every 30s
+    const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // Click outside handler
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setIsOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
   }, [])
 
   const markAsRead = async (id) => {
@@ -589,9 +442,7 @@ const NotificationsMenu = () => {
       await api.put(`/notifications/${id}/read`)
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n))
       setUnreadCount(prev => Math.max(0, prev - 1))
-    } catch (error) {
-      console.error('Error marking as read:', error)
-    }
+    } catch (error) { console.error(error) }
   }
 
   const markAllAsRead = async () => {
@@ -599,171 +450,73 @@ const NotificationsMenu = () => {
       await api.put('/notifications/read-all')
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })))
       setUnreadCount(0)
-    } catch (error) {
-      console.error('Error marking all as read:', error)
-    }
+    } catch (error) { console.error(error) }
   }
 
   const deleteNotification = async (id, e) => {
-    e.stopPropagation() // Prevent triggering the click on the notification
-    e.preventDefault()
+    e.stopPropagation(); e.preventDefault()
     try {
       await api.delete(`/notifications/${id}`)
       setNotifications(prev => {
         const notif = prev.find(n => n.id === id)
-        if (notif && !notif.is_read) {
-          setUnreadCount(count => Math.max(0, count - 1))
-        }
+        if (notif && !notif.is_read) setUnreadCount(c => Math.max(0, c - 1))
         return prev.filter(n => n.id !== id)
       })
-    } catch (error) {
-      console.error('Error deleting notification:', error)
-    }
+    } catch (error) { console.error(error) }
   }
 
-  const handleNotificationClick = (notif) => {
-    if (!notif.is_read) {
-      markAsRead(notif.id)
-    }
-    if (notif.link) {
-      setIsOpen(false)
-      // Navigation will be handled by Link component
-    }
-  }
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'success': return <div className="w-2 h-2 bg-green-400 rounded-full" />
-      case 'warning': return <div className="w-2 h-2 bg-amber-400 rounded-full" />
-      case 'error': return <div className="w-2 h-2 bg-red-400 rounded-full" />
-      case 'lead': return <div className="w-2 h-2 bg-blue-400 rounded-full" />
-      case 'whatsapp': return <div className="w-2 h-2 bg-green-400 rounded-full" />
-      case 'credit': return <div className="w-2 h-2 bg-gold-400 rounded-full" />
-      default: return <div className="w-2 h-2 bg-blue-400 rounded-full" />
-    }
-  }
+  const typeColor = { success: 'bg-emerald-400', warning: 'bg-amber-400', error: 'bg-red-400', lead: 'bg-blue-400', whatsapp: 'bg-emerald-400', credit: 'bg-gold-400' }
 
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative p-2 rounded-xl transition-colors ${
-          isDark 
-            ? 'hover:bg-space-800' 
-            : 'hover:bg-gray-100'
-        }`}
+        className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'}`}
       >
-        <Bell className="w-5 h-5 text-icon" />
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-gold-400 text-space-900 text-[10px] font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 top-full mt-2 w-80 rounded-2xl shadow-xl border z-50 overflow-hidden ${
-          isDark 
-            ? 'bg-space-800 border-space-700' 
-            : 'bg-white border-gray-200'
-        }`}>
-          {/* Header */}
-          <div className={`flex items-center justify-between p-4 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
-            <h3 className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Notifications</h3>
-            {unreadCount > 0 && (
-              <button 
-                onClick={markAllAsRead}
-                className="text-xs text-blue-400 hover:text-blue-300"
-              >
-                Tout marquer comme lu
-              </button>
-            )}
+        <div className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
+            <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Notifications</h3>
+            {unreadCount > 0 && <button onClick={markAllAsRead} className="text-xs text-blue-400 hover:text-blue-300">Tout lire</button>}
           </div>
-
-          {/* Notifications list */}
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center">
-                <Bell className="w-8 h-8 mx-auto mb-2 text-icon" />
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Aucune notification</p>
+              <div className="py-10 text-center">
+                <Bell className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Aucune notification</p>
               </div>
-            ) : (
-              notifications.map((notif) => (
-                <div 
-                  key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={`p-4 cursor-pointer transition-colors group relative ${
-                    isDark 
-                      ? `${notif.is_read ? 'bg-space-800' : 'bg-space-700'} hover:bg-space-700`
-                      : `${notif.is_read ? 'bg-white' : 'bg-blue-50'} hover:bg-gray-50`
-                  } ${isDark ? 'border-b border-space-700' : 'border-b border-gray-100'}`}
-                >
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => deleteNotification(notif.id, e)}
-                    className={`absolute top-2 right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity ${
-                      isDark 
-                        ? 'hover:bg-space-600 text-gray-400 hover:text-gray-200' 
-                        : 'hover:bg-gray-200 text-gray-400 hover:text-gray-600'
-                    }`}
-                    title="Supprimer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                  
-                  {notif.link ? (
-                    <Link to={notif.link} className="flex items-start gap-3 pr-6">
-                      <div className="mt-1.5">{getTypeIcon(notif.type)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                          {notif.title}
-                        </p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {notif.message}
-                        </p>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                          {formatRelativeTime(notif.created_at)}
-                        </p>
-                      </div>
-                      {!notif.is_read && (
-                        <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2" />
-                      )}
-                    </Link>
-                  ) : (
-                    <div className="flex items-start gap-3 pr-6">
-                      <div className="mt-1.5">{getTypeIcon(notif.type)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                          {notif.title}
-                        </p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {notif.message}
-                        </p>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
-                          {formatRelativeTime(notif.created_at)}
-                        </p>
-                      </div>
-                      {!notif.is_read && (
-                        <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2" />
-                      )}
-                    </div>
-                  )}
+            ) : notifications.map((notif) => (
+              <div
+                key={notif.id}
+                onClick={() => !notif.is_read && markAsRead(notif.id)}
+                className={`group relative px-4 py-3 cursor-pointer transition-colors border-b ${isDark ? 'border-space-700 last:border-0' : 'border-gray-50 last:border-0'} ${isDark ? (notif.is_read ? 'hover:bg-space-700' : 'bg-blue-500/5 hover:bg-space-700') : (notif.is_read ? 'hover:bg-gray-50' : 'bg-blue-50/50 hover:bg-gray-50')}`}
+              >
+                <button onClick={(e) => deleteNotification(notif.id, e)} className={`absolute top-2.5 right-2.5 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? 'hover:bg-space-600 text-gray-500' : 'hover:bg-gray-200 text-gray-400'}`}>
+                  <X className="w-3 h-3" />
+                </button>
+                <div className="flex items-start gap-2.5 pr-5">
+                  <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${typeColor[notif.type] || 'bg-blue-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{notif.title}</p>
+                    <p className={`text-xs mt-0.5 line-clamp-2 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{notif.message}</p>
+                    <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{formatRelativeTime(notif.created_at)}</p>
+                  </div>
+                  {!notif.is_read && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0 mt-2" />}
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
-
-          {/* Footer */}
-          <Link
-            to="/dashboard/notifications"
-            onClick={() => setIsOpen(false)}
-            className={`flex items-center justify-center gap-2 p-3 text-sm font-medium transition-colors ${
-              isDark 
-                ? 'text-blue-400 hover:bg-space-700 border-t border-space-700'
-                : 'text-blue-600 hover:bg-gray-50 border-t border-gray-100'
-            }`}
-          >
-            Voir toutes les notifications
+          <Link to="/dashboard/notifications" onClick={() => setIsOpen(false)}
+            className={`flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-t ${isDark ? 'border-space-700 text-blue-400 hover:bg-space-700' : 'border-gray-100 text-blue-600 hover:bg-gray-50'}`}>
+            Voir toutes les notifications <ChevronRight className="w-3 h-3" />
           </Link>
         </div>
       )}
@@ -771,86 +524,273 @@ const NotificationsMenu = () => {
   )
 }
 
-const pathToTitle = (pathname) => {
-  if (pathname === '/dashboard' || pathname === '/dashboard/') return 'Dashboard'
-  if (pathname.startsWith('/dashboard/agents/') && pathname !== '/dashboard/agents') return 'Agent'
-  if (pathname.startsWith('/dashboard/conversations/') && pathname !== '/dashboard/conversations') return 'Conversation'
-  const segments = pathname.replace(/^\/dashboard\/?/, '').split('/')
-  const first = segments[0] || 'dashboard'
-  const map = {
-    agents: 'Agents',
-    analytics: 'Analytics',
-    campaigns: 'Campagnes',
-    conversations: 'Conversations',
-    flows: 'Flows',
-    knowledge: 'Base de connaissances',
-    leads: 'Leads',
-    notifications: 'Notifications',
-    orders: 'Commandes',
-    payments: 'Paiements',
-    products: 'Produits',
-    services: 'Services',
-    reports: 'Rapports',
-    settings: 'Paramètres',
-    help: 'Aide',
-    templates: 'Templates',
-    tools: 'Outils',
-    workflows: 'Workflows',
-    admin: 'Admin'
-  }
-  return map[first] || first
+// ─── Trial Countdown ──────────────────────────────────────────────────────────
+const TrialBadge = ({ user, isDark }) => {
+  const [currentTime, setCurrentTime] = useState(() => new Date())
+  useEffect(() => {
+    const tick = setInterval(() => setCurrentTime(new Date()), 60000)
+    return () => clearInterval(tick)
+  }, [])
+
+  if (user?.plan !== 'free' || !user?.subscription_end_date) return null
+  const end = new Date(user.subscription_end_date)
+  if (end < currentTime) return null
+  const diffMs = end - currentTime
+  const days = Math.floor(diffMs / 86400000)
+  const hours = Math.floor((diffMs % 86400000) / 3600000)
+  const text = days > 0 ? `${days}j restants` : `${hours}h restantes`
+
+  return (
+    <Link to="/dashboard/settings" className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium border whitespace-nowrap ${isDark ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'}`}>
+      <Zap className="w-3 h-3" />
+      Essai · {text}
+    </Link>
+  )
 }
 
+// ─── Sidebar Content ──────────────────────────────────────────────────────────
+const SidebarContent = ({ navGroups, onItemClick, isMobile, collapsed, user, isDark, t, onLogout }) => {
+  const location = useLocation()
+  return (
+    <div className="flex flex-col h-full">
+      <div className={`flex h-14 flex-shrink-0 items-center gap-2.5 px-4 border-b ${isDark ? 'border-space-700/60' : 'border-gray-200'}`}>
+        <Logo className="flex-shrink-0" />
+        {(!collapsed || isMobile) && (
+          <span className={`font-semibold text-sm truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-3 scrollbar-hide">
+        <SidebarNavGroups navGroups={navGroups} onItemClick={onItemClick} isMobile={isMobile} collapsed={collapsed} />
+
+        {/* Divider */}
+        <div className={`pt-2 mt-2 border-t ${isDark ? 'border-space-700/60' : 'border-gray-200'}`} />
+
+        {/* Bottom nav */}
+        <div className="space-y-0.5">
+          {bottomNavigation.map((item) => (
+            <NavLink
+              key={item.href}
+              to={item.href}
+              viewTransition
+              onMouseEnter={() => prefetchRouteData(item.href)}
+              data-tour={item.tourId}
+              onClick={onItemClick}
+              className={({ isActive }) =>
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  isActive
+                    ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
+                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
+                  <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Admin */}
+        {user?.is_admin === 1 && (
+          <div className="space-y-0.5">
+            {(!collapsed || isMobile) && (
+              <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</p>
+            )}
+            {adminNavigation.map((item) => (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                viewTransition
+                onMouseEnter={() => prefetchRouteData(item.href)}
+                onClick={onItemClick}
+                className={({ isActive }) =>
+                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                    isActive
+                      ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
+                      : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
+                    <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        )}
+      </nav>
+
+      {/* User footer */}
+      {(!collapsed || isMobile) && (
+        <div className={`flex-shrink-0 px-3 py-3 border-t ${isDark ? 'border-space-700/60' : 'border-gray-200'}`}>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+              {user?.is_admin
+                ? <Shield className="w-4 h-4 text-white" />
+                : <span className="text-white font-bold text-xs">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+              }
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-xs font-semibold truncate leading-tight ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{user?.name}</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <Zap className="w-2.5 h-2.5 text-gold-400 flex-shrink-0" />
+                <span className={`text-[10px] font-medium text-gold-400`}>{user?.credits ?? 0} crédits</span>
+              </div>
+            </div>
+            <button
+              onClick={onLogout}
+              title="Déconnexion"
+              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Semantic Route Map ───────────────────────────────────────────────────────
+// Chaque route a une zone (groupe logique) et un index (position dans la zone).
+// La zone détermine l'AXE de transition : vertical dans une zone, horizontal entre zones.
+const ROUTE_SEMANTICS = {
+  '/dashboard':                   { zone: 'main',       idx: 0 },
+  '/dashboard/analytics':         { zone: 'main',       idx: 1 },
+  '/dashboard/notifications':     { zone: 'main',       idx: 2 },
+  '/dashboard/agents':            { zone: 'agents',     idx: 0 },
+  '/dashboard/conversations':     { zone: 'agents',     idx: 1 },
+  '/dashboard/knowledge':         { zone: 'agents',     idx: 2 },
+  '/dashboard/tools':             { zone: 'agents',     idx: 3 },
+  '/dashboard/products':          { zone: 'sales',      idx: 0 },
+  '/dashboard/services':          { zone: 'sales',      idx: 1 },
+  '/dashboard/orders':            { zone: 'sales',      idx: 2 },
+  '/dashboard/payments':          { zone: 'sales',      idx: 3 },
+  '/dashboard/leads':             { zone: 'sales',      idx: 4 },
+  '/dashboard/expenses':          { zone: 'sales',      idx: 5 },
+  '/dashboard/campaigns':         { zone: 'marketing',  idx: 0 },
+  '/dashboard/templates':         { zone: 'marketing',  idx: 1 },
+  '/dashboard/workflows':         { zone: 'automation', idx: 0 },
+  '/dashboard/flows':             { zone: 'automation', idx: 1 },
+  '/dashboard/reports':           { zone: 'automation', idx: 2 },
+  '/dashboard/settings':          { zone: 'config',     idx: 0 },
+  '/dashboard/help':              { zone: 'config',     idx: 1 },
+  '/dashboard/admin':             { zone: 'config',     idx: 2 },
+}
+
+// Résoudre les routes dynamiques (ex: /dashboard/agents/123 → zone 'agents')
+const resolveSemantics = (pathname) => {
+  if (ROUTE_SEMANTICS[pathname]) return ROUTE_SEMANTICS[pathname]
+  // Match par préfixe pour les routes dynamiques
+  const matched = Object.keys(ROUTE_SEMANTICS).find(route =>
+    route !== '/dashboard' && pathname.startsWith(route + '/')
+  )
+  return matched ? { ...ROUTE_SEMANTICS[matched], isDynamic: true } : null
+}
+
+// Zones dans leur ordre d'apparition dans la sidebar (pour la direction horizontale)
+const ZONE_ORDER = ['main', 'agents', 'sales', 'marketing', 'automation', 'config']
+
+// ─── Main Layout ──────────────────────────────────────────────────────────────
 export default function DashboardLayout() {
   const { t } = useTranslation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [currentTime, setCurrentTime] = useState(() => new Date())
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { user, logout } = useAuth()
   const { theme, isDark } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
+  const navigationType = useNavigationType() // 'PUSH', 'POP', 'REPLACE'
   const { activeTour } = useOnboardingTour()
+  const prevPathRef = useRef(location.pathname)
+  // transition state : { direction: 1|-1|0, axis: 'x'|'y' }
+  const [transition, setTransition] = useState({ direction: 0, axis: 'y' })
+
+  // Respect de prefers-reduced-motion (accessibilité)
+  const prefersReducedMotion = useMemo(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  , [])
+
   usePageTitle(pathToTitle(location.pathname))
+
+  // ── Calcul de la direction et de l'axe de transition ──────────────────────
+  useEffect(() => {
+    const prev = resolveSemantics(prevPathRef.current)
+    const curr = resolveSemantics(location.pathname)
+
+    let dir = 0
+    let axis = 'y'
+
+    if (prev && curr) {
+      if (prev.zone === curr.zone) {
+        // Même section → animation verticale par index
+        axis = 'y'
+        if (navigationType === 'POP') {
+          // Bouton retour : inverser la direction
+          dir = curr.idx < prev.idx ? -1 : 1
+        } else {
+          dir = curr.idx > prev.idx ? 1 : -1
+        }
+      } else {
+        // Changement de zone → animation horizontale par position de zone
+        axis = 'x'
+        const prevZoneIdx = ZONE_ORDER.indexOf(prev.zone)
+        const currZoneIdx = ZONE_ORDER.indexOf(curr.zone)
+        if (navigationType === 'POP') {
+          dir = currZoneIdx < prevZoneIdx ? -1 : 1
+        } else {
+          dir = currZoneIdx > prevZoneIdx ? 1 : -1
+        }
+      }
+    }
+
+    setTransition({ direction: dir, axis })
+    prevPathRef.current = location.pathname
+  }, [location.pathname, navigationType])
+
+  // ── Variants Framer Motion ─────────────────────────────────────────────────
+  const variants = prefersReducedMotion
+    ? {
+        // Accessibilité : simple fondu, zéro mouvement
+        initial: { opacity: 0 },
+        animate: { opacity: 1, transition: { duration: 0.15 } },
+        exit:    { opacity: 0, transition: { duration: 0.15 } }
+      }
+    : {
+        initial: ({ direction: dir, axis }) => ({
+          [axis]: dir > 0 ? '40%' : dir < 0 ? '-40%' : 0,
+          opacity: 0,
+        }),
+        animate: {
+          x: 0, y: 0,
+          opacity: 1,
+          transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } // OutQuint
+        },
+        exit: ({ direction: dir, axis }) => ({
+          [axis]: dir > 0 ? '-20%' : dir < 0 ? '20%' : 0,
+          opacity: 0,
+          transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+        })
+      }
 
   const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const navGroups = useMemo(() => {
     if (paymentModuleEnabled) return navigationGroups
-    return navigationGroups.map(g => ({
-      ...g,
-      items: g.items.filter(item => item.href !== '/dashboard/payments')
-    }))
+    return navigationGroups.map(g => ({ ...g, items: g.items.filter(item => item.href !== '/dashboard/payments') }))
   }, [paymentModuleEnabled])
 
-  // Helper for Trial Countdown
-  const renderTrialCountdown = () => {
-    if (user?.plan !== 'free' || !user?.subscription_end_date) return null
-    const end = new Date(user.subscription_end_date)
-    if (end < currentTime) return null
-    
-    const diffMs = end - currentTime
-    const days = Math.floor(diffMs / 86400000)
-    const hours = Math.floor((diffMs % 86400000) / 3600000)
-    const mins = Math.floor((diffMs % 3600000) / 60000)
-    
-    let text = ''
-    if (days > 0) text = `${days}j ${hours}h restants`
-    else if (hours > 0) text = `${hours}h ${mins}m restantes`
-    else text = `${mins}m restantes`
-
-    return (
-      <div className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap border animate-pulse ${isDark ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
-        <Clock className="w-3.5 h-3.5" />
-        Essai : {text}
-      </div>
-    )
-  }
-
-  useEffect(() => {
-    const tick = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(tick)
-  }, [])
-
-  // À la première connexion, ouvrir la sidebar mobile pendant le tour pour que les cibles soient visibles
+  // Open sidebar during tour on mobile
   useEffect(() => {
     if (activeTour === 'sidebar') {
       const mql = window.matchMedia('(max-width: 1023px)')
@@ -858,335 +798,129 @@ export default function DashboardLayout() {
     }
   }, [activeTour])
 
-  // Bloquer le défilement de la page quand la sidebar mobile est ouverte (mobile uniquement)
+  // Lock scroll on mobile sidebar open
   useEffect(() => {
     if (!sidebarOpen) return
     const mql = window.matchMedia('(max-width: 1023px)')
     if (!mql.matches) return
     const prevOverflow = document.body.style.overflow
-    const prevTouchAction = document.body.style.touchAction
     document.body.style.overflow = 'hidden'
-    document.body.style.touchAction = 'none'
-    return () => {
-      document.body.style.overflow = prevOverflow
-      document.body.style.touchAction = prevTouchAction
-    }
+    return () => { document.body.style.overflow = prevOverflow }
   }, [sidebarOpen])
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+  const handleLogout = () => { logout(); navigate('/login') }
+
+  const sidebarW = sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
+  const contentPl = sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-56'
+
+  const pageTitle = pathToTitle(location.pathname)
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? '' : 'hidden'}`}>
-        <div className={`fixed inset-0 backdrop-blur-sm ${isDark ? 'bg-space-950/90' : 'bg-slate-900/40'}`} onClick={() => setSidebarOpen(false)} />
-        <div className={`fixed inset-y-0 left-0 w-64 max-w-[85vw] shadow-2xl border-r flex flex-col ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`} style={{ paddingLeft: 'env(safe-area-inset-left)' }}>
-          <div className={`flex h-16 flex-shrink-0 items-center justify-between px-4 border-b ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-            <div className="flex items-center gap-2 min-w-0">
-              <Logo className="flex-shrink-0" />
-              <span className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
-            </div>
-            <button type="button" onClick={() => setSidebarOpen(false)} className={`touch-target flex items-center justify-center p-2 -mr-2 rounded-lg transition-colors text-icon ${isDark ? 'hover:text-gray-100 hover:bg-space-800' : 'hover:text-gray-800 hover:bg-gray-100'}`} aria-label="Fermer le menu">
-              <X className="w-6 h-6" />
+    <div className={`min-h-screen ${isDark ? 'bg-space-950/50' : 'bg-gray-50/50'} relative overflow-hidden`}>
+      <AnimatedBackground />
+
+      {/* ── Mobile overlay sidebar ── */}
+      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
+        <div
+          className={`fixed inset-0 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'} ${isDark ? 'bg-space-950/80' : 'bg-slate-900/40'}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+        <div className={`fixed inset-y-0 left-0 w-60 shadow-2xl border-r transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className="absolute top-3 right-3">
+            <button onClick={() => setSidebarOpen(false)} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+              <X className="w-4 h-4" />
             </button>
           </div>
-          <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0">
-            <SidebarNavGroups
-              navGroups={navGroups}
-              onItemClick={() => setSidebarOpen(false)}
-              isMobile={true}
-            />
-            
-            {/* Bottom navigation */}
-            <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-              {bottomNavigation.map((item) => (
-                <NavLink
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                        : isDark 
-                          ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                          : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-                    }`
-                  }
-                >
-                  <item.icon className="w-5 h-5 text-icon" />
-                  {t(item.nameKey)}
-                </NavLink>
-              ))}
-            </div>
-            
-            {/* Admin Navigation */}
-            {user?.is_admin === 1 && (
-              <>
-                <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-                  <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</span>
-                </div>
-                {adminNavigation.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gold-400/20 text-gold-400 border border-gold-400/30'
-                          : isDark 
-                            ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                            : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-                      }`
-                    }
-                  >
-                    <item.icon className="w-5 h-5 text-icon" />
-                    {t(item.nameKey)}
-                  </NavLink>
-                ))}
-              </>
-            )}
-          </nav>
-
-          {/* User section — nom + email visibles en mobile */}
-          <div className={`flex-shrink-0 p-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`} style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
-              }`}>
-                {user?.is_admin ? (
-                  <Shield className="w-5 h-5 icon-on-gradient" />
-                ) : (
-                  <span className="text-white font-bold text-sm">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{user?.name}</p>
-                  {user?.is_admin === 1 && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded shrink-0">
-                      Admin
-                    </span>
-                  )}
-                </div>
-                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user?.email}</p>
-              </div>
-            </div>
-            <div className={`flex items-center justify-between text-sm px-2 py-2 rounded-lg ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-gold-400" />
-                <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Crédits</span>
-              </div>
-              <span className="font-semibold text-gold-400">{user?.credits ?? 0}</span>
-            </div>
-          </div>
+          <SidebarContent
+            navGroups={navGroups} onItemClick={() => setSidebarOpen(false)}
+            isMobile={true} collapsed={false}
+            user={user} isDark={isDark} t={t} onLogout={handleLogout}
+          />
         </div>
       </div>
 
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-60 lg:flex-col">
-        <div className={`flex flex-col flex-grow border-r ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
-          <div className={`flex h-16 items-center gap-2 px-4 border-b min-w-0 ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-            <Logo className="flex-shrink-0" />
-            <span className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
-          </div>
-          
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            <SidebarNavGroups
-              navGroups={navGroups}
-              onItemClick={() => {}}
-              isMobile={false}
-            />
-            
-            {/* Bottom navigation */}
-            <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-              {bottomNavigation.map((item) => (
-                <NavLink
-                  key={item.href}
-                  to={item.href}
-                  data-tour={item.tourId}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                      isActive
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                        : isDark 
-                          ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                          : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-                    }`
-                  }
-                >
-                  <item.icon className="w-5 h-5 text-icon" />
-                  {t(item.nameKey)}
-                </NavLink>
-              ))}
-            </div>
-            
-            {/* Admin Navigation */}
-            {user?.is_admin === 1 && (
-              <>
-                <div className={`pt-4 mt-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-                  <span className={`px-3 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</span>
-                </div>
-                {adminNavigation.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-gold-400/20 text-gold-400 border border-gold-400/30'
-                          : isDark 
-                            ? 'text-gray-400 hover:bg-space-800 hover:text-gray-100'
-                            : 'text-gray-800 hover:bg-gray-100 hover:text-gray-900'
-                      }`
-                    }
-                  >
-                    <item.icon className="w-5 h-5 text-icon" />
-                    {t(item.nameKey)}
-                  </NavLink>
-                ))}
-              </>
-            )}
-          </nav>
-
-          {/* User section - Compact */}
-          <div className={`p-4 border-t ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-gold-400'
-              }`}>
-                {user?.is_admin ? (
-                  <Shield className="w-5 h-5 icon-on-gradient" />
-                ) : (
-                  <span className="text-white font-bold text-sm">
-                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className={`text-sm font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{user?.name}</p>
-                  {user?.is_admin === 1 && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded">
-                      Admin
-                    </span>
-                  )}
-                </div>
-                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user?.email}</p>
-              </div>
-            </div>
-            <div className={`flex items-center justify-between text-sm px-2 py-2 rounded-lg ${isDark ? 'bg-space-800' : 'bg-gray-100'}`}>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-gold-400" />
-                <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Crédits</span>
-              </div>
-              <span className="font-semibold text-gold-400">{user?.credits || 0}</span>
-            </div>
-          </div>
+      {/* ── Desktop sidebar ── */}
+      <div className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ${sidebarW}`}>
+        <div className={`flex flex-col flex-grow border-r ${isDark ? 'bg-space-900 border-space-700/60' : 'bg-white border-gray-200'}`}>
+          <SidebarContent
+            navGroups={navGroups} onItemClick={() => {}}
+            isMobile={false} collapsed={sidebarCollapsed}
+            user={user} isDark={isDark} t={t} onLogout={handleLogout}
+          />
         </div>
       </div>
 
-      {/* Main content */}
-      <div className={`lg:pl-60 min-h-screen ${isDark ? 'bg-space-950' : 'bg-gray-50'}`}>
-        {/* Mobile header — heure centrée, nom entreprise en dessous pour voir la totalité (Android / mobile) */}
-        <div className={`relative sticky top-0 z-40 flex h-[4.5rem] min-h-16 items-center border-b backdrop-blur-md px-4 lg:hidden ${
-          isDark ? 'border-space-700 bg-space-900/80' : 'border-gray-200 bg-white/90'
-        }`} style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <button type="button" onClick={() => setSidebarOpen(true)} className={`touch-target flex-shrink-0 flex items-center justify-center p-2 -ml-2 rounded-lg transition-colors text-icon ${isDark ? 'hover:text-gray-100 hover:bg-space-800' : 'hover:text-gray-800 hover:bg-gray-100'}`} aria-label="Ouvrir le menu">
-              <Menu className="w-6 h-6" />
+      {/* ── Main content area ── */}
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${contentPl}`}>
+
+        {/* ── Mobile header ── */}
+        <div className={`sticky top-0 z-40 flex h-14 items-center justify-between border-b backdrop-blur-md px-4 lg:hidden ${isDark ? 'border-space-700/60 bg-space-900/90' : 'border-gray-200 bg-white/95'}`}
+          style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className={`touch-target flex items-center justify-center w-8 h-8 rounded-lg ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+              <Menu className="w-5 h-5" />
             </button>
-            <Logo className="flex-shrink-0" />
+            <Logo />
           </div>
-          {/* Heure + nom entreprise en dessous (centré) pour afficher le nom en entier sur mobile */}
-          <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center gap-0.5 pointer-events-none min-w-0 max-w-[50vw] text-icon"
-            aria-live="polite"
-          >
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="text-xs font-medium tabular-nums whitespace-nowrap">
-                {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
-            <span className={`text-[10px] sm:text-xs font-medium text-center break-words line-clamp-2 leading-tight ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-              {user?.company?.trim() ? user.company.trim() : 'Mon espace'}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {renderTrialCountdown()}
-            <LanguageSwitcher className="hidden sm:flex" />
+          <div className="flex items-center gap-1.5">
+            <TrialBadge user={user} isDark={isDark} />
             <ThemeToggle size="sm" />
+            <NotificationsMenu />
             <UserMenu user={user} onLogout={handleLogout} />
           </div>
         </div>
 
-        {/* Desktop top navbar */}
-        <div className={`hidden lg:flex relative sticky top-0 z-40 h-14 items-center justify-between border-b px-6 ${
-          isDark ? 'border-space-700/80 bg-space-900/95 backdrop-blur-md' : 'border-gray-200/80 bg-white/95 backdrop-blur-md'
-        }`}>
-          {/* Left - Company / space name */}
-          <Link
-            to="/dashboard/settings"
-            className={`flex items-center gap-2 min-w-0 max-w-[220px] rounded-lg px-3 py-2 -ml-2 transition-colors ${
-              isDark ? 'text-gray-300 hover:text-gray-100 hover:bg-space-800/80' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100/80'
-            }`}
-            title={user?.company ? user.company : 'Renseigner mon entreprise'}
-          >
-            <Building className="w-4 h-4 flex-shrink-0 text-icon" />
-            <span className="text-sm font-medium truncate">
-              {user?.company?.trim() ? user.company.trim() : 'Mon espace'}
-            </span>
-          </Link>
-
-          {/* Center - Heure */}
-          <div
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none ${
-              'text-icon'
-            }`}
-            aria-live="polite"
-          >
-            <Clock className="w-4 h-4" />
-            <span className="text-sm font-medium tabular-nums">
-              {currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </span>
+        {/* ── Desktop top bar ── */}
+        <div className={`hidden lg:flex sticky top-0 z-40 h-14 items-center justify-between border-b px-5 ${isDark ? 'border-space-700/60 bg-space-900/95 backdrop-blur-md' : 'border-gray-200 bg-white/95 backdrop-blur-md'}`}>
+          {/* Left: collapse toggle + page title */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title={sidebarCollapsed ? 'Développer la sidebar' : 'Réduire la sidebar'}
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`}
+            >
+              <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+            </button>
+            <div className={`w-px h-4 ${isDark ? 'bg-space-700' : 'bg-gray-200'}`} />
+            <h1 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{pageTitle}</h1>
           </div>
 
-          {/* Right - Lang, credits, theme, notifications, user */}
-          <div className="flex items-center gap-1">
-            {renderTrialCountdown()}
+          {/* Right: actions */}
+          <div className="flex items-center gap-1.5">
+            <TrialBadge user={user} isDark={isDark} />
             <LanguageSwitcher />
-            <Link
-              to="/dashboard/settings"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                isDark ? 'hover:bg-space-800/80' : 'hover:bg-gray-100/80'
-              }`}
-              title="Crédits et abonnement"
-            >
-              <Zap className="w-4 h-4 text-gold-400" />
-              <span className="text-sm font-semibold text-gold-400 tabular-nums">{user?.credits ?? 0}</span>
-              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>crédits</span>
+            {/* Credits pill */}
+            <Link to="/dashboard/settings" title="Crédits et abonnement"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}>
+              <Zap className="w-3.5 h-3.5 text-gold-400" />
+              <span className="text-xs font-semibold text-gold-400 tabular-nums">{user?.credits ?? 0}</span>
+              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>crédits</span>
             </Link>
             <ThemeToggle size="sm" />
             <NotificationsMenu />
-            <div className="w-px h-6 mx-1 self-center bg-current opacity-20" aria-hidden />
+            <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-space-700' : 'bg-gray-200'}`} />
             <UserMenu user={user} onLogout={handleLogout} />
           </div>
         </div>
 
-        {/* Page content - safe area bottom for Android gesture bar */}
-        <main className="min-w-0 flex-1 p-3 sm:p-4 lg:p-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <Outlet />
+        {/* ── Page content ── */}
+        <main className="flex-1 min-w-0 relative bg-inherit overflow-hidden">
+          <AnimatePresence mode="popLayout" initial={false} custom={transition}>
+            <motion.div
+              key={location.pathname}
+              custom={transition}
+              variants={variants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              style={{ willChange: prefersReducedMotion ? 'auto' : 'transform, opacity' }}
+              className="w-full p-4 sm:p-5 lg:p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>
   )
 }
-
-

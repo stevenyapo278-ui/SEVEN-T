@@ -255,29 +255,36 @@ class WhatsAppManager {
 
             // Ensure we don't have multiple sockets for the same toolId
             if (this.connections.has(toolId)) {
-                if (forceNew) {
-                    const oldSock = this.connections.get(toolId);
-                    try { oldSock.ev.removeAllListeners(); oldSock.ws?.close(); } catch(e){}
-                    this.connections.delete(toolId);
-                } else {
-                    return { message: 'Déjà connecté ou en cours de connexion' };
-                }
+                console.log(`[WhatsApp] Killing previous socket for tool ${toolId} to ensure clean start`);
+                const oldSock = this.connections.get(toolId);
+                try { 
+                    oldSock.ev.removeAllListeners(); 
+                    if (oldSock.ws) {
+                        oldSock.ws.close();
+                        oldSock.ws.terminate?.();
+                    }
+                } catch(e){}
+                this.connections.delete(toolId);
             }
+
+            // Also clear existing store in memory
+            this.stores.delete(toolId);
 
             // Check if already connecting (prevent overlapping)
             if (!forceNew && this.connectingInProgress.has(toolId)) {
-                return { message: 'Connexion en cours...', status: 'connecting' };
+                return { message: 'Connexion déjà en cours...', status: 'connecting' };
             }
 
             this.connectingInProgress.add(toolId);
-            this.statuses.set(toolId, { status: 'connecting', message: 'Connexion en cours...' });
+            this.statuses.set(toolId, { status: 'connecting', message: 'Initialisation...' });
 
             const { state, saveCreds } = await useBaileyRedisState(this.redis, toolId);
             
-            const { version } = await fetchLatestBaileysVersion();
+            const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 2413, 1] }));
 
             // Create simple store for this agent
             const store = new SimpleStore();
+            this.stores.set(toolId, store);
             
             // Load store from Redis
             try {
@@ -307,6 +314,8 @@ class WhatsAppManager {
                 syncFullHistory: false,
                 retryRequestDelayMs: 5000,
             });
+
+            this.connections.set(toolId, sock);
 
             // Wrap sendMessage to check and deduct credits
             const originalSendMessage = sock.sendMessage.bind(sock);
@@ -427,14 +436,23 @@ class WhatsAppManager {
 
                 if (qr) {
                     // Generate QR code as data URL (Baileys envoie un nouveau QR périodiquement tant que personne n'a scanné)
-                    const qrDataUrl = await QRCode.toDataURL(qr);
-                    this.qrCodes.set(toolId, qrDataUrl);
-                    this.statuses.set(toolId, { status: 'qr', message: 'Scannez le QR code' });
-                    const now = Date.now();
-                    if (!this.lastQrLogTime.get(toolId) || now - this.lastQrLogTime.get(toolId) >= QR_LOG_INTERVAL_MS) {
-                        this.lastQrLogTime.set(toolId, now);
-                        console.log(`[WhatsApp] QR code généré pour l'outil ${toolId} (renouvelé automatiquement jusqu'au scan)`);
+                    try {
+                        const qrDataUrl = await QRCode.toDataURL(qr);
+                        this.qrCodes.set(toolId, qrDataUrl);
+                        this.statuses.set(toolId, { status: 'qr', message: 'Scannez le QR code' });
+                        const now = Date.now();
+                        if (!this.lastQrLogTime.get(toolId) || now - this.lastQrLogTime.get(toolId) >= QR_LOG_INTERVAL_MS) {
+                            this.lastQrLogTime.set(toolId, now);
+                            console.log(`[WhatsApp] QR code généré pour l'outil ${toolId} (renouvelé automatiquement jusqu'au scan)`);
+                        }
+                    } catch (qrErr) {
+                        console.error(`[WhatsApp] QR Generation error for tool ${toolId}:`, qrErr.message);
                     }
+                }
+                
+                // Track the connection immediately
+                if (!this.connections.has(toolId)) {
+                    this.connections.set(toolId, sock);
                 }
 
                 if (connection === 'open') {
@@ -478,6 +496,9 @@ class WhatsAppManager {
 
                     console.log(`[WhatsApp] Connection closed for tool ${toolId}. Status: ${statusCode || 'CRASH'}, ShouldReconnect: ${shouldReconnect}, Reason: ${errorMessage}`);
 
+                    // Clean up connection from memory
+                    this.connections.delete(toolId);
+
                     // Clear interval for store saving
                     const intervalId = this.storeIntervals.get(toolId);
                     if (intervalId) {
@@ -485,11 +506,8 @@ class WhatsAppManager {
                         this.storeIntervals.delete(toolId);
                     }
 
-                    this.connections.delete(toolId);
-                    this.qrCodes.delete(toolId);
-                    this.lastQrLogTime.delete(toolId);
-
                     if (shouldReconnect) {
+                        // Keep QR code if we have one during a mere connection drop
                         const toolIdForTimeout = toolId;
                         
                         // IMPORTANT: Clear any existing pending reconnect for this tool ID
@@ -507,6 +525,7 @@ class WhatsAppManager {
 
                         const valid = await this.isToolStillValid(toolIdForTimeout);
                         if (!valid) {
+                            this.qrCodes.delete(toolId);
                             this.statuses.delete(toolIdForTimeout);
                             this.stores.delete(toolIdForTimeout);
                             return;
@@ -528,6 +547,10 @@ class WhatsAppManager {
                         }, 5000);
                         this.pendingReconnects.set(toolIdForTimeout, timeoutId);
                     } else {
+                        // AUTH FAILURE, LOGOUT or PERMANENT DISCONNECT
+                        this.qrCodes.delete(toolId);
+                        this.lastQrLogTime.delete(toolId);
+
                         // Log admin anomaly for unexpected disconnect
                         try {
                             const agentInfo = await this.getAgentByToolId(toolId);
@@ -549,14 +572,30 @@ class WhatsAppManager {
                             }
                         } catch (e) { /* ignore */ }
                         
-                        this.stores.delete(toolId);
+                        // IMPORTANT: Clear session data if it's an authentication error or logout
+                        if (statusCode === 401 || statusCode === DisconnectReason.loggedOut) {
+                            const wasConnecting = this.statuses.get(toolId)?.status === 'connecting' || this.statuses.get(toolId)?.status === 'qr';
+                            await this.clearSession(toolId);
+                            
+                            // If this happened while we were trying to connect, retry once automatically
+                            // to get a fresh QR code from a clean state.
+                            if (wasConnecting) {
+                                console.log(`[WhatsApp] Auto-retrying clean connection for tool ${toolId} after auth failure`);
+                                this.statuses.set(toolId, { status: 'connecting', message: 'Initialisation nouvelle session...' });
+                                setTimeout(() => this.connect(toolId).catch(() => {}), 1500);
+                                return; 
+                            }
+                        } else {
+                            this.stores.delete(toolId);
+                        }
+
+                        this.statuses.set(toolId, { status: 'disconnected', message: 'Déconnecté' });
                         await db.run('UPDATE tools SET status = ?, meta = ? WHERE id = ?', 'disconnected', JSON.stringify({}), toolId);
                         const agent = await this.getAgentByToolId(toolId);
                         if (agent) {
                             await db.run('UPDATE agents SET whatsapp_connected = 0, whatsapp_number = NULL WHERE id = ?', agent.id);
                         }
-                        this.statuses.set(toolId, { status: 'disconnected', message: 'Déconnecté' });
-                        console.log(`[WhatsApp] Logged out for tool ${toolId}`);
+                        console.log(`[WhatsApp] Internal logout processed for tool ${toolId}`);
                     }
                 }
             });

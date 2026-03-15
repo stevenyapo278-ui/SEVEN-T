@@ -557,11 +557,23 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete agent
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const existing = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
-        if (!existing) {
+        const agent = await db.get('SELECT id, tool_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
 
+        // 1. Disconnect WhatsApp if connected
+        if (agent.tool_id) {
+            try {
+                if (whatsappManager.isConnected(agent.tool_id)) {
+                    await whatsappManager.disconnect(agent.tool_id, false);
+                }
+            } catch (err) {
+                console.error(`Error disconnecting WhatsApp for agent ${agent.id} during deletion:`, err);
+            }
+        }
+
+        // 2. Delete the agent (Cascading deletes in DB should handle conversations, messages, etc. if set up)
         await db.run('DELETE FROM agents WHERE id = ?', req.params.id);
 
         res.json({ message: 'Agent supprimé avec succès' });

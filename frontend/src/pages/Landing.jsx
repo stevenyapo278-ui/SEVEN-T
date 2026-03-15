@@ -30,6 +30,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import LandingChatbot from '../components/LandingChatbot'
 import toast from 'react-hot-toast'
+import AnimatedBackground from '../components/AnimatedBackground'
 
 /* ─── Data ────────────────────────────────────────────────── */
 
@@ -532,6 +533,7 @@ export default function Landing() {
 
       {/* ── HERO ──────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-20 px-5 overflow-hidden">
+        <AnimatedBackground />
         {/* Premium Background — The Star of the Show */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
           {isDark ? (

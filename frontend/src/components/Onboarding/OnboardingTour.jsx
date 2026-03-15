@@ -75,28 +75,32 @@ export const TOUR_STEPS = {
       target: '[data-tour="nav-dashboard"]',
       title: '🏠 Tableau de bord',
       description: 'Votre vue d\'ensemble avec statistiques et activité récente.',
-      position: 'right'
+      position: 'right',
+      desktopOnly: true  // La sidebar est cachée sur mobile
     },
     {
       id: 'nav-agents',
       target: '[data-tour="nav-agents"]',
       title: '🤖 Agents',
       description: 'Créez et gérez vos assistants IA.',
-      position: 'right'
+      position: 'right',
+      desktopOnly: true
     },
     {
       id: 'nav-conversations',
       target: '[data-tour="nav-conversations"]',
       title: '💬 Conversations',
       description: 'Consultez tous les échanges avec vos clients.',
-      position: 'right'
+      position: 'right',
+      desktopOnly: true
     },
     {
       id: 'nav-products',
       target: '[data-tour="nav-products"]',
       title: '📦 Produits',
       description: 'Gérez votre catalogue produits (agents type vente / e-commerce).',
-      position: 'right'
+      position: 'right',
+      desktopOnly: true
     }
   ],
   whatsapp_connect: [
@@ -180,7 +184,6 @@ export function OnboardingTourProvider({ children, userId }) {
       if (savedTask) {
         const parsed = JSON.parse(savedTask)
         setGuidedTask(parsed)
-        // If we have a saved task and no active tour, try rebooting it
         if (!activeTour && parsed.tour) {
           setActiveTour(parsed.tour)
           setCurrentStepIndex(0)
@@ -313,12 +316,241 @@ export function useOnboardingTour() {
   return context
 }
 
+// ─── Hook: détecte si on est sur mobile ──────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 640 : false
+  )
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)')
+    const handler = (e) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
+
+// ─── Tooltip Desktop (comportement original) ─────────────────────────────────
+function DesktopTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, position, targetRect }) {
+  return createPortal(
+    <div className="fixed inset-0 z-[9998] pointer-events-none">
+      {/* Backdrop Spotlight */}
+      <MotionDiv
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-space-950/60 backdrop-blur-[2px] pointer-events-auto"
+        onClick={onDismiss}
+        style={{
+          clipPath: `polygon(
+            0% 0%, 
+            0% 100%, 
+            ${targetRect.left - 8}px 100%, 
+            ${targetRect.left - 8}px ${targetRect.top - 8}px, 
+            ${targetRect.left + targetRect.width + 8}px ${targetRect.top - 8}px, 
+            ${targetRect.left + targetRect.width + 8}px ${targetRect.top + targetRect.height + 8}px, 
+            ${targetRect.left - 8}px ${targetRect.top + targetRect.height + 8}px, 
+            ${targetRect.left - 8}px 100%, 
+            100% 100%, 
+            100% 0%
+          )`
+        }}
+      />
+
+      {/* Highlight Ring */}
+      <MotionDiv
+        layoutId="tour-highlight"
+        className="absolute z-[9999] rounded-2xl border-2 border-gold-400 shadow-[0_0_30px_rgba(245,212,122,0.3)] pointer-events-none"
+        initial={false}
+        animate={{
+          top: targetRect.top - 8,
+          left: targetRect.left - 8,
+          width: targetRect.width + 16,
+          height: targetRect.height + 16,
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      />
+
+      {/* Tooltip Card */}
+      <MotionDiv
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1, top: position.top, left: position.left }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="fixed z-[10000] w-80 pointer-events-auto"
+      >
+        <TooltipCard
+          step={step}
+          stepNumber={stepNumber}
+          totalSteps={totalSteps}
+          onNext={onNext}
+          onPrev={onPrev}
+          onDismiss={onDismiss}
+        />
+      </MotionDiv>
+    </div>,
+    document.body
+  )
+}
+
+// ─── Bottom Sheet Mobile ──────────────────────────────────────────────────────
+function MobileBottomSheet({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, targetRect }) {
+  return createPortal(
+    <div className="fixed inset-0 z-[9998] pointer-events-none">
+      {/* Spotlight sur l'élément cible */}
+      <MotionDiv
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-space-950/70 backdrop-blur-[2px] pointer-events-auto"
+        onClick={onDismiss}
+        style={targetRect ? {
+          clipPath: `polygon(
+            0% 0%, 
+            0% 100%, 
+            ${targetRect.left - 8}px 100%, 
+            ${targetRect.left - 8}px ${targetRect.top - 8}px, 
+            ${targetRect.left + targetRect.width + 8}px ${targetRect.top - 8}px, 
+            ${targetRect.left + targetRect.width + 8}px ${targetRect.top + targetRect.height + 8}px, 
+            ${targetRect.left - 8}px ${targetRect.top + targetRect.height + 8}px, 
+            ${targetRect.left - 8}px 100%, 
+            100% 100%, 
+            100% 0%
+          )`
+        } : {}}
+      />
+
+      {/* Highlight Ring */}
+      {targetRect && (
+        <MotionDiv
+          layoutId="tour-highlight"
+          className="absolute z-[9999] rounded-2xl border-2 border-gold-400 shadow-[0_0_30px_rgba(245,212,122,0.3)] pointer-events-none"
+          initial={false}
+          animate={{
+            top: targetRect.top - 8,
+            left: targetRect.left - 8,
+            width: targetRect.width + 16,
+            height: targetRect.height + 16,
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        />
+      )}
+
+      {/* Bottom Sheet */}
+      <MotionDiv
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.4 }}
+        onDragEnd={(_, info) => {
+          if (info.offset.y > 80) onDismiss()
+        }}
+        className="fixed bottom-0 left-0 right-0 z-[10000] pointer-events-auto rounded-t-[2rem] overflow-hidden"
+        style={{
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+        }}
+      >
+        {/* Drag Handle */}
+        <div className="bg-[#0B0F1A] pt-3 pb-0 flex justify-center">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
+
+        <TooltipCard
+          step={step}
+          stepNumber={stepNumber}
+          totalSteps={totalSteps}
+          onNext={onNext}
+          onPrev={onPrev}
+          onDismiss={onDismiss}
+          isMobile
+        />
+      </MotionDiv>
+    </div>,
+    document.body
+  )
+}
+
+// ─── Contenu partagé du Tooltip ───────────────────────────────────────────────
+function TooltipCard({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, isMobile = false }) {
+  return (
+    <div className="bg-[#0B0F1A] border border-white/10 shadow-2xl shadow-black overflow-hidden"
+      style={{ borderRadius: isMobile ? '0' : '1.5rem' }}
+    >
+      {/* Header */}
+      <div className="px-5 py-4 bg-white/5 border-b border-white/5">
+        <div className="flex items-center justify-between">
+          <h4 className="font-syne font-black text-white italic tracking-tight text-base">{step.title}</h4>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDismiss() }}
+            className="text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-5 py-5">
+        <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
+        {isMobile && (
+          <p className="text-[10px] text-gray-600 mt-3 text-center">
+            Glissez vers le bas pour fermer
+          </p>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-5 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+        {/* Progress dots */}
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1 rounded-full transition-all duration-500 ${
+                i === stepNumber - 1 ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Buttons */}
+        <div className="flex items-center gap-3">
+          {stepNumber > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPrev() }}
+              className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
+            >
+              Précédent
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); stepNumber === totalSteps ? onDismiss() : onNext() }}
+            className="px-5 py-2 text-xs font-black bg-white text-black rounded-xl hover:bg-gold-400 transition-all hover:scale-105 active:scale-95"
+          >
+            {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Composant principal : route vers Desktop ou Mobile ───────────────────────
 function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
   const [position, setPosition] = useState({ top: 0, left: 0 })
   const [targetRect, setTargetRect] = useState(null)
-  const tooltipRef = useRef(null)
+  const [targetVisible, setTargetVisible] = useState(false)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
+    // Si l'étape est desktopOnly et qu'on est sur mobile, passer automatiquement
+    if (step.desktopOnly && isMobile) {
+      onNext()
+      return
+    }
+
     const candidates = document.querySelectorAll(step.target)
     const targetElement = Array.from(candidates).find((el) => {
       const rect = el.getBoundingClientRect()
@@ -326,17 +558,29 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
       return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
     }) || candidates[0]
 
-    if (!targetElement) return
+    if (!targetElement) {
+      setTargetRect(null)
+      setTargetVisible(false)
+      return
+    }
 
     const updatePosition = () => {
       const rect = targetElement.getBoundingClientRect()
-      setTargetRect(rect)
+      const isInViewport = rect.width > 0 && rect.height > 0 &&
+        rect.top >= 0 && rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
 
-      let top = 0
-      let left = 0
+      setTargetRect(rect)
+      setTargetVisible(isInViewport)
+
+      if (isMobile) return
+
       const tooltipWidth = 320
       const tooltipHeight = 180
       const offset = 20
+      let top = 0
+      let left = 0
 
       switch (step.position) {
         case 'right':
@@ -361,7 +605,6 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
 
       top = Math.max(10, Math.min(top, window.innerHeight - tooltipHeight - 10))
       left = Math.max(10, Math.min(left, window.innerWidth - tooltipWidth - 10))
-
       setPosition({ top, left })
     }
 
@@ -373,121 +616,44 @@ function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onD
       window.removeEventListener('resize', updatePosition)
       window.removeEventListener('scroll', updatePosition, true)
     }
-  }, [step])
+  }, [step, isMobile, onNext])
 
-  if (!targetRect) return null
-
-  // Check if a major modal is open (WelcomeModal, Wizard, etc.)
-  // We check for some common modal classes or IDs
   const isBlockingModalOpen = !!(
-    document.querySelector('[role="dialog"]') || 
+    document.querySelector('[role="dialog"]') ||
     document.querySelector('.wizard-modal') ||
     document.querySelector('.welcome-modal')
   )
-
   if (isBlockingModalOpen) return null
 
-  const padding = 8
-
-  return createPortal(
-    <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* Backdrop Spotlight Effect */}
-      <MotionDiv 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-space-950/60 backdrop-blur-[2px] pointer-events-auto"
-        onClick={onDismiss}
-        style={{
-          clipPath: `polygon(
-            0% 0%, 
-            0% 100%, 
-            ${targetRect.left - padding}px 100%, 
-            ${targetRect.left - padding}px ${targetRect.top - padding}px, 
-            ${targetRect.left + targetRect.width + padding}px ${targetRect.top - padding}px, 
-            ${targetRect.left + targetRect.width + padding}px ${targetRect.top + targetRect.height + padding}px, 
-            ${targetRect.left - padding}px ${targetRect.top + targetRect.height + padding}px, 
-            ${targetRect.left - padding}px 100%, 
-            100% 100%, 
-            100% 0%
-          )`
-        }}
+  // Mobile : bottom sheet toujours visible, spotlight conditionnel
+  if (isMobile) {
+    return (
+      <MobileBottomSheet
+        step={step}
+        stepNumber={stepNumber}
+        totalSteps={totalSteps}
+        onNext={onNext}
+        onPrev={onPrev}
+        onDismiss={onDismiss}
+        targetRect={targetVisible ? targetRect : null}  // Pas de spotlight si cible invisible
       />
+    )
+  }
 
-      {/* Target Highlight Ring */}
-      <MotionDiv
-        layoutId="tour-highlight"
-        className="absolute z-[9999] rounded-2xl border-2 border-gold-400 shadow-[0_0_30px_rgba(245,212,122,0.3)] pointer-events-none"
-        initial={false}
-        animate={{
-          top: targetRect.top - padding,
-          left: targetRect.left - padding,
-          width: targetRect.width + padding * 2,
-          height: targetRect.height + padding * 2,
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      />
+  // Sur desktop : ne rien afficher si la cible est introuvable
+  if (!targetRect || !targetVisible) return null
 
-      {/* Tooltip */}
-      <MotionDiv
-        ref={tooltipRef}
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1, top: position.top, left: position.left }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed z-[10000] w-80 pointer-events-auto"
-      >
-        <div className="bg-[#0B0F1A] border border-white/10 rounded-[1.5rem] shadow-2xl shadow-black overflow-hidden pointer-events-auto">
-          {/* Header */}
-          <div className="px-5 py-4 bg-white/5 border-b border-white/5">
-            <div className="flex items-center justify-between">
-              <h4 className="font-syne font-black text-white italic tracking-tight">{step.title}</h4>
-              <button 
-                onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-                className="text-gray-500 hover:text-white transition-colors p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="px-5 py-5">
-            <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
-          </div>
-
-          {/* Footer */}
-          <div className="px-5 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: totalSteps }).map((_, i) => (
-                <div 
-                  key={i}
-                  className={`h-1 rounded-full transition-all duration-500 ${
-                    i === stepNumber - 1 ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-3">
-              {stepNumber > 1 && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onPrev(); }}
-                  className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
-                >
-                  Précédent
-                </button>
-              )}
-              <button
-                onClick={(e) => { e.stopPropagation(); stepNumber === totalSteps ? onDismiss() : onNext(); }}
-                className="px-5 py-2 text-xs font-black bg-white text-black rounded-xl hover:bg-gold-400 transition-all hover:scale-105 active:scale-95"
-              >
-                {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </MotionDiv>
-    </div>,
-    document.body
+  return (
+    <DesktopTooltip
+      step={step}
+      stepNumber={stepNumber}
+      totalSteps={totalSteps}
+      onNext={onNext}
+      onPrev={onPrev}
+      onDismiss={onDismiss}
+      position={position}
+      targetRect={targetRect}
+    />
   )
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -938,23 +939,24 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="relative z-10 card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-        <div className="flex items-center justify-between p-4 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">Modifier l'utilisateur</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
           <div>
@@ -963,7 +965,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
           <div>
@@ -972,7 +974,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               type="text"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -981,7 +983,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               <select
                 value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans.find(p => p.is_default)?.name || activePlans[0]?.name || 'free')}
                 onChange={(e) => handlePlanChange(e.target.value)}
-                className="input-dark w-full"
+                className="input-dark w-full min-h-[44px]"
               >
                 {activePlans.length > 0
                   ? activePlans.map(p => (
@@ -1005,13 +1007,13 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
                 type="number"
                 value={formData.credits}
                 onChange={(e) => setFormData({ ...formData, credits: e.target.value === '' ? 0 : parseInt(e.target.value, 10) })}
-                className="input-dark w-full"
+                className="input-dark w-full min-h-[44px]"
                 placeholder="-1 = illimité"
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 flex-wrap">
-            <label className="flex items-center gap-2 cursor-pointer">
+          <div className="flex flex-col gap-3">
+            <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
                 type="checkbox"
                 checked={formData.is_admin}
@@ -1019,107 +1021,106 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
                   setFormData({ ...formData, is_admin: e.target.checked ? 1 : 0 })
                   if (!e.target.checked) setConfirmAdminInput('')
                 }}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
               />
               <span className="text-sm text-gray-300">Administrateur</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
                 type="checkbox"
                 checked={formData.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked ? 1 : 0 })}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400 focus:ring-emerald-400"
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400 focus:ring-emerald-400"
               />
               <span className="text-sm text-gray-300">Compte actif</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
                 type="checkbox"
                 checked={formData.voice_responses_enabled}
                 onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
               />
-              <span className="text-sm text-gray-300">Réponses vocales activées pour cet utilisateur</span>
+              <span className="text-sm text-gray-300">Réponses vocales</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
                 type="checkbox"
                 checked={formData.payment_module_enabled}
                 onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
               />
-              <span className="text-sm text-gray-300">Module Moyens de paiement activé (config PaymeTrust, etc.)</span>
+              <span className="text-sm text-gray-300">Module Moyens de paiement</span>
             </label>
-            <p className="text-xs text-gray-500 mt-1">Ces options ne sont effectives que si le plan de l&apos;utilisateur inclut les modules correspondants (voir Plans d&apos;abonnement).</p>
           </div>
 
           {isPromotingToAdmin && (
-            <div className="p-3 rounded-xl bg-gold-400/10 border border-gold-400/30">
+            <div className="p-4 rounded-xl bg-gold-400/10 border border-gold-400/30">
               <p className="text-sm text-gray-300 mb-2">
-                Pour accorder les droits administrateur, tapez <strong className="text-gold-400">CONFIRMER</strong> ci-dessous.
+                Pour confirmer, tapez <strong className="text-gold-400">CONFIRMER</strong>
               </p>
               <input
                 type="text"
                 value={confirmAdminInput}
                 onChange={(e) => setConfirmAdminInput(e.target.value)}
                 placeholder="CONFIRMER"
-                className="input-dark w-full font-mono uppercase text-sm"
+                className="input-dark w-full font-mono uppercase text-sm min-h-[44px]"
               />
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Date fin d&apos;essai / d&apos;abonnement
-              <span className="ml-2 text-xs text-amber-400">
-                {formData.subscription_end_date ? `${Math.ceil((new Date(formData.subscription_end_date) - new Date()) / 86400000)} jour(s) restant(s)` : 'Non définie'}
-              </span>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Date fin d'abonnement
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2">
               <input
                 type="date"
                 value={formData.subscription_end_date}
                 onChange={(e) => setFormData({ ...formData, subscription_end_date: e.target.value })}
-                className="input-dark flex-1"
+                className="input-dark w-full min-h-[44px]"
               />
-              {[7, 14, 30].map(days => (
-                <button
-                  key={days}
-                  type="button"
-                  onClick={() => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + days);
-                    setFormData({ ...formData, subscription_end_date: d.toISOString().slice(0, 10) });
-                  }}
-                  className="text-xs px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded transition-colors whitespace-nowrap"
-                >
-                  +{days}j
-                </button>
-              ))}
+              <div className="flex gap-2">
+                {[7, 14, 30].map(days => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + days);
+                      setFormData({ ...formData, subscription_end_date: d.toISOString().slice(0, 10) });
+                    }}
+                    className="flex-1 text-xs py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-colors"
+                  >
+                    +{days}j
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              Nouveau mot de passe <span className="text-gray-500">(laisser vide pour conserver)</span>
+              Nouveau mot de passe
             </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary">
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 btn-secondary min-h-[48px]">
               Annuler
             </button>
-            <button type="submit" disabled={saving || !canSubmit} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
+            <button type="submit" disabled={saving || !canSubmit} className="flex-1 btn-primary min-h-[48px] disabled:opacity-50">
+              {saving ? '...' : 'Enregistrer'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -1167,23 +1168,24 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="relative z-10 card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-        <div className="flex items-center justify-between p-4 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">Nouvel utilisateur</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Nom *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
               required
             />
           </div>
@@ -1193,7 +1195,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
               required
             />
           </div>
@@ -1203,7 +1205,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
               required
               minLength={6}
             />
@@ -1214,7 +1216,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
               type="text"
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1223,7 +1225,7 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
               <select
                 value={activePlans.some(p => (p.name || p.id) === formData.plan) ? formData.plan : (activePlans.find(p => p.is_default)?.name || activePlans[0]?.name || 'free')}
                 onChange={(e) => handlePlanChange(e.target.value)}
-                className="input-dark w-full"
+                className="input-dark w-full min-h-[44px]"
               >
                 {activePlans.length > 0
                   ? activePlans.map(p => (
@@ -1247,32 +1249,32 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
                 type="number"
                 value={formData.credits}
                 onChange={(e) => setFormData({ ...formData, credits: e.target.value === '' ? 0 : parseInt(e.target.value, 10) })}
-                className="input-dark w-full"
-                placeholder="-1 = illimité"
+                className="input-dark w-full min-h-[44px]"
               />
             </div>
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer py-2">
             <input
               type="checkbox"
               checked={formData.is_admin}
               onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked ? 1 : 0 })}
-              className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+              className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
             />
             <span className="text-sm text-gray-300">Administrateur</span>
           </label>
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary">
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 btn-secondary min-h-[48px]">
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Création...' : 'Créer'}
+            <button type="submit" disabled={saving} className="flex-1 btn-primary min-h-[48px]">
+              {saving ? '...' : 'Créer'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -1293,138 +1295,108 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
     setDeleting(false)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="card w-full max-w-lg relative z-10 max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-        <div className="p-6 border-b border-space-700">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="p-4 sm:p-6 border-b border-space-700 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 bg-red-500/20 rounded-2xl flex items-center justify-center flex-shrink-0">
               <AlertTriangle className="w-6 h-6 text-red-400" />
             </div>
-            <div>
-              <h2 className="text-xl font-display font-semibold text-gray-100">Supprimer l'utilisateur</h2>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-display font-semibold text-gray-100 truncate">Supprimer l'utilisateur</h2>
               <p className="text-sm text-gray-400">Cette action est irréversible</p>
             </div>
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 overscroll-contain">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
+            <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 text-gold-400 animate-spin" />
             </div>
           ) : preview ? (
             <div className="space-y-6">
-              {/* User Info */}
-              <div className="bg-space-800 rounded-xl p-4">
+              <div className="bg-space-800/50 border border-space-700 rounded-2xl p-4">
                 <p className="text-gray-100 font-medium">{preview.user.name}</p>
                 <p className="text-sm text-gray-400">{preview.user.email}</p>
               </div>
 
-              {/* Warning */}
               {preview.warning && (
-                <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
                   <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-amber-400">{preview.warning}</p>
                 </div>
               )}
 
-              {/* Data to be deleted */}
               <div>
-                <h3 className="text-sm font-medium text-gray-300 mb-3">Données qui seront supprimées :</h3>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Données impactées</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-space-800 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-100">{preview.stats.agents}</p>
-                    <p className="text-xs text-gray-500">Agents</p>
+                  <div className="bg-space-950/50 border border-space-700/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-gray-100">{preview.stats.agents}</p>
+                    <p className="text-[10px] text-gray-500 uppercase">Agents</p>
                   </div>
-                  <div className="bg-space-800 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-100">{preview.stats.conversations}</p>
-                    <p className="text-xs text-gray-500">Conversations</p>
+                  <div className="bg-space-950/50 border border-space-700/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-gray-100">{preview.stats.conversations}</p>
+                    <p className="text-[10px] text-gray-500 uppercase">Conv.</p>
                   </div>
-                  <div className="bg-space-800 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-100">{preview.stats.messages}</p>
-                    <p className="text-xs text-gray-500">Messages</p>
+                  <div className="bg-space-950/50 border border-space-700/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-gray-100">{preview.stats.messages}</p>
+                    <p className="text-[10px] text-gray-500 uppercase">Messages</p>
                   </div>
-                  <div className="bg-space-800 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-100">{preview.stats.knowledgeItems}</p>
-                    <p className="text-xs text-gray-500">Éléments de connaissance</p>
-                  </div>
-                  <div className="bg-space-800 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-100">{preview.stats.templates}</p>
-                    <p className="text-xs text-gray-500">Templates</p>
-                  </div>
-                  <div className="bg-space-800 rounded-lg p-3">
-                    <p className="text-2xl font-bold text-gray-100">{preview.stats.blacklistEntries}</p>
-                    <p className="text-xs text-gray-500">Contacts bloqués</p>
+                  <div className="bg-space-950/50 border border-space-700/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold text-gray-100">{preview.stats.knowledgeItems}</p>
+                    <p className="text-[10px] text-gray-500 uppercase">Savoirs</p>
                   </div>
                 </div>
               </div>
 
-              {/* Agents list */}
-              {preview.agents.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-300 mb-2">Agents concernés :</h3>
-                  <div className="space-y-1">
-                    {preview.agents.map(agent => (
-                      <div key={agent.id} className="flex items-center justify-between bg-space-800 rounded-lg px-3 py-2">
-                        <span className="text-sm text-gray-100">{agent.name}</span>
-                        {agent.connected && (
-                          <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">Connecté</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Confirmation input for hard delete */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Tapez <span className="text-red-400 font-mono">SUPPRIMER</span> pour confirmer la suppression définitive :
-                </label>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Pour confirmer, tapez SUPPRIMER</h3>
                 <input
                   type="text"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  className="input-dark w-full"
-                  placeholder="SUPPRIMER"
+                  placeholder="Tapez SUPPRIMER"
+                  className="input-dark w-full text-center font-mono uppercase min-h-[44px]"
                 />
               </div>
             </div>
           ) : null}
         </div>
 
-        <div className="p-6 border-t border-space-700 space-y-3">
+        <div className="p-4 sm:p-6 border-t border-space-700 bg-space-900/50 flex flex-col gap-3" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <div className="flex gap-3">
             <button
               onClick={handleSoftDelete}
               disabled={deleting || loading}
-              className="flex-1 px-4 py-2 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-3 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl hover:bg-amber-500/30 transition-all font-medium min-h-[48px]"
             >
-              {deleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Désactiver seulement'}
+              {deleting ? '...' : 'Désactiver'}
             </button>
             <button
               onClick={handleHardDelete}
               disabled={deleting || loading || confirmText !== 'SUPPRIMER'}
-              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all font-medium disabled:opacity-50 min-h-[48px]"
             >
-              {deleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Supprimer définitivement'}
+              {deleting ? '...' : 'Supprimer'}
             </button>
           </div>
           <button
             onClick={onClose}
             disabled={deleting}
-            className="w-full btn-secondary"
+            className="w-full btn-secondary min-h-[44px] text-sm"
           >
             Annuler
           </button>
-          <p className="text-xs text-gray-500 text-center">
-            "Désactiver" conserve les données mais empêche l'accès. "Supprimer" efface tout définitivement.
-          </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -1867,25 +1839,26 @@ function AIModelModal({ model, onClose, onSave }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="relative z-10 card w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-        <div className="flex items-center justify-between p-4 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">
             {model ? 'Modifier le modèle' : 'Nouveau modèle'}
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Nom *</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
               placeholder="Gemini 2.0 Flash"
               required
             />
@@ -1897,7 +1870,7 @@ function AIModelModal({ model, onClose, onSave }) {
               <select
                 value={formData.provider}
                 onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
-                className="input-dark w-full"
+                className="input-dark w-full min-h-[44px]"
                 disabled={!!model}
               >
                 <option value="gemini">Google Gemini</option>
@@ -1910,7 +1883,7 @@ function AIModelModal({ model, onClose, onSave }) {
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="input-dark w-full"
+                className="input-dark w-full min-h-[44px]"
               >
                 <option value="fast">⚡ Rapide</option>
                 <option value="smart">🧠 Intelligent</option>
@@ -1926,8 +1899,8 @@ function AIModelModal({ model, onClose, onSave }) {
               type="text"
               value={formData.model_id}
               onChange={(e) => setFormData({ ...formData, model_id: e.target.value })}
-              className="input-dark w-full font-mono text-sm"
-              placeholder="models/gemini-2.0-flash ou openai/gpt-4o:free"
+              className="input-dark w-full font-mono text-sm min-h-[44px]"
+              placeholder="models/gemini-2.0-flash"
               required
               disabled={!!model}
             />
@@ -1939,8 +1912,8 @@ function AIModelModal({ model, onClose, onSave }) {
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="input-dark w-full"
-              placeholder="Description courte du modèle"
+              className="input-dark w-full min-h-[44px]"
+              placeholder="Description courte"
             />
           </div>
 
@@ -1950,7 +1923,7 @@ function AIModelModal({ model, onClose, onSave }) {
               type="number"
               value={formData.sort_order}
               onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-              className="input-dark w-full"
+              className="input-dark w-full min-h-[44px]"
             />
           </div>
 
@@ -1962,35 +1935,33 @@ function AIModelModal({ model, onClose, onSave }) {
               type="password"
               value={formData.api_key}
               onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-              className="input-dark w-full"
-              placeholder={model?.api_key ? '••••••••••••••••' : 'Laisser vide pour utiliser la clé globale'}
+              className="input-dark w-full min-h-[44px]"
+              placeholder={model?.api_key ? '••••••••••••••••' : 'Utiliser la clé globale'}
             />
-            <p className="text-[10px] text-gray-500 mt-1">
-              Si renseignée, cette clé sera utilisée uniquement pour ce modèle. Utile pour gérer les quotas séparément.
-            </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 py-2">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.is_active}
                 onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400"
               />
               <span className="text-sm text-gray-300">Actif</span>
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Enregistrement...' : model ? 'Enregistrer' : 'Créer'}
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 btn-secondary min-h-[48px]">Annuler</button>
+            <button type="submit" disabled={saving} className="flex-1 btn-primary min-h-[48px]">
+              {saving ? '...' : model ? 'Enregistrer' : 'Créer'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -2035,18 +2006,19 @@ function APIKeyModal({ keyData, onClose, onSave }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="relative z-10 card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-        <div className="flex items-center justify-between p-4 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">
             Clé API {getProviderName(keyData?.provider)}
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Clé API {keyData?.has_key ? '(laisser vide pour conserver)' : '*'}
@@ -2055,7 +2027,7 @@ function APIKeyModal({ keyData, onClose, onSave }) {
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              className="input-dark w-full font-mono text-sm"
+              className="input-dark w-full font-mono text-sm min-h-[44px]"
               placeholder={keyData?.has_key ? '••••••••••••••••' : 'sk-...'}
               required={!keyData?.has_key}
             />
@@ -2064,19 +2036,19 @@ function APIKeyModal({ keyData, onClose, onSave }) {
                 href={getProviderLink(keyData?.provider)} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+                className="text-xs text-blue-400 hover:underline mt-2 inline-block min-h-[44px] flex items-center"
               >
                 Obtenir une clé API →
               </a>
             )}
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer py-2">
             <input
               type="checkbox"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
+              className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400"
             />
             <span className="text-sm text-gray-300">Clé active</span>
           </label>
@@ -2087,15 +2059,16 @@ function APIKeyModal({ keyData, onClose, onSave }) {
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Enregistrement...' : 'Enregistrer'}
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 btn-secondary min-h-[48px]">Annuler</button>
+            <button type="submit" disabled={saving} className="flex-1 btn-primary min-h-[48px]">
+              {saving ? '...' : 'Enregistrer'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -2201,25 +2174,26 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' }
   ]
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="relative z-10 card w-full max-w-2xl max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-space-700">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">
             {plan ? 'Modifier le plan' : 'Nouveau plan'}
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-100">
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Section tabs */}
-        <div className="flex border-b border-space-700">
+        <div className="flex border-b border-space-700 overflow-x-auto no-scrollbar">
           {['general', 'limits', 'features', 'models'].map(section => (
             <button
               key={section}
               onClick={() => setActiveSection(section)}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
+              className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap min-h-[48px] ${
                 activeSection === section 
                   ? 'text-blue-400 border-b-2 border-blue-400' 
                   : 'text-gray-500 hover:text-gray-300'
@@ -2227,41 +2201,37 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
             >
               {section === 'general' && 'Général'}
               {section === 'limits' && 'Limites'}
-              {section === 'features' && 'Fonctionnalités'}
-              {section === 'models' && 'Modèles IA'}
+              {section === 'features' && 'Fonctions'}
+              {section === 'models' && 'Modèles'}
             </button>
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 overscroll-contain">
             {/* General Section */}
             {activeSection === 'general' && (
-              <>
+              <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Identifiant (unique) *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">ID *</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                      className="input-dark w-full"
+                      className="input-dark w-full min-h-[44px]"
                       placeholder="ex: starter"
                       required
                       disabled={!!plan}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Nom affiché *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Nom *</label>
                     <input
                       type="text"
                       value={formData.display_name}
                       onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                      className="input-dark w-full"
+                      className="input-dark w-full min-h-[44px]"
                       placeholder="ex: Starter"
                       required
                     />
@@ -2273,180 +2243,105 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="input-dark w-full"
+                    className="input-dark w-full resize-none"
                     rows={2}
-                    placeholder="Description du plan..."
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">Prix</label>
                     <input
                       type="number"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                      className="input-dark w-full"
-                      placeholder="0"
+                      className="input-dark w-full min-h-[44px]"
                     />
-                    <p className="text-xs text-gray-500 mt-1">-1 = sur devis, 0 = gratuit</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">Devise</label>
                     <select
                       value={formData.price_currency}
                       onChange={(e) => setFormData({ ...formData, price_currency: e.target.value })}
-                      className="input-dark w-full"
+                      className="input-dark w-full min-h-[44px]"
                     >
                       <option value="FCFA">FCFA</option>
                       <option value="EUR">EUR</option>
                       <option value="USD">USD</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Ordre</label>
-                    <input
-                      type="number"
-                      value={formData.sort_order}
-                      onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 0 })}
-                      className="input-dark w-full"
-                    />
-                  </div>
                 </div>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                    className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
-                  />
-                  <span className="text-sm text-gray-300">Plan actif</span>
-                </label>
-              </>
+              </div>
             )}
 
             {/* Limits Section */}
             {activeSection === 'limits' && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">Définissez les limites pour ce plan. Utilisez -1 pour illimité. Les crédits = nombre de réponses IA par mois.</p>
-                <div className="grid grid-cols-2 gap-4">
-                  {limitFields.map(field => (
-                    <div key={field.key}>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">{field.label}</label>
-                      <input
-                        type="number"
-                        value={formData.limits[field.key] ?? 0}
-                        onChange={(e) => handleLimitChange(field.key, e.target.value)}
-                        className="input-dark w-full"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">{field.desc}</p>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                {limitFields.map(field => (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">{field.label}</label>
+                    <input
+                      type="number"
+                      value={formData.limits[field.key] ?? 0}
+                      onChange={(e) => handleLimitChange(field.key, e.target.value)}
+                      className="input-dark w-full min-h-[44px]"
+                    />
+                  </div>
+                ))}
               </div>
             )}
 
             {/* Features Section */}
             {activeSection === 'features' && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">Heures de disponibilité : réglage dans les paramètres de l’agent (déjà fonctionnel). Modèles IA, Réponses vocales et Module paiement sont appliqués par le plan.</p>
-                <div className="grid grid-cols-2 gap-3">
-                  {featureFields.map((field, idx) => (
-                    <div key={field.key} className="flex items-center gap-2 p-1.5 bg-space-800 rounded-lg group">
-                      <label className="flex-1 flex items-center gap-3 cursor-pointer py-1.5 px-1.5 rounded-md hover:bg-space-700 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={formData.features[field.key] || false}
-                          onChange={() => handleFeatureToggle(field.key)}
-                          className="w-4 h-4 rounded border-space-700 bg-space-800 text-emerald-400"
-                        />
-                        <span className="text-[13px] text-gray-300">{field.label}</span>
-                      </label>
-                      <div className="relative group/tooltip flex-shrink-0">
-                        <button type="button" className="p-1.5 text-gray-400 hover:text-gold-400 transition-colors">
-                          <Info className="w-4 h-4" />
-                        </button>
-                        <div className={`absolute bottom-full mb-2 w-56 p-2.5 bg-space-900/95 backdrop-blur-md border border-space-700/50 rounded-xl text-[11px] leading-relaxed text-gray-200 shadow-2xl pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-all duration-200 z-[100] translate-y-1 group-hover/tooltip:translate-y-0 ${
-                          idx % 2 === 0 
-                            ? 'left-1/2 -translate-x-1/2' 
-                            : 'right-0 translate-x-0'
-                        }`}>
-                          <div className="relative z-10">
-                            {field.desc}
-                          </div>
-                          {/* Arrow */}
-                          <div className={`absolute top-full -mt-1 border-8 border-transparent border-t-space-900/95 ${
-                            idx % 2 === 0 ? 'left-1/2 -translate-x-1/2' : 'right-4 translate-x-0'
-                          }`} />
-                        </div>
-                      </div>
+              <div className="grid grid-cols-1 gap-2">
+                {featureFields.map((field) => (
+                  <label key={field.key} className="flex items-center gap-3 p-3 bg-space-800 rounded-xl cursor-pointer hover:bg-space-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.features[field.key] || false}
+                      onChange={() => handleFeatureToggle(field.key)}
+                      className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-200">{field.label}</p>
+                      <p className="text-[10px] text-gray-500 truncate">{field.desc}</p>
                     </div>
-                  ))}
-                </div>
+                  </label>
+                ))}
               </div>
             )}
 
             {/* Models Section */}
             {activeSection === 'models' && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-500">Sélectionnez les modèles IA disponibles pour ce plan. Les modèles listés sont ceux marqués actifs dans l’onglet <strong>Modèles IA</strong>.</p>
-                {(Array.isArray(availableModels) ? availableModels : []).length === 0 ? (
-                  <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                    Aucun modèle actif. Ajoutez ou activez des modèles dans l’onglet <strong>Modèles IA</strong> du menu Admin pour les proposer ici.
-                  </div>
-                ) : (
-                <div className="grid grid-cols-1 gap-2">
-                  {availableModels.map(model => (
-                    <label 
-                      key={model.id} 
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                        formData.features.models?.includes(model.id) || formData.features.models?.includes(model.name)
-                          ? 'bg-blue-500/20 border border-blue-500/30'
-                          : 'bg-space-800 hover:bg-space-700 border border-transparent'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.features.models?.includes(model.id) || formData.features.models?.includes(model.name) || false}
-                        onChange={() => handleModelToggle(model.id)}
-                        className="w-4 h-4 rounded border-space-700 bg-space-800 text-blue-400"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-200">{model.name}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            model.provider === 'gemini' ? 'bg-blue-500/20 text-blue-400' :
-                            model.provider === 'openai' ? 'bg-emerald-500/20 text-emerald-400' :
-                            'bg-blue-500/20 text-blue-400'
-                          }`}>
-                            {model.provider}
-                          </span>
-                          {model.is_free === 1 && (
-                            <span className="text-xs px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 rounded">Gratuit</span>
-                          )}
-                        </div>
-                        {model.description && (
-                          <p className="text-xs text-gray-500 mt-0.5">{model.description}</p>
-                        )}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                )}
+              <div className="grid grid-cols-1 gap-2">
+                {availableModels.map(model => (
+                  <label key={model.id} className="flex items-center gap-3 p-3 bg-space-800 rounded-xl cursor-pointer hover:bg-space-700 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.features.models?.includes(model.id) || formData.features.models?.includes(model.name) || false}
+                      onChange={() => handleModelToggle(model.id)}
+                      className="w-5 h-5 rounded border-space-700 bg-space-800 text-blue-400"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-200">{model.name}</p>
+                      <p className="text-[10px] text-gray-500">{model.provider}</p>
+                    </div>
+                  </label>
+                ))}
               </div>
             )}
           </div>
 
-          <div className="flex justify-end gap-3 p-4 border-t border-space-700">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Enregistrement...' : plan ? 'Mettre à jour' : 'Créer'}
+          <div className="p-4 sm:p-6 border-t border-space-700 bg-space-900/50 flex gap-3" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+            <button type="button" onClick={onClose} className="flex-1 btn-secondary min-h-[48px]">Annuler</button>
+            <button type="submit" disabled={saving} className="flex-1 btn-primary min-h-[48px]">
+              {saving ? '...' : plan ? 'Enregistrer' : 'Créer'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -2464,58 +2359,42 @@ function ConfirmActionModal({ message, keyword, onConfirm, onCancel }) {
     setConfirming(false)
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-[60] p-0 sm:p-4">
-      <div className="relative z-10 card w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-        <div className="p-6">
-          {/* Warning Icon */}
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center">
-              <AlertTriangle className="w-8 h-8 text-yellow-400" />
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} aria-hidden />
+      <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col overflow-hidden">
+        <div className="p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-10 h-10 text-yellow-400" />
             </div>
           </div>
           
-          {/* Title */}
-          <h3 className="text-xl font-display font-bold text-gray-100 text-center mb-2">
-            Confirmation requise
+          <h3 className="text-2xl font-display font-bold text-gray-100 text-center mb-2">
+            Confirmation
           </h3>
           
-          {/* Message */}
-          <p className="text-gray-400 text-center mb-6">
+          <p className="text-gray-400 text-center mb-8">
             {message}
           </p>
           
-          {/* Keyword Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2 text-center">
-              Pour confirmer, tapez <span className="font-bold text-yellow-400">{keyword}</span>
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-300 mb-3 text-center">
+              Tapez <span className="font-bold text-yellow-400 uppercase">{keyword}</span> pour confirmer
             </label>
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder={`Tapez "${keyword}" pour confirmer`}
-              className={`input-dark w-full text-center text-lg font-mono ${
-                inputValue.length > 0 
-                  ? isValid 
-                    ? 'border-emerald-500 bg-emerald-500/10' 
-                    : 'border-red-500 bg-red-500/10'
-                  : ''
-              }`}
+              className="input-dark w-full text-center text-xl font-mono uppercase min-h-[56px] tracking-widest"
               autoFocus
             />
-            {inputValue.length > 0 && !isValid && (
-              <p className="text-xs text-red-400 mt-1 text-center">
-                Le mot-clé ne correspond pas
-              </p>
-            )}
           </div>
           
-          {/* Buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-4">
             <button 
               onClick={onCancel}
-              className="flex-1 btn-secondary"
+              className="flex-1 btn-secondary min-h-[56px]"
               disabled={confirming}
             >
               Annuler
@@ -2523,25 +2402,19 @@ function ConfirmActionModal({ message, keyword, onConfirm, onCancel }) {
             <button 
               onClick={handleConfirm}
               disabled={!isValid || confirming}
-              className={`flex-1 py-2.5 px-4 rounded-xl font-medium transition-all ${
+              className={`flex-1 rounded-xl font-bold min-h-[56px] transition-all ${
                 isValid 
-                  ? 'bg-red-500 hover:bg-red-600 text-white' 
-                  : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20' 
+                  : 'bg-space-800 text-gray-600 cursor-not-allowed'
               }`}
             >
-              {confirming ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Confirmation...
-                </span>
-              ) : (
-                'Confirmer'
-              )}
+              {confirming ? '...' : 'Confirmer'}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -2570,11 +2443,11 @@ function AIModelTestModal({ model, onClose }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-      <div className="card w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl animate-fadeIn overflow-hidden">
-        {/* Header */}
-        <div className="p-4 border-b border-space-700 flex items-center justify-between bg-space-800">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-space-700 flex items-center justify-between bg-space-800" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg">
               <TestTube className="w-5 h-5" />
@@ -2584,69 +2457,48 @@ function AIModelTestModal({ model, onClose }) {
               <p className="text-xs text-gray-500">{model.provider} • {model.model_id}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-gray-100 transition-colors">
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Input Area */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 overscroll-contain">
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">Message de test</label>
-            <div className="flex gap-2">
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Entrez un message pour tester le modèle..."
-                className="input-dark flex-1 min-h-[80px] py-3 resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.ctrlKey) handleTest()
-                }}
-              />
-            </div>
-            <p className="text-[10px] text-gray-500 text-right">Ctrl + Enter pour envoyer</p>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Entrez un message..."
+              className="input-dark w-full min-h-[100px] py-3 resize-none"
+            />
           </div>
 
-          {/* Action Button */}
           <button
             onClick={handleTest}
             disabled={loading || !message.trim()}
-            className="w-full btn-primary flex items-center justify-center gap-2 py-3"
+            className="w-full btn-primary flex items-center justify-center gap-2 py-4 font-bold shadow-lg shadow-blue-500/20 min-h-[48px]"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Génération en cours...
-              </>
-            ) : (
-              <>
-                <Zap className="w-5 h-5" />
-                Lancer le test
-              </>
-            )}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
+            {loading ? 'Génération...' : 'Lancer le test'}
           </button>
 
-          {/* Error View */}
           {error && (
             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-red-400">
+              <div className="text-sm text-red-400 overflow-hidden">
                 <p className="font-bold mb-1">Erreur</p>
                 <p className="break-words opacity-90">{error}</p>
               </div>
             </div>
           )}
 
-          {/* Response View */}
           {response && (
             <div className="space-y-4 animate-slideUp">
               <div className="flex items-center gap-2 text-sm font-medium text-emerald-400">
                 <CheckCircle className="w-4 h-4" />
-                Réponse reçue avec succès
+                Réponse reçue
               </div>
-              
-              <div className="card bg-space-900/50 p-4 border-emerald-500/20">
+              <div className="bg-space-950/50 p-4 border border-emerald-500/20 rounded-2xl">
                 <p className="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">
                   {typeof response.response?.response === 'string' 
                     ? response.response.response 
@@ -2655,27 +2507,17 @@ function AIModelTestModal({ model, onClose }) {
                       : JSON.stringify(response.response, null, 2)}
                 </p>
               </div>
-
-              {/* Technical Details */}
-              <div className="space-y-2">
-                <button 
-                  onClick={() => console.log(response)}
-                  className="text-[10px] text-gray-500 hover:text-gray-300 underline"
-                >
-                  Voir les détails bruts dans la console
-                </button>
-              </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-space-700 bg-space-800/50 text-center">
-          <p className="text-[10px] text-gray-500">
-            Le test simule un agent standard. Si vous utilisez OpenRouter, assurez-vous que la clé est valide.
+        <div className="p-4 border-t border-space-700 bg-space-800/50 flex-shrink-0" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+          <p className="text-[10px] text-gray-500 text-center">
+            {model.provider === 'openrouter' ? 'Vérifiez votre clé API OpenRouter.' : 'Test simulant un agent standard.'}
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

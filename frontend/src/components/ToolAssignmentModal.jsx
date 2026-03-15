@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { 
@@ -27,8 +28,6 @@ export default function ToolAssignmentModal({ agentId, currentToolId, onClose, o
   const loadTools = async () => {
     try {
       const response = await api.get('/tools')
-      // Filter for tools that can be assigned (usually WhatsApp tools)
-      // and sort to put connected ones first
       const toolsList = (response.data?.tools || []).map(tool => ({
         ...tool,
         meta: (typeof tool.meta === 'string' && tool.meta) ? JSON.parse(tool.meta) : (tool.meta || {})
@@ -59,21 +58,21 @@ export default function ToolAssignmentModal({ agentId, currentToolId, onClose, o
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 card w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
-        <div className="flex-shrink-0 p-5 sm:p-6 border-b border-space-700 flex items-center justify-between">
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="relative z-10 w-full max-w-lg max-h-[90dvh] sm:max-h-[85vh] flex flex-col rounded-t-3xl sm:rounded-3xl bg-space-900 border border-space-700 shadow-2xl overflow-hidden animate-fadeIn max-sm:rounded-b-none">
+        <div className="flex-shrink-0 p-5 sm:p-6 border-b border-space-700 flex items-center justify-between" style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}>
           <div>
             <h2 className="text-xl font-display font-semibold text-gray-100">{t('agents.detail.tool.assign', 'Assigner un outil')}</h2>
             <p className="text-sm text-gray-400 mt-1">Choisissez un outil WhatsApp pour cet agent</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-space-800 rounded-full transition-colors text-gray-500">
+          <button onClick={onClose} className="p-2 -m-2 hover:bg-space-800 rounded-full transition-colors text-gray-500 min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 overscroll-contain">
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
@@ -90,10 +89,9 @@ export default function ToolAssignmentModal({ agentId, currentToolId, onClose, o
             </div>
           ) : (
             <div className="grid gap-3">
-              {/* Option to remove tool */}
               <button
                 onClick={() => handleSelectTool(null)}
-                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left group ${
+                className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left group min-h-[44px] ${
                   !currentToolId 
                     ? 'border-gold-400 bg-gold-400/5' 
                     : 'border-space-700 hover:border-space-600 bg-space-800/50'
@@ -119,7 +117,7 @@ export default function ToolAssignmentModal({ agentId, currentToolId, onClose, o
                     key={tool.id}
                     onClick={() => handleSelectTool(tool.id)}
                     disabled={saving}
-                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left group ${
+                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left group min-h-[44px] ${
                       isSelected 
                         ? 'border-gold-400 bg-gold-400/5' 
                         : 'border-space-700 hover:border-space-600 bg-space-800/50'
@@ -151,16 +149,17 @@ export default function ToolAssignmentModal({ agentId, currentToolId, onClose, o
           )}
         </div>
 
-        <div className="flex-shrink-0 p-5 sm:p-6 border-t border-space-700 bg-space-900/50">
+        <div className="flex-shrink-0 p-5 sm:p-6 border-t border-space-700 bg-space-900/50" style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
           <Link
             to="/dashboard/tools"
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-space-800 hover:bg-space-700 text-gray-200 font-medium transition-all border border-space-700"
+            className="flex items-center justify-center gap-2 w-full py-4 px-4 rounded-xl bg-space-800 hover:bg-space-700 text-gray-200 font-medium transition-all border border-space-700 min-h-[44px]"
           >
             <Settings className="w-4 h-4" />
             {t('common.tabs.tools', 'Gérer les outils')}
           </Link>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
