@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp } from 'lucide-react'
+import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp, Phone, User, Trash2, CheckCircle, ArrowLeft } from 'lucide-react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../contexts/CurrencyContext'
@@ -55,7 +55,7 @@ export default function Products() {
   const [historyList, setHistoryList] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [selectedProductView, setSelectedProductView] = useState(null)
-  const [imageZoom, setImageZoom] = useState(null) // URL de l'image à afficher en grand
+  const [imageZoom, setImageZoom] = useState(null)
 
   const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory || !!selectedProductView
   useLockBodyScroll(anyModalOpen)
@@ -246,39 +246,89 @@ export default function Products() {
         />
       )}
 
-      {showImportUrlModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => !importUrlLoading && setShowImportUrlModal(false)} aria-hidden />
-          <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl animate-fadeIn p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="import-url-title" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 id="import-url-title" className="text-lg font-display font-semibold text-gray-100">Importer depuis une URL</h2>
-              <button type="button" onClick={() => setShowImportUrlModal(false)} disabled={importUrlLoading} className="p-2 -m-2 text-gray-500 hover:text-gray-300 disabled:opacity-50">
-                <X className="w-5 h-5" />
-              </button>
+      {showImportUrlModal && createPortal(
+        <div 
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4 bg-black/80 backdrop-blur-md"
+          onClick={() => !importUrlLoading && setShowImportUrlModal(false)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-lg bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
-            <p className="text-sm text-gray-400 mb-4">Collez l&apos;URL d&apos;une page catalogue (site e‑commerce) pour extraire les produits.</p>
-            <form onSubmit={handleImportFromUrl} className="space-y-4">
-              <input
-                type="url"
-                value={importUrlValue}
-                onChange={(e) => setImportUrlValue(e.target.value)}
-                placeholder="https://..."
-                className="w-full px-4 py-3 rounded-xl border border-space-700 bg-space-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400/50"
-                required
-                disabled={importUrlLoading}
-              />
-              <div className="flex gap-3">
-                <button type="button" onClick={() => setShowImportUrlModal(false)} disabled={importUrlLoading} className="btn-secondary flex-1 min-h-[44px] touch-target disabled:opacity-50">
-                  Annuler
-                </button>
-                <button type="submit" disabled={importUrlLoading || !importUrlValue?.trim()} className="btn-primary flex-1 min-h-[44px] touch-target inline-flex items-center justify-center gap-2 disabled:opacity-50">
-                  {importUrlLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Importer
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-display font-bold text-gray-100 truncate">Importer via URL</h2>
+                  <p className="text-sm text-gray-500 mt-1 truncate">Collez l'URL d'un catalogue produit</p>
+                </div>
+                <button 
+                  onClick={() => setShowImportUrlModal(false)} 
+                  disabled={importUrlLoading}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                >
+                  <X className="w-6 h-6" />
                 </button>
               </div>
-            </form>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 custom-scrollbar overscroll-contain">
+              <form onSubmit={handleImportFromUrl} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">URL du catalogue</label>
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                      <Link className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="url"
+                      value={importUrlValue}
+                      onChange={(e) => setImportUrlValue(e.target.value)}
+                      placeholder="https://votre-boutique.com/produits"
+                      className="input-dark w-full py-4 pl-12 pr-5 text-base rounded-2xl"
+                      required
+                      disabled={importUrlLoading}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
+                  <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
+                    <Target className="w-5 h-5" />
+                  </div>
+                  <p className="text-sm text-blue-100/60 leading-relaxed">
+                    Notre IA va analyser la page pour extraire automatiquement les photos, noms et prix des produits.
+                  </p>
+                </div>
+
+                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowImportUrlModal(false)} 
+                    disabled={importUrlLoading} 
+                    className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={importUrlLoading || !importUrlValue?.trim()} 
+                    className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl inline-flex items-center justify-center gap-2 uppercase tracking-tight"
+                  >
+                    {importUrlLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
+                    {importUrlLoading ? 'Analyse...' : 'Lancer l\'import'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showHistory && (
@@ -291,101 +341,108 @@ export default function Products() {
           onClose={() => { setShowHistory(false); setHistoryProductId(null); setHistoryList([]) }}
         />
       )}
-      {/* Product Detail Zoom View */}
+
       {selectedProductView && (
         <DetailOverlay onClose={() => setSelectedProductView(null)}>
-          <div className="flex flex-col p-2">
-            <div className="flex items-center gap-6 mb-8">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-6 mb-10">
               <div
-                className={`w-24 h-24 bg-space-800 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-xl ring-2 ring-white/5 ${
-                  selectedProductView.image_url ? 'cursor-zoom-in hover:ring-gold-400/50 transition-all' : ''
+                className={`w-28 h-28 bg-white/5 rounded-3xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-2xl ring-1 ring-white/10 ${
+                  selectedProductView.image_url ? 'cursor-zoom-in group' : ''
                 }`}
                 onClick={() => selectedProductView.image_url && setImageZoom(getProductImageUrl(selectedProductView.image_url))}
               >
                 {selectedProductView.image_url ? (
-                  <img src={getProductImageUrl(selectedProductView.image_url)} alt={selectedProductView.name} className="w-full h-full object-cover" />
+                  <img src={getProductImageUrl(selectedProductView.image_url)} alt={selectedProductView.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 ) : (
-                  <Package className="w-10 h-10 text-gray-600" />
+                  <Package className="w-12 h-12 text-gray-700" />
                 )}
               </div>
-              <div className="min-w-0">
-                <h3 className="text-2xl sm:text-3xl font-display font-bold text-gray-100 mb-2 truncate">{selectedProductView.name}</h3>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-3xl font-display font-bold text-gray-100 mb-3 truncate leading-tight">{selectedProductView.name}</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedProductView.category && (
-                    <span className="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-semibold">
+                    <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
                       {selectedProductView.category}
                     </span>
                   )}
-                  <span className="px-3 py-1 rounded-full bg-gold-400/20 text-gold-400 text-xs font-mono font-semibold">
-                    {selectedProductView.sku || 'SANS-SKU'}
+                  <span className="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-[10px] font-mono font-bold tracking-wider border border-white/5">
+                    {selectedProductView.sku || 'AUCUN-SKU'}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Prix de vente</p>
-                <p className="text-2xl font-bold text-emerald-400">{formatPrice(selectedProductView.price)}</p>
-              </div>
-              <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                <p className="text-xs text-gray-500 uppercase font-medium mb-1">Stock actuel</p>
-                <p className={`text-2xl font-bold ${
-                  selectedProductView.stock === 0 ? 'text-red-400' : 
-                  selectedProductView.stock <= 10 ? 'text-amber-400' : 'text-blue-400'
-                }`}>
-                  {selectedProductView.stock} unités
-                </p>
-              </div>
-            </div>
-
-            {selectedProductView.description && (
-              <div className="mb-8 p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                <p className="text-xs text-gray-500 uppercase font-medium mb-2">Description</p>
-                <p className="text-gray-300 text-sm leading-relaxed">{selectedProductView.description}</p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="flex items-center gap-3 p-4 bg-space-800/30 rounded-2xl border border-space-700">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
-                  <ShoppingCart className="w-5 h-5" />
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-5 bg-white/5 rounded-3xl border border-white/5">
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Prix de vente</p>
+                  <p className="text-3xl font-display font-bold text-emerald-400 font-mono italic">{formatPrice(selectedProductView.price)}</p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Ventes totales</p>
-                  <p className="text-gray-100 font-semibold">{selectedProductView.total_sold || 0} vendus</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-space-800/30 rounded-2xl border border-space-700">
-                <div className="w-10 h-10 rounded-xl bg-gold-400/20 flex items-center justify-center text-gold-400">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 font-medium">Marge brute</p>
-                  <p className="text-gray-100 font-semibold">
-                    {formatPrice((selectedProductView.price || 0) - (selectedProductView.cost_price || 0))} / unité
+                <div className="p-5 bg-white/5 rounded-3xl border border-white/5">
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Stock actuel</p>
+                  <p className={`text-3xl font-display font-bold font-mono italic ${
+                    selectedProductView.stock === 0 ? 'text-red-400' : 
+                    selectedProductView.stock <= 10 ? 'text-amber-400' : 'text-blue-400'
+                  }`}>
+                    {selectedProductView.stock}
+                    <span className="text-xs uppercase font-black ml-1.5 opacity-50 not-italic">unités</span>
                   </p>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => {
-                  setSelectedProductView(null)
-                  setEditingProduct(selectedProductView)
-                }}
-                className="btn-primary flex-1"
-              >
-                Modifier le produit
-              </button>
-              <button onClick={() => setSelectedProductView(null)} className="btn-secondary flex-1">Fermer</button>
+              {selectedProductView.description && (
+                <div className="p-6 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+                  <p className="text-[10px] text-gray-500 uppercase font-black mb-3 tracking-widest">Description</p>
+                  <p className="text-gray-300 leading-relaxed italic text-sm">{selectedProductView.description}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                    <ShoppingCart className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Ventes totales</p>
+                    <p className="text-gray-100 font-bold font-mono">{selectedProductView.total_sold || 0} vendus</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-gold-400/10 flex items-center justify-center text-gold-400">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Marge unitaire</p>
+                    <p className="text-gray-100 font-bold font-mono">
+                      {formatPrice((selectedProductView.price || 0) - (selectedProductView.cost_price || 0))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+                <button 
+                  onClick={() => {
+                    setSelectedProductView(null)
+                    setEditingProduct(selectedProductView)
+                  }}
+                  className="w-full sm:flex-1 py-4 px-8 bg-white text-black rounded-2xl font-syne font-black italic uppercase tracking-tight hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl flex items-center justify-center gap-2"
+                >
+                  Modifier le produit
+                </button>
+                <button 
+                  onClick={() => setSelectedProductView(null)} 
+                  className="w-full sm:w-auto py-4 px-8 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-2xl font-bold transition-colors border border-white/5"
+                >
+                  Fermer
+                </button>
+              </div>
             </div>
           </div>
         </DetailOverlay>
       )}
 
-      {/* Lightbox — image produit en grand */}
       {imageZoom && (
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out animate-fadeIn"
@@ -412,32 +469,38 @@ export default function Products() {
 function getProductImageUrl(url) {
   if (!url) return null
   const u = url.trim()
-  // URL absolue externe → retourner telle quelle
   if (u.startsWith('http')) return u
-  // URL relative déjà complète (stockée comme /api/products/image/xxx) → retourner telle quelle
   if (u.startsWith('/api/') || u.startsWith('/products/')) return u
-  // Juste un nom de fichier → construire l'URL complète
   return `/api/products/image/${u}`
 }
 
 function DetailOverlay({ children, onClose }) {
   return createPortal(
     <div 
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 lg:p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
       onClick={onClose}
+      style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
-      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
       <div 
-        className="relative z-10 w-full max-w-lg bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-8 animate-zoom-in"
+        className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors"
-        >
-          <XCircle className="w-6 h-6" />
-        </button>
-        {children}
+        <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+          <div className="w-12 h-1.5 rounded-full bg-white/10" />
+        </div>
+
+        <div className="flex-shrink-0 p-6 sm:p-10 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+          <button 
+            onClick={onClose} 
+            className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+          >
+            <XCircle className="w-7 h-7" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-6 sm:px-10 pb-10" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
+          {children}
+        </div>
       </div>
     </div>,
     document.body

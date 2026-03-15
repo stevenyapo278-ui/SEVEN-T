@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -605,133 +606,206 @@ export default function Campaigns() {
       ) : null}
 
       {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="relative z-10 card w-full max-w-lg max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
-            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-              <h2 className="text-lg sm:text-xl font-display font-bold text-gray-100">
-                {selectedCampaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
-              </h2>
+      {showModal && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => { setShowModal(false); setSelectedCampaign(null); }}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-lg max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden" 
+            role="dialog" 
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
-            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Nom de la campagne *
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="input"
-                  placeholder="Ex: Promotion du mois"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Agent *
-                </label>
-                <select
-                  value={form.agent_id}
-                  onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
-                  className="input"
-                  required
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-display font-bold text-gray-100">
+                    {selectedCampaign ? 'Modifier la campagne' : 'Nouvelle campagne'}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">Diffusez votre message à grande échelle</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => { setShowModal(false); setSelectedCampaign(null); }}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
                 >
-                  <option value="">Sélectionner un agent</option>
-                  {(agents || []).filter(a => a.whatsapp_connected).map((agent) => (
-                    <option key={agent.id} value={agent.id}>{agent.name}</option>
-                  ))}
-                </select>
-                {(agents || []).filter(a => a.whatsapp_connected).length === 0 && (
-                  <p className="text-xs text-amber-400 mt-1">Aucun agent connecté à WhatsApp. Connectez un agent depuis la page Agents.</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">Seuls les agents connectés à WhatsApp sont disponibles</p>
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Message *
-                </label>
-                <textarea
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  className="input min-h-[150px]"
-                  placeholder="Votre message ici... Utilisez {{nom}} pour le nom du contact."
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Variables disponibles: {'{{nom}}'}, {'{{telephone}}'}</p>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-6 overscroll-contain custom-scrollbar">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                    Nom de la campagne *
+                  </label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                    placeholder="Ex: Promotion du mois"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                    Agent expéditeur *
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={form.agent_id}
+                      onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
+                      className="input-dark w-full py-4 px-5 text-base rounded-2xl appearance-none"
+                      required
+                    >
+                      <option value="">Sélectionner un agent</option>
+                      {(agents || []).filter(a => a.whatsapp_connected).map((agent) => (
+                        <option key={agent.id} value={agent.id}>{agent.name}</option>
+                      ))}
+                    </select>
+                    <MoreHorizontal className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none" />
+                  </div>
+                  {(agents || []).filter(a => a.whatsapp_connected).length === 0 && (
+                    <p className="text-xs text-amber-400 mt-2 bg-amber-400/10 p-3 rounded-xl border border-amber-400/20">Aucun agent connecté à WhatsApp. Connectez un agent depuis la page Agents.</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                    Message à diffuser *
+                  </label>
+                  <div className="relative group">
+                    <textarea
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className="input-dark w-full min-h-[160px] py-4 px-5 text-base rounded-2xl resize-none"
+                      placeholder="Votre message ici... Utilisez {{nom}} pour personnaliser."
+                      required
+                    />
+                    <div className="absolute bottom-3 right-3 flex gap-2">
+                      <span className="text-[10px] bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-blue-400 font-mono">{'{{nom}}'}</span>
+                      <span className="text-[10px] bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-blue-400 font-mono">{'{{telephone}}'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                    Programmer l'envoi (optionnel)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.scheduled_at}
+                    onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                    className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Programmer l'envoi (optionnel)
-                </label>
-                <input
-                  type="datetime-local"
-                  value={form.scheduled_at}
-                  onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-                  className="input"
-                />
-              </div>
-              </div>
-              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+
+              <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col-reverse sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false)
                     setSelectedCampaign(null)
                   }}
-                  className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target"
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
                 >
                   Annuler
                 </button>
-                <button type="submit" className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target">
-                  {selectedCampaign ? 'Enregistrer' : 'Créer'}
+                <button 
+                  type="submit" 
+                  className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl min-h-[48px]"
+                >
+                  {selectedCampaign ? 'Enregistrer les modifications' : 'Créer la campagne'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Gérer les destinataires (modal) */}
-      {showRecipientsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="relative z-10 card w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-              <h2 className="text-lg sm:text-xl font-display font-bold text-gray-100">
-                Gérer les destinataires
-              </h2>
-              {recipientsCampaign && (
-                <p className="text-sm text-gray-400 mt-1">{recipientsCampaign.campaign?.name}</p>
-              )}
+      {showRecipientsModal && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          onClick={closeRecipientsModal}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden" 
+            role="dialog" 
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
-            <div className="flex-1 min-h-0 flex flex-col">
-            {loadingRecipients ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-gold-400" />
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-display font-bold text-gray-100 truncate">
+                    Gérer les destinataires
+                  </h2>
+                  {recipientsCampaign && (
+                    <p className="text-sm text-gray-500 mt-1 truncate">{recipientsCampaign.campaign?.name}</p>
+                  )}
+                </div>
+                <button 
+                  type="button"
+                  onClick={closeRecipientsModal}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
-            ) : (
-              <>
-                <div className="flex-1 overflow-y-auto space-y-6 min-h-0">
+            </div>
+
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              {loadingRecipients ? (
+                <div className="flex-1 flex flex-col items-center justify-center p-12">
+                  <Loader2 className="w-10 h-10 animate-spin text-gold-400 mb-4" />
+                  <p className="text-gray-400 animate-pulse font-bold tracking-widest uppercase text-xs">Chargement en cours...</p>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-8 custom-scrollbar overscroll-contain">
                   {/* Destinataires actuels */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
+                  <section>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4 flex items-center gap-2 ml-1">
                       <Users className="w-4 h-4" />
-                      Destinataires ({recipientsList.length})
+                      Destinataires actuels ({recipientsList.length})
                     </h3>
-                    <div className="space-y-1 max-h-32 overflow-y-auto rounded-lg border border-gray-700/50 p-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[25vh] overflow-y-auto rounded-3xl border border-white/5 p-4 bg-black/40 shadow-inner custom-scrollbar">
                       {recipientsList.length === 0 ? (
-                        <p className="text-gray-500 text-sm py-2">Aucun destinataire. Ajoutez des leads ou importez depuis les conversations.</p>
+                        <div className="col-span-full text-center py-8">
+                          <p className="text-gray-500 text-sm font-medium">Aucun destinataire pour le moment.</p>
+                          <p className="text-[10px] font-black text-gray-700 mt-2 uppercase tracking-widest">Utilisez les leads ou importez des contacts</p>
+                        </div>
                       ) : (
                         recipientsList.map((r) => (
-                          <div key={r.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-gray-800/50">
-                            <span className="text-gray-200 text-sm truncate">{r.contact_name || r.contact_number || '—'}</span>
-                            <span className="text-gray-500 text-xs ml-2 truncate max-w-[120px]">{r.contact_number}</span>
+                          <div key={r.id} className="flex items-center justify-between py-3 px-4 rounded-2xl bg-white/[0.02] border border-white/5 group hover:border-gold-400/30 transition-all hover:bg-white/[0.04]">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-gray-200 text-sm font-bold truncate">{r.contact_name || r.contact_number || '—'}</p>
+                              <p className="text-gray-500 text-[10px] font-black font-mono truncate">{r.contact_number}</p>
+                            </div>
                             <button
                               type="button"
                               onClick={() => handleRemoveRecipient(r.id)}
-                              className="p-1 text-gray-400 hover:text-red-400 rounded"
-                              title="Retirer"
+                              className="p-2 text-gray-500 hover:text-red-500 rounded-xl hover:bg-red-500/10 transition-all ml-2"
+                              aria-label="Retirer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -750,128 +824,192 @@ export default function Campaigns() {
                           setRecipientsCampaign(prev => prev ? { ...prev, campaign: campRes.data.campaign } : null)
                         } catch (_) {}
                       }}
-                      className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                      className="mt-4 w-full sm:w-auto h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest text-blue-400 hover:text-white bg-blue-500/10 hover:bg-blue-500 transition-all border border-blue-500/20 flex items-center justify-center gap-2"
                     >
-                      + Importer depuis les conversations
+                      <Plus className="w-4 h-4" />
+                      Importer des conversations récentes
                     </button>
-                  </div>
+                  </section>
 
                   {/* Sélectionner des leads */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                      <UserPlus className="w-4 h-4" />
-                      Ajouter depuis les leads
-                    </h3>
-                    <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-700/50 p-2 space-y-1">
+                  <section>
+                    <div className="flex items-center justify-between mb-4 ml-1">
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        Ajouter depuis mes leads
+                      </h3>
+                      {selectedLeadIds.size > 0 && (
+                        <button 
+                          onClick={() => setSelectedLeadIds(new Set())}
+                          className="text-[10px] font-black text-blue-400 hover:text-blue-300 uppercase tracking-widest"
+                        >
+                          Désélectionner tout
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[35vh] overflow-y-auto rounded-3xl border border-white/5 p-4 bg-black/40 shadow-inner custom-scrollbar overscroll-contain">
                       {leadsList.filter(l => l.phone).length === 0 ? (
-                        <p className="text-gray-500 text-sm py-2">Aucun lead avec téléphone. Ajoutez des leads depuis la page Leads.</p>
+                        <div className="col-span-full text-center py-10">
+                          <p className="text-gray-500 text-sm font-medium">Aucun lead avec numéro de téléphone.</p>
+                        </div>
                       ) : (
                         leadsList.filter(l => l.phone).map((lead) => (
-                          <label key={lead.id} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-gray-800/50 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedLeadIds.has(lead.id)}
-                              onChange={() => toggleLeadSelection(lead.id)}
-                              className="rounded border-gray-600 text-gold-500 focus:ring-gold-500/50"
-                            />
-                            <span className="text-gray-200 text-sm truncate flex-1">{lead.name || lead.phone || '—'}</span>
-                            <span className="text-gray-500 text-xs truncate max-w-[100px]">{lead.phone}</span>
+                          <label key={lead.id} className={`flex items-center gap-4 py-3 px-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                            selectedLeadIds.has(lead.id) 
+                              ? 'bg-gold-400 text-black border-gold-400' 
+                              : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                          }`}>
+                            <div className="relative flex items-center justify-center z-10">
+                              <input
+                                type="checkbox"
+                                checked={selectedLeadIds.has(lead.id)}
+                                onChange={() => toggleLeadSelection(lead.id)}
+                                className={`w-5 h-5 rounded-lg border-2 transition-colors ${
+                                  selectedLeadIds.has(lead.id) 
+                                    ? 'bg-black border-black text-gold-400' 
+                                    : 'bg-transparent border-white/20'
+                                }`}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1 z-10">
+                              <p className={`text-sm font-bold truncate ${selectedLeadIds.has(lead.id) ? 'text-black' : 'text-gray-100'}`}>{lead.name || 'Inconnu'}</p>
+                              <p className={`text-[10px] font-black font-mono truncate ${selectedLeadIds.has(lead.id) ? 'text-black/60' : 'text-gray-500'}`}>{lead.phone}</p>
+                            </div>
+                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider z-10 ${
+                              selectedLeadIds.has(lead.id) 
+                                ? 'bg-black/10 text-black/80' 
+                                : lead.status === 'qualified' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 text-gray-400'
+                            }`}>
+                              {lead.status || 'new'}
+                            </span>
                           </label>
                         ))
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleAddFromLeads}
-                      disabled={selectedLeadIds.size === 0}
-                      className="mt-2 btn-primary text-sm py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Ajouter la sélection ({selectedLeadIds.size})
-                    </button>
-                  </div>
+                    <div className="mt-6">
+                      <button
+                        type="button"
+                        onClick={handleAddFromLeads}
+                        disabled={selectedLeadIds.size === 0}
+                        className="w-full h-14 rounded-2xl font-syne font-black italic shadow-xl bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale disabled:scale-100"
+                      >
+                        <UserCheck className="w-5 h-5" />
+                        <span>Ajouter {selectedLeadIds.size > 0 ? `${selectedLeadIds.size} contact(s)` : 'les contacts'}</span>
+                      </button>
+                    </div>
+                  </section>
                 </div>
-                <div className="flex-shrink-0 pt-4 border-t border-gray-700/50 flex flex-col-reverse sm:flex-row sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={closeRecipientsModal}
-                    className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target mt-3 sm:mt-0"
-                  >
-                    Fermer
-                  </button>
-                </div>
-              </>
-            )}
+              )}
+            </div>
+
+            <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+              <button
+                type="button"
+                onClick={closeRecipientsModal}
+                className="w-full h-14 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-sm uppercase tracking-widest border border-white/5"
+              >
+                Terminer la gestion
+              </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Historique d'exécution */}
-      {showHistoryModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative z-10 bg-gray-900 border border-gray-700 rounded-t-2xl sm:rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex flex-col animate-fadeIn">
-            <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-700">
-              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                <History className="w-5 h-5 text-blue-400" />
-                Historique d'exécution
-                {historyData.campaign && (
-                  <span className="text-gray-400 font-normal">— {historyData.campaign.name}</span>
-                )}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowHistoryModal(false)}
-                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700/50 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {showHistoryModal && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowHistoryModal(false)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-4xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden" 
+            role="dialog" 
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
-            <div className="p-4 overflow-auto flex-1 min-h-0">
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-2xl font-display font-bold text-gray-100 flex items-center gap-3 truncate">
+                    <History className="w-7 h-7 text-blue-400" />
+                    Rapport d'exécution
+                  </h3>
+                  {historyData.campaign && (
+                    <p className="text-sm text-gray-500 truncate mt-1">{historyData.campaign.name}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHistoryModal(false)}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                  aria-label="Fermer"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 min-h-0 custom-scrollbar overscroll-contain">
               {loadingHistory ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="w-12 h-12 animate-spin text-blue-400 mb-4" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 animate-pulse">Chargement du rapport...</p>
                 </div>
               ) : historyData.recipients.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">Aucun destinataire pour cette campagne.</p>
+                <div className="text-center py-20 bg-white/[0.02] rounded-[2rem] border-2 border-dashed border-white/5">
+                  <History className="w-12 h-12 text-gray-800 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">Aucun destinataire historisé.</p>
+                </div>
               ) : (
-                <div className="overflow-x-auto table-responsive">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto rounded-[2rem] border border-white/5 bg-black/40 shadow-inner">
+                  <table className="w-full text-sm text-left border-collapse">
                     <thead>
-                      <tr className="text-left text-gray-400 border-b border-gray-700">
-                        <th className="pb-2 pr-4">Destinataire</th>
-                        <th className="pb-2 pr-4">Téléphone</th>
-                        <th className="pb-2 pr-4">Statut</th>
-                        <th className="pb-2 pr-4">Envoyé le</th>
-                        <th className="pb-2">Erreur</th>
+                      <tr className="text-gray-500 bg-white/[0.02] border-b border-white/5">
+                        <th className="p-5 font-black uppercase tracking-widest text-[10px]">Destinataire</th>
+                        <th className="p-5 font-black uppercase tracking-widest text-[10px]">Téléphone</th>
+                        <th className="p-5 font-black uppercase tracking-widest text-[10px]">Statut</th>
+                        <th className="p-5 font-black uppercase tracking-widest text-[10px]">Envoyé</th>
+                        <th className="p-5 font-black uppercase tracking-widest text-[10px]">Erreur</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-white/5">
                       {historyData.recipients.map((r) => (
-                        <tr key={r.id} className="border-b border-gray-700/50">
-                          <td className="py-2 pr-4 text-white">{r.contact_name || '—'}</td>
-                          <td className="py-2 pr-4 text-gray-300">{r.contact_number || '—'}</td>
-                          <td className="py-2 pr-4">
+                        <tr key={r.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="p-5 font-bold text-gray-200">{r.contact_name || '—'}</td>
+                          <td className="p-5 text-gray-500 font-mono text-[10px] font-black">{r.contact_number || '—'}</td>
+                          <td className="p-5">
                             {r.status === 'sent' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-xs">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Envoyé
+                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Succès
                               </span>
                             )}
                             {r.status === 'failed' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-xs">
+                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20">
                                 <XCircle className="w-3.5 h-3.5" /> Échec
                               </span>
                             )}
                             {r.status === 'pending' && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs">
-                                <Clock className="w-3.5 h-3.5" /> En attente
+                              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-widest border border-amber-500/20">
+                                <Clock className="w-3.5 h-3.5" /> Attente
                               </span>
                             )}
                           </td>
-                          <td className="py-2 pr-4 text-gray-400">
-                            {r.sent_at ? new Date(r.sent_at).toLocaleString('fr-FR') : '—'}
+                          <td className="p-5 text-gray-400 text-[10px] font-bold">
+                            {r.sent_at ? new Date(r.sent_at).toLocaleString('fr-FR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—'}
                           </td>
-                          <td className="py-2 text-gray-400 text-xs max-w-[200px] truncate" title={r.error_message}>
-                            {r.status === 'failed' && r.error_message ? r.error_message : '—'}
+                          <td className="p-5 text-gray-500 text-[10px] font-medium max-w-[180px]">
+                            {r.status === 'failed' && r.error_message ? (
+                              <span className="text-red-400/80 leading-relaxed italic">{r.error_message}</span>
+                            ) : (
+                              <span className="opacity-20 italic">Aucune</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -880,17 +1018,19 @@ export default function Campaigns() {
                 </div>
               )}
             </div>
-            <div className="flex-shrink-0 p-4 border-t border-gray-700 flex flex-col-reverse sm:flex-row sm:justify-end">
+
+            <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
               <button
                 type="button"
                 onClick={() => setShowHistoryModal(false)}
-                className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target"
+                className="w-full h-14 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all text-sm uppercase tracking-widest border border-white/5"
               >
-                Fermer
+                Fermer le rapport
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

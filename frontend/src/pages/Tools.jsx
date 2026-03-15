@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
@@ -787,140 +788,189 @@ export default function Tools() {
   )}
 
       {/* Overlay QR code en premier plan */}
-      {connectingToolId && (
+      {connectingToolId && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && cancelConnect(connectingToolId)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
           <div
-            className="relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col items-center max-h-[90vh] sm:max-h-[85vh] overflow-y-auto animate-fadeIn"
+            className="relative z-10 w-full max-w-md rounded-t-[2rem] sm:rounded-3xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col items-center max-h-[92dvh] sm:max-h-[85vh] overflow-y-auto animate-fadeIn custom-scrollbar overscroll-contain"
             onClick={(e) => e.stopPropagation()}
             data-tour="whatsapp-connect-section"
           >
+            <div className="flex-shrink-0 w-full flex justify-center pt-1 pb-4 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+            </div>
+
             <button
               type="button"
               onClick={() => cancelConnect(connectingToolId)}
-              className="absolute top-4 right-4 p-2 rounded-xl text-gray-400 hover:text-white hover:bg-space-700 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-xl text-gray-500 hover:text-white hover:bg-space-700 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Fermer"
+              style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
-            <h3 className="text-xl font-display font-semibold text-gray-100 mb-2">Connexion WhatsApp</h3>
+
+            <div className="text-center mt-4">
+              <h3 className="text-2xl font-display font-bold text-gray-100 mb-2">Connecter WhatsApp</h3>
+              <p className="text-sm text-gray-400 mb-6">Associez votre compte en quelques secondes</p>
+            </div>
+
             {qrByTool[connectingToolId] ? (
-              <>
-                <div className="rounded-2xl bg-white p-4 border-2 border-space-600 shadow-lg my-4">
+              <div className="w-full flex flex-col items-center">
+                <div className="rounded-3xl bg-white p-5 border-4 border-emerald-500/20 shadow-2xl my-4 transform transition-all hover:scale-[1.02]">
                   <img
                     src={qrByTool[connectingToolId]}
                     alt="QR code WhatsApp"
-                    className="w-72 h-72 sm:w-80 sm:h-80 block"
+                    className="w-64 h-64 sm:w-80 sm:h-80 block"
                   />
                 </div>
-                <p className="text-sm text-gray-300 text-center mb-6 max-w-sm">
-                  Scannez ce QR code avec WhatsApp (Paramètres → Appareils connectés). La connexion se fera automatiquement.
-                </p>
-              </>
+                <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start gap-3 text-left">
+                  <div className="p-1.5 bg-emerald-500/20 rounded-lg text-emerald-400 flex-shrink-0">
+                    <Check className="w-4 h-4" />
+                  </div>
+                  <p className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed">
+                    Scannez ce QR code avec WhatsApp sur votre téléphone (<strong>Appareils connectés</strong>). <br className="hidden sm:block" />
+                    L'outil sera automatiquement prêt à l'emploi.
+                  </p>
+                </div>
+              </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <RefreshCw className="w-12 h-12 text-gray-500 animate-spin mb-4" />
-                <p className="text-gray-400">Génération du QR code…</p>
+              <div className="flex flex-col items-center justify-center py-16">
+                <div className="relative">
+                  <RefreshCw className="w-16 h-16 text-emerald-500 animate-spin mb-6" />
+                  <div className="absolute inset-0 bg-emerald-500/20 blur-xl animate-pulse rounded-full" />
+                </div>
+                <p className="text-lg font-medium text-gray-300">Génération du code...</p>
+                <p className="text-sm text-gray-500 mt-2 text-center max-w-[200px]">Nous préparons une session sécurisée</p>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => cancelConnect(connectingToolId)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
-            >
-              <X className="w-4 h-4" />
-              Annuler
-            </button>
+
+            <div className="w-full mt-8 sm:mt-10" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <button
+                type="button"
+                onClick={() => cancelConnect(connectingToolId)}
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold bg-space-700 hover:bg-space-600 text-gray-200 transition-all active:scale-[0.98] min-h-[48px]"
+              >
+                <X className="w-5 h-5" />
+                Annuler la connexion
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 
       {/* Configuration Modal (Outlook / Google) */}
-      {configTool && (configTool.type === 'outlook' || configTool.type === 'google_calendar') && (
+      {configTool && (configTool.type === 'outlook' || configTool.type === 'google_calendar') && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setConfigTool(null)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
           <div
-            className="relative z-10 w-full max-w-md rounded-2xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col max-h-[90vh] overflow-y-auto animate-fadeIn"
+            className="relative z-10 w-full max-w-md rounded-t-[2rem] sm:rounded-3xl bg-space-800 border border-space-600 shadow-2xl p-6 sm:p-8 flex flex-col max-h-[92dvh] sm:max-h-[85vh] animate-fadeIn overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="flex-shrink-0 w-full flex justify-center pt-1 pb-4 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+            </div>
+
             <button
               type="button"
               onClick={() => setConfigTool(null)}
-              className="absolute top-4 right-4 p-2 rounded-xl text-gray-400 hover:text-white hover:bg-space-700 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-xl text-gray-500 hover:text-white hover:bg-space-700 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              style={{ top: 'max(1rem, env(safe-area-inset-top))' }}
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
-            <h3 className="text-xl font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
-              {configTool.type === 'outlook' ? (
-                <Mail className="w-5 h-5 text-blue-500" />
-              ) : (
-                <Calendar className="w-5 h-5 text-rose-500" />
-              )}
-              {configTool.type === 'outlook' ? 'Configuration Outlook' : 'Configuration Google Calendar'}
-            </h3>
-            
-            <form onSubmit={configTool.type === 'outlook' ? saveOutlookConfig : saveGoogleConfig} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  {configTool.type === 'outlook' ? 'Microsoft App Client ID' : 'Google Client ID'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={configTool.draftConfig?.clientId || ''}
-                  onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientId: e.target.value } })}
-                  className="input-dark w-full font-mono text-sm"
-                  placeholder={configTool.type === 'outlook' ? 'ex: 8bxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' : 'ex: xxxx.apps.googleusercontent.com'}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  {configTool.type === 'outlook' ? 'Client Secret' : 'Client Secret'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={configTool.draftConfig?.clientSecret || ''}
-                  onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientSecret: e.target.value } })}
-                  className="input-dark w-full font-mono text-sm"
-                  placeholder="Secret de l'application..."
-                />
-                <p className="mt-2 text-xs text-gray-400">
+
+            <div className="flex-shrink-0 mb-6">
+              <h3 className="text-2xl font-display font-bold text-gray-100 flex items-center gap-3">
+                <div className={`p-2 rounded-xl ${configTool.type === 'outlook' ? 'bg-blue-500/20 text-blue-400' : 'bg-rose-500/20 text-rose-400'}`}>
                   {configTool.type === 'outlook' ? (
-                    <>Besoin d'aide ? Créez une application dans Azure Active Directory, ajoutez l'URI de redirection <code>HTTPS://.../api/outlook/callback</code>, et générez un secret.</>
+                    <Mail className="w-6 h-6" />
                   ) : (
-                    <>Besoin d'aide ? Créez un projet dans Google Cloud Console, activez l'API Calendar, ajoutez l'URI de redirection <code>HTTPS://.../api/google-calendar/callback</code> dans vos identifiants OAuth 2.0.</>
+                    <Calendar className="w-6 h-6" />
                   )}
-                </p>
+                </div>
+                <span>{configTool.type === 'outlook' ? 'Config. Outlook' : 'Config. Google'}</span>
+              </h3>
+              <p className="text-sm text-gray-400 mt-2">Veuillez renseigner vos identifiants API pour continuer.</p>
+            </div>
+            
+            <form onSubmit={configTool.type === 'outlook' ? saveOutlookConfig : saveGoogleConfig} className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto space-y-5 pr-2 custom-scrollbar overscroll-contain">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    {configTool.type === 'outlook' ? 'Microsoft App Client ID' : 'Google Client ID'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={configTool.draftConfig?.clientId || ''}
+                    onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientId: e.target.value } })}
+                    className="input-dark w-full font-mono text-xs sm:text-sm py-3 px-4 min-h-[48px] touch-target"
+                    placeholder={configTool.type === 'outlook' ? 'ex: 8bxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' : 'ex: xxxx.apps.googleusercontent.com'}
+                    autoFocus
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    {configTool.type === 'outlook' ? 'Client Secret' : 'Client Secret'}
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={configTool.draftConfig?.clientSecret || ''}
+                    onChange={e => setConfigTool({ ...configTool, draftConfig: { ...configTool.draftConfig, clientSecret: e.target.value } })}
+                    className="input-dark w-full font-mono text-xs sm:text-sm py-3 px-4 min-h-[48px] touch-target"
+                    placeholder="Secret de l'application..."
+                  />
+                </div>
+
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 mt-2">
+                  <p className="text-[11px] sm:text-xs text-gray-400 leading-relaxed italic">
+                    {configTool.type === 'outlook' ? (
+                      <>Besoin d'aide ? Créez une application dans <strong>Azure AD</strong>, ajoutez l'URI de redirection <code>HTTPS://.../api/outlook/callback</code>, et générez un secret.</>
+                    ) : (
+                      <>Besoin d'aide ? Créez un projet dans <strong>Google Cloud Console</strong>, activez l'API Calendar, ajoutez l'URI de redirection <code>HTTPS://.../api/google-calendar/callback</code> dans vos identifiants.</>
+                    )}
+                  </p>
+                </div>
               </div>
 
-              <div className="pt-4 flex gap-3">
+              <div className="flex-shrink-0 pt-6 flex flex-col-reverse sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 <button
                   type="button"
                   onClick={() => setConfigTool(null)}
-                  className="flex-1 px-4 py-2.5 rounded-xl font-medium bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                  className="flex-1 px-4 py-3.5 rounded-2xl font-bold bg-space-700 text-gray-300 hover:bg-space-600 transition-all active:scale-[0.98] min-h-[48px]"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={busyToolId === configTool.id}
-                  className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-white transition-colors ${
-                    configTool.type === 'outlook' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-rose-600 hover:bg-rose-500'
+                  className={`flex-1 px-4 py-3.5 rounded-2xl font-bold text-white shadow-lg transition-all active:scale-[0.98] min-h-[48px] ${
+                    configTool.type === 'outlook' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/20' : 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/20'
                   }`}
                 >
-                  Suivant (Connexion)
+                  {busyToolId === configTool.id ? (
+                      <span className="flex items-center justify-center gap-2">
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                          Chargement...
+                      </span>
+                  ) : 'Suivant (Connexion)'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

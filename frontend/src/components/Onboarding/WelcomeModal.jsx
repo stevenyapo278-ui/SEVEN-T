@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll'
 import { useNavigate } from 'react-router-dom'
@@ -218,21 +219,22 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
     })
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       <AnimatePresence>
         <MotionDiv 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-space-950/95 backdrop-blur-xl" 
+          onClick={handleSkip}
         />
       </AnimatePresence>
       
       <MotionDiv 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-3xl max-h-[95vh] sm:max-h-[85vh] flex flex-col lg:flex-row bg-[#0B0F1A] rounded-[1.5rem] sm:rounded-[2rem] border border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
+        className="relative z-10 w-full max-w-3xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col lg:flex-row bg-[#0B0F1A] rounded-[2rem] border border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] overflow-hidden"
       >
         {/* Left Side: Visual/Image */}
         <div className="hidden lg:flex lg:w-[45%] bg-[#0D121F] relative overflow-hidden border-r border-white/5">
@@ -285,7 +287,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
         {/* Right Side: content */}
         <div className="flex-1 flex flex-col min-h-0 p-5 sm:p-10">
           {/* Header Mobile / Info */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gold-400/10 flex items-center justify-center border border-gold-400/20">
                    <Sparkles className="w-4 h-4 text-gold-400" />
@@ -294,13 +296,13 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
              </div>
              <button 
                onClick={handleSkip}
-               className="p-2 hover:bg-white/5 rounded-full transition-colors group"
+               className="p-2 hover:bg-white/5 rounded-full transition-colors group min-w-[44px] min-h-[44px] flex items-center justify-center"
              >
                <X className="w-5 h-5 text-gray-500 group-hover:text-white" />
              </button>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar overscroll-contain">
             <AnimatePresence mode="wait" custom={direction}>
               <MotionDiv
                 key={currentStep}
@@ -329,7 +331,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
           </div>
 
           {/* Footer Actions */}
-          <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-between pt-6 sm:pt-8 border-t border-white/5 gap-4">
+          <div className="mt-8 sm:mt-12 flex flex-col sm:flex-row items-center justify-between pt-6 sm:pt-8 border-t border-white/5 gap-4" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
              <div className="flex items-center justify-between w-full sm:w-auto">
                 <div className="flex lg:hidden gap-1.5 mr-4">
                     {steps.map((_, i) => (
@@ -345,18 +347,18 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
                 {currentStep > 0 && (
                   <button
                     onClick={handleBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-white font-bold transition-colors text-sm sm:text-base"
+                    className="flex items-center gap-2 text-gray-500 hover:text-white font-bold transition-colors text-sm sm:text-base min-h-[44px]"
                   >
                     Précédent
                   </button>
                 )}
              </div>
 
-             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-6">
+             <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-6 font-bold">
                 {!isLastStep && (
                    <button 
                      onClick={handleSkip}
-                     className="text-sm font-bold text-gray-500 hover:text-gray-300 sm:block"
+                     className="text-sm font-bold text-gray-500 hover:text-gray-300 sm:block min-h-[44px]"
                    >
                      Passer
                    </button>
@@ -364,7 +366,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
                 
                 <button
                   onClick={handleNext}
-                  className="group relative flex items-center justify-center sm:justify-start gap-3 bg-white text-black px-5 sm:px-6 py-3 sm:py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none"
+                  className="group relative flex items-center justify-center sm:justify-start gap-3 bg-white text-black px-5 sm:px-6 py-3 sm:py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none min-h-[48px]"
                 >
                   <span className="relative z-10 text-xs sm:text-sm">
                     {isLastStep ? t('onboarding.btnCreateAgent') : t('onboarding.btnContinue')}
@@ -376,6 +378,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
           </div>
         </div>
       </MotionDiv>
-    </div>
+    </div>,
+    document.body
   )
 }

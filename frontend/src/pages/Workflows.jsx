@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -788,173 +789,232 @@ export default function Workflows() {
       </div>
 
       {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className={`relative z-10 card p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-fadeIn ${isDark ? 'bg-space-800' : 'bg-white'}`}>
-            <h2 className={`text-xl font-display font-bold mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              {selectedWorkflow ? 'Modifier le workflow' : 'Nouveau workflow'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Nom *</label>
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="input"
-                    placeholder="Ex: Suivi automatique"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Agent (optionnel)</label>
-                  <select
-                    value={form.agent_id}
-                    onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
-                    className="input"
-                  >
-                    <option value="">Tous les agents</option>
-                    {agents.map((agent) => (
-                      <option key={agent.id} value={agent.id}>{agent.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+      {showModal && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => { setShowModal(false); resetForm(); }}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden" 
+            role="dialog" 
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="input"
-                  rows={2}
-                  placeholder="Description du workflow..."
-                />
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-display font-bold text-gray-100 truncate">
+                    {selectedWorkflow ? 'Modifier le workflow' : 'Nouveau workflow'}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1 truncate">Automatisez vos interactions clients</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => { setShowModal(false); resetForm(); }}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
+            </div>
 
-              {/* Trigger */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Déclencheur *</label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {Object.entries(types.triggerTypes).map(([key, trigger]) => {
-                    const TriggerIcon = TRIGGER_ICONS[key] || Zap
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setForm({ ...form, trigger_type: key, trigger_config: {} })}
-                        className={`p-3 rounded-xl border text-left transition-all ${
-                          form.trigger_type === key
-                            ? 'border-gold-400 bg-gold-400/10'
-                            : 'border-space-600 hover:border-space-500'
-                        }`}
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-8 custom-scrollbar overscroll-contain">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nom du workflow *</label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                      placeholder="Ex: Suivi automatique"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Agent (optionnel)</label>
+                    <div className="relative">
+                      <select
+                        value={form.agent_id}
+                        onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
+                        className="input-dark w-full py-4 px-5 text-base rounded-2xl appearance-none"
                       >
-                        <TriggerIcon className={`w-5 h-5 mb-2 ${form.trigger_type === key ? 'text-gold-400' : 'text-gray-400'}`} />
-                        <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{trigger.name}</p>
-                      </button>
-                    )
-                  })}
+                        <option value="">Tous les agents</option>
+                        {agents.map((agent) => (
+                          <option key={agent.id} value={agent.id}>{agent.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Trigger config based on type */}
-              {form.trigger_type === 'keyword' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Mots-clés (séparés par virgule)</label>
-                  <input
-                    type="text"
-                    value={form.trigger_config.keywords || ''}
-                    onChange={(e) => setForm({ ...form, trigger_config: { ...form.trigger_config, keywords: e.target.value } })}
-                    className="input"
-                    placeholder="commande, achat, prix"
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Description</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="input-dark w-full py-4 px-5 text-base rounded-2xl min-h-[80px] resize-none"
+                    placeholder="Briefing sur l'objectif de ce workflow..."
                   />
                 </div>
-              )}
 
-              {form.trigger_type === 'no_response' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Délai (en minutes)</label>
-                  <input
-                    type="number"
-                    value={form.trigger_config.delay_minutes || 30}
-                    onChange={(e) => setForm({ ...form, trigger_config: { ...form.trigger_config, delay_minutes: parseInt(e.target.value) } })}
-                    className="input"
-                    min={1}
-                  />
-                </div>
-              )}
-
-              {/* Actions */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Actions *</label>
-                {form.actions.length > 0 && (
-                  <div className="space-y-2 mb-4">
-                    {form.actions.map((action, idx) => {
-                      const ActionIcon = ACTION_ICONS[action.type] || Zap
+                {/* Trigger */}
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Déclencheur (Quand?)</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {Object.entries(types.triggerTypes).map(([key, trigger]) => {
+                      const TriggerIcon = TRIGGER_ICONS[key] || Zap
+                      const isSelected = form.trigger_type === key
                       return (
-                        <div key={idx} className="flex items-center gap-3 p-3 bg-space-800 rounded-xl">
-                          <div className="w-8 h-8 rounded-lg bg-space-700 flex items-center justify-center">
-                            <ActionIcon className="w-4 h-4 text-gold-400" />
-                          </div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{types.actionTypes[action.type]?.name}</p>
-                            {action.type === 'send_message' && (
-                              <div className="mt-2 space-y-2">
-                                <div>
-                                  <label className="block text-xs text-gray-400 mb-1">Destinataire</label>
-                                  <select
-                                    value={action.config.send_to === 'contact' ? 'contact' : 'conversation'}
-                                    onChange={(e) => updateActionConfig(idx, {
-                                      send_to: e.target.value === 'contact' ? 'contact' : 'conversation',
-                                      contact_id: e.target.value === 'contact' ? (action.config.contact_id || '') : null
-                                    })}
-                                    className="input text-sm"
-                                  >
-                                    <option value="conversation">Contact de la conversation</option>
-                                    <option value="contact">Contact enregistré</option>
-                                  </select>
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setForm({ ...form, trigger_type: key, trigger_config: {} })}
+                          className={`p-4 rounded-2xl border-2 text-left transition-all min-h-[100px] flex flex-col justify-between ${
+                            isSelected
+                              ? 'border-gold-400 bg-gold-400 text-black'
+                              : 'border-white/5 bg-white/[0.02] hover:border-white/10 hover:bg-white/5'
+                          }`}
+                        >
+                          <TriggerIcon className={`w-6 h-6 ${isSelected ? 'text-black' : 'text-gray-400'}`} />
+                          <p className={`text-[10px] font-black uppercase tracking-tight leading-tight ${isSelected ? 'text-black' : (isDark ? 'text-gray-100' : 'text-gray-900')}`}>{trigger.name}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Trigger config based on type */}
+                {form.trigger_type === 'keyword' && (
+                  <div className="animate-slideDown space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Mots-clés déclencheurs</label>
+                    <input
+                      type="text"
+                      value={form.trigger_config.keywords || ''}
+                      onChange={(e) => setForm({ ...form, trigger_config: { ...form.trigger_config, keywords: e.target.value } })}
+                      className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                      placeholder="Séparez par virgule: commande, achat, prix"
+                    />
+                  </div>
+                )}
+
+                {form.trigger_type === 'no_response' && (
+                  <div className="animate-slideDown space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Délai d'inactivité (minutes)</label>
+                    <input
+                      type="number"
+                      value={form.trigger_config.delay_minutes || 30}
+                      onChange={(e) => setForm({ ...form, trigger_config: { ...form.trigger_config, delay_minutes: parseInt(e.target.value) } })}
+                      className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                      min={1}
+                    />
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="space-y-6">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Séquence d'actions (Quoi?)</label>
+                  {form.actions.length > 0 && (
+                    <div className="space-y-4">
+                      {form.actions.map((action, idx) => {
+                        const ActionIcon = ACTION_ICONS[action.type] || Zap
+                        return (
+                          <div key={idx} className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl animate-fadeIn relative">
+                            <div className="flex items-center justify-between gap-4 mb-6">
+                              <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-gold-400 text-black shadow-lg shadow-gold-400/20">
+                                  <ActionIcon className="w-5 h-5" />
                                 </div>
-                                {action.config.send_to === 'contact' && (
-                                  <select
-                                    value={action.config.contact_id || ''}
-                                    onChange={(e) => updateActionConfig(idx, { contact_id: e.target.value })}
-                                    className="input text-sm w-full"
-                                  >
-                                    <option value="">Choisir un contact...</option>
-                                    {contacts.map((c) => (
-                                      <option key={c.id} value={c.id}>{c.name} ({contactRoleLabel(c.role)}) – {c.phone_number}</option>
-                                    ))}
-                                  </select>
-                                )}
-                                <div className="rounded-xl border border-space-600 bg-space-800/50 p-3 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
-                                  <div className="flex items-center justify-between gap-2 mb-2">
-                                    <label className="block text-xs font-medium text-gray-300">Message (ou laisser vide si récap uniquement)</label>
+                                <div>
+                                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none mb-1">Action {idx + 1}</p>
+                                  <p className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{types.actionTypes[action.type]?.name}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeAction(idx)}
+                                className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                                aria-label="Supprimer l'action"
+                              >
+                                <Trash2 className="w-5 h-5" />
+                              </button>
+                            </div>
+
+                            {action.type === 'send_message' && (
+                              <div className="space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Destinataire</label>
+                                    <div className="relative">
+                                      <select
+                                        value={action.config.send_to === 'contact' ? 'contact' : 'conversation'}
+                                        onChange={(e) => updateActionConfig(idx, {
+                                          send_to: e.target.value === 'contact' ? 'contact' : 'conversation',
+                                          contact_id: e.target.value === 'contact' ? (action.config.contact_id || '') : null
+                                        })}
+                                        className="input-dark w-full py-4 px-5 text-sm rounded-2xl appearance-none"
+                                      >
+                                        <option value="conversation">Contact de la conversation</option>
+                                        <option value="contact">Contact enregistré</option>
+                                      </select>
+                                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                    </div>
+                                  </div>
+                                  {action.config.send_to === 'contact' && (
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Choisir le contact</label>
+                                      <div className="relative">
+                                        <select
+                                          value={action.config.contact_id || ''}
+                                          onChange={(e) => updateActionConfig(idx, { contact_id: e.target.value })}
+                                          className="input-dark w-full py-4 px-5 text-sm rounded-2xl appearance-none"
+                                        >
+                                          <option value="">Choisir...</option>
+                                          {contacts.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.name} ({contactRoleLabel(c.role)})</option>
+                                          ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="rounded-2xl border border-white/5 bg-black/40 p-5 focus-within:border-gold-400/50 transition-all shadow-inner">
+                                  <div className="flex items-center justify-between gap-2 mb-4">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Message à envoyer</label>
                                     <button
                                       type="button"
                                       onClick={() => setMessageFocusOpen(idx)}
-                                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/30 transition-colors flex-shrink-0"
+                                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-400/10 transition-all border border-blue-400/20"
                                     >
-                                      <Maximize2 className="w-3.5 h-3.5" />
-                                      Agrandir
+                                      <Maximize2 className="w-3 h-3" />
+                                      Plein écran
                                     </button>
                                   </div>
                                   <textarea
                                     value={action.config.message || ''}
                                     onChange={(e) => updateActionConfig(idx, { message: e.target.value })}
-                                    className="w-full rounded-lg border border-space-600 bg-space-900 px-3 py-2 font-mono text-sm text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500/30 min-h-[160px] resize-y leading-relaxed"
-                                    placeholder={"Ex: 🚚 Nouvelle livraison pour {customer_name}..."}
-                                    rows={7}
+                                    className="w-full bg-transparent border-none p-0 focus:ring-0 font-mono text-sm leading-relaxed min-h-[140px] text-gray-100 placeholder:text-gray-600 custom-scrollbar resize-none"
+                                    placeholder="Ex: Bonjour {customer_name}, votre commande est prête ! 🚚"
+                                    rows={5}
                                   />
                                 </div>
+
                                 {['order_validated', 'order_created'].includes(form.trigger_type) && (
-                                  <div className="mt-2 p-3 bg-space-800 rounded-lg border border-space-700">
-                                    <p className="text-xs font-semibold text-gray-300 mb-2">
-                                      ✨ Variables disponibles pour formater votre message :
-                                    </p>
+                                  <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                                    <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3 leading-none">Variables automatiques</p>
                                     <div className="flex flex-wrap gap-2">
-                                      {['{customer_name}', '{customer_phone}', '{lieu_livraison}', '{delivery_phone}', '{order_items}', '{order_total}', '{currency}', '{order_id}', '{order_notes}'].map(variable => (
-                                        <code key={variable} className="text-[10px] bg-space-900 border border-space-600 px-1.5 py-0.5 rounded text-blue-400">
+                                      {['{customer_name}', '{order_total}', '{order_id}'].map(variable => (
+                                        <code key={variable} className="text-[9px] font-black bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-blue-300">
                                           {variable}
                                         </code>
                                       ))}
@@ -963,165 +1023,218 @@ export default function Workflows() {
                                 )}
                               </div>
                             )}
+
                             {action.type === 'wait' && (
-                              <input
-                                type="number"
-                                value={action.config.minutes || 5}
-                                onChange={(e) => updateActionConfig(idx, { minutes: parseInt(e.target.value) })}
-                                className="input mt-2 w-32"
-                                placeholder="Minutes"
-                                min={1}
-                              />
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Attente recommandée (minutes)</label>
+                                <input
+                                  type="number"
+                                  value={action.config.minutes || 5}
+                                  onChange={(e) => updateActionConfig(idx, { minutes: parseInt(e.target.value) })}
+                                  className="input-dark w-full max-w-[160px] py-4 px-5 text-base rounded-2xl"
+                                  min={1}
+                                />
+                              </div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeAction(idx)}
-                            className="p-2 text-gray-400 hover:text-red-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-3">
+                    {Object.entries(types.actionTypes).map(([key, action]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => addAction(key)}
+                        className={`inline-flex items-center gap-3 px-5 py-3 text-[10px] font-black uppercase tracking-widest border-2 rounded-2xl transition-all ${
+                          isDark ? 'border-white/5 text-gray-400 hover:text-white hover:bg-white/5 hover:border-white/10' : 'border-gray-100 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Plus className="w-4 h-4" />
+                        {action.name}
+                      </button>
+                    ))}
                   </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(types.actionTypes).map(([key, action]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => addAction(key)}
-                      className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
-                        isDark ? 'border-space-600 text-gray-400 hover:text-gray-100 hover:border-space-500' : 'border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300'
-                      }`}
-                    >
-                      + {action.name}
-                    </button>
-                  ))}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col-reverse sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false)
-                    resetForm()
-                  }}
-                  className="btn-secondary"
+                  onClick={() => { setShowModal(false); resetForm(); }}
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
                 >
                   Annuler
                 </button>
-                <button type="submit" className="btn-primary">
-                  {selectedWorkflow ? 'Enregistrer' : 'Créer'}
+                <button 
+                  type="submit" 
+                  className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_20px_40px_rgba(0,0,0,0.3)] min-h-[48px]"
+                >
+                  {selectedWorkflow ? 'Enregistrer les modifications' : 'Créer le workflow'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Éditeur plein écran du message (style system prompt) */}
-      {messageFocusOpen !== null && form.actions[messageFocusOpen] && (
-        <div className="fixed inset-0 z-[60] flex flex-col p-4 bg-space-950/95 backdrop-blur-sm overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-100">Message du workflow</h3>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Variables : {'{customer_name}'} {'{customer_phone}'} {'{lieu_livraison}'} {'{delivery_phone}'} {'{order_items}'} {'{order_total}'} {'{currency}'} {'{order_id}'}
+      {messageFocusOpen !== null && form.actions[messageFocusOpen] && createPortal(
+        <div 
+          className="fixed inset-0 z-[100] flex flex-col bg-[#0B0F1A] backdrop-blur-3xl animate-fadeIn" 
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div className="flex-shrink-0 flex items-center justify-between p-6 sm:p-8 bg-black/40 border-b border-white/10" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+            <div className="min-w-0">
+              <h3 className="text-2xl font-display font-bold text-gray-100 truncate">Éditeur de message</h3>
+              <p className="text-[10px] font-black text-gray-500 mt-1 uppercase tracking-widest leading-none">
+                Variables: {'{customer_name}'} • {'{order_id}'} • {'{order_total}'}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setMessageFocusOpen(null)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-300 hover:text-white bg-space-800 hover:bg-space-700 border border-space-600 transition-colors"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest bg-white text-black hover:bg-gold-400 transition-all min-h-[48px] shadow-lg shadow-white/5"
             >
-              <Minimize2 className="w-4 h-4" />
-              Réduire
+              <Minimize2 className="w-5 h-5" />
+              <span>Terminer</span>
             </button>
           </div>
-          <div className="flex-1 min-h-0 rounded-xl border border-space-600 bg-space-900 overflow-hidden flex flex-col">
-            <textarea
-              value={form.actions[messageFocusOpen]?.config?.message || ''}
-              onChange={(e) => updateActionConfig(messageFocusOpen, { message: e.target.value })}
-              placeholder={"🚚 Nouvelle livraison pour {customer_name}...\n\nClient: {customer_name}\nTél: {customer_phone}\nLieu: {lieu_livraison}\nArticles: {order_items}\nTotal: {order_total} {currency}"}
-              className="flex-1 w-full min-h-0 p-4 font-mono text-sm text-gray-100 placeholder-gray-500 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none leading-relaxed"
-              autoFocus
-            />
+          
+          <div className="flex-1 min-h-0 p-6 sm:p-12 overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 rounded-[2.5rem] border border-white/10 bg-black/60 shadow-[0_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden focus-within:ring-2 focus-within:ring-white/10 transition-all">
+              <textarea
+                value={form.actions[messageFocusOpen]?.config?.message || ''}
+                onChange={(e) => updateActionConfig(messageFocusOpen, { message: e.target.value })}
+                placeholder={"Saisissez votre message ici...\n\nEx: 🚚 Nouvelle commande expédiée pour {customer_name} !"}
+                className="flex-1 w-full min-h-0 p-8 sm:p-12 font-mono text-lg sm:text-2xl text-gray-100 placeholder-gray-800 bg-transparent border-0 focus:outline-none focus:ring-0 resize-none leading-relaxed custom-scrollbar"
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-gray-600 text-center mt-8 italic font-bold uppercase tracking-widest opacity-50">Sauvegarde automatique active</p>
           </div>
-          <p className="text-xs text-gray-500 mt-2">Cliquez sur "Réduire" pour revenir au formulaire. Vos modifications sont conservées.</p>
-        </div>
+
+          <div className="flex-shrink-0 p-6 bg-black/20 border-t border-white/5" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+             <button
+               type="button"
+               onClick={() => setMessageFocusOpen(null)}
+               className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-white transition-all"
+             >
+               Sortir du mode plein écran
+             </button>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Ajouter/Modifier contact */}
-      {showContactModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className={`relative z-10 card p-4 sm:p-6 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn ${isDark ? 'bg-space-800' : 'bg-white'}`}>
-            <h2 className={`text-xl font-display font-bold mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-              {selectedContact ? 'Modifier le contact' : 'Ajouter un contact'}
-            </h2>
-            <form onSubmit={saveContact} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Nom *</label>
-                <input
-                  type="text"
-                  value={contactForm.name}
-                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                  className="input"
-                  placeholder="Ex: Jean Dupont"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Numéro *</label>
-                <input
-                  type="text"
-                  value={contactForm.phone_number}
-                  onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value })}
-                  className="input"
-                  placeholder="Ex: +225 07 00 00 00 00"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Rôle / Type *</label>
-                <select
-                  value={contactForm.role}
-                  onChange={(e) => setContactForm({ ...contactForm, role: e.target.value })}
-                  className="input"
+      {showContactModal && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setShowContactModal(false)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-md bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-fadeIn" 
+            role="dialog" 
+            aria-modal="true"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+            </div>
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-display font-bold text-gray-100 truncate">
+                    {selectedContact ? 'Modifier le contact' : 'Nouveau contact'}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1 truncate">Assignez des contacts à vos workflows</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setShowContactModal(false)}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
                 >
-                  {Object.entries(types.contactRoles || {}).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Ex: Livreur, Gérant magasin — pour cibler ce contact dans l’action « Envoyer un message »</p>
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
-                <textarea
-                  value={contactForm.notes}
-                  onChange={(e) => setContactForm({ ...contactForm, notes: e.target.value })}
-                  className="input"
-                  rows={2}
-                  placeholder="Optionnel"
-                />
+            </div>
+
+            <form onSubmit={saveContact} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-6 overscroll-contain custom-scrollbar">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nom complet *</label>
+                  <input
+                    type="text"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                    className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                    placeholder="Ex: Jean Dupont"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Numéro de téléphone *</label>
+                  <input
+                    type="text"
+                    value={contactForm.phone_number}
+                    onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value })}
+                    className="input-dark w-full py-4 px-5 text-base font-mono rounded-2xl"
+                    placeholder="Ex: +225 07 00 00 00 00"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Rôle / Type de contact *</label>
+                  <div className="relative">
+                    <select
+                      value={contactForm.role}
+                      onChange={(e) => setContactForm({ ...contactForm, role: e.target.value })}
+                      className="input-dark w-full py-4 px-5 text-sm rounded-2xl appearance-none"
+                    >
+                      {Object.entries(types.contactRoles || {}).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Notes internes</label>
+                  <textarea
+                    value={contactForm.notes}
+                    onChange={(e) => setContactForm({ ...contactForm, notes: e.target.value })}
+                    className="input-dark w-full py-4 px-5 text-base rounded-2xl min-h-[80px] resize-none"
+                    placeholder="Informations utiles pour les automatisations..."
+                  />
+                </div>
               </div>
-              <div className="flex justify-end gap-3 pt-2">
+
+              <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col-reverse sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 <button
                   type="button"
                   onClick={() => setShowContactModal(false)}
-                  className="btn-secondary"
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
                 >
                   Annuler
                 </button>
-                <button type="submit" className="btn-primary">
-                  {selectedContact ? 'Enregistrer' : 'Ajouter'}
+                <button 
+                  type="submit" 
+                  className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl min-h-[48px]"
+                >
+                  {selectedContact ? 'Mettre à jour' : 'Ajouter le contact'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Contact Detail Zoom View */}
       {selectedContactView && (
@@ -1242,24 +1355,35 @@ export default function Workflows() {
 }
 
 function DetailOverlay({ children, onClose }) {
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/80 backdrop-blur-xl"
       onClick={onClose}
+      style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
-      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
       <div 
-        className="relative z-10 w-full max-w-lg bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-8 animate-zoom-in"
+        className="relative z-10 w-full max-w-xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-zoomIn max-h-[92dvh] sm:max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors"
-        >
-          <XCircle className="w-6 h-6" />
-        </button>
-        {children}
+        {/* Mobile Handle */}
+        <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+          <div className="w-12 h-1.5 rounded-full bg-white/10" />
+        </div>
+
+        <div className="flex-shrink-0 p-6 sm:p-10 pb-0 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+          <button 
+            onClick={onClose}
+            className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/5 rounded-xl"
+          >
+            <XCircle className="w-7 h-7" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-6 sm:px-10 pb-10" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
+          {children}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

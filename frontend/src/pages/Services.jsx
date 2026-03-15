@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Briefcase, Plus, Search, Filter, Loader2, RefreshCw, XCircle } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
@@ -170,47 +171,67 @@ export default function Services() {
       )}
 
       {/* View Modal (Overlay) */}
-      {selectedServiceView && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setSelectedServiceView(null)}>
-          <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
-          <div className="relative z-10 w-full max-w-lg bg-space-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 animate-zoom-in" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedServiceView(null)} className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors">
-              <XCircle className="w-6 h-6" />
-            </button>
-            <div className="flex flex-col">
-              <div className="aspect-video rounded-3xl overflow-hidden bg-space-800 mb-6">
-                 {selectedServiceView.image_url ? (
-                  <img src={selectedServiceView.image_url} alt={selectedServiceView.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Briefcase className="w-16 h-16 text-space-600" />
-                  </div>
-                )}
-              </div>
-              <h3 className="text-3xl font-display font-bold text-white mb-4">{selectedServiceView.name}</h3>
-              <div className="flex flex-wrap gap-3 mb-6">
-                <span className="px-4 py-1.5 rounded-full bg-gold-400/20 text-gold-400 text-sm font-bold font-mono">
-                  {formatPrice(selectedServiceView.price)}
-                </span>
-                <span className="px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">
-                  {selectedServiceView.duration} min
-                </span>
-                {selectedServiceView.category && (
-                  <span className="px-4 py-1.5 rounded-full bg-space-800 text-gray-400 text-sm font-medium">
-                    {selectedServiceView.category}
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-400 leading-relaxed mb-8">{selectedServiceView.description || 'Aucune description fournie.'}</p>
+      {selectedServiceView && createPortal(
+        <div 
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
+          onClick={() => setSelectedServiceView(null)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-lg bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-[2.5rem] shadow-2xl animate-zoomIn flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+            </div>
+
+            <div className="flex-shrink-0 p-6 sm:p-8 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
               <button 
-                onClick={() => { setSelectedServiceView(null); setEditingService(selectedServiceView) }}
-                className="btn-primary py-4 rounded-2xl font-bold text-lg"
+                onClick={() => setSelectedServiceView(null)} 
+                className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
               >
-                {t('common.edit')}
+                <XCircle className="w-6 h-6" />
               </button>
             </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-6 sm:px-10 pb-10" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
+              <div className="flex flex-col">
+                <div className="aspect-video rounded-3xl overflow-hidden bg-space-800 mb-8 shadow-2xl shadow-black/50">
+                   {selectedServiceView.image_url ? (
+                    <img src={selectedServiceView.image_url} alt={selectedServiceView.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Briefcase className="w-16 h-16 text-space-600" />
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-3xl font-display font-bold text-white mb-4">{selectedServiceView.name}</h3>
+                <div className="flex flex-wrap gap-3 mb-8">
+                  <span className="px-4 py-1.5 rounded-full bg-gold-400/20 text-gold-400 text-sm font-bold font-mono">
+                    {formatPrice(selectedServiceView.price)}
+                  </span>
+                  <span className="px-4 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">
+                    {selectedServiceView.duration} min
+                  </span>
+                  {selectedServiceView.category && (
+                    <span className="px-4 py-1.5 rounded-full bg-white/5 text-gray-400 text-sm font-medium">
+                      {selectedServiceView.category}
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-400 leading-relaxed mb-10 text-lg">{selectedServiceView.description || 'Aucune description fournie.'}</p>
+                <button 
+                  onClick={() => { setSelectedServiceView(null); setEditingService(selectedServiceView) }}
+                  className="btn-primary py-4 rounded-2xl font-bold text-lg shadow-xl shadow-gold-500/20"
+                >
+                  {t('common.edit')}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

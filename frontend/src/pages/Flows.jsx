@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
@@ -392,124 +393,135 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
       
-      <div className={`relative z-10 w-full max-w-lg rounded-t-2xl sm:rounded-2xl border shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn ${
+      <div className={`relative z-10 w-full max-w-lg rounded-t-3xl sm:rounded-3xl border shadow-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-fadeIn overflow-hidden max-sm:rounded-b-none ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
       }`}>
-        <div className={`flex-shrink-0 p-4 border-b flex items-center justify-between ${
+        <div className={`flex-shrink-0 p-5 sm:p-6 border-b flex items-center justify-between ${
           isDark ? 'border-space-700' : 'border-gray-200'
-        }`}>
-          <h2 className={`text-lg font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+        }`} style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}>
+          <h2 className={`text-xl font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             Nouveau flow
           </h2>
-          <button onClick={onClose} className="p-2 -m-2 text-icon hover:opacity-80 touch-target" aria-label="Fermer">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-space-800 transition-colors" aria-label="Fermer">
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
-          <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Nom du flow
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className={`w-full px-4 py-2 rounded-lg border ${
-                isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
-              }`}
-              placeholder="Ex: Accueil et qualification"
-              required
-            />
-          </div>
+          <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 space-y-5 custom-scrollbar overscroll-contain">
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Nom du flow
+              </label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className={`w-full px-4 py-2 rounded-lg border min-h-[44px] touch-target ${
+                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
+                }`}
+                placeholder="Ex: Accueil et qualification"
+                required
+              />
+            </div>
 
-          <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Description (optionnel)
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className={`w-full px-4 py-2 rounded-lg border h-20 ${
-                isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
-              }`}
-              placeholder="Décrivez le but de ce flow..."
-            />
-          </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Description (optionnel)
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className={`w-full px-4 py-2 rounded-xl border h-24 resize-none ${
+                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
+                }`}
+                placeholder="Décrivez le but de ce flow..."
+              />
+            </div>
 
-          <div>
-            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Agent (optionnel)
-            </label>
-            <select
-              value={form.agent_id}
-              onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
-              className={`w-full px-4 py-2 rounded-lg border ${
-                isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
-              }`}
-            >
-              <option value="">Tous les agents</option>
-              {agents.map(agent => (
-                <option key={agent.id} value={agent.id}>{agent.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-              Commencer avec un template
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, template: null })}
-                className={`p-3 rounded-lg border-2 text-left transition-all ${
-                  form.template === null
-                    ? 'border-gold-400 bg-gold-400/10'
-                    : isDark ? 'border-space-700 hover:border-space-600' : 'border-gray-200 hover:border-gray-300'
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Agent (optionnel)
+              </label>
+              <select
+                value={form.agent_id}
+                onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
+                className={`w-full px-4 py-2 rounded-lg border min-h-[44px] touch-target ${
+                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
                 }`}
               >
-                <Zap className={`w-5 h-5 mb-1 ${form.template === null ? 'text-gold-400' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Vide</p>
-                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Partir de zéro</p>
-              </button>
-              
-              {templates.map(template => (
+                <option value="">Tous les agents</option>
+                {agents.map(agent => (
+                  <option key={agent.id} value={agent.id}>{agent.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Commencer avec un template
+              </label>
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  key={template.id}
                   type="button"
-                  onClick={() => setForm({ ...form, template: template.id })}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
-                    form.template === template.id
+                  onClick={() => setForm({ ...form, template: null })}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    form.template === null
                       ? 'border-gold-400 bg-gold-400/10'
                       : isDark ? 'border-space-700 hover:border-space-600' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <LayoutTemplate className={`w-5 h-5 mb-1 ${form.template === template.id ? 'text-gold-400' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-                  <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{template.name}</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{template.description}</p>
+                  <Zap className={`w-5 h-5 mb-1 ${form.template === null ? 'text-gold-400' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                  <p className={`text-sm font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Vide</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Partir de zéro</p>
                 </button>
-              ))}
+                
+                {templates.map(template => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    onClick={() => setForm({ ...form, template: template.id })}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      form.template === template.id
+                        ? 'border-gold-400 bg-gold-400/10'
+                        : isDark ? 'border-space-700 hover:border-space-600' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <LayoutTemplate className={`w-5 h-5 mb-1 ${form.template === template.id ? 'text-gold-400' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <p className={`text-sm font-bold truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{template.name}</p>
+                    <p className={`text-xs line-clamp-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{template.description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          </div>
-          <div className="flex-shrink-0 p-4 border-t flex flex-col-reverse sm:flex-row gap-3 sm:justify-end bg-inherit">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1 sm:flex-none min-h-[44px] touch-target">
+          <div className={`flex-shrink-0 p-5 sm:p-6 border-t flex flex-col sm:flex-row gap-3 ${
+            isDark ? 'bg-space-900/50 border-space-700' : 'bg-gray-50 border-gray-200'
+          }`} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secondary flex-1 min-h-[48px] touch-target"
+            >
               Annuler
             </button>
-            <button type="submit" disabled={saving} className="btn-primary flex-1 sm:flex-none min-h-[44px] touch-target flex items-center justify-center gap-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary flex-1 min-h-[48px] touch-target inline-flex items-center justify-center gap-2"
+            >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Créer
+              Créer le flow
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

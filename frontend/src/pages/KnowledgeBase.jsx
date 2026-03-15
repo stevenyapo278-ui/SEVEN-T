@@ -517,80 +517,125 @@ function KnowledgeModal({ item, onClose, onSaved }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
-      <div className="relative z-10 w-full max-w-xl bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-3xl shadow-2xl max-h-[90dvh] sm:max-h-[80vh] flex flex-col animate-fadeIn max-sm:rounded-b-none" role="dialog" aria-modal="true">
-        <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-display font-semibold text-gray-100">
-              {isEditing ? 'Modifier le savoir' : 'Ajouter un savoir'}
-            </h2>
-            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 min-w-[44px] min-h-[44px] flex items-center justify-center"><X className="w-5 h-5" /></button>
+    <div 
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+      style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+    >
+      <div 
+        className="relative z-10 w-full max-w-xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden" 
+        role="dialog" 
+        aria-modal="true" 
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Mobile Handle */}
+        <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+          <div className="w-12 h-1.5 rounded-full bg-white/10" />
+        </div>
+
+        <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-display font-bold text-gray-100">
+                {isEditing ? 'Modifier le savoir' : 'Ajouter un savoir'}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Enrichissez l'intelligence de vos agents</p>
+            </div>
+            <button type="button" onClick={onClose} className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5">
+              <X className="w-6 h-6" />
+            </button>
           </div>
+          
           {!isEditing && (
             <div className="grid grid-cols-4 gap-2">
               {typeOptions.map(opt => (
                 <button
                   key={opt.id}
                   onClick={() => setActiveType(opt.id)}
-                  className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all min-h-[64px] ${
-                    activeType === opt.id ? 'bg-gold-400/10 border-gold-400/30 ring-2 ring-gold-400/10' : 'bg-space-950/50 border-transparent hover:border-space-700'
+                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all min-h-[80px] ${
+                    activeType === opt.id 
+                      ? 'bg-gold-400 text-black border-gold-400' 
+                      : 'bg-white/[0.02] border-white/5 text-gray-500 hover:border-white/10 hover:bg-white/5'
                   }`}
                 >
-                  <opt.icon className={`w-5 h-5 ${activeType === opt.id ? 'text-gold-400' : 'text-gray-500'}`} />
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${activeType === opt.id ? 'text-gray-100' : 'text-gray-500'}`}>{opt.label}</span>
+                  <opt.icon className="w-5 h-5" />
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${activeType === opt.id ? 'text-black' : 'text-gray-500'}`}>{opt.label}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 custom-scrollbar overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex-1 overflow-y-auto min-h-0 p-6 sm:p-8 pt-0 space-y-6 custom-scrollbar overscroll-contain">
           {activeType === 'text' || isEditing ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Titre du sujet</label>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Titre du sujet</label>
                 <input
                   type="text" required value={title} onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Politique de livraison" className="input-dark w-full min-h-[44px]"
+                  placeholder="Ex: Politique de livraison" className="input-dark w-full py-4 px-5 text-base rounded-2xl"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contenu textuel</label>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Contenu textuel</label>
                 <textarea
                   required value={content} onChange={(e) => setContent(e.target.value)}
-                  placeholder="Décrivez votre savoir ici..." rows={10} className="input-dark w-full resize-none min-h-[150px]"
+                  placeholder="Décrivez votre savoir ici..." rows={12} 
+                  className="input-dark w-full py-4 px-5 text-base rounded-2xl resize-none min-h-[250px] custom-scrollbar"
                 />
               </div>
-              <button disabled={loading} className="btn-primary w-full py-4 text-base shadow-xl active:scale-[0.98] min-h-[56px] mt-4">
-                {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Enregistrer dans le cerveau'}
-              </button>
+              <div className="p-6 sm:p-8 pt-4 border-t border-white/5 -mx-6 sm:-mx-8 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+                <button disabled={loading} className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-gold-400 py-4 px-6 rounded-2xl font-syne font-black italic transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl disabled:opacity-50">
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                  {isEditing ? 'Mettre à jour le savoir' : 'Enregistrer dans le cerveau'}
+                </button>
+              </div>
             </form>
           ) : activeType === 'pdf' ? (
-            <div className="space-y-6">
-               <button onClick={() => fileInputRef.current?.click()} className="w-full py-12 sm:py-20 border-2 border-dashed border-space-700 rounded-3xl bg-space-950/50 hover:bg-space-800 transition-all flex flex-col items-center justify-center gap-4">
+            <div className="space-y-6 pb-6">
+               <button 
+                 onClick={() => fileInputRef.current?.click()} 
+                 className="w-full py-16 sm:py-24 border-2 border-dashed border-white/5 rounded-[2.5rem] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/20 transition-all flex flex-col items-center justify-center gap-6 group"
+               >
                   <input ref={fileInputRef} type="file" accept=".pdf" onChange={handleFileUpload} className="hidden" />
-                  <Upload className="w-12 h-12 text-gold-400" />
-                  <div className="text-center p-4">
-                    <p className="text-lg font-bold text-gray-100">Importer un PDF</p>
-                    <p className="text-xs text-gray-500">Maximum 10 Mo</p>
+                  <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-gray-500 group-hover:scale-110 group-hover:text-gold-400 transition-all">
+                    <Upload className="w-10 h-10" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-gray-100 mb-1 font-display">Importer un PDF</p>
+                    <p className="text-sm text-gray-500 font-medium">Glissez-déposez ou cliquez ici</p>
+                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest mt-4">Maximum 10 Mo</p>
                   </div>
                </button>
+               <div className="p-6 sm:p-8 pt-4 border-t border-white/5 -mx-6 sm:-mx-8 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+                 <button type="button" onClick={onClose} className="w-full py-4 rounded-xl font-bold text-gray-500 hover:text-white transition-all">Annuler</button>
+               </div>
             </div>
           ) : (
-            <form onSubmit={handleUrlSubmit} className="space-y-6">
-               <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-                 <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Extraction intelligente</p>
-                 <p className="text-sm text-gray-400">Nous allons analyser cette source pour en extraire le savoir pertinent.</p>
+            <form onSubmit={handleUrlSubmit} className="space-y-8 pb-6">
+               <div className="p-5 bg-blue-500/10 rounded-2xl border border-blue-500/20 flex gap-4">
+                 <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400 flex-shrink-0 self-start">
+                   <Info className="w-5 h-5" />
+                 </div>
+                 <div>
+                   <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 leading-none">Extraction intelligente</p>
+                   <p className="text-sm text-blue-100/70 leading-relaxed font-medium">Nous allons analyser cette source pour en extraire le savoir pertinent automatiquement.</p>
+                 </div>
                </div>
-               <input
-                 type="url" required value={url} onChange={(e) => setUrl(e.target.value)}
-                 placeholder={activeType === 'youtube' ? "Lien de la vidéo YouTube" : "Lien de la page web"} 
-                 className="input-dark w-full min-h-[44px]"
-               />
-               <button disabled={loading} className="btn-primary w-full py-4 text-base min-h-[56px]">
-                 {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Extraire le contenu'}
-               </button>
+               <div className="space-y-2">
+                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Lien source</label>
+                 <input
+                   type="url" required value={url} onChange={(e) => setUrl(e.target.value)}
+                   placeholder={activeType === 'youtube' ? "https://youtube.com/watch?v=..." : "https://votre-site.com/faq"} 
+                   className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                 />
+               </div>
+               <div className="p-6 sm:p-8 pt-4 border-t border-white/5 -mx-6 sm:-mx-8 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+                 <button disabled={loading} className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-gold-400 py-4 px-6 rounded-2xl font-syne font-black italic transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl disabled:opacity-50">
+                   {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
+                   Extraire le contenu
+                 </button>
+               </div>
             </form>
           )}
         </div>

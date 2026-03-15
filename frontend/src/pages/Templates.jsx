@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import {
@@ -330,87 +331,130 @@ export default function Templates() {
       )}
 
       {/* Create/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="relative z-10 card p-4 sm:p-6 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6">
-              {selectedTemplate ? 'Modifier le template' : 'Nouveau template'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Nom *</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="input"
-                  placeholder="Ex: Message de bienvenue"
-                  required
-                />
-              </div>
+      {showModal && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div className="relative z-10 w-full max-w-lg bg-[#0B0F1A] border border-white/10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col rounded-t-[2rem] sm:rounded-2xl max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-fadeIn">
+            {/* Mobile handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 sm:p-8 flex flex-col flex-1 overflow-hidden">
+              <div className="flex items-center justify-between mb-8">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Catégorie</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
-                    className="input"
-                  >
-                    <option value="">Aucune</option>
-                    <option value="greeting">Accueil</option>
-                    <option value="closing">Clôture</option>
-                    <option value="followup">Suivi</option>
-                    <option value="faq">FAQ</option>
-                    <option value="sales">Vente</option>
-                  </select>
+                  <h2 className="text-2xl font-display font-bold text-gray-100">
+                    {selectedTemplate ? 'Modifier template' : 'Nouveau template'}
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-1">Configurez votre réponse rapide</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Raccourci</label>
-                  <div className="input-with-icon">
-                    <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">/</div>
-                    <input
-                      type="text"
-                      value={form.shortcut}
-                      onChange={(e) => setForm({ ...form, shortcut: e.target.value.replace(/[^a-z0-9]/g, '') })}
-                      placeholder="bienvenue"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Contenu *</label>
-                <textarea
-                  value={form.content}
-                  onChange={(e) => setForm({ ...form, content: e.target.value })}
-                  className="input min-h-[150px]"
-                  placeholder="Votre message ici..."
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Variables: {'{{nom}}'}, {'{{telephone}}'}, {'{{produit}}'}
-                </p>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false)
-                    resetForm()
-                  }}
-                  className="btn-secondary"
+                  onClick={() => setShowModal(false)}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
-                  Annuler
-                </button>
-                <button type="submit" className="btn-primary">
-                  {selectedTemplate ? 'Enregistrer' : 'Créer'}
+                  <RefreshCw className="w-6 h-6 rotate-45" /> {/* Use RefreshCw rotated as an X or just import X if available, but X is available in imports */}
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar overscroll-contain">
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-semibold text-gray-300 ml-1">Nom du template *</label>
+                    <input
+                      type="text"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      className="input-dark w-full py-3.5 px-4 text-base min-h-[48px] touch-target"
+                      placeholder="Ex: Message de bienvenue"
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-300 ml-1">Catégorie</label>
+                      <select
+                        value={form.category}
+                        onChange={(e) => setForm({ ...form, category: e.target.value })}
+                        className="input-dark w-full py-3.5 px-4 text-base min-h-[48px] touch-target appearance-none bg-no-repeat bg-[right_1rem_center]"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")` }}
+                      >
+                        <option value="">Aucune</option>
+                        <option value="greeting">Accueil</option>
+                        <option value="closing">Clôture</option>
+                        <option value="followup">Suivi</option>
+                        <option value="faq">FAQ</option>
+                        <option value="sales">Vente</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-semibold text-gray-300 ml-1">Raccourci</label>
+                      <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-500">/</div>
+                        <input
+                          type="text"
+                          value={form.shortcut}
+                          onChange={(e) => setForm({ ...form, shortcut: e.target.value.replace(/[^a-z0-9]/g, '') })}
+                          placeholder="bienvenue"
+                          className="input-dark w-full py-3.5 pl-8 pr-4 text-base min-h-[48px] font-mono touch-target"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-sm font-semibold text-gray-300 ml-1">Contenu du message *</label>
+                    <textarea
+                      value={form.content}
+                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+                      className="input-dark w-full min-h-[180px] py-4 px-4 text-base resize-none touch-target"
+                      placeholder="Tapez votre message ici..."
+                      required
+                    />
+                    <div className="flex flex-wrap gap-2 mt-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                      <span className="text-[10px] uppercase font-black text-gray-500 tracking-wider w-full mb-1">Variables disponibles :</span>
+                      {['{{nom}}', '{{telephone}}', '{{produit}}'].map(v => (
+                        <button 
+                          key={v}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, content: f.content + v }))}
+                          className="text-xs px-2 py-1 rounded-md bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-8 mt-4 border-t border-white/5" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false)
+                      resetForm()
+                    }}
+                    className="flex-1 sm:flex-none px-6 py-3.5 rounded-xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="flex-1 sm:flex-none px-8 py-3.5 rounded-xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] min-h-[48px] shadow-xl shadow-white/5"
+                  >
+                    {selectedTemplate ? 'Enregistrer' : 'Créer le template'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

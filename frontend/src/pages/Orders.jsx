@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
@@ -1448,9 +1449,9 @@ export default function Orders() {
       {/* Order Detail Zoom View */}
       {selectedOrderView && (
         <DetailOverlay onClose={() => setSelectedOrderView(null)}>
-          <div className="flex flex-col h-full max-h-[85vh]">
-            <div className="flex items-center gap-4 mb-6">
-              <div className={`p-4 rounded-3xl ${getStatusIconBgClasses(selectedOrderView.status)} shadow-lg`}>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-4 mb-8">
+              <div className={`p-4 rounded-3xl ${getStatusIconBgClasses(selectedOrderView.status)} shadow-lg shadow-black/20`}>
                 <div className={getStatusIconClasses(selectedOrderView.status)}>
                   {(() => {
                     const Icon = getStatusInfo(selectedOrderView.status).icon
@@ -1469,59 +1470,59 @@ export default function Orders() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
+            <div className="space-y-8">
               {/* Customer Info & Date */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {selectedOrderView.customer_phone && (
-                  <div className="p-3 bg-space-800/50 rounded-2xl border border-space-700">
-                    <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Téléphone</p>
-                    <p className="text-gray-100 font-medium truncate">{selectedOrderView.customer_phone}</p>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Téléphone</p>
+                    <p className="text-gray-100 font-medium truncate font-mono">{selectedOrderView.customer_phone}</p>
                   </div>
                 )}
-                <div className="p-3 bg-space-800/50 rounded-2xl border border-space-700">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Date de création</p>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-1">Date de création</p>
                   <p className="text-gray-100 font-medium">{formatDate(selectedOrderView.created_at)}</p>
                 </div>
               </div>
 
               {/* Items List */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] text-gray-400 uppercase font-bold px-1 tracking-widest">Articles</h4>
+              <div className="space-y-3">
+                <h4 className="text-[10px] text-gray-500 uppercase font-black px-1 tracking-widest">Articles</h4>
                 <div className="space-y-2">
                   {selectedOrderView.items?.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-space-900/80 rounded-2xl border border-space-800">
+                    <div key={idx} className="flex items-center justify-between p-4 bg-white/[0.02] rounded-2xl border border-white/5">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-gray-100 truncate">{item.product_name}</p>
                         <p className="text-xs text-gray-500">{item.quantity} x {formatCurrency(item.unit_price, selectedOrderView.currency)}</p>
                       </div>
-                      <p className="text-sm font-bold text-gold-400 ml-4 whitespace-nowrap">
+                      <p className="text-sm font-bold text-gold-400 ml-4 whitespace-nowrap font-mono">
                         {formatCurrency(item.total_price, selectedOrderView.currency)}
                       </p>
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gold-400/5 rounded-2xl border-2 border-gold-400/20 mt-4">
-                  <p className="text-sm font-bold text-gray-300 uppercase">Total de la commande</p>
-                  <p className="text-xl font-bold text-gold-400">{formatCurrency(selectedOrderView.total_amount, selectedOrderView.currency)}</p>
+                <div className="flex items-center justify-between p-5 bg-gold-400/5 rounded-2xl border border-gold-400/20 mt-6 group transition-all hover:bg-gold-400/10">
+                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Total commande</p>
+                  <p className="text-2xl font-display font-bold text-gold-400 font-mono tracking-tight group-hover:scale-105 transition-transform">{formatCurrency(selectedOrderView.total_amount, selectedOrderView.currency)}</p>
                 </div>
               </div>
 
               {/* Notes */}
               {selectedOrderView.notes && (
-                <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Notes</p>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 border-dashed">
+                  <p className="text-[10px] text-gray-500 uppercase font-black mb-2 tracking-widest">Notes</p>
                   <p className="text-sm text-gray-300 leading-relaxed italic">{selectedOrderView.notes}</p>
                 </div>
               )}
 
               {/* Payment Method Integration */}
               {paymentModuleEnabled && (selectedOrderView.status === 'pending' || selectedOrderView.status === 'validated') && (
-                <div className="p-4 bg-space-800/50 rounded-2xl border border-space-700">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Mode de paiement souhaité</p>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <p className="text-[10px] text-gray-500 uppercase font-black mb-3 tracking-widest">Mode de paiement souhaité</p>
                   <select
                     value={selectedOrderView.payment_method || 'on_delivery'}
                     onChange={(e) => handlePaymentMethodChange(selectedOrderView.id, e.target.value)}
-                    className="input-dark w-full"
+                    className="input-dark w-full py-3 px-4 rounded-xl"
                   >
                     <option value="on_delivery">{t(PAYMENT_METHODS.on_delivery.nameKey)}</option>
                     <option value="online">{t(PAYMENT_METHODS.online.nameKey)}</option>
@@ -1531,12 +1532,12 @@ export default function Orders() {
 
               {/* Payment Link Actions */}
               {paymentModuleEnabled && ['pending', 'validated', 'delivered'].includes(selectedOrderView.status) && (
-                <div className="space-y-2">
-                  <h4 className="text-[10px] text-gray-400 uppercase font-bold px-1 tracking-widest">Paiement & WhatsApp</h4>
-                  <div className="grid grid-cols-1 gap-2">
+                <div className="space-y-3">
+                  <h4 className="text-[10px] text-gray-500 uppercase font-black px-1 tracking-widest">Paiement & WhatsApp</h4>
+                  <div className="grid grid-cols-1 gap-3 text-center">
                     <button
                       onClick={() => handleCreatePaymentLink(selectedOrderView)}
-                      className="flex items-center justify-center gap-2 px-4 py-3 bg-gold-400/10 hover:bg-gold-400/20 text-gold-400 rounded-2xl transition-all font-medium text-sm"
+                      className="flex items-center justify-center gap-2 px-6 py-4 bg-white text-black rounded-2xl transition-all font-bold text-sm hover:bg-gold-400 active:scale-95"
                     >
                       <Link2 className="w-4 h-4" />
                       Générer un lien de paiement
@@ -1545,10 +1546,10 @@ export default function Orders() {
                       <button
                         onClick={() => handleSendPaymentLinkInConversation(selectedOrderView)}
                         disabled={sendingInConversation === selectedOrderView.id}
-                        className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-2xl transition-all font-medium text-sm disabled:opacity-50"
+                        className="flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-2xl transition-all font-bold text-sm disabled:opacity-50 border border-emerald-500/20"
                       >
                         {sendingInConversation === selectedOrderView.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-                        Envoyer le lien sur WhatsApp
+                        Envoyer sur WhatsApp
                       </button>
                     )}
                   </div>
@@ -1557,304 +1558,374 @@ export default function Orders() {
 
               {/* Status Specific Timeline */}
               {(selectedOrderView.status === 'validated' || selectedOrderView.status === 'delivered' || selectedOrderView.status === 'rejected') && (
-                <div className={`p-4 rounded-2xl border flex items-start gap-3 ${
+                <div className={`p-4 rounded-3xl border-2 flex items-start gap-4 ${
                   selectedOrderView.status === 'validated' ? 'bg-emerald-500/5 border-emerald-500/10' :
                   selectedOrderView.status === 'delivered' ? 'bg-emerald-500/5 border-emerald-500/10' :
                   'bg-red-500/5 border-red-500/10'
                 }`}>
-                  <div className={`p-2 rounded-xl scale-75 ${
+                  <div className={`p-3 rounded-2xl flex-shrink-0 ${
                     selectedOrderView.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
                   }`}>
-                    {selectedOrderView.status === 'rejected' ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+                    {selectedOrderView.status === 'rejected' ? <XCircle className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
                   </div>
                   <div className="min-w-0">
-                    <p className={`text-[10px] font-bold uppercase ${selectedOrderView.status === 'rejected' ? 'text-red-400' : 'text-emerald-400'}`}>
+                    <p className={`text-xs font-black uppercase tracking-widest ${selectedOrderView.status === 'rejected' ? 'text-red-400' : 'text-emerald-400'}`}>
                       {selectedOrderView.status === 'validated' ? 'Commande Validée' : 
                        selectedOrderView.status === 'delivered' ? 'Commande Livrée' : 'Commande Rejetée'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm text-gray-400 mt-1">
                       {formatDate(selectedOrderView.validated_at || selectedOrderView.delivered_at || selectedOrderView.rejected_at)}
-                      {selectedOrderView.validated_by && ` par ${selectedOrderView.validated_by}`}
+                      {selectedOrderView.validated_by && <span className="text-gray-500 block">par {selectedOrderView.validated_by}</span>}
                     </p>
                     {selectedOrderView.rejection_reason && (
-                      <p className="text-xs text-red-400/70 mt-1 italic">Raison: {selectedOrderView.rejection_reason}</p>
+                      <p className="text-sm text-red-400/80 mt-2 italic px-3 py-2 bg-red-500/10 rounded-xl">Raison: {selectedOrderView.rejection_reason}</p>
                     )}
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Quick Action Footer inside Zoom */}
-            <div className="pt-6 mt-6 border-t border-space-700 space-y-3">
-              <div className="flex flex-wrap gap-2">
-                {selectedOrderView.status === 'pending' && (
-                  <>
+              {/* Quick Action Footer inside Zoom */}
+              <div className="pt-8 border-t border-white/5 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {selectedOrderView.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleValidate(selectedOrderView.id)}
+                        className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-display font-black italic hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98] text-lg uppercase tracking-tighter"
+                      >
+                        Valider
+                      </button>
+                      <button
+                        onClick={() => handleReject(selectedOrderView.id)}
+                        className="flex-1 py-4 bg-white/5 text-red-400 border border-red-500/20 rounded-2xl font-bold hover:bg-red-500/10 transition-all active:scale-[0.98] text-lg"
+                      >
+                        Rejeter
+                      </button>
+                    </>
+                  )}
+                  {selectedOrderView.status === 'validated' && (
+                    <>
+                      <button
+                        onClick={() => handleMarkDelivered(selectedOrderView.id)}
+                        className="flex-[2] py-4 bg-emerald-500 text-white rounded-2xl font-display font-black italic hover:bg-emerald-400 transition-all shadow-xl shadow-emerald-500/20 active:scale-[0.98] text-lg uppercase tracking-tighter"
+                      >
+                        Marquer Livrée
+                      </button>
+                      <button
+                        onClick={() => handleRevertToPending(selectedOrderView.id)}
+                        className="flex-1 py-4 bg-white/5 text-gray-400 border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                        title="Annuler la validation et remettre en stock"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                        Attente
+                      </button>
+                    </>
+                  )}
+                  {selectedOrderView.status === 'delivered' && (
                     <button
-                      onClick={() => handleValidate(selectedOrderView.id)}
-                      className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                      onClick={() => handleUnmarkDelivered(selectedOrderView.id)}
+                      className="w-full py-4 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-2xl font-bold hover:bg-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                     >
-                      Valider
+                      <ArrowLeft className="w-5 h-5" />
+                      Annuler livraison (Retour à Validé)
                     </button>
-                    <button
-                      onClick={() => handleReject(selectedOrderView.id)}
-                      className="flex-1 py-3.5 bg-red-500/20 text-red-500 rounded-2xl font-bold hover:bg-red-500/30 transition-all active:scale-95"
-                    >
-                      Rejeter
-                    </button>
-                  </>
-                )}
-                {selectedOrderView.status === 'validated' && (
-                  <>
-                    <button
-                      onClick={() => handleMarkDelivered(selectedOrderView.id)}
-                      className="flex-[2] py-4 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
-                    >
-                      Marquer comme Livrée
-                    </button>
+                  )}
+                  {selectedOrderView.status === 'rejected' && (
                     <button
                       onClick={() => handleRevertToPending(selectedOrderView.id)}
-                      className="flex-1 px-3 py-3.5 bg-space-800 text-gray-400 rounded-2xl font-bold hover:bg-space-700 transition-all flex items-center justify-center gap-2 border border-space-700 active:scale-95 shadow-sm"
-                      title="Annuler la validation et remettre en stock"
+                      className="w-full py-4 bg-white/5 text-gray-400 border border-white/10 rounded-2xl font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                     >
-                      <ArrowLeft className="w-4 h-4" />
-                      En attente
+                      <ArrowLeft className="w-5 h-5" />
+                      Ré-ouvrir (Remettre en attente)
                     </button>
-                  </>
-                )}
-                {selectedOrderView.status === 'delivered' && (
-                  <button
-                    onClick={() => handleUnmarkDelivered(selectedOrderView.id)}
-                    className="w-full py-3.5 bg-amber-500/20 text-amber-500 rounded-2xl font-bold hover:bg-amber-500/30 transition-all flex items-center justify-center gap-2 border border-amber-500/10 active:scale-95 shadow-sm"
+                  )}
+                </div>
+                
+                {selectedOrderView.conversation_id && (
+                  <Link
+                    to={`/dashboard/conversations/${selectedOrderView.conversation_id}`}
+                    onClick={() => setSelectedOrderView(null)}
+                    className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 hover:bg-white/10 text-gray-300 rounded-2xl transition-all font-bold text-sm border border-white/5"
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    Annuler livraison (Retour à Validé)
-                  </button>
-                )}
-                {selectedOrderView.status === 'rejected' && (
-                  <button
-                    onClick={() => handleRevertToPending(selectedOrderView.id)}
-                    className="w-full py-3.5 bg-space-800 text-gray-400 rounded-2xl font-bold hover:bg-space-700 transition-all flex items-center justify-center gap-2 active:scale-95"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Ré-ouvrir (Remettre en attente)
-                  </button>
+                    <MessageSquare className="w-5 h-5 text-blue-400" />
+                    Voir sur WhatsApp
+                  </Link>
                 )}
               </div>
-              
-              {selectedOrderView.conversation_id && (
-                <Link
-                  to={`/dashboard/conversations/${selectedOrderView.conversation_id}`}
-                  onClick={() => setSelectedOrderView(null)}
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-space-700 hover:bg-space-600 text-gray-300 rounded-2xl transition-all font-medium text-sm"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Voir la conversation WhatsApp
-                </Link>
-              )}
-              
-              {selectedOrderView.status === 'pending' && (
-                 <button 
-                  onClick={() => setSelectedOrderView(null)}
-                  className="w-full text-sm text-gray-500 hover:text-gray-400 font-medium py-1"
-                >
-                  Annuler
-                </button>
-              )}
             </div>
           </div>
         </DetailOverlay>
       )}
 
-      {paymentLinkModal.open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => !paymentLinkModal.loading && setPaymentLinkModal(prev => ({ ...prev, open: false }))} />
-          <div className="relative z-10 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-space-900 border border-space-700 rounded-t-2xl sm:rounded-2xl shadow-2xl animate-fadeIn">
-            <div className="flex-shrink-0 p-4 border-b border-space-700 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-100">Lien de paiement à envoyer au client</h3>
-              <button onClick={() => setPaymentLinkModal(prev => ({ ...prev, open: false }))} className="p-2 -m-2 text-gray-500 hover:text-gray-300 rounded-lg touch-target" aria-label="Fermer">
-                <X className="w-5 h-5" />
-              </button>
+      {paymentLinkModal.open && createPortal(
+        <div 
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => !paymentLinkModal.loading && setPaymentLinkModal(prev => ({ ...prev, open: false }))}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 w-full max-w-lg bg-[#0B0F1A] border border-white/10 rounded-t-[2rem] sm:rounded-2xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
-            <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <h3 className="text-xl font-display font-bold text-gray-100">Lien de paiement</h3>
+                <button 
+                  onClick={() => setPaymentLinkModal(prev => ({ ...prev, open: false }))} 
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-6 custom-scrollbar overscroll-contain" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}>
               {paymentLinkModal.loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="w-8 h-8 text-gold-400 animate-spin" />
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <div className="w-12 h-12 border-4 border-gold-400/20 border-t-gold-400 rounded-full animate-spin" />
+                  <p className="text-gray-500 font-medium font-mono text-xs uppercase tracking-widest">Génération du lien...</p>
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-gray-400">Copiez le message ci-dessous et envoyez-le à votre client (par ex. WhatsApp) :</p>
-                  <pre className="p-4 bg-space-800 rounded-xl text-sm text-gray-300 whitespace-pre-wrap overflow-x-auto max-h-48 overflow-y-auto">
-                    {paymentLinkModal.message}
-                  </pre>
+                  <div className="p-5 bg-white/5 rounded-2xl border border-white/5">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-3">Message pour le client</p>
+                    <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans leading-relaxed">
+                      {paymentLinkModal.message}
+                    </pre>
+                  </div>
+
                   {paymentLinkModal.url && (
-                    <div className="flex items-center gap-2 p-3 bg-space-800 rounded-xl">
-                      <span className="text-xs text-gray-500 flex-shrink-0">Lien :</span>
-                      <a href={paymentLinkModal.url} target="_blank" rel="noopener noreferrer" className="text-gold-400 hover:underline truncate text-sm">
+                    <div className="flex items-center gap-3 p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                      <ExternalLink className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                      <a href={paymentLinkModal.url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline truncate text-sm font-mono flex-1">
                         {paymentLinkModal.url}
                       </a>
                     </div>
                   )}
-                  <div className="flex flex-col sm:flex-row gap-3">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
                     <button
                       onClick={copyPaymentMessage}
-                      className="flex-1 min-h-[44px] touch-target flex items-center justify-center gap-2 px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
+                      className="flex items-center justify-center gap-2 px-6 py-4 bg-white text-black rounded-2xl transition-all font-bold hover:bg-gray-200 active:scale-95 shadow-xl"
                     >
-                      <Copy className="w-4 h-4" />
-                      Copier le message
+                      <Copy className="w-5 h-5" />
+                      Copier
                     </button>
                     <button
                       onClick={openWhatsAppWithPayment}
-                      className="flex-1 min-h-[44px] touch-target flex items-center justify-center gap-2 px-4 py-3 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl transition-colors"
+                      className="flex items-center justify-center gap-2 px-6 py-4 bg-emerald-500 text-white rounded-2xl transition-all font-bold hover:bg-emerald-400 active:scale-95 shadow-xl shadow-emerald-500/20"
                     >
-                      <ExternalLink className="w-4 h-4" />
-                      Ouvrir WhatsApp
+                      <MessageSquare className="w-5 h-5" />
+                      WhatsApp
                     </button>
                   </div>
                 </>
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal Nouvelle commande manuelle */}
-      {showNewOrderModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60" onClick={() => !newOrderLoading && setShowNewOrderModal(false)}>
-          <div className="relative z-10 bg-space-800 border border-space-700 rounded-t-2xl sm:rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col animate-fadeIn" onClick={e => e.stopPropagation()}>
-            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-space-700">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-100 flex items-center gap-2">
-                <Plus className="w-5 h-5 text-blue-400" />
-                Nouvelle commande (manuelle)
-              </h2>
-              <p className="text-sm text-gray-400 mt-1">Créez une commande en attente de validation.</p>
+      {showNewOrderModal && createPortal(
+        <div 
+          className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4 bg-black/80 backdrop-blur-md" 
+          onClick={() => !newOrderLoading && setShowNewOrderModal(false)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+        >
+          <div 
+            className="relative z-10 bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] max-w-2xl w-full max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-slideUp sm:animate-zoomIn overflow-hidden" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Mobile Handle */}
+            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-12 h-1.5 rounded-full bg-white/10" />
             </div>
-            <form onSubmit={handleCreateOrderSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nom du client *</label>
-                <input
-                  type="text"
-                  value={newOrderForm.customerName}
-                  onChange={e => setNewOrderForm(prev => ({ ...prev, customerName: e.target.value }))}
-                  className="input-dark w-full"
-                  placeholder="Ex. Jean Dupont"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Téléphone</label>
-                <input
-                  type="text"
-                  value={newOrderForm.customerPhone}
-                  onChange={e => setNewOrderForm(prev => ({ ...prev, customerPhone: e.target.value }))}
-                  className="input-dark w-full"
-                  placeholder="Ex. +225 07 00 00 00 00"
-                />
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-300">Articles *</label>
-                  <button type="button" onClick={addNewOrderLine} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                    <Plus className="w-4 h-4" />
-                    Ajouter une ligne
-                  </button>
+
+            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-display font-bold text-gray-100 truncate">
+                    Nouvelle commande
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1 truncate">Créez manuellement une commande client</p>
                 </div>
-                <div className="space-y-3">
-                  {newOrderForm.items.map((item, index) => (
-                    <div key={index} className="flex flex-wrap items-center gap-2 p-3 bg-space-900 rounded-xl border border-space-700">
-                      <select
-                        value={item.productId || ''}
-                        onChange={e => {
-                          const p = products.find(pr => pr.id === e.target.value)
-                          selectProductForLine(index, p || null)
-                        }}
-                        className="input-dark flex-1 min-w-[140px]"
-                      >
-                        <option value="">— Saisie manuelle —</option>
-                        {products.filter(p => p.is_active !== 0).map(p => (
-                          <option key={p.id} value={p.id}>{p.name} – {Number(p.price || 0).toLocaleString()} FCFA</option>
-                        ))}
-                      </select>
+                <button 
+                  type="button"
+                  onClick={() => setShowNewOrderModal(false)}
+                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateOrderSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-8 custom-scrollbar overscroll-contain">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Client *</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                       <input
                         type="text"
-                        value={item.productName}
-                        onChange={e => updateNewOrderLine(index, 'productName', e.target.value)}
-                        className="input-dark w-36"
-                        placeholder="Nom produit"
+                        value={newOrderForm.customerName}
+                        onChange={e => setNewOrderForm(prev => ({ ...prev, customerName: e.target.value }))}
+                        className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
+                        placeholder="Nom complet"
+                        required
                       />
-                      <input
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={e => updateNewOrderLine(index, 'quantity', e.target.value)}
-                        className="input-dark w-20"
-                        placeholder="Qté"
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={item.unitPrice || ''}
-                        onChange={e => updateNewOrderLine(index, 'unitPrice', e.target.value)}
-                        className="input-dark w-28"
-                        placeholder="Prix unit."
-                      />
-                      <span className="text-gray-500 text-sm w-16">
-                        {((item.quantity || 1) * (Number(item.unitPrice) || 0)).toLocaleString()}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeNewOrderLine(index)}
-                        className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg"
-                        title="Supprimer la ligne"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
-                <textarea
-                  value={newOrderForm.notes}
-                  onChange={e => setNewOrderForm(prev => ({ ...prev, notes: e.target.value }))}
-                  className="input-dark w-full min-h-[80px]"
-                  placeholder="Optionnel"
-                />
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Devise</label>
-                  <select
-                    value={newOrderForm.currency}
-                    onChange={e => setNewOrderForm(prev => ({ ...prev, currency: e.target.value }))}
-                    className="input-dark"
-                  >
-                    <option value="XOF">XOF (FCFA)</option>
-                    <option value="EUR">EUR</option>
-                  </select>
-                </div>
-                {paymentModuleEnabled && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Paiement</label>
-                    <select
-                      value={newOrderForm.paymentMethod}
-                      onChange={e => setNewOrderForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                      className="input-dark"
-                    >
-                      <option value="on_delivery">À la livraison</option>
-                      <option value="online">En ligne</option>
-                    </select>
                   </div>
-                )}
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Téléphone</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      <input
+                        type="text"
+                        value={newOrderForm.customerPhone}
+                        onChange={e => setNewOrderForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
+                        placeholder="+225 ..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">Articles & Produits</label>
+                    <button type="button" onClick={addNewOrderLine} className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5 transition-colors">
+                      <Plus className="w-4 h-4" />
+                      Ajouter une ligne
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {newOrderForm.items.map((item, index) => (
+                      <div key={index} className="group relative flex flex-col gap-3 p-5 bg-white/[0.02] rounded-3xl border border-white/5 hover:bg-white/[0.04] transition-all">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex-1 min-w-[200px]">
+                            <select
+                              value={item.productId || ''}
+                              onChange={e => {
+                                const p = products.find(pr => pr.id === e.target.value)
+                                selectProductForLine(index, p || null)
+                              }}
+                              className="input-dark w-full py-3 px-4 rounded-xl text-sm"
+                            >
+                              <option value="">— Saisie libre —</option>
+                              {products.filter(p => p.is_active !== 0).map(p => (
+                                <option key={p.id} value={p.id}>{p.name} ({Number(p.price || 0).toLocaleString()})</option>
+                              ))}
+                            </select>
+                          </div>
+                          {!item.productId && (
+                            <input
+                              type="text"
+                              value={item.productName}
+                              onChange={e => updateNewOrderLine(index, 'productName', e.target.value)}
+                              className="input-dark flex-[2] min-w-[150px] py-3 px-4 rounded-xl text-sm"
+                              placeholder="Nom de l'article"
+                              required
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeNewOrderLine(index)}
+                            className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all self-start lg:self-center"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-600 uppercase ml-1">Quantité</label>
+                            <input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={e => updateNewOrderLine(index, 'quantity', e.target.value)}
+                              className="input-dark w-full py-2.5 px-4 rounded-xl text-sm font-mono"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-gray-600 uppercase ml-1">Prix Unitaire</label>
+                            <input
+                              type="number"
+                              min={0}
+                              value={item.unitPrice || ''}
+                              onChange={e => updateNewOrderLine(index, 'unitPrice', e.target.value)}
+                              className="input-dark w-full py-2.5 px-4 rounded-xl text-sm font-mono"
+                            />
+                          </div>
+                          <div className="lg:col-span-2 space-y-1 flex flex-col justify-end">
+                            <div className="bg-black/20 rounded-xl p-2.5 text-right border border-white/5">
+                              <span className="text-[10px] text-gray-500 uppercase font-bold mr-2">Sous-total</span>
+                              <span className="text-sm font-mono font-bold text-gold-400">
+                                {((item.quantity || 1) * (Number(item.unitPrice) || 0)).toLocaleString()} {newOrderForm.currency}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-6 pt-4">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Notes internes</label>
+                    <textarea
+                      value={newOrderForm.notes}
+                      onChange={e => setNewOrderForm(prev => ({ ...prev, notes: e.target.value }))}
+                      className="input-dark w-full min-h-[100px] py-4 px-5 rounded-2xl resize-none"
+                      placeholder="Adresse de livraison, instructions, etc."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Devise</label>
+                      <select
+                        value={newOrderForm.currency}
+                        onChange={e => setNewOrderForm(prev => ({ ...prev, currency: e.target.value }))}
+                        className="input-dark w-full py-4 px-5 rounded-2xl"
+                      >
+                        <option value="XOF">FCFA (XOF)</option>
+                        <option value="EUR">Euro (€)</option>
+                        <option value="USD">Dollar ($)</option>
+                      </select>
+                    </div>
+                    {paymentModuleEnabled && (
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Mode de Paiement</label>
+                        <select
+                          value={newOrderForm.paymentMethod}
+                          onChange={e => setNewOrderForm(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                          className="input-dark w-full py-4 px-5 rounded-2xl"
+                        >
+                          <option value="on_delivery">À la livraison (Cash)</option>
+                          <option value="online">Paiement en ligne (Mobile Money/Carte)</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              </div>
-              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3">
+
+              <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col-reverse sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 <button
                   type="button"
                   onClick={() => !newOrderLoading && setShowNewOrderModal(false)}
-                  className="flex-1 sm:flex-none min-h-[44px] touch-target px-4 py-3 bg-space-700 hover:bg-space-600 text-gray-200 rounded-xl transition-colors"
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all text-center"
                   disabled={newOrderLoading}
                 >
                   Annuler
@@ -1862,33 +1933,34 @@ export default function Orders() {
                 <button
                   type="submit"
                   disabled={newOrderLoading}
-                  className="flex-1 sm:flex-none min-h-[44px] touch-target flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors disabled:opacity-50"
+                  className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl inline-flex items-center justify-center gap-2 uppercase tracking-tight"
                 >
-                  {newOrderLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                  Créer la commande
+                  {newOrderLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Package className="w-5 h-5" />}
+                  Finaliser la commande
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
-      {focusStat && (
+      {focusStat && createPortal(
         <div 
-          className="fixed inset-0 z-[75] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
           onClick={() => setFocusStat(null)}
+          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
-          <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm animate-fade-in" />
           <div 
-            className="relative z-10 w-full max-w-sm bg-space-900/90 border border-white/10 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 animate-zoom-in text-center"
+            className="relative z-10 w-full max-w-sm bg-[#0B0F1A] border border-white/10 rounded-[2.5rem] shadow-2xl p-10 animate-zoomIn text-center"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
               onClick={() => setFocusStat(null)}
-              className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white"
+              className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors"
             >
               <XCircle className="w-6 h-6" />
             </button>
-            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg ${
+            <div className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-xl ${
               focusStat.color === 'amber' ? 'bg-amber-500/10 text-amber-500' :
               focusStat.color === 'green' ? 'bg-green-500/10 text-green-500' :
               focusStat.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-500' :
@@ -1897,32 +1969,56 @@ export default function Orders() {
             }`}>
               {(() => {
                 const Icon = focusStat.icon
-                return <Icon className="w-10 h-10" />
+                return <Icon className="w-12 h-12" />
               })()}
             </div>
-            <p className="text-gray-400 text-sm uppercase tracking-widest font-bold mb-2">{focusStat.label}</p>
-            <h3 className={`text-3xl sm:text-4xl font-display font-black break-words max-w-full ${isDark ? 'text-white' : 'text-gray-900'}`}>{focusStat.value}</h3>
-            <button onClick={() => setFocusStat(null)} className="btn-secondary w-full mt-8">Fermer</button>
+            <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black mb-3">{focusStat.label}</p>
+            <h3 className="text-4xl font-display font-black text-white font-mono">{focusStat.value}</h3>
+            
+            <button 
+              onClick={() => setFocusStat(null)} 
+              className="w-full mt-10 py-4 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-2xl font-bold transition-all border border-white/5"
+            >
+              Fermer
+            </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
 }
 
 function DetailOverlay({ children, onClose }) {
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6" onClick={onClose}>
-      <div className="absolute inset-0 bg-space-950/90 backdrop-blur-md animate-fade-in" />
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 lg:p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
+      onClick={onClose}
+      style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+    >
       <div 
-        className="relative z-10 w-full max-w-sm sm:max-w-xl bg-space-900/50 border border-white/10 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-6 sm:p-10 animate-zoom-in overflow-hidden"
+        className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 text-gray-500 hover:text-white transition-colors">
-          <XCircle className="w-6 h-6" />
-        </button>
-        {children}
+        {/* Mobile Handle */}
+        <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
+          <div className="w-12 h-1.5 rounded-full bg-white/10" />
+        </div>
+
+        <div className="flex-shrink-0 p-6 sm:p-10 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+          <button 
+            onClick={onClose} 
+            className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+          >
+            <XCircle className="w-7 h-7" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-6 sm:px-10 pb-10" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
+          {children}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
