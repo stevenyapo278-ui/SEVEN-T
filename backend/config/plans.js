@@ -164,15 +164,15 @@ export const PLANS = {
         price: 0,
         priceCurrency: 'XOF',
         limits: {
-            agents: 1,
+            agents: 0,
             whatsapp_accounts: 0,
             outlook_accounts: 0,
             google_calendar_accounts: 0,
             conversations_per_month: 0,
-            messages_per_month: 20,
-            credits_per_month: 20,
-            knowledge_items: 2,
-            templates: 1
+            messages_per_month: 0,
+            credits_per_month: 0,
+            knowledge_items: 0,
+            templates: 0
         },
         features: {
             models: ['gemini-1.5-flash'],

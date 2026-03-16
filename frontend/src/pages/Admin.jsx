@@ -903,7 +903,7 @@ export default function Admin() {
 
       {/* Coupons Tab */}
       {activeTab === 'coupons' && (
-        <CouponsContent />
+        <CouponsContent users={users} />
       )}
 
       {activeTab === 'activity' && (
@@ -1284,7 +1284,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="flex-shrink-0 border-b border-space-700">
           <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
@@ -1379,7 +1379,20 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 py-2">
+            <label className="flex items-center gap-2 cursor-pointer bg-blue-500/5 p-3 rounded-xl border border-blue-500/10 hover:bg-blue-500/10 transition-colors">
+              <input
+                type="checkbox"
+                checked={formData.generate_coupon}
+                onChange={(e) => setFormData({ ...formData, generate_coupon: e.target.checked })}
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-gold-400">Créer un coupon d'influenceur</span>
+                <span className="text-[10px] text-gray-500">Génère automatiquement un code promo et assigne le rôle Influenceur</span>
+              </div>
+            </label>
+
             <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
                 type="checkbox"
@@ -1600,6 +1613,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
     voice_responses_enabled: false,
     payment_module_enabled: false,
     analytics_module_enabled: false,
+    generate_coupon: false, // New field for automatic coupon generation
     roles: []
   })
 
@@ -1637,7 +1651,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">Nouvel utilisateur</h3>
@@ -1873,7 +1887,7 @@ function DeleteUserModal({ loading, preview, onClose, onSoftDelete, onHardDelete
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="p-4 sm:p-6 border-b border-space-700 flex-shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-start gap-3">
@@ -2417,7 +2431,7 @@ function AIModelModal({ model, onClose, onSave }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-lg bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">
@@ -2584,7 +2598,7 @@ function APIKeyModal({ keyData, onClose, onSave }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">
@@ -2754,7 +2768,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <h3 className="text-lg font-display font-semibold text-gray-100">
@@ -2939,7 +2953,7 @@ function ConfirmActionModal({ message, keyword, onConfirm, onCancel }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} aria-hidden />
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col overflow-hidden">
         <div className="p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div className="flex justify-center mb-6">
@@ -3023,7 +3037,7 @@ function AIModelTestModal({ model, onClose }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" aria-hidden />
       <div className="relative z-10 w-full max-w-2xl bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-space-700 flex items-center justify-between bg-space-800" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center gap-3">

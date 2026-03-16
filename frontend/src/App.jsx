@@ -35,6 +35,7 @@ const FlowBuilder = lazy(() => import('./pages/FlowBuilder'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const Tools = lazy(() => import('./pages/Tools'))
+const InfluencerDashboard = lazy(() => import('./pages/InfluencerDashboard'))
 const Help = lazy(() => import('./pages/Help'))
 const Docs = lazy(() => import('./pages/Docs'))
 
@@ -145,6 +146,7 @@ function App() {
           <Route path="reports" element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
           <Route path="notifications" element={<Suspense fallback={<PageFallback />}><Notifications /></Suspense>} />
           <Route path="settings" element={<Suspense fallback={<PageFallback />}><Settings /></Suspense>} />
+          <Route path="influencer" element={<Suspense fallback={<PageFallback />}><InfluencerDashboard /></Suspense>} />
           <Route path="help" element={<Suspense fallback={<PageFallback />}><Help /></Suspense>} />
           <Route path="docs" element={<Suspense fallback={<PageFallback />}><Docs /></Suspense>} />
           <Route path="admin" element={

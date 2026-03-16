@@ -170,6 +170,22 @@ router.get('/:id/export/pdf', authenticateToken, async (req, res) => {
     }
 });
 
+// Get unread conversations count
+router.get('/unread-count', authenticateToken, async (req, res) => {
+    try {
+        const row = await db.get(`
+            SELECT COUNT(*) as count 
+            FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE a.user_id = ? AND c.status != 'read'
+        `, req.user.id);
+        res.json({ count: row?.count || 0 });
+    } catch (error) {
+        console.error('Get unread conversation count error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get single conversation with messages
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
@@ -614,5 +630,6 @@ router.get('/needs-human', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
 
 export default router;

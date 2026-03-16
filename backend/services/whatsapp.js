@@ -2783,6 +2783,16 @@ class WhatsAppManager {
             throw new Error('Conversation non trouvée');
         }
 
+        // Plan & Trial check
+        const user = await db.get('SELECT * FROM users WHERE id = ?', agent.user_id);
+        const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
+        const effectivePlanName = await getEffectivePlanName(user?.plan, user);
+        const plan = await getPlan(effectivePlanName);
+
+        if (plan.limits.whatsapp_accounts <= 0) {
+            throw new Error('Votre plan actuel ne permet pas d\'envoyer des messages WhatsApp. Veuillez renouveler votre abonnement.');
+        }
+
         const recipientJid = resolveJidForSend(conversation) || resolveConversationJid(conversation);
         if (!recipientJid) {
             throw new Error('Contact JID invalide');

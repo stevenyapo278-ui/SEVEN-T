@@ -47,6 +47,7 @@ import analyticsRoutes from './routes/analytics.js';
 import workflowRoutes from './routes/workflows.js';
 import flowRoutes from './routes/flows.js';
 import reportRoutes from './routes/reports.js';
+import influencerRoutes from './routes/influencer.js';
 import userRoutes from './routes/users.js';
 import subscriptionRoutes, { handleGeniusPaySubscriptionWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
@@ -161,6 +162,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/services', serviceRoutes);
+app.use('/api/influencer', influencerRoutes);
 
 app.get('/api/health-db', async (req, res) => {
     try {

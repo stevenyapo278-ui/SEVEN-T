@@ -4,7 +4,7 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { aiService } from '../services/ai.js';
 import { whatsappManager } from '../services/whatsapp.js';
-import { getPlan, isLimitReached, getRemainingQuota, hasFeature, getAvailableModels } from '../config/plans.js';
+import { getPlan, isLimitReached, getRemainingQuota, hasFeature, getAvailableModels, getEffectivePlanName } from '../config/plans.js';
 import { checkCreditWarnings, getMonthlyUsage, CREDIT_COSTS } from '../services/credits.js';
 import { validate, createAgentSchema, updateAgentSchema } from '../middleware/security.js';
 import { getTemplates, getTemplate } from '../config/agentTemplates.js';
@@ -58,14 +58,15 @@ router.get('/system-templates/:id', authenticateToken, (req, res) => {
  */
 router.get('/available-models', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT plan, is_admin FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date, is_admin FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const models = await db.all('SELECT * FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
         
         if (user.is_admin) {
             return res.json({ models });
         }
 
-        const allowedModels = await getAvailableModels(user.plan);
+        const allowedModels = await getAvailableModels(effectivePlan);
         const filtered = models.filter(m => allowedModels.includes(m.id));
         
         res.json({ models: filtered });
@@ -80,8 +81,9 @@ router.get('/available-models', authenticateToken, async (req, res) => {
 // Get user quotas and plan info
 router.get('/quotas', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT plan, credits FROM users WHERE id = ?', req.user.id);
-        const plan = await getPlan(user.plan);
+        const user = await db.get('SELECT plan, credits, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        const plan = await getPlan(effectivePlan);
 
         // Get current usage
         const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.id);
@@ -160,15 +162,15 @@ router.get('/quotas', authenticateToken, async (req, res) => {
                 ai_messages_this_month: monthlyUsage.ai_messages
             },
             remaining: {
-                agents: await getRemainingQuota(user.plan, 'agents', agentsCount),
-                whatsapp_accounts: await getRemainingQuota(user.plan, 'whatsapp_accounts', whatsappConnected),
-                outlook_accounts: await getRemainingQuota(user.plan, 'outlook_accounts', outlookConnected),
-                conversations: await getRemainingQuota(user.plan, 'conversations_per_month', conversationsThisMonth),
-                messages: await getRemainingQuota(user.plan, 'messages_per_month', messagesThisMonth),
-                knowledge_items: await getRemainingQuota(user.plan, 'knowledge_items', knowledgeItems),
-                templates: await getRemainingQuota(user.plan, 'templates', templates)
+                agents: await getRemainingQuota(effectivePlan, 'agents', agentsCount),
+                whatsapp_accounts: await getRemainingQuota(effectivePlan, 'whatsapp_accounts', whatsappConnected),
+                outlook_accounts: await getRemainingQuota(effectivePlan, 'outlook_accounts', outlookConnected),
+                conversations: await getRemainingQuota(effectivePlan, 'conversations_per_month', conversationsThisMonth),
+                messages: await getRemainingQuota(effectivePlan, 'messages_per_month', messagesThisMonth),
+                knowledge_items: await getRemainingQuota(effectivePlan, 'knowledge_items', knowledgeItems),
+                templates: await getRemainingQuota(effectivePlan, 'templates', templates)
             },
-            availableModels: await getAvailableModels(user.plan)
+            availableModels: await getAvailableModels(effectivePlan)
         });
     } catch (error) {
         console.error('Get quotas error:', error);
@@ -280,16 +282,17 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         // Check plan limits
-        const user = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
         const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.id);
         const agentsCount = agentsCountRow?.count ?? 0;
-        const plan = await getPlan(user.plan);
+        const plan = await getPlan(effectivePlan);
 
-        if (await isLimitReached(user.plan, 'agents', agentsCount)) {
+        if (await isLimitReached(effectivePlan, 'agents', agentsCount)) {
             return res.status(403).json({ 
                 error: `Limite d'agents atteinte (${plan.limits.agents} max pour le plan ${plan.displayName})`,
                 upgrade_required: true,
-                current_plan: user.plan,
+                current_plan: effectivePlan,
                 limit: plan.limits.agents,
                 current: agentsCount
             });
@@ -299,7 +302,7 @@ router.post('/', authenticateToken, async (req, res) => {
         const dbModels = await db.all('SELECT id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
         
         // 2. Filter allowed models for user's plan
-        const planAllowedIds = await getAvailableModels(user.plan);
+        const planAllowedIds = await getAvailableModels(effectivePlan);
         const allowedModels = dbModels.filter(m => planAllowedIds.includes(m.id)).map(m => m.id);
 
         // 3. Resolve the final model: specified -> check allowed | unspecified -> take first in list
@@ -357,15 +360,17 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
         }
 
         // Check plan limits
-        const user = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlanName = await getEffectivePlanName(user.plan, user);
         const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.id);
         const agentsCount = agentsCountRow?.count ?? 0;
-        const plan = await getPlan(user.plan);
+        const plan = await getPlan(effectivePlanName);
 
-        if (await isLimitReached(user.plan, 'agents', agentsCount)) {
+        if (await isLimitReached(effectivePlanName, 'agents', agentsCount)) {
             return res.status(403).json({ 
                 error: `Limite d'agents atteinte (${plan.limits.agents} max)`,
-                upgrade_required: true
+                upgrade_required: true,
+                current_plan: effectivePlanName
             });
         }
 
@@ -481,8 +486,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
                     finalModel = existing.model; // Rollback if model doesn't exist
                 }
             } else {
-                const userRow = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
-                const planAllowedIds = await getAvailableModels(userRow.plan);
+                const userRow = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+                const effectivePlan = await getEffectivePlanName(userRow.plan, userRow);
+                const planAllowedIds = await getAvailableModels(effectivePlan);
                 const allowedModels = dbModels.filter(m => planAllowedIds.includes(m.id)).map(m => m.id);
                 if (!allowedModels.includes(model)) {
                     // If not allowed, try to keep existing if still allowed, otherwise take the first allowed

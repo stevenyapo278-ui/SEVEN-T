@@ -42,6 +42,7 @@ import {
   Wallet,
   Briefcase,
   ChevronLeft,
+  Gift,
 } from 'lucide-react'
 
 // ─── Navigation config ───────────────────────────────────────────────────────
@@ -118,7 +119,7 @@ const pathToTitle = (pathname) => {
     payments: 'Paiements', products: 'Produits', services: 'Services',
     reports: 'Rapports', settings: 'Paramètres', help: 'Aide',
     templates: 'Templates', tools: 'Outils', workflows: 'Workflows',
-    admin: 'Admin', expenses: 'Dépenses',
+    admin: 'Admin', expenses: 'Dépenses', influencer: 'Influenceur',
   }
   return map[first] || first
 }
@@ -189,7 +190,7 @@ const ThemeToggle = ({ className = '', size = 'md' }) => {
 }
 
 // ─── Nav Group (sidebar) ─────────────────────────────────────────────────────
-const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, collapsed = false }) => {
+const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, collapsed = false, unreadCount = 0, unreadConversationsCount = 0 }) => {
   const { t } = useTranslation()
   const { isDark } = useTheme()
   const location = useLocation()
@@ -231,7 +232,27 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
               <>
                 <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
                 <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
-                {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                {(!collapsed || isMobile) && (
+                  <div className="flex-1 flex items-center justify-between min-w-0">
+                    <span className="truncate">{t(item.nameKey)}</span>
+                    {item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                      <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                    {item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                      <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                        {unreadConversationsCount > 99 ? '99+' : unreadConversationsCount}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {collapsed && !isMobile && item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
+                )}
+                {collapsed && !isMobile && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
+                )}
               </>
             )}
           </NavLink>
@@ -280,7 +301,27 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                 <>
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
                   <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
-                  {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                  {(!collapsed || isMobile) && (
+                    <div className="flex-1 flex items-center justify-between min-w-0">
+                      <span className="truncate">{t(item.nameKey)}</span>
+                      {item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                        <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                      {item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                        <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                          {unreadConversationsCount > 99 ? '99+' : unreadConversationsCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {collapsed && !isMobile && item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
+                  )}
+                  {collapsed && !isMobile && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
+                  )}
                 </>
               )}
             </NavLink>
@@ -292,7 +333,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
 }
 
 // ─── Sidebar nav groups (with onboarding support) ────────────────────────────
-function SidebarNavGroups({ navGroups, onItemClick, isMobile, collapsed }) {
+function SidebarNavGroups({ navGroups, onItemClick, isMobile, collapsed, unreadCount, unreadConversationsCount }) {
   const { activeTour, currentStep } = useOnboardingTour()
   const expandForStep = activeTour === 'sidebar' ? currentStep?.id : null
   return (
@@ -304,6 +345,8 @@ function SidebarNavGroups({ navGroups, onItemClick, isMobile, collapsed }) {
           onItemClick={onItemClick}
           isMobile={isMobile}
           collapsed={collapsed}
+          unreadCount={unreadCount}
+          unreadConversationsCount={unreadConversationsCount}
           forceExpand={expandForStep != null && group.items.some(item => item.tourId === expandForStep)}
         />
       ))}
@@ -396,10 +439,11 @@ const UserMenu = ({ user, onLogout }) => {
 }
 
 // ─── Notifications Menu ───────────────────────────────────────────────────────
-const NotificationsMenu = () => {
+const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadCountInternal, setUnreadCountInternal] = useState(0)
+  const unreadCount = externalUnreadCount !== undefined ? externalUnreadCount : unreadCountInternal
   const menuRef = useRef(null)
   const { isDark } = useTheme()
 
@@ -421,15 +465,18 @@ const NotificationsMenu = () => {
     try {
       const response = await api.get('/notifications?limit=20')
       setNotifications(response.data.notifications || [])
-      setUnreadCount(response.data.unreadCount || 0)
+      setUnreadCountInternal(response.data.unreadCount || 0)
     } catch (error) { console.error('Error fetching notifications:', error) }
   }
 
   useEffect(() => {
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 60000)
+    const interval = setInterval(() => {
+      if (onRefresh) onRefresh()
+      fetchNotifications()
+    }, 60000)
     return () => clearInterval(interval)
-  }, [])
+  }, [onRefresh])
 
   useEffect(() => {
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setIsOpen(false) }
@@ -441,7 +488,7 @@ const NotificationsMenu = () => {
     try {
       await api.put(`/notifications/${id}/read`)
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: 1 } : n))
-      setUnreadCount(prev => Math.max(0, prev - 1))
+      setUnreadCountInternal(prev => Math.max(0, prev - 1))
     } catch (error) { console.error(error) }
   }
 
@@ -449,7 +496,7 @@ const NotificationsMenu = () => {
     try {
       await api.put('/notifications/read-all')
       setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })))
-      setUnreadCount(0)
+      setUnreadCountInternal(0)
     } catch (error) { console.error(error) }
   }
 
@@ -459,7 +506,7 @@ const NotificationsMenu = () => {
       await api.delete(`/notifications/${id}`)
       setNotifications(prev => {
         const notif = prev.find(n => n.id === id)
-        if (notif && !notif.is_read) setUnreadCount(c => Math.max(0, c - 1))
+        if (notif && !notif.is_read) setUnreadCountInternal(c => Math.max(0, c - 1))
         return prev.filter(n => n.id !== id)
       })
     } catch (error) { console.error(error) }
@@ -549,7 +596,7 @@ const TrialBadge = ({ user, isDark }) => {
 }
 
 // ─── Sidebar Content ──────────────────────────────────────────────────────────
-const SidebarContent = ({ navGroups, onItemClick, isMobile, collapsed, user, isDark, t, onLogout }) => {
+const SidebarContent = ({ navGroups, onItemClick, isMobile, collapsed, user, isDark, t, onLogout, unreadCount, unreadConversationsCount }) => {
   const location = useLocation()
   return (
     <div className="flex flex-col h-full">
@@ -562,7 +609,7 @@ const SidebarContent = ({ navGroups, onItemClick, isMobile, collapsed, user, isD
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-3 scrollbar-hide">
-        <SidebarNavGroups navGroups={navGroups} onItemClick={onItemClick} isMobile={isMobile} collapsed={collapsed} />
+        <SidebarNavGroups navGroups={navGroups} onItemClick={onItemClick} isMobile={isMobile} collapsed={collapsed} unreadCount={unreadCount} unreadConversationsCount={unreadConversationsCount} />
 
         {/* Divider */}
         <div className={`pt-2 mt-2 border-t ${isDark ? 'border-space-700/60' : 'border-gray-200'}`} />
@@ -595,6 +642,35 @@ const SidebarContent = ({ navGroups, onItemClick, isMobile, collapsed, user, isD
             </NavLink>
           ))}
         </div>
+
+        {/* Influencer */}
+        {(user?.permissions?.includes('influencer.dashboard')) && (
+          <div className="space-y-0.5">
+            {(!collapsed || isMobile) && (
+              <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-blue-600'}`}>Partenariat</p>
+            )}
+            <NavLink
+              to="/dashboard/influencer"
+              viewTransition
+              onClick={onItemClick}
+              className={({ isActive }) =>
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                  isActive
+                    ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
+                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
+                  <Gift className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  {(!collapsed || isMobile) && <span className="truncate">Dashboard Influenceur</span>}
+                </>
+              )}
+            </NavLink>
+          </div>
+        )}
 
         {/* Admin */}
         {(user?.is_admin === 1 || user?.can_manage_users || user?.can_manage_plans || user?.can_view_stats || user?.can_manage_ai) && (
@@ -715,6 +791,27 @@ export default function DashboardLayout() {
   const prevPathRef = useRef(location.pathname)
   // transition state : { direction: 1|-1|0, axis: 'x'|'y' }
   const [transition, setTransition] = useState({ direction: 0, axis: 'y' })
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadConversationsCount, setUnreadConversationsCount] = useState(0)
+
+  const fetchUnreadCounts = async () => {
+    try {
+      const [notifRes, convRes] = await Promise.all([
+        api.get('/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
+        api.get('/conversations/unread-count').catch(() => ({ data: { count: 0 } }))
+      ])
+      setUnreadCount(notifRes.data.count || 0)
+      setUnreadConversationsCount(convRes.data.count || 0)
+    } catch (error) {
+      console.error('Error fetching unread counts:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchUnreadCounts()
+    const interval = setInterval(fetchUnreadCounts, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Respect de prefers-reduced-motion (accessibilité)
   const prefersReducedMotion = useMemo(() =>
@@ -843,6 +940,8 @@ export default function DashboardLayout() {
             navGroups={navGroups} onItemClick={() => setSidebarOpen(false)}
             isMobile={true} collapsed={false}
             user={user} isDark={isDark} t={t} onLogout={handleLogout}
+            unreadCount={unreadCount}
+            unreadConversationsCount={unreadConversationsCount}
           />
         </div>
       </div>
@@ -854,6 +953,8 @@ export default function DashboardLayout() {
             navGroups={navGroups} onItemClick={() => {}}
             isMobile={false} collapsed={sidebarCollapsed}
             user={user} isDark={isDark} t={t} onLogout={handleLogout}
+            unreadCount={unreadCount}
+            unreadConversationsCount={unreadConversationsCount}
           />
         </div>
       </div>
@@ -873,7 +974,16 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-1.5">
             <TrialBadge user={user} isDark={isDark} />
             <ThemeToggle size="sm" />
-            <NotificationsMenu />
+            <Link to="/dashboard/conversations" title="Conversations non lues"
+              className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'}`}>
+              <MessageSquare className="w-4 h-4" />
+              {unreadConversationsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                  {unreadConversationsCount > 9 ? '9+' : unreadConversationsCount}
+                </span>
+              )}
+            </Link>
+            <NotificationsMenu unreadCount={unreadCount} onRefresh={fetchUnreadCounts} />
             <UserMenu user={user} onLogout={handleLogout} />
           </div>
         </div>
@@ -905,7 +1015,16 @@ export default function DashboardLayout() {
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>crédits</span>
             </Link>
             <ThemeToggle size="sm" />
-            <NotificationsMenu />
+            <Link to="/dashboard/conversations" title="Conversations non lues"
+              className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'}`}>
+              <MessageSquare className="w-4 h-4" />
+              {unreadConversationsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
+                  {unreadConversationsCount > 9 ? '9+' : unreadConversationsCount}
+                </span>
+              )}
+            </Link>
+            <NotificationsMenu unreadCount={unreadCount} onRefresh={fetchUnreadCounts} />
             <div className={`w-px h-4 mx-0.5 ${isDark ? 'bg-space-700' : 'bg-gray-200'}`} />
             <UserMenu user={user} onLogout={handleLogout} />
           </div>

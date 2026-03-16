@@ -360,7 +360,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });

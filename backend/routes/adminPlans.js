@@ -619,8 +619,10 @@ router.get('/available-models', async (req, res) => {
 router.get('/coupons', async (req, res) => {
     try {
         const coupons = await db.all(`
-            SELECT * FROM subscription_coupons
-            ORDER BY created_at DESC
+            SELECT c.*, u.name as influencer_name, u.email as influencer_email 
+            FROM subscription_coupons c
+            LEFT JOIN users u ON c.influencer_id = u.id
+            ORDER BY c.created_at DESC
         `);
         res.json({ coupons: Array.isArray(coupons) ? coupons : [] });
     } catch (error) {
@@ -634,7 +636,11 @@ router.get('/coupons', async (req, res) => {
  */
 router.post('/coupons', async (req, res) => {
     try {
-        let { name, code, discount_type, discount_value, max_uses, expires_at, is_active } = req.body;
+        let { 
+            name, code, discount_type, discount_value, max_uses, expires_at, is_active, 
+            influencer_id, influencer_reward_type, influencer_reward_value,
+            create_influencer, influencer_email, influencer_name // New fields for auto-creation
+        } = req.body;
         
         if (!code || !discount_type || discount_value === undefined) {
             return res.status(400).json({ error: 'Code, type de réduction et valeur requis' });
@@ -646,11 +652,40 @@ router.post('/coupons', async (req, res) => {
             return res.status(400).json({ error: 'Ce code de coupon existe déjà' });
         }
 
+        let finalInfluencerId = influencer_id || null;
+
+        // Auto-create influencer account if requested
+        if (create_influencer && influencer_email && influencer_name) {
+            const userExists = await db.get('SELECT id FROM users WHERE email = ?', influencer_email.toLowerCase().trim());
+            if (userExists) {
+                finalInfluencerId = userExists.id;
+            } else {
+                const userId = uuidv4();
+                const bcrypt = await import('bcryptjs');
+                const tempPassword = Math.random().toString(36).slice(-10);
+                const hashedPassword = await bcrypt.default.hash(tempPassword, 10);
+                
+                await db.run(`
+                    INSERT INTO users (id, name, email, password, plan, subscription_status)
+                    VALUES (?, ?, ?, ?, 'free', 'active')
+                `, userId, influencer_name, influencer_email.toLowerCase().trim(), hashedPassword);
+
+                // Assign influencer role
+                const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
+                if (influencerRole) {
+                    await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', userId, influencerRole.id);
+                }
+                
+                finalInfluencerId = userId;
+                console.log(`[Coupons] Influencer created: ${influencer_email} / Temp pass: ${tempPassword}`);
+            }
+        }
+
         const id = uuidv4();
         await db.run(`
-            INSERT INTO subscription_coupons (id, name, code, discount_type, discount_value, max_uses, expires_at, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, id, name || null, code, discount_type, discount_value, max_uses || null, expires_at || null, is_active !== false ? 1 : 0);
+            INSERT INTO subscription_coupons (id, name, code, discount_type, discount_value, max_uses, expires_at, is_active, influencer_id, influencer_reward_type, influencer_reward_value)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, id, name || null, code, discount_type, discount_value, max_uses || null, expires_at || null, is_active !== false ? 1 : 0, finalInfluencerId, influencer_reward_type || 'none', influencer_reward_value || 0);
 
         const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', id);
 
@@ -670,12 +705,28 @@ router.post('/coupons', async (req, res) => {
     }
 });
 
+router.get('/coupons/:id', async (req, res) => {
+    try {
+        const coupon = await db.get(`
+            SELECT c.*, u.name as influencer_name, u.email as influencer_email 
+            FROM subscription_coupons c
+            LEFT JOIN users u ON c.influencer_id = u.id
+            WHERE c.id = ?
+        `, req.params.id);
+        if (!coupon) return res.status(404).json({ error: 'Coupon non trouvé' });
+        res.json({ coupon });
+    } catch (error) {
+        console.error('Get coupon error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 /**
  * Update a coupon
  */
 router.put('/coupons/:id', async (req, res) => {
     try {
-        const { name, code, discount_type, discount_value, max_uses, expires_at, is_active } = req.body;
+        const { name, code, discount_type, discount_value, max_uses, expires_at, is_active, influencer_id, influencer_reward_type, influencer_reward_value } = req.body;
         
         const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', req.params.id);
         if (!coupon) return res.status(404).json({ error: 'Coupon non trouvé' });
@@ -695,6 +746,9 @@ router.put('/coupons/:id', async (req, res) => {
         if (max_uses !== undefined) { updates.push('max_uses = ?'); params.push(max_uses || null); }
         if (expires_at !== undefined) { updates.push('expires_at = ?'); params.push(expires_at || null); }
         if (is_active !== undefined) { updates.push('is_active = ?'); params.push(is_active ? 1 : 0); }
+        if (influencer_id !== undefined) { updates.push('influencer_id = ?'); params.push(influencer_id || null); }
+        if (influencer_reward_type !== undefined) { updates.push('influencer_reward_type = ?'); params.push(influencer_reward_type); }
+        if (influencer_reward_value !== undefined) { updates.push('influencer_reward_value = ?'); params.push(influencer_reward_value); }
 
         if (updates.length > 0) {
             params.push(req.params.id);

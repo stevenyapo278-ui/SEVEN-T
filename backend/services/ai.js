@@ -203,6 +203,21 @@ class AIService {
             // DB not ready or error
         }
 
+        // 1.b Check credits/trial BEFORE calling LLM
+        if (userId) {
+            const hasCredits = await hasEnoughCredits(userId, resolvedModelId);
+            if (!hasCredits) {
+                console.warn(`[AI] Blocking request for user ${userId}: Insufficient credits or expired trial`);
+                return { 
+                    content: 'Merci pour votre message. Un conseiller vous répondra dès que possible.', 
+                    need_human: true,
+                    tokens: 0,
+                    provider: 'fallback',
+                    credit_warning: 'Votre compte ne dispose pas d\'assez de crédits ou votre période d\'essai est expirée.'
+                };
+            }
+        }
+
         // 2. Identify Provider based on resolved model
         const provider = this.getProvider(resolvedModelId);
         let finalModelString = resolvedModelId;
@@ -1149,6 +1164,20 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
     async generateResponseFromImage(agent, conversationHistory, imageBase64, mimeType, caption, knowledgeBase = [], userId = null) {
         this.initialize();
         const geminiModel = this.resolveMediaModel(agent);
+
+        if (userId) {
+            const hasCredits = await hasEnoughCredits(userId, geminiModel);
+            if (!hasCredits) {
+                console.warn(`[AI-Vision] Blocking request for user ${userId}: Insufficient credits or expired trial`);
+                return { 
+                    content: 'Merci pour votre message. Un conseiller vous répondra dès que possible.', 
+                    need_human: true,
+                    tokens: 0,
+                    provider: 'fallback',
+                    credit_warning: 'Votre compte ne dispose pas d\'assez de crédits ou votre période d\'essai est expirée.'
+                };
+            }
+        }
         
         // Get the actual API key to use
         const apiKey = await this.getApiKey('gemini', geminiModel);

@@ -161,9 +161,9 @@ router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) =>
 /**
  * Apply subscription to user: set plan, credits, subscription_status
  */
-async function applySubscriptionToUser(userId, planName, externalSubscriptionId, endDate = null) {
+async function applySubscriptionToUser(userId, planName, externalSubscriptionId, endDate = null, bonusCredits = 0) {
     const plan = await getPlan(planName);
-    const credits = plan?.limits?.credits_per_month ?? 100;
+    const credits = (plan?.limits?.credits_per_month ?? 100) + bonusCredits;
     
     // If no explicit endDate is provided but it's a non-GeniusPay payment, 
     // we might want to default to 1 month/year.
@@ -279,8 +279,23 @@ async function finalizeSubscription(payment, externalSubId) {
     if (payment.status === 'paid') return;
     await db.run("UPDATE saas_subscription_payments SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
     
+    let bonusCredits = 0;
     if (payment.coupon_code) {
-        await db.run("UPDATE subscription_coupons SET used_count = used_count + 1 WHERE code = ?", payment.coupon_code);
+        const coupon = await db.get("SELECT * FROM subscription_coupons WHERE code = ?", payment.coupon_code);
+        if (coupon) {
+            await db.run("UPDATE subscription_coupons SET used_count = used_count + 1 WHERE id = ?", coupon.id);
+            
+            // Record detailed usage
+            await db.run(`
+                INSERT INTO coupon_usages (id, coupon_id, user_id, subscription_id, amount_total, discount_amount)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `, uuidv4(), coupon.id, payment.user_id, payment.id, payment.original_amount, payment.discount_amount);
+            
+            // Apply bonus credits if any
+            if (coupon.bonus_credits > 0) {
+                bonusCredits = coupon.bonus_credits;
+            }
+        }
     }
     
     const endDate = new Date();
@@ -289,7 +304,7 @@ async function finalizeSubscription(payment, externalSubId) {
     } else {
         endDate.setMonth(endDate.getMonth() + 1);
     }
-    await applySubscriptionToUser(payment.user_id, payment.plan_id, externalSubId || `sub_${payment.id}`, endDate);
+    await applySubscriptionToUser(payment.user_id, payment.plan_id, externalSubId || `sub_${payment.id}`, endDate, bonusCredits);
 }
 
 export default router;

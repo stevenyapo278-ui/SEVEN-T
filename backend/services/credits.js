@@ -74,6 +74,12 @@ export async function hasEnoughCredits(userId, action, quantity = 1) {
 
     const { getEffectivePlanName } = await import('../config/plans.js');
     const effectivePlanName = await getEffectivePlanName(user.plan, user);
+    
+    // Si l'essai est expiré, on bloque tout
+    if (effectivePlanName === 'free_expired') {
+        return false;
+    }
+
     const plan = await getPlan(effectivePlanName);
     
     // Enterprise plan has unlimited credits

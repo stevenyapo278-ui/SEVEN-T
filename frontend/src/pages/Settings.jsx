@@ -666,7 +666,7 @@ export default function Settings() {
       {/* Modal config PaymeTrust / GeniusPay */}
       {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && paymentProviderModal?.provider && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
           <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-space-700 bg-space-900 shadow-2xl animate-fadeIn overflow-hidden">
             <div className="flex-shrink-0 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -888,7 +888,7 @@ export default function Settings() {
 
       {/* Modal confirmation suppression compte */}
       {showDeleteAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => !deletingAccount && setShowDeleteAccountModal(false)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative z-10 bg-space-900 border border-space-600 rounded-t-2xl sm:rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-display font-semibold text-gray-100 mb-2">Supprimer définitivement mon compte ?</h3>
             <p className="text-sm text-gray-400 mb-6">

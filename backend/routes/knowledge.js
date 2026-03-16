@@ -8,6 +8,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import { contentExtractor } from '../services/contentExtractor.js';
 import { indexAgentKnowledge, indexGlobalKnowledge, deleteChunksBySource } from '../services/knowledgeRetrieval.js';
 import { activityLogger } from '../services/activityLogger.js';
+import { getPlan, isLimitReached, getEffectivePlanName } from '../config/plans.js';
 
 const router = Router();
 const MAX_KNOWLEDGE_CHARS = 150000; // ~150k characters max per item
@@ -103,6 +104,20 @@ router.post('/agent/:agentId', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
 
+        // Check plan limits
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM knowledge_base WHERE agent_id = ?', req.params.agentId);
+        const itemsCount = itemsCountRow?.count ?? 0;
+
+        if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
+            const plan = await getPlan(effectivePlan);
+            return res.status(403).json({ 
+                error: `Limite de base de connaissances atteinte (${plan.limits.knowledge_items} max)`,
+                upgrade_required: true
+            });
+        }
+
         let finalContent = content;
         let finalMetadata = metadata || {};
         let finalType = type || 'text';
@@ -180,6 +195,21 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
         if (!agent) {
             if (req.file) fs.unlinkSync(req.file.path);
             return res.status(404).json({ error: 'Agent non trouvé' });
+        }
+
+        // Check plan limits
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM knowledge_base WHERE agent_id = ?', req.params.agentId);
+        const itemsCount = itemsCountRow?.count ?? 0;
+
+        if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            const plan = await getPlan(effectivePlan);
+            return res.status(403).json({ 
+                error: `Limite de base de connaissances atteinte (${plan.limits.knowledge_items} max)`,
+                upgrade_required: true
+            });
         }
 
         if (!req.file) {
@@ -525,6 +555,28 @@ router.post('/global', authenticateToken, async (req, res) => {
     try {
         const { title, content, type } = req.body;
 
+        // Check plan limits
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        
+        if (effectivePlan === 'free_expired') {
+            return res.status(403).json({ 
+                error: "Votre période d'essai est terminée. Passez à un plan supérieur pour ajouter des éléments à la base de connaissances.",
+                upgrade_required: true
+            });
+        }
+
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const itemsCount = itemsCountRow?.count ?? 0;
+
+        if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
+            const plan = await getPlan(effectivePlan);
+            return res.status(403).json({ 
+                error: `Limite de base de connaissances atteinte (${plan.limits.knowledge_items} max)`,
+                upgrade_required: true
+            });
+        }
+
         if (!title?.trim() || !content?.trim()) {
             return res.status(400).json({ error: 'Titre et contenu requis' });
         }
@@ -577,6 +629,29 @@ router.post('/global', authenticateToken, async (req, res) => {
 // Upload file to global knowledge
 router.post('/global/upload', authenticateToken, upload.single('file'), async (req, res) => {
     try {
+        // Check plan limits
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        
+        if (effectivePlan === 'free_expired') {
+            if (req.file) fs.unlinkSync(req.file.path);
+            return res.status(403).json({ 
+                error: "Votre période d'essai est terminée. Passez à un plan supérieur pour ajouter des fichiers.",
+                upgrade_required: true
+            });
+        }
+
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const itemsCount = itemsCountRow?.count ?? 0;
+
+        if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
+            if (req.file) fs.unlinkSync(req.file.path);
+            const plan = await getPlan(effectivePlan);
+            return res.status(403).json({ 
+                error: `Limite de base de connaissances atteinte (${plan.limits.knowledge_items} max)`,
+                upgrade_required: true
+            });
+        }
         if (!req.file) {
             return res.status(400).json({ error: 'Fichier requis' });
         }
@@ -670,6 +745,28 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
 router.post('/global/extract-url', authenticateToken, async (req, res) => {
     try {
         const { url, title } = req.body;
+
+        // Check plan limits
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        
+        if (effectivePlan === 'free_expired') {
+            return res.status(403).json({ 
+                error: "Votre période d'essai est terminée. Passez à un plan supérieur pour extraire des contenus.",
+                upgrade_required: true
+            });
+        }
+
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const itemsCount = itemsCountRow?.count ?? 0;
+
+        if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
+            const plan = await getPlan(effectivePlan);
+            return res.status(403).json({ 
+                error: `Limite de base de connaissances atteinte (${plan.limits.knowledge_items} max)`,
+                upgrade_required: true
+            });
+        }
 
         if (!url) {
             return res.status(400).json({ error: 'URL requise' });

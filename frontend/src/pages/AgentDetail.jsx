@@ -52,7 +52,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import ToolAssignmentModal from '../components/ToolAssignmentModal'
-import { AuditLogsContent } from './Admin/AuditLogsContent'
+import AuditLogsContent from './Admin/AuditLogsContent'
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {

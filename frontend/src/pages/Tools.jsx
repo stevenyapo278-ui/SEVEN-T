@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useOnboardingTour } from '../components/Onboarding'
+import UpgradePrompt from '../components/UpgradePrompt'
 
 const TOOL_LABELS = {
   whatsapp: 'WhatsApp',

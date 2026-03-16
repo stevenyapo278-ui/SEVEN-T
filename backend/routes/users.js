@@ -107,7 +107,7 @@ router.get('/me/export', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, payment_module_enabled FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, payment_module_enabled, analytics_module_enabled FROM users WHERE id = ?', userId);
         
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
         

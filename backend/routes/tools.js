@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate, createToolSchema } from '../middleware/security.js';
-import { getPlan } from '../config/plans.js';
+import { getPlan, getEffectivePlanName } from '../config/plans.js';
 import { whatsappManager } from '../services/whatsapp.js';
 
 const router = Router();
@@ -15,8 +15,9 @@ function getLimitKeyForType(type) {
 }
 
 async function checkToolLimit(userId, type) {
-    const user = await db.get('SELECT plan FROM users WHERE id = ?', userId);
-    const plan = await getPlan(user?.plan || 'free');
+    const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', userId);
+    const effectivePlan = await getEffectivePlanName(user?.plan || 'free', user);
+    const plan = await getPlan(effectivePlan);
     const limitKey = getLimitKeyForType(type);
     const limit = plan?.limits?.[limitKey];
 
@@ -57,8 +58,9 @@ router.get('/', authenticateToken, async (req, res) => {
             return acc;
         }, {});
 
-        const user = await db.get('SELECT plan FROM users WHERE id = ?', req.user.id);
-        const plan = await getPlan(user?.plan || 'free');
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlan = await getEffectivePlanName(user?.plan || 'free', user);
+        const plan = await getPlan(effectivePlan);
 
         res.json({
             tools: tools.map(t => ({

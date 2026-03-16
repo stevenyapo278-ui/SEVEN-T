@@ -200,6 +200,7 @@ export async function initDatabase() {
             reset_token TEXT,
             reset_token_expires TIMESTAMP,
             payment_module_enabled INTEGER DEFAULT 0,
+            analytics_module_enabled INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -1127,6 +1128,9 @@ export async function initDatabase() {
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_plans INTEGER DEFAULT 0');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_view_stats INTEGER DEFAULT 0');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_ai INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS analytics_module_enabled INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT \'XOF\'');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS media_model TEXT');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('users columns migrations:', e?.message);
@@ -1201,8 +1205,8 @@ export async function initDatabase() {
             ['security.anomalies.read', 'security', 'Lire anomalies', 'Voir anomalies sécurité'],
             ['security.anomalies.manage', 'security', 'Gérer anomalies', 'Résoudre/cleanup/health-check anomalies'],
 
-            ['platform.stats.read', 'platform', 'Lire stats plateforme', 'Dashboard admin/stats'],
-            ['platform.activity.read', 'platform', 'Lire activité plateforme', 'Flux activité / activité système']
+            ['platform.activity.read', 'platform', 'Lire activité plateforme', 'Flux activité / activité système'],
+            ['influencer.dashboard', 'influencer', 'Accès Dashboard Influenceur', 'Suivre ses coupons et commissions']
         ];
 
         for (const [key, groupKey, name, description] of seedPerms) {
@@ -1238,7 +1242,8 @@ export async function initDatabase() {
             security_analyst: ['platform.stats.read', 'audit.read', 'security.anomalies.read'],
             user_admin: ['users.read', 'users.write', 'users.credentials.reset', 'users.credits.write', 'users.delete'],
             billing_admin: ['billing.plans.read', 'billing.plans.write', 'billing.coupons.read', 'billing.coupons.write', 'billing.subscriptions.write'],
-            ai_admin: ['ai.models.read', 'ai.models.write', 'ai.keys.read', 'ai.keys.write', 'ai.settings.write', 'ai.reindex.run']
+            ai_admin: ['ai.models.read', 'ai.models.write', 'ai.keys.read', 'ai.keys.write', 'ai.settings.write', 'ai.reindex.run'],
+            influencer: ['influencer.dashboard']
         };
 
         const roles = await db.all('SELECT id, key FROM roles');
@@ -1420,6 +1425,49 @@ export async function initDatabase() {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('subscription_coupons name column migration:', e?.message);
         }
+    }
+
+    try {
+        await db.run('ALTER TABLE subscription_coupons ADD COLUMN IF NOT EXISTS influencer_id TEXT');
+        await db.run('ALTER TABLE subscription_coupons ADD COLUMN IF NOT EXISTS influencer_reward_type TEXT DEFAULT \'none\'');
+        await db.run('ALTER TABLE subscription_coupons ADD COLUMN IF NOT EXISTS influencer_reward_value REAL DEFAULT 0');
+        await db.run('ALTER TABLE subscription_coupons ADD COLUMN IF NOT EXISTS bonus_credits INTEGER DEFAULT 0');
+    } catch (e) {
+        console.warn('subscription_coupons influencer columns migration:', e?.message);
+    }
+
+    try {
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS coupon_usages (
+                id TEXT PRIMARY KEY,
+                coupon_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                subscription_id TEXT,
+                amount_total REAL,
+                discount_amount REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (coupon_id) REFERENCES subscription_coupons(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_coupon_usages_coupon ON coupon_usages(coupon_id);
+            CREATE INDEX IF NOT EXISTS idx_coupon_usages_user ON coupon_usages(user_id);
+            CREATE INDEX IF NOT EXISTS idx_subscription_coupons_influencer ON subscription_coupons(influencer_id);
+        `);
+    } catch (e) {
+        console.error('Failed to create coupon_usages table:', e?.message);
+    }
+
+    // Seed Influencer Role
+    try {
+        const influencerRole = ['influencer', 'Influencer', 'Accès au dashboard coupon et suivi des usages'];
+        await db.run(
+            `INSERT INTO roles (id, key, name, description)
+             VALUES (gen_random_uuid(), ?, ?, ?)
+             ON CONFLICT (key) DO NOTHING`,
+            influencerRole[0], influencerRole[1], influencerRole[2]
+        );
+    } catch (e) {
+        console.warn('Influencer role seed skipped:', e?.message);
     }
 
     try {
