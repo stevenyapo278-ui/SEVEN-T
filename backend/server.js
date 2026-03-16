@@ -99,17 +99,22 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow all origins in development or if DISABLE_STRICT_SECURITY is true
-        if (!origin || !isProduction || process.env.DISABLE_STRICT_SECURITY === 'true') {
+        // In development, allow all origins (useful for local tools)
+        if (!isProduction) {
             return callback(null, true);
         }
-        
-        if (allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            console.warn(`🛑 CORS blocked origin: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
+
+        // In production, never wildcard when using cookies (credentials=true)
+        if (!origin) {
+            return callback(new Error('CORS origin required in production'));
         }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        console.warn(`🛑 CORS blocked origin: ${origin}`);
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],

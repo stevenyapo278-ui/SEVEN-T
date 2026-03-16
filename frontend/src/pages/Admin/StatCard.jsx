@@ -11,7 +11,7 @@ export default function StatCard({ icon: Icon, label, value, subValue, color }) 
         <Icon className="w-6 h-6" />
         {subValue && <span className="text-xs opacity-70">{subValue}</span>}
       </div>
-      <div className="text-3xl font-bold text-gray-100">{value.toLocaleString()}</div>
+      <div className="text-3xl font-bold text-gray-100">{(value ?? 0).toLocaleString()}</div>
       <div className="text-sm text-gray-400">{label}</div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { Search, Plus, Edit, Trash2, Shield, ShieldOff, RefreshCw, ChevronLeft, ChevronRight, RotateCcw, Users } from 'lucide-react'
+import { Search, Plus, Edit, Trash2, Shield, ShieldOff, RefreshCw, ChevronLeft, ChevronRight, RotateCcw, Users, FileText } from 'lucide-react'
 
 export default function UsersContent({
   users,
@@ -15,10 +15,11 @@ export default function UsersContent({
   onDelete,
   onToggleAdmin,
   onToggleActive,
-  onEdit,
-  onCreate,
   onRefresh,
   onRestore,
+  onViewLogs,
+  onEdit,
+  onCreate,
   formatDate
 }) {
   const totalPages = Math.ceil(pagination.total / pagination.limit)
@@ -142,6 +143,9 @@ export default function UsersContent({
                         </button>
                         <button onClick={() => onEdit(user)} className="p-1.5 text-gray-500 hover:text-gray-100 hover:bg-space-700 rounded-lg transition-colors" title="Modifier">
                           <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => onViewLogs(user)} className="p-1.5 text-gray-400 hover:text-gold-400 hover:bg-gold-400/10 rounded-lg transition-colors" title="Voir le journal d'activité">
+                          <FileText className="w-4 h-4" />
                         </button>
                         {user.is_active === 0 && user.email?.includes('_deleted_') ? (
                           <button onClick={() => onRestore(user.id)} className="p-1.5 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors" title="Restaurer l'utilisateur">

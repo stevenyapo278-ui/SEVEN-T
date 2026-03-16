@@ -7,6 +7,7 @@ import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { motion, AnimatePresence } from 'framer-motion'
+import EmptyState from '../components/EmptyState'
 import { 
   BookOpen, 
   Plus, 
@@ -313,16 +314,21 @@ export default function KnowledgeBase() {
           ))}
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="bg-space-800/20 border border-space-700/50 border-dashed rounded-3xl p-16 text-center">
-          <div className="w-20 h-20 bg-gold-400/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <BookOpen className="w-10 h-10 text-gold-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-100 mb-3">Votre base est vide</h3>
-          <p className="text-gray-500 max-w-sm mx-auto mb-6">Ajoutez du contenu pour rendre vos agents IA plus intelligents et précis.</p>
-          <button onClick={() => setShowAddModal(true)} className="btn-primary inline-flex items-center gap-2">
-            <Plus className="w-5 h-5" /> Nouveau savoir
-          </button>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="Votre base est vide"
+          description="Ajoutez du contenu pour rendre vos agents IA plus intelligents et précis."
+          primaryAction={{
+            label: 'Nouveau savoir',
+            icon: Plus,
+            onClick: () => setShowAddModal(true)
+          }}
+          secondaryAction={{
+            label: 'Comment structurer sa base ?',
+            onClick: () => window.open('https://help.seven-t.com/knowledge', '_blank'),
+            external: true
+          }}
+        />
       ) : (
         <div className={viewMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" : "space-y-3"}>
           <AnimatePresence mode='popLayout'>

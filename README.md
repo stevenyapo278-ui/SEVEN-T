@@ -173,9 +173,9 @@ Utilisez le "Playground" pour tester les réponses avant de recevoir des vrais m
 
 L'IA est **déjà configurée** - les utilisateurs n'ont rien à faire !
 
-Côté backend, le fichier `.env` contient :
+Côté backend, le fichier `.env` contient une clé Gemini **personnelle** que vous devez fournir vous‑même :
 ```env
-GEMINI_API_KEY=AIzaSyBStbOU2wlnvBpIC0rPM1t_08wKYAKxUEE
+GEMINI_API_KEY=votre-cle-gemini
 ```
 
 ### Architecture IA

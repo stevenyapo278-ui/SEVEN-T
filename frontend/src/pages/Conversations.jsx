@@ -8,6 +8,7 @@ import { useOnboardingTour } from '../components/Onboarding'
 import { useConversationSocket } from '../hooks/useConversationSocket'
 import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import EmptyState from '../components/EmptyState'
 
 // Cache for profile pictures (shared across all ProfileAvatar instances)
 const profilePicCache = new Map()

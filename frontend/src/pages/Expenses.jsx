@@ -27,6 +27,11 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import toast from 'react-hot-toast'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
 
 const COLORS = ['#F5D47A', '#8B5CF6', '#22C55E', '#3B82F6', '#EF4444', '#F97316', '#EC4899']
 
@@ -164,28 +169,19 @@ export default function Expenses() {
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
               <div className="flex items-center gap-2">
-                <select
-                  value={month}
-                  onChange={(e) => setMonth(Number(e.target.value))}
-                  className={`px-3 py-2 rounded-xl border transition-all duration-200 text-sm ${
+                <DatePicker
+                  selected={new Date(year, month - 1)}
+                  onChange={(date) => {
+                    setMonth(date.getMonth() + 1)
+                    setYear(date.getFullYear())
+                  }}
+                  showMonthYearPicker
+                  dateFormat="MMMM yyyy"
+                  locale="fr"
+                  className={`px-3 py-2 rounded-xl border transition-all duration-200 text-sm w-40 ${
                     isDark ? 'bg-space-800 border-space-700 text-gray-200 focus:bg-space-700' : 'bg-white border-gray-200 text-gray-700'
                   }`}
-                >
-                  {monthNames.slice(1).map((name, i) => (
-                    <option key={i} value={i + 1}>{name}</option>
-                  ))}
-                </select>
-                <select
-                  value={year}
-                  onChange={(e) => setYear(Number(e.target.value))}
-                  className={`px-3 py-2 rounded-xl border transition-all duration-200 text-sm ${
-                    isDark ? 'bg-space-800 border-space-700 text-gray-200 focus:bg-space-700' : 'bg-white border-gray-200 text-gray-700'
-                  }`}
-                >
-                  {[year - 2, year - 1, year, year + 1].map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
+                />
               </div>
               <button
                 type="button"
@@ -523,12 +519,13 @@ function ExpenseModal({ expense, onClose, onSaved }) {
           <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">{t('expenses.date')}</label>
-            <input
-              type="date"
-              required
-              value={form.expense_date}
-              onChange={(e) => setForm((f) => ({ ...f, expense_date: e.target.value }))}
+            <DatePicker
+              selected={form.expense_date ? new Date(form.expense_date) : null}
+              onChange={(date) => setForm((f) => ({ ...f, expense_date: date ? date.toISOString().slice(0, 10) : '' }))}
+              dateFormat="dd/MM/yyyy"
+              locale="fr"
               className="input w-full"
+              required
             />
           </div>
           <div>

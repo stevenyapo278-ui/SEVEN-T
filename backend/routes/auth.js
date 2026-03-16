@@ -15,6 +15,8 @@ import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
 import { notificationService } from '../services/notifications.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { whatsappManager } from '../services/whatsapp.js';
+import { activityLogger } from '../services/activityLogger.js';
+import { getUserPermissions } from '../services/rbac.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
@@ -270,6 +272,15 @@ router.post('/register', validate(registerSchema), async (req, res) => {
 
         sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
         notificationService.notifyWelcome(userId);
+        
+        await activityLogger.log({
+            userId: user.id,
+            action: 'register',
+            entityType: 'user',
+            entityId: user.id,
+            req
+        });
+
         res.status(201).json({
             message: 'Compte créé avec succès',
             user: { ...user, plan: effectivePlan, plan_features }
@@ -288,6 +299,12 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         // Find user (case-insensitive)
         const user = await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', email);
         if (!user) {
+            await activityLogger.log({
+                userId: 'anonymous',
+                action: 'login_failed',
+                details: { email, reason: 'user_not_found' },
+                req
+            });
             // Use same error message to prevent email enumeration
             return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
         }
@@ -300,6 +317,14 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         // Check password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
+            await activityLogger.log({
+                userId: user.id,
+                action: 'login_failed',
+                entityType: 'user',
+                entityId: user.id,
+                details: { email: user.email, reason: 'invalid_password' },
+                req
+            });
             return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
         }
 
@@ -313,6 +338,15 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
+
+        await activityLogger.log({
+            userId: user.id,
+            action: 'login',
+            entityType: 'user',
+            entityId: user.id,
+            req
+        });
+
         res.json({
             message: 'Connexion réussie',
             user: { ...userWithoutPassword, plan: effectivePlan, plan_features }
@@ -326,7 +360,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 // Get current user
 router.get('/me', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -334,16 +368,17 @@ router.get('/me', authenticateToken, async (req, res) => {
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
-        res.json({ user: { ...user, plan: effectivePlan, plan_features } });
+        const permissions = await getUserPermissions(user.id);
+        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions } });
     } catch (error) {
         console.error('Get user error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
-// Update user
 router.put('/me', authenticateToken, async (req, res) => {
     try {
+        const existing = await db.get('SELECT name, company, currency, media_model, notification_number FROM users WHERE id = ?', req.user.id);
         const { name, company, currency, media_model, notification_number } = req.body;
 
         // Build dynamic update query
@@ -378,11 +413,33 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        
+        // Calculate changes
+        const changes = {};
+        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number'];
+        fieldsToTrack.forEach(field => {
+            if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
+                changes[field] = { old: existing[field], new: req.body[field] };
+            }
+        });
+
+        if (Object.keys(changes).length > 0) {
+            await activityLogger.log({
+                userId: req.user.id,
+                action: 'update_profile',
+                entityType: 'user',
+                entityId: req.user.id,
+                details: { changes },
+                req
+            });
+        }
+
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
-        res.json({ user: { ...user, plan: effectivePlan, plan_features } });
+        const permissions = await getUserPermissions(user.id);
+        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions } });
     } catch (error) {
         console.error('Update user error:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour' });
@@ -410,6 +467,13 @@ router.delete('/me', authenticateToken, async (req, res) => {
         }
 
         await db.run('DELETE FROM users WHERE id = ?', userId);
+
+        await activityLogger.log({
+            userId: userId,
+            action: 'delete_account',
+            details: { reason: 'user_deleted_self' },
+            req
+        });
 
         res.json({ message: 'Compte et données supprimés définitivement' });
     } catch (error) {
@@ -442,6 +506,15 @@ router.post('/forgot-password', async (req, res) => {
             );
 
             await sendPasswordResetEmail(user, resetToken); // Plaintext sent by email
+
+            await activityLogger.log({
+                userId: user.id,
+                action: 'forgot_password_request',
+                entityType: 'user',
+                entityId: user.id,
+                details: { email: user.email },
+                req
+            });
         }
 
         res.json({ message: 'Si un compte correspond à cet email, vous recevrez un lien de réinitialisation.' });
@@ -476,6 +549,15 @@ router.post('/reset-password', async (req, res) => {
             hashedPassword,
             user.id
         );
+
+        await activityLogger.log({
+            userId: user.id,
+            action: 'reset_password_success',
+            entityType: 'user',
+            entityId: user.id,
+            details: { email: user.email },
+            req
+        });
 
         res.json({ message: 'Votre mot de passe a été réinitialisé avec succès.' });
     } catch (error) {

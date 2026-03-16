@@ -58,6 +58,12 @@ import {
   ResponsiveContainer 
 } from 'recharts'
 
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
+
 const ORDER_STATUSES = {
   pending: { nameKey: 'orders.statusPending', color: 'amber', icon: Clock },
   validated: { nameKey: 'orders.statusValidated', color: 'green', icon: CheckCircle },
@@ -1254,20 +1260,24 @@ export default function Orders() {
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Période :</span>
           </div>
           <div className="flex items-center gap-2 flex-1 sm:flex-none">
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              className={`flex-1 sm:flex-none px-3 py-2 rounded-xl border text-sm ${
+            <DatePicker
+              selected={dateRange.start ? new Date(dateRange.start) : null}
+              onChange={(date) => setDateRange(prev => ({ ...prev, start: date ? date.toISOString().slice(0, 10) : '' }))}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Début"
+              locale="fr"
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-xl border text-sm w-full sm:w-32 ${
                 isDark ? 'bg-space-800 border-space-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'
               }`}
             />
             <span className="text-gray-500">à</span>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              className={`flex-1 sm:flex-none px-3 py-2 rounded-xl border text-sm ${
+            <DatePicker
+              selected={dateRange.end ? new Date(dateRange.end) : null}
+              onChange={(date) => setDateRange(prev => ({ ...prev, end: date ? date.toISOString().slice(0, 10) : '' }))}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Fin"
+              locale="fr"
+              className={`flex-1 sm:flex-none px-3 py-2 rounded-xl border text-sm w-full sm:w-32 ${
                 isDark ? 'bg-space-800 border-space-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'
               }`}
             />

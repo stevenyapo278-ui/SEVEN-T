@@ -7,6 +7,7 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { contentExtractor } from '../services/contentExtractor.js';
 import { indexAgentKnowledge, indexGlobalKnowledge, deleteChunksBySource } from '../services/knowledgeRetrieval.js';
+import { activityLogger } from '../services/activityLogger.js';
 
 const router = Router();
 const MAX_KNOWLEDGE_CHARS = 150000; // ~150k characters max per item
@@ -148,6 +149,15 @@ router.post('/agent/:agentId', authenticateToken, async (req, res) => {
             console.warn('[Knowledge] Vector index error:', err?.message)
         );
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'add_knowledge',
+            entityType: 'knowledge',
+            entityId: itemId,
+            details: { agent_id: req.params.agentId, title: finalTitle, type: finalType },
+            req
+        });
+
         res.status(201).json({ 
             message: 'Élément ajouté à la base de connaissances',
             item: {
@@ -245,6 +255,15 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
             console.warn('[Knowledge] Vector index error:', err?.message)
         );
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'upload_knowledge',
+            entityType: 'knowledge',
+            entityId: itemId,
+            details: { agent_id: req.params.agentId, title: finalTitle, fileName: req.file.originalname },
+            req
+        });
+
         res.status(201).json({ 
             message: 'Fichier ajouté à la base de connaissances',
             item: {
@@ -330,6 +349,15 @@ router.post('/agent/:agentId/extract-url', authenticateToken, async (req, res) =
             console.warn('[Knowledge] Vector index error:', err?.message)
         );
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'extract_url_knowledge',
+            entityType: 'knowledge',
+            entityId: itemId,
+            details: { agent_id: req.params.agentId, title: finalTitle, url },
+            req
+        });
+
         res.status(201).json({ 
             message,
             item: {
@@ -381,6 +409,27 @@ router.put('/:id', authenticateToken, async (req, res) => {
             );
         }
 
+        // Calculate changes
+        const changes = {};
+        const fieldsToTrack = ['title', 'type'];
+        fieldsToTrack.forEach(field => {
+            if (req.body[field] !== undefined && String(item[field]) !== String(req.body[field])) {
+                changes[field] = { old: item[field], new: req.body[field] };
+            }
+        });
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_knowledge',
+            entityType: 'knowledge',
+            entityId: req.params.id,
+            details: { 
+                title: updated.title,
+                changes: Object.keys(changes).length > 0 ? changes : 'Content updated'
+            },
+            req
+        });
+
         res.json({ 
             item: {
                 ...updated,
@@ -405,6 +454,15 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         if (item) {
             await deleteChunksBySource('agent', req.params.id);
             await db.run('DELETE FROM knowledge_base WHERE id = ?', req.params.id);
+            
+            await activityLogger.log({
+                userId: req.user.id,
+                action: 'delete_knowledge',
+                entityType: 'knowledge',
+                entityId: req.params.id,
+                req
+            });
+            
             return res.json({ message: 'Élément supprimé' });
         }
 
@@ -413,6 +471,15 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         if (item) {
             await deleteChunksBySource('global', req.params.id);
             await db.run('DELETE FROM global_knowledge WHERE id = ?', req.params.id);
+
+            await activityLogger.log({
+                userId: req.user.id,
+                action: 'delete_global_knowledge',
+                entityType: 'knowledge',
+                entityId: req.params.id,
+                req
+            });
+
             return res.json({ message: 'Élément supprimé' });
         }
 
@@ -484,6 +551,15 @@ router.post('/global', authenticateToken, async (req, res) => {
         indexGlobalKnowledge(itemId, title, content).catch(err =>
             console.warn('[Knowledge] Vector index error:', err?.message)
         );
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'add_global_knowledge',
+            entityType: 'knowledge',
+            entityId: itemId,
+            details: { title, type: type || 'text' },
+            req
+        });
 
         res.status(201).json({ 
             message: 'Ajouté à la base de connaissances',
@@ -565,6 +641,15 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
             console.warn('[Knowledge] Vector index error:', err?.message)
         );
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'upload_global_knowledge',
+            entityType: 'knowledge',
+            entityId: itemId,
+            details: { title, fileName: originalName },
+            req
+        });
+
         res.status(201).json({ 
             message: 'Fichier ajouté',
             item: {
@@ -633,6 +718,15 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
             console.warn('[Knowledge] Vector index error:', err?.message)
         );
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'extract_url_global_knowledge',
+            entityType: 'knowledge',
+            entityId: itemId,
+            details: { title: finalTitle, url },
+            req
+        });
+
         let message;
         if (result.metadata?.fallback) {
             message = 'Métadonnées de la vidéo ajoutées (transcription non disponible)';
@@ -691,6 +785,22 @@ router.put('/global/:id', authenticateToken, async (req, res) => {
                 console.warn('[Knowledge] Vector index error:', err?.message)
             );
         }
+
+        const changes = {};
+        if (title !== undefined && String(item.title) !== String(title)) changes.title = { old: item.title, new: title };
+        if (type !== undefined && String(item.type) !== String(type)) changes.type = { old: item.type, new: type };
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_global_knowledge',
+            entityType: 'knowledge',
+            entityId: req.params.id,
+            details: { 
+                title: updated.title,
+                changes: Object.keys(changes).length > 0 ? changes : 'Content updated'
+            },
+            req
+        });
 
         res.json({ 
             item: {

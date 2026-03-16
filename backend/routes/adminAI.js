@@ -1,15 +1,19 @@
 import { Router } from 'express';
 import db from '../database/init.js';
-import { authenticateAdmin } from '../middleware/auth.js';
+import { authenticateAdmin, requirePermission } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 import aiService from '../services/ai.js';
+import { activityLogger } from '../services/activityLogger.js';
 
 const router = Router();
+
+// All AI admin routes require AI administration permission (or full admin)
+router.use(authenticateAdmin, requirePermission('ai.settings.write'));
 
 // ==================== AI MODELS MANAGEMENT ====================
 
 // Get all AI models
-router.get('/models', authenticateAdmin, async (req, res) => {
+router.get('/models', async (req, res) => {
     try {
         const { provider, category, active } = req.query;
 
@@ -73,7 +77,7 @@ router.get('/models', authenticateAdmin, async (req, res) => {
 });
 
 // Get single AI model
-router.get('/models/:id', authenticateAdmin, async (req, res) => {
+router.get('/models/:id', async (req, res) => {
     try {
         const model = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
 
@@ -116,7 +120,7 @@ router.get('/models/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Create new AI model
-router.post('/models', authenticateAdmin, async (req, res) => {
+router.post('/models', async (req, res) => {
     try {
         const { 
             name, provider, model_id, description, 
@@ -151,6 +155,16 @@ router.post('/models', authenticateAdmin, async (req, res) => {
         );
 
         const model = await db.get('SELECT * FROM ai_models WHERE id = ?', id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'create_ai_model',
+            entityType: 'ai_model',
+            entityId: id,
+            details: { name, model_id },
+            req
+        });
+
         res.status(201).json({ model });
     } catch (error) {
         console.error('Create AI model error:', error);
@@ -159,9 +173,9 @@ router.post('/models', authenticateAdmin, async (req, res) => {
 });
 
 // Update AI model
-router.put('/models/:id', authenticateAdmin, async (req, res) => {
+router.put('/models/:id', async (req, res) => {
     try {
-        const existing = await db.get('SELECT id FROM ai_models WHERE id = ?', req.params.id);
+        const existing = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Modèle non trouvé' });
         }
@@ -198,6 +212,28 @@ router.put('/models/:id', authenticateAdmin, async (req, res) => {
         );
 
         const updated = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
+
+        // Calculate changes for logging
+        const changes = {};
+        const fieldsToTrack = ['name', 'credits_per_use', 'is_free', 'is_active', 'category', 'max_tokens', 'supports_vision', 'supports_tools', 'sort_order'];
+        fieldsToTrack.forEach(field => {
+            if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
+                changes[field] = { old: existing[field], new: req.body[field] };
+            }
+        });
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_ai_model',
+            entityType: 'ai_model',
+            entityId: req.params.id,
+            details: { 
+                name: updated.name,
+                changes: Object.keys(changes).length > 0 ? changes : 'Configuration update'
+            },
+            req
+        });
+
         res.json({ model: updated });
     } catch (error) {
         console.error('Update AI model error:', error);
@@ -206,7 +242,7 @@ router.put('/models/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Delete AI model
-router.delete('/models/:id', authenticateAdmin, async (req, res) => {
+router.delete('/models/:id', async (req, res) => {
     try {
         const model = await db.get('SELECT id, name FROM ai_models WHERE id = ?', req.params.id);
         if (!model) {
@@ -226,6 +262,16 @@ router.delete('/models/:id', authenticateAdmin, async (req, res) => {
         }
 
         await db.run('DELETE FROM ai_models WHERE id = ?', req.params.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'delete_ai_model',
+            entityType: 'ai_model',
+            entityId: req.params.id,
+            details: { name: model.name },
+            req
+        });
+
         res.json({ message: 'Modèle supprimé' });
     } catch (error) {
         console.error('Delete AI model error:', error);
@@ -236,7 +282,7 @@ router.delete('/models/:id', authenticateAdmin, async (req, res) => {
 // ==================== PLATFORM SETTINGS ====================
 
 // Get platform settings (e.g. default_media_model for images/voice)
-router.get('/settings', authenticateAdmin, async (req, res) => {
+router.get('/settings', async (req, res) => {
     try {
         const rows = await db.all('SELECT key, value FROM platform_settings');
         const arr = Array.isArray(rows) ? rows : [];
@@ -264,7 +310,7 @@ router.get('/settings', authenticateAdmin, async (req, res) => {
 });
 
 // Update platform settings
-router.put('/settings', authenticateAdmin, async (req, res) => {
+router.put('/settings', async (req, res) => {
     try {
         const { default_media_model, voice_responses_enabled, default_trial_days, embedding_model } = req.body;
         if (default_media_model !== undefined) {
@@ -297,6 +343,14 @@ router.put('/settings', authenticateAdmin, async (req, res) => {
         const arr = Array.isArray(rows) ? rows : [];
         const settings = {};
         for (const { key, value } of arr) settings[key] = value;
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_platform_settings',
+            details: req.body,
+            req
+        });
+
         res.json({ settings });
     } catch (error) {
         console.error('Update platform settings error:', error);
@@ -307,7 +361,7 @@ router.put('/settings', authenticateAdmin, async (req, res) => {
 // ==================== API KEYS MANAGEMENT ====================
 
 // Get all API keys (masked)
-router.get('/api-keys', authenticateAdmin, async (req, res) => {
+router.get('/api-keys', async (req, res) => {
     try {
         const keys = await db.all('SELECT * FROM ai_api_keys ORDER BY provider ASC');
         const list = Array.isArray(keys) ? keys : [];
@@ -326,7 +380,7 @@ router.get('/api-keys', authenticateAdmin, async (req, res) => {
 });
 
 // Set/Update API key for provider
-router.put('/api-keys/:provider', authenticateAdmin, async (req, res) => {
+router.put('/api-keys/:provider', async (req, res) => {
     try {
         const { api_key, is_active } = req.body;
         const { provider } = req.params;
@@ -378,6 +432,26 @@ router.put('/api-keys/:provider', authenticateAdmin, async (req, res) => {
             process.env[envVarName] = api_key;
         }
 
+        const changes = {};
+        if (api_key) {
+            changes.api_key = { old: '********', new: '********' };
+        }
+        if (is_active !== undefined && Boolean(existingKey?.is_active) !== Boolean(is_active)) {
+            changes.is_active = { old: Boolean(existingKey?.is_active), new: Boolean(is_active) };
+        }
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_api_key',
+            entityType: 'ai_model',
+            entityId: provider,
+            details: { 
+                provider,
+                changes: Object.keys(changes).length > 0 ? changes : 'Re-saved current settings'
+            },
+            req
+        });
+
         res.json({ message: 'Clé API mise à jour', provider });
     } catch (error) {
         console.error('Update API key error:', error);
@@ -386,7 +460,7 @@ router.put('/api-keys/:provider', authenticateAdmin, async (req, res) => {
 });
 
 // Test API key
-router.post('/api-keys/:provider/test', authenticateAdmin, async (req, res) => {
+router.post('/api-keys/:provider/test', async (req, res) => {
     try {
         const { provider } = req.params;
         
@@ -505,7 +579,7 @@ router.post('/api-keys/:provider/test', authenticateAdmin, async (req, res) => {
 // ==================== USAGE STATISTICS ====================
 
 // Get overall AI usage stats
-router.get('/stats', authenticateAdmin, async (req, res) => {
+router.get('/stats', async (req, res) => {
     try {
         const overall = await db.get(`
             SELECT 
@@ -609,7 +683,7 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
 });
 
 // Get users using a specific model
-router.get('/models/:id/users', authenticateAdmin, (req, res) => {
+router.get('/models/:id/users', (req, res) => {
     try {
         const users = db.prepare(`
             SELECT DISTINCT
@@ -635,7 +709,7 @@ router.get('/models/:id/users', authenticateAdmin, (req, res) => {
 });
 
 // Test a specific AI model
-router.post('/models/:id/test', authenticateAdmin, async (req, res) => {
+router.post('/models/:id/test', async (req, res) => {
     try {
         const { message = 'Hello, this is a test message.' } = req.body;
         const modelRecord = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
@@ -675,7 +749,7 @@ router.post('/models/:id/test', authenticateAdmin, async (req, res) => {
 
 let isReindexing = false;
 
-router.post('/reindex', authenticateAdmin, async (req, res) => {
+router.post('/reindex', async (req, res) => {
     if (isReindexing) {
         return res.status(400).json({ error: 'Une ré-indexation est déjà en cours' });
     }

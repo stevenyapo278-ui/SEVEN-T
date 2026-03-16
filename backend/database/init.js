@@ -186,6 +186,11 @@ export async function initDatabase() {
             credits INTEGER DEFAULT 1500,
             is_admin INTEGER DEFAULT 0,
             is_active INTEGER DEFAULT 1,
+            -- Granular permissions for partial admins
+            can_manage_users INTEGER DEFAULT 0,
+            can_manage_plans INTEGER DEFAULT 0,
+            can_view_stats INTEGER DEFAULT 0,
+            can_manage_ai INTEGER DEFAULT 0,
             subscription_status TEXT DEFAULT 'trialing',
             subscription_end_date TIMESTAMP,
             currency TEXT DEFAULT 'XOF',
@@ -198,6 +203,23 @@ export async function initDatabase() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        -- Activity Logs Table (Audit Trail)
+        CREATE TABLE IF NOT EXISTS activity_logs (
+            id TEXT PRIMARY KEY,
+            user_id TEXT,
+            action TEXT NOT NULL,         -- login, create_user, update_agent, etc.
+            entity_type TEXT,            -- user, agent, plan, etc.
+            entity_id TEXT,
+            details TEXT,                -- JSON description of the action
+            ip_address TEXT,
+            user_agent TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
+        CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action);
+        CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
 
         -- Add columns if they don't exist (for existing databases)
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
@@ -1101,10 +1123,157 @@ export async function initDatabase() {
     // Migration: users.payment_module_enabled (module Moyens de paiement visible si admin l'active)
     try {
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_users INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_plans INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_view_stats INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_ai INTEGER DEFAULT 0');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
-            console.warn('users.payment_module_enabled column migration:', e?.message);
+            console.warn('users columns migrations:', e?.message);
         }
+    }
+
+    // ── RBAC (roles & permissions) ────────────────────────────
+    // Scalable SaaS permission model. Legacy flags remain for backwards compatibility.
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS roles (
+            id TEXT PRIMARY KEY,
+            key TEXT UNIQUE NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS permissions (
+            id TEXT PRIMARY KEY,
+            key TEXT UNIQUE NOT NULL,
+            group_key TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS role_permissions (
+            role_id TEXT NOT NULL,
+            permission_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (role_id, permission_id),
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS user_roles (
+            user_id TEXT NOT NULL,
+            role_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, role_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);
+        CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role_id);
+    `);
+
+    // Seed permissions / roles (best-effort, idempotent)
+    try {
+        const seedPerms = [
+            ['users.read', 'users', 'Lire utilisateurs', 'Liste/lecture des utilisateurs'],
+            ['users.write', 'users', 'Modifier utilisateurs', 'Créer/modifier/activer/désactiver utilisateurs'],
+            ['users.credentials.reset', 'users', 'Réinitialiser mots de passe', 'Reset mot de passe utilisateur'],
+            ['users.credits.write', 'users', 'Gérer crédits', 'Ajouter/retirer crédits utilisateur'],
+            ['users.delete', 'users', 'Supprimer utilisateurs', 'Suppression utilisateur (soft/hard)'],
+
+            ['billing.plans.read', 'billing', 'Lire plans', 'Voir les plans d’abonnement'],
+            ['billing.plans.write', 'billing', 'Modifier plans', 'Créer/modifier/activer/désactiver plans'],
+            ['billing.coupons.read', 'billing', 'Lire coupons', 'Voir coupons'],
+            ['billing.coupons.write', 'billing', 'Modifier coupons', 'Créer/modifier coupons'],
+            ['billing.subscriptions.write', 'billing', 'Gérer abonnements', 'Changer le plan d’un utilisateur'],
+
+            ['ai.models.read', 'ai', 'Lire modèles IA', 'Voir modèles IA'],
+            ['ai.models.write', 'ai', 'Modifier modèles IA', 'Créer/modifier/supprimer modèles IA'],
+            ['ai.keys.read', 'ai', 'Lire clés IA', 'Voir clés (masquées)'],
+            ['ai.keys.write', 'ai', 'Modifier clés IA', 'Configurer clés API IA'],
+            ['ai.settings.write', 'ai', 'Modifier paramètres IA', 'Paramètres plateforme IA'],
+            ['ai.reindex.run', 'ai', 'Lancer ré-indexation', 'Ré-indexation globale'],
+
+            ['audit.read', 'audit', 'Lire audit logs', 'Voir journal d’activité/audit'],
+            ['audit.rollback', 'audit', 'Rollback audit', 'Annuler une action (rollback)'],
+            ['security.anomalies.read', 'security', 'Lire anomalies', 'Voir anomalies sécurité'],
+            ['security.anomalies.manage', 'security', 'Gérer anomalies', 'Résoudre/cleanup/health-check anomalies'],
+
+            ['platform.stats.read', 'platform', 'Lire stats plateforme', 'Dashboard admin/stats'],
+            ['platform.activity.read', 'platform', 'Lire activité plateforme', 'Flux activité / activité système']
+        ];
+
+        for (const [key, groupKey, name, description] of seedPerms) {
+            await db.run(
+                `INSERT INTO permissions (id, key, group_key, name, description)
+                 VALUES (gen_random_uuid(), ?, ?, ?, ?)
+                 ON CONFLICT (key) DO NOTHING`,
+                key, groupKey, name, description
+            );
+        }
+
+        const seedRoles = [
+            ['owner', 'Owner', 'Accès total (super admin)'],
+            ['support', 'Support', 'Lecture (stats/audit/anomalies), sans actions destructives'],
+            ['user_admin', 'User Admin', 'Gestion des utilisateurs'],
+            ['billing_admin', 'Billing Admin', 'Gestion plans & coupons'],
+            ['ai_admin', 'AI Admin', 'Gestion IA (modèles/keys/settings/reindex)'],
+            ['security_analyst', 'Security Analyst', 'Lecture audit/anomalies/stats']
+        ];
+
+        for (const [key, name, description] of seedRoles) {
+            await db.run(
+                `INSERT INTO roles (id, key, name, description)
+                 VALUES (gen_random_uuid(), ?, ?, ?)
+                 ON CONFLICT (key) DO NOTHING`,
+                key, name, description
+            );
+        }
+
+        const rolePerms = {
+            owner: '*',
+            support: ['platform.stats.read', 'audit.read', 'security.anomalies.read', 'platform.activity.read', 'users.read'],
+            security_analyst: ['platform.stats.read', 'audit.read', 'security.anomalies.read'],
+            user_admin: ['users.read', 'users.write', 'users.credentials.reset', 'users.credits.write', 'users.delete'],
+            billing_admin: ['billing.plans.read', 'billing.plans.write', 'billing.coupons.read', 'billing.coupons.write', 'billing.subscriptions.write'],
+            ai_admin: ['ai.models.read', 'ai.models.write', 'ai.keys.read', 'ai.keys.write', 'ai.settings.write', 'ai.reindex.run']
+        };
+
+        const roles = await db.all('SELECT id, key FROM roles');
+        const perms = await db.all('SELECT id, key FROM permissions');
+        const roleByKey = new Map((roles || []).map(r => [r.key, r.id]));
+        const permByKey = new Map((perms || []).map(p => [p.key, p.id]));
+
+        for (const [roleKey, permKeys] of Object.entries(rolePerms)) {
+            const roleId = roleByKey.get(roleKey);
+            if (!roleId) continue;
+
+            if (permKeys === '*') {
+                for (const permId of permByKey.values()) {
+                    await db.run(
+                        `INSERT INTO role_permissions (role_id, permission_id)
+                         VALUES (?, ?)
+                         ON CONFLICT DO NOTHING`,
+                        roleId, permId
+                    );
+                }
+            } else {
+                for (const permKey of permKeys) {
+                    const permId = permByKey.get(permKey);
+                    if (!permId) continue;
+                    await db.run(
+                        `INSERT INTO role_permissions (role_id, permission_id)
+                         VALUES (?, ?)
+                         ON CONFLICT DO NOTHING`,
+                        roleId, permId
+                    );
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('RBAC seed skipped:', e?.message || e);
     }
 
 

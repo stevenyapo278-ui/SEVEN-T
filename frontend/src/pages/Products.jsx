@@ -18,6 +18,7 @@ import ImportModal from './products/ImportModal'
 import HistoryModal from './products/HistoryModal'
 import CategoryModal from './products/CategoryModal'
 import { useOnboardingTour } from '../components/Onboarding'
+import EmptyState from '../components/EmptyState'
 
 export default function Products() {
   const { t } = useTranslation()
@@ -209,29 +210,28 @@ export default function Products() {
       )}
 
       {!loadError && !loading && filteredProducts.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-20 h-20 bg-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <Package className="w-10 h-10 text-gray-600" aria-hidden />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-300 mb-2">
-            {products.length === 0 ? t('products.emptyNoProduct') : t('products.emptyNoResult')}
-          </h2>
-          <p className="text-gray-500 mb-6">
-            {products.length === 0 ? t('products.emptyHintNone') : t('products.emptyHintFilter')}
-          </p>
-          {products.length === 0 && (
-            <div className="flex gap-3 justify-center">
-              <button type="button" onClick={() => setShowImportModal(true)} className="btn-secondary inline-flex items-center gap-2">
-                <Upload className="w-4 h-4" aria-hidden />
-                {t('products.btnImportCsvShort')}
-              </button>
-              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary inline-flex items-center gap-2">
-                <Plus className="w-5 h-5" aria-hidden />
-                {t('products.btnAddProduct')}
-              </button>
-            </div>
-          )}
-        </div>
+        <EmptyState
+          icon={Package}
+          title={products.length === 0 ? t('products.emptyNoProduct') : t('products.emptyNoResult')}
+          description={products.length === 0 ? t('products.emptyHintNone') : t('products.emptyHintFilter')}
+          primaryAction={products.length === 0 ? {
+            label: t('products.btnAddProduct'),
+            icon: Plus,
+            onClick: () => setShowAddModal(true)
+          } : {
+            label: 'Effacer les filtres',
+            onClick: () => {
+              setSearchQuery('')
+              setCategoryFilter('all')
+              setStockFilter('all')
+            }
+          }}
+          secondaryAction={products.length === 0 ? {
+            label: t('products.btnImportCsvShort'),
+            icon: Upload,
+            onClick: () => setShowImportModal(true)
+          } : null}
+        />
       ) : !loadError ? (
         <>
           {/* Bulk Action Bar - Improved for Mobile */}

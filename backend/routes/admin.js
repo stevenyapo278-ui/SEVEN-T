@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../database/init.js';
-import { authenticateAdmin } from '../middleware/auth.js';
+import { authenticateAdmin, requireFullAdmin, requirePermission } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { whatsappManager } from '../services/whatsapp.js';
@@ -8,6 +8,7 @@ import { adminAnomaliesService } from '../services/adminAnomalies.js';
 import { existsSync, rmSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { activityLogger } from '../services/activityLogger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
@@ -17,7 +18,7 @@ const router = Router();
 // ==================== DASHBOARD STATS ====================
 
 // Get admin dashboard stats
-router.get('/stats', authenticateAdmin, async (req, res) => {
+router.get('/stats', authenticateAdmin, requirePermission('platform.stats.read'), async (req, res) => {
     try {
         const r = await Promise.all([
             db.get('SELECT COUNT(*) as count FROM users'),
@@ -73,11 +74,42 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
             ORDER BY date ASC
         `);
 
+        // Security Stats (last 24h)
+        const failedLogins24hRow = await db.get(`
+            SELECT COUNT(*) as count 
+            FROM activity_logs 
+            WHERE action = 'login_failed' 
+            AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+        `);
+        const failedLogins24h = failedLogins24hRow?.count ?? 0;
+
+        const criticalActions24hRow = await db.get(`
+            SELECT COUNT(*) as count 
+            FROM activity_logs 
+            WHERE (action LIKE '%delete%' OR action LIKE '%reset_password%' OR action = 'add_credits' OR action = 'update_plan' OR action = 'update_ai_model' OR action = 'rollback_action')
+            AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+        `);
+        const criticalActions24h = criticalActions24hRow?.count ?? 0;
+
+        const recentSecurityEvents = await db.all(`
+            SELECT l.*, u.name as user_name, u.email as user_email
+            FROM activity_logs l
+            LEFT JOIN users u ON l.user_id = u.id
+            WHERE (l.action LIKE '%delete%' OR l.action LIKE '%reset_password%' OR l.action = 'add_credits' OR l.action = 'login_failed' OR l.action = 'update_plan' OR l.action = 'update_ai_model' OR l.action = 'rollback_action')
+            ORDER BY l.created_at DESC
+            LIMIT 5
+        `);
+
         res.json({ 
             stats, 
             usersByPlan, 
             recentSignups,
-            messagesPerDay
+            messagesPerDay,
+            security: {
+                failedLogins24h,
+                criticalActions24h,
+                recentSecurityEvents
+            }
         });
     } catch (error) {
         console.error('Admin stats error:', error);
@@ -85,10 +117,21 @@ router.get('/stats', authenticateAdmin, async (req, res) => {
     }
 });
 
+// Get all available roles
+router.get('/roles', authenticateAdmin, async (req, res) => {
+    try {
+        const roles = await db.all('SELECT key, name, description FROM roles ORDER BY name ASC');
+        res.json({ roles: roles || [] });
+    } catch (error) {
+        console.error('Get roles error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // ==================== USERS MANAGEMENT ====================
 
 // Get all users with stats
-router.get('/users', authenticateAdmin, async (req, res) => {
+router.get('/users', authenticateAdmin, requirePermission('users.read'), async (req, res) => {
     try {
         const { search, plan, status, sort = 'created_at', order = 'desc', limit = 50, offset = 0 } = req.query;
 
@@ -170,7 +213,7 @@ router.get('/users', authenticateAdmin, async (req, res) => {
 });
 
 // Get single user details
-router.get('/users/:id', authenticateAdmin, async (req, res) => {
+router.get('/users/:id', authenticateAdmin, requirePermission('users.read'), async (req, res) => {
     try {
         let user = await db.get(`
             SELECT u.*,
@@ -198,10 +241,19 @@ router.get('/users/:id', authenticateAdmin, async (req, res) => {
             WHERE a.user_id = ?
         `, req.params.id);
 
+        // Get user's roles
+        const userRoles = await db.all(`
+            SELECT r.key
+            FROM user_roles ur
+            JOIN roles r ON ur.role_id = r.id
+            WHERE ur.user_id = ?
+        `, req.params.id);
+        const roles = (userRoles || []).map(r => r.key);
+
         // Remove password
         const { password, ...userWithoutPassword } = user;
 
-        res.json({ user: userWithoutPassword, agents });
+        res.json({ user: { ...userWithoutPassword, roles }, agents });
     } catch (error) {
         console.error('Get user error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -209,11 +261,16 @@ router.get('/users/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Update user
-router.put('/users/:id', authenticateAdmin, async (req, res) => {
+router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), async (req, res) => {
     try {
-        const { name, email, company, plan, credits, is_admin, is_active, voice_responses_enabled, payment_module_enabled, subscription_end_date } = req.body;
+        const { 
+            name, email, company, plan, credits, is_admin, is_active, 
+            voice_responses_enabled, payment_module_enabled, subscription_end_date,
+            can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
+            roles
+        } = req.body;
 
-        const existing = await db.get('SELECT id, is_admin, plan FROM users WHERE id = ?', req.params.id);
+        const existing = await db.get('SELECT id, is_admin, plan, name, email, credits, is_active FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
@@ -307,6 +364,22 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
             setClauses.push('payment_module_enabled = ?');
             params.push(payment_module_enabled ? 1 : 0);
         }
+        if (can_manage_users !== undefined) {
+            setClauses.push('can_manage_users = ?');
+            params.push(can_manage_users ? 1 : 0);
+        }
+        if (can_manage_plans !== undefined) {
+            setClauses.push('can_manage_plans = ?');
+            params.push(can_manage_plans ? 1 : 0);
+        }
+        if (can_view_stats !== undefined) {
+            setClauses.push('can_view_stats = ?');
+            params.push(can_view_stats ? 1 : 0);
+        }
+        if (can_manage_ai !== undefined) {
+            setClauses.push('can_manage_ai = ?');
+            params.push(can_manage_ai ? 1 : 0);
+        }
 
         // Allow explicit override of subscription_end_date (only if plan didn't already set it)
         if (subscription_end_date !== undefined && !planChanged) {
@@ -356,8 +429,53 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
             );
         }
 
+        // Synchronize roles if provided
+        if (roles !== undefined && Array.isArray(roles)) {
+            await db.transaction(async (tx) => {
+                // Remove existing roles
+                await tx.run('DELETE FROM user_roles WHERE user_id = ?', req.params.id);
+                
+                // Add new roles
+                if (roles.length > 0) {
+                    const availableRoles = await tx.all('SELECT id, key FROM roles');
+                    const roleMap = new Map((availableRoles || []).map(r => [r.key, r.id]));
+                    
+                    for (const roleKey of roles) {
+                        const roleId = roleMap.get(roleKey);
+                        if (roleId) {
+                            await tx.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', req.params.id, roleId);
+                        }
+                    }
+                }
+            });
+        }
+
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;
+
+        // Calculate changes for logging
+        const changes = {};
+        const fieldsToTrack = [
+            'name', 'email', 'plan', 'credits', 'is_admin', 'is_active',
+            'can_manage_users', 'can_manage_plans', 'can_view_stats', 'can_manage_ai'
+        ];
+        fieldsToTrack.forEach(field => {
+            if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
+                changes[field] = { old: existing[field], new: req.body[field] };
+            }
+        });
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_user',
+            entityType: 'user',
+            entityId: req.params.id,
+            details: { 
+                email: user.email,
+                changes: Object.keys(changes).length > 0 ? changes : null
+            },
+            req
+        });
 
         res.json({ user: userWithoutPassword });
     } catch (error) {
@@ -367,7 +485,7 @@ router.put('/users/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Reset user password
-router.post('/users/:id/reset-password', authenticateAdmin, async (req, res) => {
+router.post('/users/:id/reset-password', authenticateAdmin, requirePermission('users.credentials.reset'), async (req, res) => {
     try {
         const { new_password } = req.body;
 
@@ -375,13 +493,22 @@ router.post('/users/:id/reset-password', authenticateAdmin, async (req, res) => 
             return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
         }
 
-        const existing = await db.get('SELECT id FROM users WHERE id = ?', req.params.id);
+        const existing = await db.get('SELECT id, email FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
         const hashedPassword = await bcrypt.hash(new_password, 10);
         await db.run('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', hashedPassword, req.params.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'reset_password',
+            entityType: 'user',
+            entityId: req.params.id,
+            details: { target_email: existing.email },
+            req
+        });
 
         res.json({ message: 'Mot de passe réinitialisé avec succès' });
     } catch (error) {
@@ -391,7 +518,7 @@ router.post('/users/:id/reset-password', authenticateAdmin, async (req, res) => 
 });
 
 // Add credits to user
-router.post('/users/:id/add-credits', authenticateAdmin, async (req, res) => {
+router.post('/users/:id/add-credits', authenticateAdmin, requirePermission('users.credits.write'), async (req, res) => {
     try {
         const { amount } = req.body;
 
@@ -407,6 +534,16 @@ router.post('/users/:id/add-credits', authenticateAdmin, async (req, res) => {
         await db.run('UPDATE users SET credits = credits + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', amount, req.params.id);
 
         const user = await db.get('SELECT credits FROM users WHERE id = ?', req.params.id);
+        
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'add_credits',
+            entityType: 'user',
+            entityId: req.params.id,
+            details: { amount },
+            req
+        });
+
         res.json({ message: 'Crédits ajoutés', credits: user.credits });
     } catch (error) {
         console.error('Add credits error:', error);
@@ -415,7 +552,7 @@ router.post('/users/:id/add-credits', authenticateAdmin, async (req, res) => {
 });
 
 // Get deletion preview (what will be deleted)
-router.get('/users/:id/deletion-preview', authenticateAdmin, async (req, res) => {
+router.get('/users/:id/deletion-preview', authenticateAdmin, requirePermission('users.delete'), async (req, res) => {
     try {
         const user = await db.get('SELECT id, name, email FROM users WHERE id = ?', req.params.id);
         if (!user) {
@@ -470,7 +607,7 @@ router.get('/users/:id/deletion-preview', authenticateAdmin, async (req, res) =>
 });
 
 // Delete user (with full cleanup)
-router.delete('/users/:id', authenticateAdmin, async (req, res) => {
+router.delete('/users/:id', authenticateAdmin, requirePermission('users.delete'), async (req, res) => {
     try {
         const { soft_delete } = req.query;
         
@@ -509,9 +646,29 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
         if (soft_delete === 'true') {
             await db.run(`UPDATE users SET is_active = 0, email = email || '_deleted_' || ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, Date.now(), req.params.id);
             await db.run('UPDATE agents SET is_active = 0, whatsapp_connected = 0 WHERE user_id = ?', req.params.id);
+            
+            await activityLogger.log({
+                userId: req.user.id,
+                action: 'soft_delete_user',
+                entityType: 'user',
+                entityId: req.params.id,
+                details: { email: existing.email },
+                req
+            });
+
             res.json({ message: 'Utilisateur désactivé avec succès', soft_deleted: true, cleanup: cleanupResults });
         } else {
             await db.run('DELETE FROM users WHERE id = ?', req.params.id);
+
+            await activityLogger.log({
+                userId: req.user.id,
+                action: 'hard_delete_user',
+                entityType: 'user',
+                entityId: req.params.id,
+                details: { email: existing.email },
+                req
+            });
+
             res.json({ message: 'Utilisateur et toutes ses données supprimés définitivement', soft_deleted: false, cleanup: cleanupResults, deleted: { agents: agents.length, sessions_cleaned: cleanupResults.filter(r => r.action === 'session_deleted').length } });
         }
     } catch (error) {
@@ -521,7 +678,7 @@ router.delete('/users/:id', authenticateAdmin, async (req, res) => {
 });
 
 // Restore soft-deleted user
-router.post('/users/:id/restore', authenticateAdmin, async (req, res) => {
+router.post('/users/:id/restore', authenticateAdmin, requirePermission('users.write'), async (req, res) => {
     try {
         const user = await db.get('SELECT id, email FROM users WHERE id = ?', req.params.id);
         if (!user) {
@@ -541,6 +698,15 @@ router.post('/users/:id/restore', authenticateAdmin, async (req, res) => {
         await db.run(`UPDATE users SET is_active = 1, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, originalEmail, req.params.id);
         await db.run('UPDATE agents SET is_active = 1 WHERE user_id = ?', req.params.id);
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'restore_user',
+            entityType: 'user',
+            entityId: req.params.id,
+            details: { email: originalEmail },
+            req
+        });
+
         res.json({ message: 'Utilisateur restauré avec succès', email: originalEmail });
     } catch (error) {
         console.error('Restore user error:', error);
@@ -549,9 +715,14 @@ router.post('/users/:id/restore', authenticateAdmin, async (req, res) => {
 });
 
 // Create new user (admin)
-router.post('/users', authenticateAdmin, async (req, res) => {
+router.post('/users', authenticateAdmin, requirePermission('users.write'), async (req, res) => {
     try {
-        const { name, email, password, company, plan, credits, is_admin } = req.body;
+        const { 
+            name, email, password, company, plan, credits, is_admin, 
+            voice_responses_enabled, payment_module_enabled,
+            can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
+            roles
+        } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Nom, email et mot de passe requis' });
@@ -588,9 +759,38 @@ router.post('/users', authenticateAdmin, async (req, res) => {
         }
 
         await db.run(`
-            INSERT INTO users (id, name, email, password, company, plan, credits, is_admin, subscription_status, subscription_end_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, subscriptionStatus, subscriptionEndDate);
+            INSERT INTO users (
+                id, name, email, password, company, plan, credits, is_admin, 
+                subscription_status, subscription_end_date, voice_responses_enabled, payment_module_enabled,
+                can_manage_users, can_manage_plans, can_view_stats, can_manage_ai
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, 
+           subscriptionStatus, subscriptionEndDate, voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0,
+           can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0
+        );
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'create_user',
+            entityType: 'user',
+            entityId: userId,
+            details: { email, plan: planToUse },
+            req
+        });
+
+        // Add roles if provided
+        if (roles && Array.isArray(roles) && roles.length > 0) {
+            const availableRoles = await db.all('SELECT id, key FROM roles');
+            const roleMap = new Map((availableRoles || []).map(r => [r.key, r.id]));
+            
+            for (const roleKey of roles) {
+                const roleId = roleMap.get(roleKey);
+                if (roleId) {
+                    await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', userId, roleId);
+                }
+            }
+        }
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         const { password: pwd, ...userWithoutPassword } = user;
@@ -605,7 +805,7 @@ router.post('/users', authenticateAdmin, async (req, res) => {
 // ==================== AGENTS MANAGEMENT ====================
 
 // Get all agents
-router.get('/agents', authenticateAdmin, async (req, res) => {
+router.get('/agents', authenticateAdmin, requirePermission('platform.activity.read'), async (req, res) => {
     try {
         const agents = await db.all(`
             SELECT a.*, u.name as user_name, u.email as user_email,
@@ -628,7 +828,7 @@ router.get('/agents', authenticateAdmin, async (req, res) => {
 // ==================== SYSTEM LOGS ====================
 
 // Get recent activity logs
-router.get('/activity', authenticateAdmin, async (req, res) => {
+router.get('/activity', authenticateAdmin, requirePermission('platform.activity.read'), async (req, res) => {
     try {
         const { limit = 50 } = req.query;
 
@@ -657,10 +857,51 @@ router.get('/activity', authenticateAdmin, async (req, res) => {
     }
 });
 
+// Get Audit Trail (Activity Logs)
+router.get('/audit-logs', authenticateAdmin, requirePermission('audit.read'), async (req, res) => {
+    try {
+        const { limit = 50, offset = 0, userId, action, actionExact, entityType, entityId, dateFrom, dateTo, ip, onlyErrors } = req.query;
+        const { logs, total } = await activityLogger.getLogs({
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            userId,
+            action,
+            actionExact,
+            entityType,
+            entityId,
+            dateFrom,
+            dateTo,
+            ip,
+            onlyErrors
+        });
+        
+        res.json({ 
+            logs,
+            total
+        });
+    } catch (error) {
+        console.error('Get audit logs error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+// Rollback an audit log action
+router.post('/audit-logs/:id/rollback', authenticateAdmin, requireFullAdmin, async (req, res) => {
+    try {
+        const result = await activityLogger.rollback(req.params.id, req.user.id);
+        if (result.error) {
+            return res.status(400).json({ error: result.error });
+        }
+        res.json({ success: true, message: 'Action annulée avec succès' });
+    } catch (error) {
+        console.error('Rollback route error:', error);
+        res.status(500).json({ error: 'Erreur lors de l\'annulation' });
+    }
+});
+
 // ==================== ANOMALIES MANAGEMENT ====================
 
 // Get all anomalies
-router.get('/anomalies', authenticateAdmin, async (req, res) => {
+router.get('/anomalies', authenticateAdmin, requirePermission('security.anomalies.read'), async (req, res) => {
     try {
         const { resolved, severity, type, limit = 100, offset = 0 } = req.query;
 
@@ -680,7 +921,7 @@ router.get('/anomalies', authenticateAdmin, async (req, res) => {
 });
 
 // Get anomaly stats
-router.get('/anomalies/stats', authenticateAdmin, async (req, res) => {
+router.get('/anomalies/stats', authenticateAdmin, requirePermission('security.anomalies.read'), async (req, res) => {
     try {
         const stats = await adminAnomaliesService.getStats();
         res.json(stats);
@@ -691,7 +932,7 @@ router.get('/anomalies/stats', authenticateAdmin, async (req, res) => {
 });
 
 // Run health check
-router.post('/anomalies/health-check', authenticateAdmin, async (req, res) => {
+router.post('/anomalies/health-check', authenticateAdmin, requireFullAdmin, async (req, res) => {
     try {
         const anomaliesFound = await adminAnomaliesService.runHealthCheck();
         res.json({ 
@@ -706,7 +947,7 @@ router.post('/anomalies/health-check', authenticateAdmin, async (req, res) => {
 });
 
 // Resolve single anomaly
-router.post('/anomalies/:id/resolve', authenticateAdmin, async (req, res) => {
+router.post('/anomalies/:id/resolve', authenticateAdmin, requireFullAdmin, async (req, res) => {
     try {
         const success = await adminAnomaliesService.resolve(req.params.id, req.user.id);
         if (success) {
@@ -721,7 +962,7 @@ router.post('/anomalies/:id/resolve', authenticateAdmin, async (req, res) => {
 });
 
 // Resolve all of a type
-router.post('/anomalies/resolve-type/:type', authenticateAdmin, async (req, res) => {
+router.post('/anomalies/resolve-type/:type', authenticateAdmin, requireFullAdmin, async (req, res) => {
     try {
         const count = await adminAnomaliesService.resolveByType(req.params.type, req.user.id);
         res.json({
@@ -736,7 +977,7 @@ router.post('/anomalies/resolve-type/:type', authenticateAdmin, async (req, res)
 });
 
 // Cleanup old resolved anomalies
-router.delete('/anomalies/cleanup', authenticateAdmin, async (req, res) => {
+router.delete('/anomalies/cleanup', authenticateAdmin, requireFullAdmin, async (req, res) => {
     try {
         const { days = 30 } = req.query;
         const deleted = await adminAnomaliesService.cleanup(parseInt(days));

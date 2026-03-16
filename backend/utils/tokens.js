@@ -11,17 +11,10 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import db from '../database/init.js';
+import { JWT_SECRET } from '../middleware/auth.js';
 
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-function getJwtSecret() {
-    const secret = process.env.JWT_SECRET;
-    if (!secret || secret.length < 32) {
-        console.warn('[Auth] JWT_SECRET is weak — use a strong secret in production');
-    }
-    return secret || 'dev-jwt-secret-change-in-production';
-}
 
 /**
  * Generate a short-lived access token (JWT, 15 min)
@@ -33,7 +26,7 @@ export function generateAccessToken(user) {
             email: user.email,
             is_admin: user.is_admin || 0,
         },
-        getJwtSecret(),
+        JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_TTL }
     );
 }
@@ -149,7 +142,7 @@ export function clearAuthCookies(res) {
 export function generateToken(user) {
     return jwt.sign(
         { id: user.id, email: user.email, is_admin: user.is_admin || 0 },
-        getJwtSecret(),
+        JWT_SECRET,
         { expiresIn: '7d' }
     );
 }

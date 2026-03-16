@@ -267,6 +267,19 @@ class NotificationService {
             link: '/dashboard/conversations'
         });
     }
+
+    /**
+     * Notify about a critical action (for admins)
+     */
+    notifyCriticalAction(userId, title, message, details = {}) {
+        return this.create(userId, {
+            type: 'error',
+            title: `[SÉCURITÉ] ${title}`,
+            message,
+            link: '/admin?tab=activity',
+            metadata: { critical: true, ...details }
+        });
+    }
 }
 
 export const notificationService = new NotificationService();

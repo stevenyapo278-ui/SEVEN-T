@@ -597,7 +597,7 @@ const SidebarContent = ({ navGroups, onItemClick, isMobile, collapsed, user, isD
         </div>
 
         {/* Admin */}
-        {user?.is_admin === 1 && (
+        {(user?.is_admin === 1 || user?.can_manage_users || user?.can_manage_plans || user?.can_view_stats || user?.can_manage_ai) && (
           <div className="space-y-0.5">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</p>

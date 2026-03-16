@@ -249,7 +249,6 @@ h3 {
   box-shadow: 0 4px 6px -1px var(--shadow-color);
   /* Fix blurry text on hover transform */
   transform: translateZ(0); 
-  will-change: transform;
 }
 .card:hover {
   transform: translateY(-2px) translateZ(0);

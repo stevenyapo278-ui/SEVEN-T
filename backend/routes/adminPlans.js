@@ -6,9 +6,10 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
-import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { authenticateToken, requirePermission } from '../middleware/auth.js';
 import { clearPlansCache, getDefaultPlanName } from '../config/plans.js';
 import { defaultPlans } from '../config/defaultPlans.js';
+import { activityLogger } from '../services/activityLogger.js';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ function mergeWithDefaults(plan) {
 }
 
 // All routes require admin
-router.use(authenticateToken, requireAdmin);
+router.use(authenticateToken, requirePermission('billing.plans.write'));
 
 // ==================== PLANS CRUD ====================
 
@@ -224,6 +225,15 @@ router.post('/plans', async (req, res) => {
         // Invalidate cache immediately
         clearPlansCache();
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'create_plan',
+            entityType: 'plan',
+            entityId: planId,
+            details: { name: plan.name, display_name: plan.display_name },
+            req
+        });
+
         res.status(201).json({ 
             message: 'Plan créé avec succès',
             plan 
@@ -325,8 +335,32 @@ router.put('/plans/:id', async (req, res) => {
         updatedPlan.limits = JSON.parse(parsePlanJson(updatedPlan.limits, '{}'));
         updatedPlan.features = JSON.parse(parsePlanJson(updatedPlan.features, '[]'));
 
+        // Calculate changes for logging
+        const changes = {};
+        const fieldsToTrack = ['display_name', 'price', 'is_active', 'billing_period', 'limits', 'features'];
+        fieldsToTrack.forEach(field => {
+            const oldValue = plan[field];
+            const newValue = req.body[field] !== undefined ? (typeof req.body[field] === 'object' ? JSON.stringify(req.body[field]) : req.body[field]) : undefined;
+            
+            if (newValue !== undefined && String(oldValue) !== String(newValue)) {
+                changes[field] = { old: oldValue, new: newValue };
+            }
+        });
+
         // Invalidate cache immediately
         clearPlansCache();
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_plan',
+            entityType: 'plan',
+            entityId: req.params.id,
+            details: { 
+                name: updatedPlan.name,
+                changes: Object.keys(changes).length > 0 ? changes : null
+            },
+            req
+        });
 
         res.json({ 
             message: 'Plan mis à jour',
@@ -371,6 +405,15 @@ router.delete('/plans/:id', async (req, res) => {
         // Invalidate cache immediately
         clearPlansCache();
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'delete_plan',
+            entityType: 'plan',
+            entityId: req.params.id,
+            details: { name: plan.name },
+            req
+        });
+
         res.json({ message: 'Plan supprimé avec succès' });
     } catch (error) {
         console.error('Delete plan error:', error);
@@ -397,6 +440,15 @@ router.post('/plans/:id/set-default', async (req, res) => {
 
         // Invalidate cache immediately
         clearPlansCache();
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'set_default_plan',
+            entityType: 'plan',
+            entityId: req.params.id,
+            details: { name: plan.name },
+            req
+        });
 
         res.json({ message: `${plan.display_name} est maintenant le plan par défaut` });
     } catch (error) {
@@ -600,6 +652,16 @@ router.post('/coupons', async (req, res) => {
         `, id, name || null, code, discount_type, discount_value, max_uses || null, expires_at || null, is_active !== false ? 1 : 0);
 
         const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'create_coupon',
+            entityType: 'coupon',
+            entityId: id,
+            details: { code: coupon.code, value: coupon.discount_value },
+            req
+        });
+
         res.status(201).json({ message: 'Coupon créé avec succès', coupon });
     } catch (error) {
         console.error('Create coupon error:', error);
@@ -639,6 +701,28 @@ router.put('/coupons/:id', async (req, res) => {
         }
 
         const updatedCoupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', req.params.id);
+
+        // Calculate changes
+        const changes = {};
+        const fieldsToTrack = ['name', 'code', 'discount_value', 'is_active', 'max_uses'];
+        fieldsToTrack.forEach(field => {
+            if (req.body[field] !== undefined && String(coupon[field]) !== String(req.body[field])) {
+                changes[field] = { old: coupon[field], new: req.body[field] };
+            }
+        });
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_coupon',
+            entityType: 'coupon',
+            entityId: req.params.id,
+            details: { 
+                code: updatedCoupon.code,
+                changes: Object.keys(changes).length > 0 ? changes : 'Configuration update'
+             },
+            req
+        });
+
         res.json({ message: 'Coupon mis à jour', coupon: updatedCoupon });
     } catch (error) {
         console.error('Update coupon error:', error);
@@ -655,6 +739,16 @@ router.delete('/coupons/:id', async (req, res) => {
         if (!coupon) return res.status(404).json({ error: 'Coupon non trouvé' });
 
         await db.run('DELETE FROM subscription_coupons WHERE id = ?', req.params.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'delete_coupon',
+            entityType: 'coupon',
+            entityId: req.params.id,
+            details: { code: coupon.code },
+            req
+        });
+
         res.json({ message: 'Coupon supprimé' });
     } catch (error) {
         console.error('Delete coupon error:', error);

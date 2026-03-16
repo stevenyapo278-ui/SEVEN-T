@@ -165,7 +165,7 @@ function getSteps(t) {
   ]
 }
 
-export default function WelcomeModal({ isOpen, onClose, onComplete }) {
+export default function WelcomeModal({ isOpen, onClose, onComplete, data }) {
   useLockBodyScroll(isOpen)
   const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState(0)
@@ -182,7 +182,17 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
   const handleNext = () => {
     if (isLastStep) {
       onComplete(true)
-      navigate('/dashboard/agents?create=true')
+      if (!data) {
+        navigate('/dashboard/agents?create=true')
+      } else if (data.agentsCount === 0) {
+        navigate('/dashboard/agents?create=true')
+      } else if (data.whatsappConnected === 0) {
+        navigate('/dashboard/tools')
+      } else if (data.messagesCount === 0) {
+        navigate('/dashboard/conversations')
+      } else {
+        navigate('/dashboard')
+      }
     } else {
       setDirection(1)
       setCurrentStep(prev => prev + 1)
@@ -369,7 +379,7 @@ export default function WelcomeModal({ isOpen, onClose, onComplete }) {
                   className="group relative flex items-center justify-center sm:justify-start gap-3 bg-white text-black px-5 sm:px-6 py-3 sm:py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 flex-1 sm:flex-none min-h-[48px]"
                 >
                   <span className="relative z-10 text-xs sm:text-sm">
-                    {isLastStep ? t('onboarding.btnCreateAgent') : t('onboarding.btnContinue')}
+                    {isLastStep ? (data && data?.agentsCount > 0 ? "Continuer" : t('onboarding.btnCreateAgent')) : t('onboarding.btnContinue')}
                   </span>
                   <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform relative z-10" />
                   <div className="absolute inset-0 bg-gold-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />

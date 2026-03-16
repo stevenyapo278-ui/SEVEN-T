@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
 import api, { syncChats, getSyncStatus, getContacts } from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -47,6 +52,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import ToolAssignmentModal from '../components/ToolAssignmentModal'
+import { AuditLogsContent } from './Admin/AuditLogsContent'
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {
@@ -137,6 +143,7 @@ const TABS = (t) => [
   { id: 'knowledge', label: t('agents.detail.tabs.knowledge'), icon: BookOpen },
   { id: 'settings', label: t('agents.detail.tabs.settings'), icon: Settings },
   { id: 'playground', label: t('agents.detail.tabs.playground'), icon: Play },
+  { id: 'logs', label: 'Journal', icon: FileText },
 ]
 
 // Get the best display name for a contact
@@ -168,7 +175,7 @@ export default function AgentDetail() {
   const [toggling, setToggling] = useState(false)
   
   // Get tab from URL or default to 'overview'
-  const validTabs = ['overview', 'conversations', 'knowledge', 'settings', 'playground']
+  const validTabs = ['overview', 'conversations', 'knowledge', 'settings', 'playground', 'logs']
   const tabFromUrl = searchParams.get('tab')
   const activeTab = validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview'
   
@@ -368,6 +375,7 @@ export default function AgentDetail() {
       {activeTab === 'knowledge' && <KnowledgeTab agentId={agent.id} />}
       {activeTab === 'settings' && <SettingsTab agent={agent} onUpdate={loadAgent} />}
       {activeTab === 'playground' && <PlaygroundTab agent={agent} />}
+      {activeTab === 'logs' && <LogsTab agentId={agent.id} />}
     </div>
   )
 }
@@ -1791,19 +1799,29 @@ function SettingsTab({ agent, onUpdate }) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.startTime', 'Start time')}</label>
-                      <input
-                        type="time"
-                        value={formData.availability_start}
-                        onChange={(e) => setFormData({ ...formData, availability_start: e.target.value })}
+                      <DatePicker
+                        selected={formData.availability_start ? new Date(`2000-01-01T${formData.availability_start}`) : null}
+                        onChange={(date) => setFormData({ ...formData, availability_start: date ? date.toTimeString().slice(0, 5) : '' })}
+                        showTimeSelect
+                        showTimeSelectOnly
+                        timeIntervals={15}
+                        timeCaption="Début"
+                        dateFormat="HH:mm"
+                        locale="fr"
                         className="input-dark w-full"
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">{t('agents.detail.settings.endTime', 'End time')}</label>
-                      <input
-                        type="time"
-                        value={formData.availability_end}
-                        onChange={(e) => setFormData({ ...formData, availability_end: e.target.value })}
+                      <DatePicker
+                        selected={formData.availability_end ? new Date(`2000-01-01T${formData.availability_end}`) : null}
+                        onChange={(date) => setFormData({ ...formData, availability_end: date ? date.toTimeString().slice(0, 5) : '' })}
+                        showTimeSelect
+                        showTimeSelectOnly
+                        timeIntervals={15}
+                        timeCaption="Fin"
+                        dateFormat="HH:mm"
+                        locale="fr"
                         className="input-dark w-full"
                       />
                     </div>
@@ -3244,4 +3262,64 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
     </div>,
     document.body
   )
+}
+
+function LogsTab({ agentId }) {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ limit: 20, offset: 0, total: 0 });
+  const [filters, setFilters] = useState({ action: '' });
+
+  const loadLogs = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/admin/audit-logs', {
+        params: {
+          limit: pagination.limit,
+          offset: pagination.offset,
+          action: filters.action,
+          entityId: agentId
+        }
+      });
+      setLogs(response.data.logs);
+      setPagination(prev => ({ ...prev, total: response.data.total }));
+    } catch (error) {
+      console.error('Failed to load logs:', error);
+      toast.error('Erreur lors du chargement des logs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRollback = async (logId) => {
+    try {
+      if (!window.confirm('Êtes-vous sûr de vouloir annuler cette action ? cela restaurera les valeurs précédentes.')) {
+        return;
+      }
+      const response = await api.post(`/admin/audit-logs/${logId}/rollback`);
+      toast.success(response.data.message || 'Action annulée');
+      loadLogs();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'annulation');
+    }
+  };
+
+  useEffect(() => {
+    loadLogs();
+  }, [agentId, pagination.offset, filters]);
+
+  return (
+    <div className="card p-4 sm:p-6 overflow-hidden">
+      <AuditLogsContent 
+        logs={logs}
+        loading={loading}
+        pagination={pagination}
+        onPageChange={(offset) => setPagination(prev => ({ ...prev, offset }))}
+        filters={filters}
+        onFilterChange={setFilters}
+        onRefresh={loadLogs}
+        onRollback={handleRollback}
+      />
+    </div>
+  );
 }

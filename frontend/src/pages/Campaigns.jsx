@@ -31,6 +31,11 @@ import {
   RefreshCw
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
 
 export default function Campaigns() {
   const { isDark } = useTheme()
@@ -703,10 +708,16 @@ export default function Campaigns() {
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
                     Programmer l'envoi (optionnel)
                   </label>
-                  <input
-                    type="datetime-local"
-                    value={form.scheduled_at}
-                    onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                  <DatePicker
+                    selected={form.scheduled_at ? new Date(form.scheduled_at) : null}
+                    onChange={(date) => setForm({ ...form, scheduled_at: date ? date.toISOString() : '' })}
+                    showTimeSelect
+                    timeFormat="HH:mm"
+                    timeIntervals={15}
+                    timeCaption="Heure"
+                    dateFormat="dd/MM/yyyy HH:mm"
+                    locale="fr"
+                    placeholderText="Choisir une date et heure"
                     className="input-dark w-full py-4 px-5 text-base rounded-2xl"
                   />
                 </div>

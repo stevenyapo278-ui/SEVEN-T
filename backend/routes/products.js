@@ -11,6 +11,7 @@ import { validate, productCreateSchema, productUpdateSchema } from '../middlewar
 import { messageAnalyzer } from '../services/messageAnalyzer.js';
 import { requireModule } from '../middleware/requireModule.js';
 import { importFromUrl } from '../services/catalogImport.js';
+import { activityLogger } from '../services/activityLogger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
@@ -93,6 +94,15 @@ router.post('/import-from-url', authenticateToken, requireModule('catalog_import
             created.push({ id, name: item.title || 'Sans nom', price, image_url: item.imageUrl || null });
         }
         messageAnalyzer.invalidateProductCache(req.user.id);
+        
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'import_products_url',
+            entityType: 'product',
+            details: { count: created.length, url },
+            req
+        });
+
         res.json({ imported: created.length, products: created });
     } catch (error) {
         const message = error?.message || 'Erreur lors de l\'import';
@@ -287,6 +297,16 @@ router.post('/', authenticateToken, validate(productCreateSchema), async (req, r
         `, logId, id, req.user.id, parseInt(stock) || 0, 'Produit créé');
 
         messageAnalyzer.invalidateProductCache(req.user.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'create_product',
+            entityType: 'product',
+            entityId: id,
+            details: { name },
+            req
+        });
+
         res.status(201).json({ 
             product: {
                 ...product,
@@ -365,6 +385,31 @@ router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req,
         const marginRate = updatedCostPrice > 0 ? margin / updatedCostPrice : null;
 
         messageAnalyzer.invalidateProductCache(req.user.id);
+
+        // Calculate audit changes (formatting for activityLogger)
+        const auditChanges = {};
+        const fields = ['name', 'price', 'cost_price', 'stock', 'category', 'is_active'];
+        fields.forEach(field => {
+            if (req.body[field] !== undefined && String(product[field]) !== String(req.body[field])) {
+                auditChanges[field] = { 
+                    old: product[field] ?? 'None', 
+                    new: req.body[field] 
+                };
+            }
+        });
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_product',
+            entityType: 'product',
+            entityId: req.params.id,
+            details: { 
+                name: updated.name,
+                changes: Object.keys(auditChanges).length > 0 ? auditChanges : 'Stock or secondary update'
+            },
+            req
+        });
+
         res.json({ 
             product: {
                 ...updated,
@@ -381,8 +426,20 @@ router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req,
 // Delete product
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        await db.run('DELETE FROM products WHERE id = ?', req.params.id);
+        const result = await db.run('DELETE FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        if (!result.rowCount || result.rowCount === 0) {
+            return res.status(404).json({ error: 'Produit non trouvé' });
+        }
         messageAnalyzer.invalidateProductCache(req.user.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'delete_product',
+            entityType: 'product',
+            entityId: req.params.id,
+            req
+        });
+
         res.json({ message: 'Produit supprimé' });
     } catch (error) {
         console.error('Delete product error:', error);

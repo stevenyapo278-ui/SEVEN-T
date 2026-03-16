@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { Plus, RefreshCw, Edit, Trash2, Loader2, Save, X, Ticket } from 'lucide-react'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
 
 export default function CouponsContent() {
   const [coupons, setCoupons] = useState([])
@@ -239,10 +244,16 @@ export default function CouponsContent() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Date d'expiration (optionnel)</label>
-                <input
-                  type="datetime-local"
-                  value={formData.expires_at}
-                  onChange={e => setFormData({ ...formData, expires_at: e.target.value })}
+                <DatePicker
+                  selected={formData.expires_at ? new Date(formData.expires_at) : null}
+                  onChange={date => setFormData({ ...formData, expires_at: date ? date.toISOString() : '' })}
+                  showTimeSelect
+                  timeFormat="HH:mm"
+                  timeIntervals={15}
+                  timeCaption="Heure"
+                  dateFormat="dd/MM/yyyy HH:mm"
+                  locale="fr"
+                  placeholderText="Choisir une date et heure"
                   className="w-full px-3 py-2 bg-space-800 border border-space-600 rounded-lg text-white"
                 />
               </div>

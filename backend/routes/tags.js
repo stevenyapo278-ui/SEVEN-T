@@ -132,6 +132,17 @@ router.post('/conversation/:conversationId', authenticateToken, async (req, res)
 // Remove tag from conversation
 router.delete('/conversation/:conversationId/:tagId', authenticateToken, async (req, res) => {
     try {
+        // Ensure conversation belongs to current user (multi-tenant safety)
+        const conv = await db.get(`
+            SELECT c.id FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE c.id = ? AND a.user_id = ?
+        `, req.params.conversationId, req.user.id);
+
+        if (!conv) {
+            return res.status(404).json({ error: 'Conversation non trouvée' });
+        }
+
         await db.run('DELETE FROM conversation_tags WHERE conversation_id = ? AND tag_id = ?', req.params.conversationId, req.params.tagId);
 
         res.json({ message: 'Tag retiré' });
@@ -144,6 +155,16 @@ router.delete('/conversation/:conversationId/:tagId', authenticateToken, async (
 // Get tags for a conversation
 router.get('/conversation/:conversationId', authenticateToken, async (req, res) => {
     try {
+        const conv = await db.get(`
+            SELECT c.id FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE c.id = ? AND a.user_id = ?
+        `, req.params.conversationId, req.user.id);
+
+        if (!conv) {
+            return res.status(404).json({ error: 'Conversation non trouvée' });
+        }
+
         const tags = await db.all(`
             SELECT t.* FROM tags t
             JOIN conversation_tags ct ON t.id = ct.tag_id
@@ -162,6 +183,16 @@ router.get('/conversation/:conversationId', authenticateToken, async (req, res) 
 // Get notes for a conversation
 router.get('/notes/:conversationId', authenticateToken, async (req, res) => {
     try {
+        const conv = await db.get(`
+            SELECT c.id FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE c.id = ? AND a.user_id = ?
+        `, req.params.conversationId, req.user.id);
+
+        if (!conv) {
+            return res.status(404).json({ error: 'Conversation non trouvée' });
+        }
+
         const notes = await db.all(`
             SELECT n.*, u.name as author_name
             FROM conversation_notes n

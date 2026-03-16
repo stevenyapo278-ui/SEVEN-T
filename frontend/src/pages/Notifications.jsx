@@ -5,6 +5,11 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
 
 export default function Notifications() {
   const { t, i18n } = useTranslation()
@@ -267,11 +272,13 @@ export default function Notifications() {
 
           {/* Start Date */}
           <div className="relative">
-            <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+            <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <DatePicker
+              selected={startDate ? new Date(startDate) : null}
+              onChange={(date) => setStartDate(date ? date.toISOString().slice(0, 10) : '')}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Date début"
+              locale="fr"
               className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
                 isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
               }`}
@@ -280,11 +287,13 @@ export default function Notifications() {
 
           {/* End Date */}
           <div className="relative">
-            <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+            <Calendar className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <DatePicker
+              selected={endDate ? new Date(endDate) : null}
+              onChange={(date) => setEndDate(date ? date.toISOString().slice(0, 10) : '')}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="Date fin"
+              locale="fr"
               className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
                 isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
               }`}

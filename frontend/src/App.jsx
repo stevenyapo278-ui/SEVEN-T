@@ -81,7 +81,15 @@ function AdminRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
-  if (!user.is_admin) {
+  const isAnyAdmin = Boolean(
+    user.is_admin ||
+    user.can_manage_users ||
+    user.can_manage_plans ||
+    user.can_view_stats ||
+    user.can_manage_ai
+  )
+
+  if (!isAnyAdmin) {
     return <Navigate to="/dashboard" replace />
   }
 

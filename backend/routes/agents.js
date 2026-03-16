@@ -8,6 +8,7 @@ import { getPlan, isLimitReached, getRemainingQuota, hasFeature, getAvailableMod
 import { checkCreditWarnings, getMonthlyUsage, CREDIT_COSTS } from '../services/credits.js';
 import { validate, createAgentSchema, updateAgentSchema } from '../middleware/security.js';
 import { getTemplates, getTemplate } from '../config/agentTemplates.js';
+import { activityLogger } from '../services/activityLogger.js';
 
 const router = Router();
 
@@ -324,6 +325,15 @@ router.post('/', authenticateToken, async (req, res) => {
 
         const agent = await db.get('SELECT * FROM agents WHERE id = ?', agentId);
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'create_agent',
+            entityType: 'agent',
+            entityId: agentId,
+            details: { name: agent.name },
+            req
+        });
+
         res.status(201).json({ 
             message: 'Agent créé avec succès',
             agent,
@@ -387,6 +397,15 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
 
         const agent = await db.get('SELECT * FROM agents WHERE id = ?', agentId);
 
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'duplicate_agent',
+            entityType: 'agent',
+            entityId: agentId,
+            details: { from_id: req.params.id, name: agent.name },
+            req
+        });
+
         res.status(201).json({ 
             message: 'Agent dupliqué avec succès',
             agent,
@@ -448,7 +467,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         } = req.body;
 
         // Check ownership and current model
-        const existing = await db.get('SELECT id, template, model FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const existing = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -536,6 +555,26 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         const agent = await db.get('SELECT * FROM agents WHERE id = ?', req.params.id);
 
+        // Calculate changes for logging
+        const changes = {};
+        const fieldsToTrack = ['name', 'model', 'language', 'is_active', 'temperature', 'auto_reply'];
+        fieldsToTrack.forEach(field => {
+            if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
+                changes[field] = { old: existing[field], new: req.body[field] };
+            }
+        });
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'update_agent',
+            entityType: 'agent',
+            entityId: req.params.id,
+            details: { 
+                name: agent.name,
+                changes: Object.keys(changes).length > 0 ? changes : 'Prompt or secondary settings update'
+            },
+            req
+        });
 
         // If agent was reactivated and has WhatsApp credentials, try to reconnect
         if (is_active === 1 && agent.whatsapp_connected === 1) {
@@ -557,7 +596,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete agent
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const agent = await db.get('SELECT id, tool_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id, name, tool_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -575,6 +614,15 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 
         // 2. Delete the agent (Cascading deletes in DB should handle conversations, messages, etc. if set up)
         await db.run('DELETE FROM agents WHERE id = ?', req.params.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'delete_agent',
+            entityType: 'agent',
+            entityId: req.params.id,
+            details: { name: agent.name },
+            req
+        });
 
         res.json({ message: 'Agent supprimé avec succès' });
     } catch (error) {

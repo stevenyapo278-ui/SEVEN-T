@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
+import { useAuth } from '../contexts/AuthContext'
 import { 
   Users, 
   Bot, 
@@ -44,10 +45,16 @@ import {
   Database
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, CouponsContent, getCreditsForPlan } from './Admin/index.js'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
+import { registerLocale } from 'react-datepicker'
+import fr from 'date-fns/locale/fr'
+registerLocale('fr', fr)
+import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
 
 export default function Admin() {
   const { showConfirm } = useConfirm()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
@@ -96,11 +103,50 @@ export default function Admin() {
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [editingPlan, setEditingPlan] = useState(null)
   const [availableModels, setAvailableModels] = useState([])
-  // Confirmation modal for dangerous actions
+  // Audit Logs state
+  const [auditLogs, setAuditLogs] = useState([])
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false)
+  const [auditPagination, setAuditPagination] = useState({ total: 0, limit: 50, offset: 0 })
+  const [auditFilters, setAuditFilters] = useState({ action: '', actionExact: '', userId: '', entityType: '', dateFrom: '', dateTo: '', ip: '', onlyErrors: false })
+  const [rolesList, setRolesList] = useState([])
+  const [loadingRoles, setLoadingRoles] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [confirmAction, setConfirmAction] = useState(null) // { type, data, message, keyword }
+  const [confirmAction, setConfirmAction] = useState(null)
+
   const anyAdminModalOpen = showUserModal || showCreateModal || showDeleteModal || promoteAdminModal.open || showModelModal || showKeyModal || showPlanModal || showConfirmModal || testingModel !== null
+
   useLockBodyScroll(anyAdminModalOpen)
+
+  const adminCaps = useMemo(() => {
+    const can = (v) => Boolean(v === 1 || v === true)
+    return {
+      // keep naming explicit and stable for UI logic
+      isFullAdmin: can(user?.is_admin),
+      canManageUsers: can(user?.can_manage_users),
+      canManagePlans: can(user?.can_manage_plans),
+      canViewStats: can(user?.can_view_stats),
+      canManageAI: can(user?.can_manage_ai),
+    }
+  }, [user])
+
+  const allowedAdminTabs = useMemo(() => {
+    const tabs = []
+    if (adminCaps.canViewStats || adminCaps.isFullAdmin) {
+      tabs.push('dashboard', 'activity', 'anomalies')
+    }
+    if (adminCaps.canManageUsers || adminCaps.isFullAdmin) tabs.push('users')
+    if (adminCaps.canManageAI || adminCaps.isFullAdmin) tabs.push('ai-models')
+    if (adminCaps.canManagePlans || adminCaps.isFullAdmin) tabs.push('plans', 'coupons')
+    return tabs
+  }, [adminCaps])
+
+  // If current tab becomes forbidden (or on first mount), move to first allowed tab.
+  useEffect(() => {
+    if (!allowedAdminTabs.length) return
+    if (!allowedAdminTabs.includes(activeTab)) {
+      setActiveTab(allowedAdminTabs[0])
+    }
+  }, [allowedAdminTabs, activeTab])
 
   useEffect(() => {
     // Reset all modals when changing tab to avoid stuck scroll locks
@@ -116,21 +162,75 @@ export default function Admin() {
 
   useEffect(() => {
     if (activeTab === 'dashboard') {
-      loadStats()
-      loadAnomalyStats()
+      if (adminCaps.canViewStats || adminCaps.isFullAdmin) {
+        loadStats()
+        loadAnomalyStats()
+      }
     } else if (activeTab === 'users') {
-      loadUsers()
-      loadPlans()
+      if (adminCaps.canManageUsers || adminCaps.isFullAdmin) {
+        loadUsers()
+      }
+      if (adminCaps.canManagePlans || adminCaps.isFullAdmin) {
+        loadPlans()
+      }
     } else if (activeTab === 'anomalies') {
-      loadAnomalies()
+      if (adminCaps.canViewStats || adminCaps.isFullAdmin) {
+        loadAnomalies()
+      }
     } else if (activeTab === 'ai-models') {
-      loadAIData()
+      if (adminCaps.canManageAI || adminCaps.isFullAdmin) {
+        loadAIData()
+      }
     } else if (activeTab === 'plans') {
-      loadPlans()
+      if (adminCaps.canManagePlans || adminCaps.isFullAdmin) {
+        loadPlans()
+      }
+    } else if (activeTab === 'activity') {
+      if (adminCaps.canViewStats || adminCaps.isFullAdmin) {
+        loadAuditLogs()
+      }
+    }
+    
+    // Always load roles if not already loaded and we are in users tab
+    if (activeTab === 'users' && rolesList.length === 0 && !loadingRoles) {
+      loadRoles()
     }
   }, [activeTab, pagination.offset, searchQuery, selectedPlan, selectedStatus])
 
+
+  // Reload audit logs when filters/pagination change
+  useEffect(() => {
+    if (activeTab !== 'activity') return
+    loadAuditLogs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeTab,
+    auditPagination.offset,
+    auditPagination.limit,
+    auditFilters.action,
+    auditFilters.actionExact,
+    auditFilters.userId,
+    auditFilters.entityType,
+    auditFilters.dateFrom,
+    auditFilters.dateTo,
+    auditFilters.ip,
+    auditFilters.onlyErrors
+  ])
+
+  const loadRoles = async () => {
+    setLoadingRoles(true)
+    try {
+      const res = await api.get('/admin/roles')
+      setRolesList(res.data.roles || [])
+    } catch (error) {
+      console.error('Error loading roles:', error)
+    } finally {
+      setLoadingRoles(false)
+    }
+  }
+
   const loadAIData = async () => {
+
     setLoadingAI(true)
     try {
       const [modelsRes, keysRes, statsRes, settingsRes] = await Promise.all([
@@ -483,6 +583,55 @@ export default function Admin() {
     }
   }
 
+  const loadAuditLogs = async () => {
+    setLoadingAuditLogs(true)
+    try {
+      const params = new URLSearchParams({
+        limit: auditPagination.limit,
+        offset: auditPagination.offset,
+        ...(auditFilters.action && { action: auditFilters.action }),
+        ...(auditFilters.actionExact && { actionExact: auditFilters.actionExact }),
+        ...(auditFilters.userId && { userId: auditFilters.userId }),
+        ...(auditFilters.entityType && { entityType: auditFilters.entityType }),
+        ...(auditFilters.dateFrom && { dateFrom: auditFilters.dateFrom }),
+        ...(auditFilters.dateTo && { dateTo: auditFilters.dateTo + 'T23:59:59' }),
+        ...(auditFilters.ip && { ip: auditFilters.ip }),
+        ...(auditFilters.onlyErrors && { onlyErrors: 'true' })
+      })
+      const response = await api.get(`/admin/audit-logs?${params}`)
+      setAuditLogs(response.data.logs)
+      setAuditPagination(prev => ({ ...prev, total: response.data.total }))
+    } catch (error) {
+      toast.error('Erreur lors du chargement des logs')
+    } finally {
+      setLoadingAuditLogs(false)
+    }
+  }
+
+  const handleRollback = async (logId) => {
+    try {
+      if (!window.confirm('Êtes-vous sûr de vouloir annuler cette action ? Cela restaurera les valeurs précédentes.')) {
+        return;
+      }
+      
+      const response = await api.post(`/admin/audit-logs/${logId}/rollback`)
+      toast.success(response.data.message || 'Action annulée')
+      loadAuditLogs()
+      
+      // Also reload associated data depending on where we are
+      if (activeTab === 'users') loadUsers()
+      if (activeTab === 'plans') loadPlans()
+      if (activeTab === 'ai-models') loadAIData()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'annulation')
+    }
+  }
+
+  const handleViewUserLogs = (user) => {
+    setAuditFilters({ action: '', actionExact: '', userId: user.id, entityType: '', dateFrom: '', dateTo: '', ip: '', onlyErrors: false })
+    setActiveTab('activity')
+  }
+
   const handleDeleteUser = async (userId) => {
     // Open preview modal instead of immediate delete
     setUserToDelete(userId)
@@ -585,83 +734,113 @@ export default function Admin() {
       {/* Tabs - scroll horizontal on small screens so "Modèles IA" and "Plans" are visible */}
       <div className="mb-6 border-b border-space-700 overflow-x-auto overflow-y-hidden -mx-1 px-1 sm:mx-0 sm:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="flex gap-1 sm:gap-4 min-w-max">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
-              activeTab === 'dashboard' 
-                ? 'border-gold-400 text-gold-400' 
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            <TrendingUp className="w-5 h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Dashboard</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
-              activeTab === 'users' 
-                ? 'border-gold-400 text-gold-400' 
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            <Users className="w-5 h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Utilisateurs</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('anomalies')}
-            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors relative touch-target flex items-center gap-2 ${
-              activeTab === 'anomalies' 
-                ? 'border-red-400 text-red-400' 
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Anomalies</span>
-            {anomalyStats.total > 0 && (
-              <span className="absolute -top-1 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                {anomalyStats.total > 99 ? '99+' : anomalyStats.total}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('ai-models')}
-            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
-              activeTab === 'ai-models' 
-                ? 'border-blue-400 text-blue-400' 
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            <Cpu className="w-5 h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Modèles IA</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('plans')}
-            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
-              activeTab === 'plans' 
-                ? 'border-blue-400 text-blue-400' 
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            <CreditCard className="w-5 h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Plans</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('coupons')}
-            className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
-              activeTab === 'coupons' 
-                ? 'border-gold-400 text-gold-400' 
-                : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
-          >
-            <Ticket className="w-5 h-5 flex-shrink-0" />
-            <span className="whitespace-nowrap">Coupons</span>
-          </button>
+          {(adminCaps.canViewStats || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'dashboard' 
+                  ? 'border-gold-400 text-gold-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Dashboard</span>
+            </button>
+          )}
+          {(adminCaps.canViewStats || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'activity' 
+                  ? 'border-gold-400 text-gold-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Activity className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Activité</span>
+            </button>
+          )}
+          {(adminCaps.canManageUsers || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'users' 
+                  ? 'border-gold-400 text-gold-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Users className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Utilisateurs</span>
+            </button>
+          )}
+          {(adminCaps.canViewStats || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('anomalies')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors relative touch-target flex items-center gap-2 ${
+                activeTab === 'anomalies' 
+                  ? 'border-red-400 text-red-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Anomalies</span>
+              {anomalyStats.total > 0 && (
+                <span className="absolute -top-1 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {anomalyStats.total > 99 ? '99+' : anomalyStats.total}
+                </span>
+              )}
+            </button>
+          )}
+          {(adminCaps.canManageAI || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('ai-models')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'ai-models' 
+                  ? 'border-blue-400 text-blue-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Cpu className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Modèles IA</span>
+            </button>
+          )}
+          {(adminCaps.canManagePlans || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('plans')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'plans' 
+                  ? 'border-blue-400 text-blue-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <CreditCard className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Plans</span>
+            </button>
+          )}
+          {(adminCaps.canManagePlans || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('coupons')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'coupons' 
+                  ? 'border-gold-400 text-gold-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Ticket className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Coupons</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && (
-        <DashboardContent stats={stats} loading={loading} anomalyStats={anomalyStats} />
+        <DashboardContent 
+          stats={stats} 
+          loading={loading} 
+          anomalyStats={anomalyStats} 
+          onTabChange={setActiveTab} 
+        />
       )}
 
       {/* Anomalies Tab */}
@@ -727,6 +906,23 @@ export default function Admin() {
         <CouponsContent />
       )}
 
+      {activeTab === 'activity' && (
+        <AuditLogsContent
+          logs={auditLogs}
+          loading={loadingAuditLogs}
+          pagination={auditPagination}
+          filters={auditFilters}
+          onFilterChange={(next) => {
+            setAuditFilters(next)
+            setAuditPagination(prev => ({ ...prev, offset: 0 }))
+          }}
+          onPageChange={(offset) => setAuditPagination(prev => ({ ...prev, offset }))}
+          onRefresh={loadAuditLogs}
+          onRollback={handleRollback}
+          filterUserName={auditFilters.userId ? (users.find(u => u.id === auditFilters.userId)?.name || null) : null}
+        />
+      )}
+
       {/* Users Tab */}
       {activeTab === 'users' && (
         <UsersContent 
@@ -748,6 +944,7 @@ export default function Admin() {
           onEdit={(user) => { setSelectedUser(user); setShowUserModal(true); }}
           onCreate={() => setShowCreateModal(true)}
           onRefresh={loadUsers}
+          onViewLogs={handleViewUserLogs}
           formatDate={formatDate}
         />
       )}
@@ -880,8 +1077,147 @@ export default function Admin() {
   )
 }
 
+// ─── Contextual User Audit History (used inside EditUserModal) ───────────────
+function UserAuditHistory({ userId }) {
+  const [logs, setLogs] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!userId) return
+    setLoading(true)
+    api.get(`/admin/audit-logs?userId=${userId}&limit=30`)
+      .then(res => setLogs(res.data.logs || []))
+      .catch(() => setLogs([]))
+      .finally(() => setLoading(false))
+  }, [userId])
+
+  const ACTION_LABELS = {
+    login: 'Connexion', register: 'Inscription', login_failed: 'Échec connexion',
+    create_user: 'Création compte', update_user: 'Profil modifié', soft_delete_user: 'Désactivé',
+    hard_delete_user: 'Suppression définitive', restore_user: 'Restauration',
+    reset_password: 'Réinit. MDP', add_credits: 'Crédits ajoutés', create_agent: 'Agent créé',
+    update_agent: 'Agent modifié', delete_agent: 'Agent supprimé', rollback_action: 'Rollback',
+    update_plan: 'Plan mis à jour', update_ai_model: 'Modèle IA modifié',
+    add_knowledge: 'Connaissance ajoutée', upload_knowledge: 'Fichier uploadé',
+  }
+
+  const getColor = (action) => {
+    if (action?.includes('delete') || action === 'login_failed') return 'text-red-400 bg-red-400/10'
+    if (action?.includes('create')) return 'text-emerald-400 bg-emerald-400/10'
+    if (action?.includes('login')) return 'text-blue-400 bg-blue-400/10'
+    if (action?.includes('rollback')) return 'text-amber-400 bg-amber-400/10'
+    return 'text-gray-400 bg-gray-400/10'
+  }
+
+  const formatRelTime = (d) => {
+    const diff = (Date.now() - new Date(d)) / 1000
+    if (diff < 60) return 'À l\'instant'
+    if (diff < 3600) return `Il y a ${Math.floor(diff / 60)}m`
+    if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`
+    return new Date(d).toLocaleDateString('fr-FR')
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+      </div>
+    )
+  }
+
+  if (logs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-gray-500 text-sm">
+        <Activity className="w-10 h-10 mb-3 opacity-30" />
+        Aucune activité enregistrée
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-space-800/50" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      {logs.map(log => {
+        const details = typeof log.details === 'string' ? JSON.parse(log.details || '{}') : (log.details || {})
+        const colorClass = getColor(log.action)
+        return (
+          <div key={log.id} className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+            <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs ${colorClass}`}>
+              <Activity className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-200">
+                {ACTION_LABELS[log.action] || log.action}
+              </p>
+              {details.geo && (
+                <p className="text-[10px] text-gray-500 flex items-center gap-1">
+                  <span title={`${details.geo.city}, ${details.geo.country}`}>{details.geo.emoji}</span>
+                  {log.ip_address}
+                </p>
+              )}
+              {!details.geo && log.ip_address && (
+                <p className="text-[10px] text-gray-500 font-mono">{log.ip_address}</p>
+              )}
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="text-[10px] text-gray-500 whitespace-nowrap flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatRelTime(log.created_at)}
+              </p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function RbacRoleSelector({ selectedRoles = [], availableRoles = [], onChange }) {
+  const toggleRole = (roleKey) => {
+    if (selectedRoles.includes(roleKey)) {
+      onChange(selectedRoles.filter(r => r !== roleKey))
+    } else {
+      onChange([...selectedRoles, roleKey])
+    }
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {availableRoles.map((role) => {
+        const isSelected = selectedRoles.includes(role.key)
+        return (
+          <button
+            key={role.key}
+            type="button"
+            onClick={() => toggleRole(role.key)}
+            className={`flex flex-col items-start p-3 rounded-xl border transition-all text-left group ${
+              isSelected 
+                ? 'bg-gold-400/10 border-gold-400/50 ring-1 ring-gold-400/20' 
+                : 'bg-space-800/50 border-space-700 hover:border-space-500'
+            }`}
+          >
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-gold-400' : 'text-gray-400'}`}>
+                {role.name}
+              </span>
+              <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                isSelected ? 'bg-gold-400 border-gold-400' : 'border-space-500'
+              }`}>
+                {isSelected && <Zap className="w-2.5 h-2.5 text-space-950 fill-current" />}
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed group-hover:text-gray-400 transition-colors">
+              {role.description}
+            </p>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // Edit User Modal
-function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
+function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
+  const [activeTab, setActiveTab] = useState('edit')
   const [formData, setFormData] = useState({
     name: user.name,
     email: user.email,
@@ -889,11 +1225,17 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     plan: user.plan,
     credits: user.credits,
     is_admin: user.is_admin,
+    can_manage_users: user.can_manage_users || 0,
+    can_manage_plans: user.can_manage_plans || 0,
+    can_view_stats: user.can_view_stats || 0,
+    can_manage_ai: user.can_manage_ai || 0,
     is_active: user.is_active,
     voice_responses_enabled: !!user.voice_responses_enabled,
     payment_module_enabled: !!user.payment_module_enabled,
+    roles: user.roles || [],
     subscription_end_date: user.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : ''
   })
+
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmAdminInput, setConfirmAdminInput] = useState('')
@@ -943,12 +1285,36 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-t-3xl sm:rounded-2xl shadow-2xl animate-fadeIn flex flex-col max-h-[90dvh] sm:max-h-[85vh] max-sm:rounded-b-none overflow-hidden">
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-space-700" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-          <h3 className="text-lg font-display font-semibold text-gray-100">Modifier l'utilisateur</h3>
-          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex-shrink-0 border-b border-space-700">
+          <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+            <div>
+              <h3 className="text-lg font-display font-semibold text-gray-100">{user.name}</h3>
+              <p className="text-xs text-gray-500">{user.email}</p>
+            </div>
+            <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-100 min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex px-4 sm:px-5 mt-3">
+            <button
+              onClick={() => setActiveTab('edit')}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === 'edit' ? 'border-gold-400 text-gold-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            >
+              Modifier
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${activeTab === 'history' ? 'border-blue-400 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              Historique
+            </button>
+          </div>
         </div>
+
+        {activeTab === 'history' ? (
+          <UserAuditHistory userId={user.id} />
+        ) : (
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto overscroll-contain" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
@@ -1018,13 +1384,79 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
                 type="checkbox"
                 checked={formData.is_admin}
                 onChange={(e) => {
-                  setFormData({ ...formData, is_admin: e.target.checked ? 1 : 0 })
-                  if (!e.target.checked) setConfirmAdminInput('')
+                  const val = e.target.checked ? 1 : 0;
+                  setFormData({ 
+                    ...formData, 
+                    is_admin: val,
+                    can_manage_users: val,
+                    can_manage_plans: val,
+                    can_view_stats: val,
+                    can_manage_ai: val
+                  });
+                  if (!e.target.checked) setConfirmAdminInput('');
                 }}
                 className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
               />
               <span className="text-sm text-gray-300">Administrateur</span>
             </label>
+            <div className="ml-7 space-y-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_users}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_users: newVal };
+                    const allChecked = newVal && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gérer les utilisateurs</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_plans}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_plans: newVal };
+                    const allChecked = nextData.can_manage_users && newVal && nextData.can_view_stats && nextData.can_manage_ai;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gérer les plans</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_view_stats}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_view_stats: newVal };
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && newVal && nextData.can_manage_ai;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Voir les statistiques</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_ai}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_ai: newVal };
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && newVal;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gérer l'IA</span>
+              </label>
+            </div>
             <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
                 type="checkbox"
@@ -1054,6 +1486,18 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
             </label>
           </div>
 
+          {formData.is_admin === 1 && (
+            <div className="pt-2 border-t border-space-700">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Rôles Administrateur</h4>
+              <RbacRoleSelector 
+                selectedRoles={formData.roles}
+                availableRoles={rolesList}
+                onChange={(roles) => setFormData({ ...formData, roles })}
+              />
+            </div>
+          )}
+
+
           {isPromotingToAdmin && (
             <div className="p-4 rounded-xl bg-gold-400/10 border border-gold-400/30">
               <p className="text-sm text-gray-300 mb-2">
@@ -1073,11 +1517,13 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               Date fin d'abonnement
             </label>
             <div className="flex flex-col gap-2">
-              <input
-                type="date"
-                value={formData.subscription_end_date}
-                onChange={(e) => setFormData({ ...formData, subscription_end_date: e.target.value })}
+              <DatePicker
+                selected={formData.subscription_end_date ? new Date(formData.subscription_end_date) : null}
+                onChange={(date) => setFormData({ ...formData, subscription_end_date: date ? date.toISOString().slice(0, 10) : '' })}
+                dateFormat="dd/MM/yyyy"
+                locale="fr"
                 className="input-dark w-full min-h-[44px]"
+                placeholderText="Choisir une date"
               />
               <div className="flex gap-2">
                 {[7, 14, 30].map(days => (
@@ -1107,6 +1553,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
               className="input-dark w-full min-h-[44px]"
+              autoComplete="new-password"
             />
           </div>
           <div className="flex gap-3 pt-4">
@@ -1118,6 +1565,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>,
     document.body
@@ -1125,7 +1573,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], allUsers = [] }) {
 }
 
 // Create User Modal
-function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
+function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
   const activePlans = (plans || []).filter(p => p.is_active !== false && p.is_active !== 0)
   const [formData, setFormData] = useState({
     name: '',
@@ -1134,8 +1582,16 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
     company: '',
     plan: 'free',
     credits: 500,
-    is_admin: 0
+    is_admin: 0,
+    can_manage_users: 0,
+    can_manage_plans: 0,
+    can_view_stats: 0,
+    can_manage_ai: 0,
+    voice_responses_enabled: false,
+    payment_module_enabled: false,
+    roles: []
   })
+
   const [saving, setSaving] = useState(false)
   const initialCreditsSyncedRef = useRef(false)
 
@@ -1254,15 +1710,115 @@ function CreateUserModal({ onClose, onSave, plans = [], allUsers = [] }) {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer py-2">
-            <input
-              type="checkbox"
-              checked={formData.is_admin}
-              onChange={(e) => setFormData({ ...formData, is_admin: e.target.checked ? 1 : 0 })}
-              className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
-            />
-            <span className="text-sm text-gray-300">Administrateur</span>
-          </label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer py-1">
+              <input
+                type="checkbox"
+                checked={formData.is_admin}
+                onChange={(e) => {
+                  const val = e.target.checked ? 1 : 0;
+                  setFormData({ 
+                    ...formData, 
+                    is_admin: val,
+                    can_manage_users: val,
+                    can_manage_plans: val,
+                    can_view_stats: val,
+                    can_manage_ai: val
+                  });
+                }}
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+              />
+              <span className="text-sm text-gray-300">Administrateur</span>
+            </label>
+            <div className="ml-7 space-y-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_users}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_users: newVal };
+                    const allChecked = newVal && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gérer les utilisateurs</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_plans}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_plans: newVal };
+                    const allChecked = nextData.can_manage_users && newVal && nextData.can_view_stats && nextData.can_manage_ai;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gérer les plans</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_view_stats}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_view_stats: newVal };
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && newVal && nextData.can_manage_ai;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Voir les statistiques</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_ai}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_ai: newVal };
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && newVal;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gérer l'IA</span>
+              </label>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer py-1">
+              <input
+                type="checkbox"
+                checked={formData.voice_responses_enabled}
+                onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
+              />
+              <span className="text-sm text-gray-300">Réponses vocales</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer py-1">
+              <input
+                type="checkbox"
+                checked={formData.payment_module_enabled}
+                onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400 focus:ring-emerald-400"
+              />
+              <span className="text-sm text-gray-300">Module Paiements</span>
+            </label>
+          </div>
+
+          {formData.is_admin === 1 && (
+            <div className="pt-2 border-t border-space-700">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Rôles Administrateur</h4>
+              <RbacRoleSelector 
+                selectedRoles={formData.roles}
+                availableRoles={rolesList}
+                onChange={(roles) => setFormData({ ...formData, roles })}
+              />
+            </div>
+          )}
+
           <div className="flex gap-3 pt-4">
             <button type="button" onClick={onClose} className="flex-1 btn-secondary min-h-[48px]">
               Annuler

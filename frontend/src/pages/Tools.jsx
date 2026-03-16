@@ -458,15 +458,10 @@ export default function Tools() {
                 Connecter WhatsApp
               </button>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-amber-400">Aucun compte WhatsApp inclus dans votre plan.</p>
-                <Link
-                  to="/dashboard/settings?tab=subscription"
-                  className="btn-primary w-full block text-center min-h-[48px]"
-                >
-                  Améliorer mon plan
-                </Link>
-              </div>
+              <UpgradePrompt 
+                title="Débloquez WhatsApp"
+                description="Aucun compte WhatsApp inclus dans votre plan."
+              />
             )}
           </div>
 
@@ -490,15 +485,10 @@ export default function Tools() {
                 Connecter Outlook
               </button>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-amber-400">Aucun compte Outlook inclus dans votre plan.</p>
-                <Link
-                  to="/dashboard/settings?tab=subscription"
-                  className="btn-primary w-full block text-center min-h-[48px]"
-                >
-                  Améliorer mon plan
-                </Link>
-              </div>
+              <UpgradePrompt 
+                title="Débloquez Outlook"
+                description="Aucun compte Outlook inclus dans votre plan."
+              />
             )}
           </div>
 
@@ -522,15 +512,10 @@ export default function Tools() {
                 Connecter Calendar
               </button>
             ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-amber-400">Aucun compte Google inclus dans votre plan.</p>
-                <Link
-                  to="/dashboard/settings?tab=subscription"
-                  className="btn-primary w-full block text-center min-h-[48px]"
-                >
-                  Améliorer mon plan
-                </Link>
-              </div>
+              <UpgradePrompt 
+                title="Débloquez Google Calendar"
+                description="Aucun compte Google inclus dans votre plan."
+              />
             )}
           </div>
 

@@ -21,6 +21,7 @@ import {
   XCircle
 } from 'lucide-react'
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import NextBestAction from '../components/NextBestAction'
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -162,6 +163,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400" /></div>
       ) : (
         <>
+          <NextBestAction data={onboardingData} />
           <OnboardingChecklist data={onboardingData} />
           {alerts.length > 0 && (
             <div className="space-y-3">
