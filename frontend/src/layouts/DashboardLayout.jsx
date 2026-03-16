@@ -785,10 +785,18 @@ export default function DashboardLayout() {
       }
 
   const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
+  const analyticsModuleEnabled = !!(user?.plan_features?.analytics || user?.analytics_module_enabled === 1 || user?.analytics_module_enabled === true)
+
   const navGroups = useMemo(() => {
-    if (paymentModuleEnabled) return navigationGroups
-    return navigationGroups.map(g => ({ ...g, items: g.items.filter(item => item.href !== '/dashboard/payments') }))
-  }, [paymentModuleEnabled])
+    return navigationGroups.map(g => ({ 
+      ...g, 
+      items: g.items.filter(item => {
+        if (item.href === '/dashboard/payments') return paymentModuleEnabled;
+        if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
+        return true;
+      })
+    })).filter(g => g.items.length > 0);
+  }, [paymentModuleEnabled, analyticsModuleEnabled])
 
   // Open sidebar during tour on mobile
   useEffect(() => {

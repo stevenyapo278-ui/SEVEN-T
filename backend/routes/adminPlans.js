@@ -28,7 +28,8 @@ const ALL_FEATURE_KEYS = {
     conversion_score: false,
     daily_briefing: false,
     sentiment_routing: false,
-    catalog_import: false
+    catalog_import: false,
+    analytics: false
 };
 
 /** Merge DB limits/features with default plan so keys like modules 3–7 are always present */

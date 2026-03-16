@@ -24,6 +24,7 @@ const FEATURES_BASELINE = {
     sentiment_routing: false,
     catalog_import: false,
     human_handoff_alerts: false,
+    analytics: false,
     models: []
 };
 
@@ -243,7 +244,7 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true
+            human_handoff_alerts: true, analytics: true
         }
     },
     business: {
@@ -273,7 +274,7 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true
+            human_handoff_alerts: true, analytics: true
         }
     },
     enterprise: {
@@ -303,7 +304,7 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true
+            human_handoff_alerts: true, analytics: true
         }
     }
 };

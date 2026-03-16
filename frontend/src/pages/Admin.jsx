@@ -1232,6 +1232,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
     is_active: user.is_active,
     voice_responses_enabled: !!user.voice_responses_enabled,
     payment_module_enabled: !!user.payment_module_enabled,
+    analytics_module_enabled: !!user.analytics_module_enabled,
     roles: user.roles || [],
     subscription_end_date: user.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : ''
   })
@@ -1484,6 +1485,15 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
               />
               <span className="text-sm text-gray-300">Module Moyens de paiement</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer py-2">
+              <input
+                type="checkbox"
+                checked={formData.analytics_module_enabled}
+                onChange={(e) => setFormData({ ...formData, analytics_module_enabled: e.target.checked })}
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-purple-400 focus:ring-purple-400"
+              />
+              <span className="text-sm text-gray-300">Module Statistiques & Analytics</span>
+            </label>
           </div>
 
           {formData.is_admin === 1 && (
@@ -1589,6 +1599,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
     can_manage_ai: 0,
     voice_responses_enabled: false,
     payment_module_enabled: false,
+    analytics_module_enabled: false,
     roles: []
   })
 
@@ -1804,7 +1815,16 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                 onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
                 className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400 focus:ring-emerald-400"
               />
-              <span className="text-sm text-gray-300">Module Paiements</span>
+              <span className="text-sm text-gray-300">Module Moyens de paiement</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer py-1">
+              <input
+                type="checkbox"
+                checked={formData.analytics_module_enabled}
+                onChange={(e) => setFormData({ ...formData, analytics_module_enabled: e.target.checked })}
+                className="w-5 h-5 rounded border-space-700 bg-space-800 text-purple-400 focus:ring-purple-400"
+              />
+              <span className="text-sm text-gray-300">Module Statistiques & Analytics</span>
             </label>
           </div>
 
@@ -2660,6 +2680,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
       sentiment_routing: false,
       catalog_import: false,
       human_handoff_alerts: false,
+      analytics: false,
       ...(plan?.features || {})
     }
   })
@@ -2727,7 +2748,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'daily_briefing', label: 'Module 6 : Daily Briefing', desc: 'Résumé quotidien des activités envoyé sur WhatsApp.' },
     { key: 'sentiment_routing', label: 'Module 7 : Sentiment routing', desc: 'Transfère à un humain si le client semble frustré.' },
     { key: 'catalog_import', label: 'Module 8 : Import catalogue', desc: 'L\'IA connaît vos produits via URL ou fichiers.' },
-    { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' }
+    { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' },
+    { key: 'analytics', label: 'Module 10 : Analytics & Statistiques', desc: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' }
   ]
 
   return createPortal(

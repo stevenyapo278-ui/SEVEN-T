@@ -364,6 +364,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('payment_module_enabled = ?');
             params.push(payment_module_enabled ? 1 : 0);
         }
+        if (analytics_module_enabled !== undefined) {
+            setClauses.push('analytics_module_enabled = ?');
+            params.push(analytics_module_enabled ? 1 : 0);
+        }
         if (can_manage_users !== undefined) {
             setClauses.push('can_manage_users = ?');
             params.push(can_manage_users ? 1 : 0);
@@ -457,7 +461,8 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
         const changes = {};
         const fieldsToTrack = [
             'name', 'email', 'plan', 'credits', 'is_admin', 'is_active',
-            'can_manage_users', 'can_manage_plans', 'can_view_stats', 'can_manage_ai'
+            'can_manage_users', 'can_manage_plans', 'can_view_stats', 'can_manage_ai',
+            'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled'
         ];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
@@ -719,7 +724,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
     try {
         const { 
             name, email, password, company, plan, credits, is_admin, 
-            voice_responses_enabled, payment_module_enabled,
+            voice_responses_enabled, payment_module_enabled, analytics_module_enabled,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
             roles
         } = req.body;
@@ -761,12 +766,12 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
         await db.run(`
             INSERT INTO users (
                 id, name, email, password, company, plan, credits, is_admin, 
-                subscription_status, subscription_end_date, voice_responses_enabled, payment_module_enabled,
+                subscription_status, subscription_end_date, voice_responses_enabled, payment_module_enabled, analytics_module_enabled,
                 can_manage_users, can_manage_plans, can_view_stats, can_manage_ai
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, 
-           subscriptionStatus, subscriptionEndDate, voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0,
+           subscriptionStatus, subscriptionEndDate, voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0,
            can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0
         );
 
