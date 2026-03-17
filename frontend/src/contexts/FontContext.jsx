@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 
 const STORAGE_KEY = 'seven-t-font'
+const STORAGE_SIZE_KEY = 'seven-t-font-size'
+const STORAGE_TITLES_SYNC_KEY = 'seven-t-font-titles-sync'
 
 export const FONT_PRESETS = {
   jakarta: {
@@ -84,6 +86,19 @@ export function FontProvider({ children }) {
     return saved && FONT_PRESETS[saved] ? saved : 'syne'
   })
 
+  const [titlesMatchBody, setTitlesMatchBodyState] = useState(() => {
+    if (typeof window === 'undefined') return true
+    const saved = localStorage.getItem(STORAGE_TITLES_SYNC_KEY)
+    if (saved === null) return true
+    return saved === 'true'
+  })
+
+  const [fontSize, setFontSizeState] = useState(() => {
+    if (typeof window === 'undefined') return 'md'
+    const saved = localStorage.getItem(STORAGE_SIZE_KEY)
+    return saved && ['sm', 'md', 'lg', 'xl'].includes(saved) ? saved : 'md'
+  })
+
   useEffect(() => {
     const root = document.documentElement
     const bodyPreset = FONT_PRESETS[fontPreset] || FONT_PRESETS.jakarta
@@ -91,15 +106,22 @@ export function FontProvider({ children }) {
 
     root.style.setProperty('--font-ui', bodyPreset.fontUi)
     root.style.setProperty('--font-body', bodyPreset.fontBody)
-    root.style.setProperty('--font-brand', bodyPreset.fontBrand)
+    // Uniform typography across the whole layout
+    root.style.setProperty('--font-brand', bodyPreset.fontUi)
     root.style.setProperty('--font-code', bodyPreset.fontCode)
     
-    // Specifically for large titles
-    root.style.setProperty('--font-display', titlePreset.fontUi)
+    root.style.setProperty('--font-display', titlesMatchBody ? bodyPreset.fontUi : titlePreset.fontUi)
 
     localStorage.setItem(STORAGE_KEY, fontPreset)
     localStorage.setItem(STORAGE_KEY + '-title', titleFontPreset)
-  }, [fontPreset, titleFontPreset])
+    localStorage.setItem(STORAGE_TITLES_SYNC_KEY, String(titlesMatchBody))
+
+    const sizeMap = { sm: '14px', md: '16px', lg: '18px', xl: '22px' }
+    const px = sizeMap[fontSize] || '16px'
+    root.style.setProperty('--base-font-size', px)
+    root.style.fontSize = px
+    localStorage.setItem(STORAGE_SIZE_KEY, fontSize)
+  }, [fontPreset, titleFontPreset, titlesMatchBody, fontSize])
 
   const setFontPreset = (value) => {
     if (FONT_PRESETS[value]) setFontPresetState(value)
@@ -109,11 +131,23 @@ export function FontProvider({ children }) {
     if (FONT_PRESETS[value]) setTitleFontPresetState(value)
   }
 
+  const setTitlesMatchBody = (value) => {
+    setTitlesMatchBodyState(Boolean(value))
+  }
+
+  const setFontSize = (value) => {
+    if (['sm', 'md', 'lg', 'xl'].includes(value)) setFontSizeState(value)
+  }
+
   const value = {
     fontPreset,
     setFontPreset,
     titleFontPreset,
     setTitleFontPreset,
+    titlesMatchBody,
+    setTitlesMatchBody,
+    fontSize,
+    setFontSize,
     presets: FONT_PRESETS,
   }
 

@@ -1,7 +1,8 @@
 import {
   RefreshCw, Activity, CheckCircle, Loader2, Users, Bot,
-  CreditCard, Zap, WifiOff, Clock, AlertTriangle, AlertCircle, Package, ShoppingCart
+  CreditCard, Zap, WifiOff, Clock, AlertTriangle, AlertCircle, Package, ShoppingCart, Search
 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 function getTypeInfo(type) {
   const types = {
@@ -41,7 +42,28 @@ function formatAnomalyDate(dateStr) {
   return date.toLocaleDateString('fr-FR')
 }
 
-export default function AnomaliesContent({ anomalies, stats, loading, onResolve, onResolveByType, onHealthCheck, onRefresh }) {
+export default function AnomaliesContent({ anomalies, stats, loading, onResolve, onResolveByType, onHealthCheck, onRefresh, filters, onChangeFilters }) {
+  const [localQ, setLocalQ] = useState(filters?.q || '')
+
+  useEffect(() => {
+    setLocalQ(filters?.q || '')
+  }, [filters?.q])
+
+  const typeOptions = useMemo(() => {
+    const known = [
+      'credits_zero',
+      'credits_negative',
+      'ai_error',
+      'whatsapp_disconnect',
+      'rate_limit',
+      'plan_limit_exceeded',
+      'system_error',
+      'low_stock',
+      'order_stuck',
+    ]
+    return known
+  }, [])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -50,7 +72,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
           <p className="text-gray-400 text-sm">Surveillez les problèmes et erreurs de la plateforme</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={onRefresh} disabled={loading} className="p-2 text-gray-400 hover:text-gray-100 transition-colors">
+          <button onClick={() => onRefresh(filters)} disabled={loading} className="p-2 text-gray-400 hover:text-gray-100 transition-colors">
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={onHealthCheck} disabled={loading} className="btn-secondary inline-flex items-center gap-2">
@@ -58,6 +80,56 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
             Vérification système
           </button>
         </div>
+      </div>
+
+      {/* Search + Filters */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_180px_220px_180px] gap-3">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-space-700 bg-space-900/40">
+          <Search className="w-4 h-4 text-gray-500" />
+          <input
+            value={localQ}
+            onChange={(e) => {
+              const v = e.target.value
+              setLocalQ(v)
+              onChangeFilters?.({ ...filters, q: v })
+            }}
+            placeholder="Rechercher (titre, message, user, agent, type, metadata)…"
+            className="w-full bg-transparent outline-none text-sm text-gray-200 placeholder:text-gray-600"
+          />
+        </div>
+
+        <select
+          value={filters?.severity || ''}
+          onChange={(e) => onChangeFilters?.({ ...filters, severity: e.target.value })}
+          className="px-3 py-2 rounded-xl border border-space-700 bg-space-900/40 text-sm text-gray-200"
+        >
+          <option value="">Sévérité: toutes</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+
+        <select
+          value={filters?.type || ''}
+          onChange={(e) => onChangeFilters?.({ ...filters, type: e.target.value })}
+          className="px-3 py-2 rounded-xl border border-space-700 bg-space-900/40 text-sm text-gray-200"
+        >
+          <option value="">Type: tous</option>
+          {typeOptions.map((t) => (
+            <option key={t} value={t}>{getTypeInfo(t).label}</option>
+          ))}
+        </select>
+
+        <select
+          value={filters?.resolved || 'open'}
+          onChange={(e) => onChangeFilters?.({ ...filters, resolved: e.target.value })}
+          className="px-3 py-2 rounded-xl border border-space-700 bg-space-900/40 text-sm text-gray-200"
+        >
+          <option value="open">Non résolues</option>
+          <option value="true">Toutes</option>
+          <option value="only">Résolues</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -25,7 +25,7 @@ import NextBestAction from '../components/NextBestAction'
 
 export default function Dashboard() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const location = useLocation()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
@@ -77,6 +77,10 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
+      if (!isAuthenticated) {
+        setLoading(false)
+        return
+      }
       const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
         api.get('/stats/dashboard'),
         api.get('/agents'),
@@ -88,6 +92,7 @@ export default function Dashboard() {
       setQuotas(quotasRes.data)
       setWeeklyActivity(weeklyRes.data?.data || [])
     } catch (error) {
+      if (error?.response?.status === 401) return
       console.error('Error loading dashboard:', error)
     } finally {
       setLoading(false)

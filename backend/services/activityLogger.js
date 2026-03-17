@@ -25,7 +25,7 @@ class ActivityLogger {
                 const recentFailures = await db.get(`
                     SELECT COUNT(*) as count FROM activity_logs 
                     WHERE action = 'login_failed' AND ip_address = ? 
-                    AND created_at >= CURRENT_TIMESTAMP - INTERVAL '10 minutes'
+                    AND created_at >= (CURRENT_TIMESTAMP - INTERVAL '10 minutes')
                 `, ip);
                 
                 if (recentFailures?.count >= 5) {
@@ -216,7 +216,7 @@ class ActivityLogger {
                 query += ` AND l.action = ?`;
                 params.push(actionExact);
             } else if (action) {
-                query += ` AND (l.action ILIKE ? OR l.details ILIKE ? OR u.name ILIKE ? OR u.email ILIKE ? OR l.entity_id ILIKE ?)`;
+                query += ` AND (l.action LIKE ? OR l.details LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR l.entity_id LIKE ?)`;
                 const searchParam = `%${action}%`;
                 params.push(searchParam, searchParam, searchParam, searchParam, searchParam);
             }
@@ -237,7 +237,7 @@ class ActivityLogger {
                 params.push(dateTo);
             }
             if (ip) {
-                query += ` AND l.ip_address ILIKE ?`;
+                query += ` AND l.ip_address LIKE ?`;
                 params.push(`%${ip}%`);
             }
             if (onlyErrors === 'true' || onlyErrors === true) {
@@ -262,7 +262,7 @@ class ActivityLogger {
                 countQuery += ` AND l.action = ?`;
                 countParams.push(actionExact);
             } else if (action) {
-                countQuery += ` AND (l.action ILIKE ? OR l.details ILIKE ? OR u.name ILIKE ? OR u.email ILIKE ? OR l.entity_id ILIKE ?)`;
+                countQuery += ` AND (l.action LIKE ? OR l.details LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR l.entity_id LIKE ?)`;
                 const searchParam = `%${action}%`;
                 countParams.push(searchParam, searchParam, searchParam, searchParam, searchParam);
             }
@@ -283,7 +283,7 @@ class ActivityLogger {
                 countParams.push(dateTo);
             }
             if (ip) {
-                countQuery += ` AND l.ip_address ILIKE ?`;
+                countQuery += ` AND l.ip_address LIKE ?`;
                 countParams.push(`%${ip}%`);
             }
             if (onlyErrors === 'true' || onlyErrors === true) {

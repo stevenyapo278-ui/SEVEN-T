@@ -13,13 +13,13 @@ import {
     BarChart3
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import api from '../../services/api';
 
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { usePartnerAuth } from '../../contexts/PartnerAuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
-const InfluencerDashboard = () => {
-    const { user } = useAuth();
+const PartnerDashboard = () => {
+    const { partner } = usePartnerAuth();
     const { isDark } = useTheme();
     const [stats, setStats] = useState(null);
     const [usages, setUsages] = useState([]);
@@ -34,8 +34,8 @@ const InfluencerDashboard = () => {
         try {
             setLoading(true);
             const [statsRes, usagesRes] = await Promise.all([
-                axios.get('/api/influencer/stats'),
-                axios.get('/api/influencer/usages')
+                api.get('/influencer/stats'),
+                api.get('/influencer/usages')
             ]);
             setStats(statsRes.data);
             setUsages(usagesRes.data.usages);
@@ -98,7 +98,7 @@ const InfluencerDashboard = () => {
             {/* Header */}
             <div>
                 <h1 className={`text-3xl font-bold flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Tableau de bord {user?.name || 'Influenceur'}
+                    Tableau de bord {partner?.name || 'Partenaire'}
                     <span className="px-2 py-1 text-xs font-semibold bg-gold-400/20 text-gold-400 rounded-full">Partenaire</span>
                 </h1>
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'} mt-2`}>Suivez vos performances et vos commissions en temps réel.</p>
@@ -260,4 +260,4 @@ const InfluencerDashboard = () => {
     );
 };
 
-export default InfluencerDashboard;
+export default PartnerDashboard;

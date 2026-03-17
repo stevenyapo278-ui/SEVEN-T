@@ -26,6 +26,20 @@ const NO_CACHE_PATTERNS = [
 const shouldSkipCache = (url) =>
   NO_CACHE_PATTERNS.some((pattern) => pattern.test(url))
 
+let isRefreshing = false
+let failedQueue = []
+
+const processQueue = (error) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error)
+    } else {
+      prom.resolve()
+    }
+  })
+  failedQueue = []
+}
+
 api.interceptors.request.use((config) => {
   // Add token to requests; allow FormData to set Content-Type (multipart)
   if (config.data instanceof FormData) {
@@ -72,12 +86,61 @@ api.interceptors.response.use(
     }
     return response
   },
-  (error) => {
-    // If we get a 401 on a route OTHER than login/register, it means the session is invalid or expired.
+  async (error) => {
+    const originalRequest = error.config
+
     if (error.response && error.response.status === 401) {
-      const url = error.config?.url;
-      if (url && !url.includes('/auth/login') && !url.includes('/auth/register')) {
-        window.dispatchEvent(new Event('auth:unauthorized'));
+      const url = originalRequest?.url
+
+      // Session probes: do not attempt refresh (avoid noise/loops)
+      if (url && (url.includes('/auth/me') || url.includes('/partner/auth/me') || url.includes('/users/me'))) {
+        window.dispatchEvent(new Event('auth:unauthorized'))
+        return Promise.reject(error)
+      }
+
+      // Avoid looping on auth endpoints
+      if (
+        url && 
+        (url.includes('/auth/login') || 
+         url.includes('/auth/register') || 
+         url.includes('/auth/refresh') || 
+         url.includes('/auth/logout'))
+      ) {
+        return Promise.reject(error)
+      }
+
+      // Special case: /auth/me on initial load is expected to sometimes be 401, but we STILL want to try and refresh it
+      // if we have a refresh token.
+
+      if (!originalRequest._retry) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject })
+          })
+            .then(() => {
+              return api(originalRequest)
+            })
+            .catch((err) => {
+              return Promise.reject(err)
+            })
+        }
+
+        originalRequest._retry = true
+        isRefreshing = true
+
+        try {
+          await axios.post('/api/auth/refresh', {}, { withCredentials: true })
+          isRefreshing = false
+          processQueue(null)
+          return api(originalRequest)
+        } catch (refreshError) {
+          isRefreshing = false
+          processQueue(refreshError)
+          window.dispatchEvent(new Event('auth:unauthorized'))
+          return Promise.reject(refreshError)
+        }
+      } else {
+        window.dispatchEvent(new Event('auth:unauthorized'))
       }
     }
     return Promise.reject(error)

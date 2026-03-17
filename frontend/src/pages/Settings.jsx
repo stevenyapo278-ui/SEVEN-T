@@ -16,7 +16,58 @@ export default function Settings() {
   const { user, updateUser, refreshUser, logout } = useAuth()
   const navigate = useNavigate()
   const { currency, setCurrency } = useCurrency()
-  const { fontPreset, setFontPreset, titleFontPreset, setTitleFontPreset } = useFont()
+  const { fontPreset, setFontPreset, titleFontPreset, setTitleFontPreset, titlesMatchBody, setTitlesMatchBody, fontSize, setFontSize } = useFont()
+
+  const [voicePrefs, setVoicePrefs] = useState({ platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false })
+  const [savingVoice, setSavingVoice] = useState(false)
+
+  const [uiSidebarCollapsed, setUiSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('seven-t-sidebar-collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  const [uiReduceMotion, setUiReduceMotion] = useState(() => {
+    try {
+      const v = localStorage.getItem('seven-t-reduce-motion')
+      if (v === null) return false
+      return v === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  useEffect(() => {
+    try { localStorage.setItem('seven-t-sidebar-collapsed', String(uiSidebarCollapsed)) } catch {}
+    window.dispatchEvent(new CustomEvent('seven-t:sidebar-collapsed', { detail: { collapsed: uiSidebarCollapsed } }))
+  }, [uiSidebarCollapsed])
+
+  useEffect(() => {
+    try { localStorage.setItem('seven-t-reduce-motion', String(uiReduceMotion)) } catch {}
+    window.dispatchEvent(new CustomEvent('seven-t:reduce-motion', { detail: { value: uiReduceMotion } }))
+  }, [uiReduceMotion])
+
+  useEffect(() => {
+    api.get('/settings/voice-responses')
+      .then((r) => setVoicePrefs(r.data || { platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }))
+      .catch(() => setVoicePrefs({ platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }))
+  }, [])
+
+  const toggleVoice = async (enabled) => {
+    if (savingVoice) return
+    setSavingVoice(true)
+    try {
+      const res = await api.put('/settings/voice-responses', { enabled })
+      setVoicePrefs(res.data)
+      toast.success(enabled ? 'Réponses vocales activées' : 'Réponses vocales désactivées')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur')
+    } finally {
+      setSavingVoice(false)
+    }
+  }
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -505,88 +556,199 @@ export default function Settings() {
           <Coins className="w-5 h-5 text-gold-400" />
           {t('settings.preferencesTitle')}
         </h2>
-        <div className="space-y-6">
-          {/* Body Font */}
-          <div className="border-b border-space-800 pb-8">
-            <p className="text-sm font-semibold text-gray-200 mb-2">{t('settings.fontBody')}</p>
-            <p className="text-gray-400 text-xs mb-4">
-              {t('settings.fontBodyDesc')}
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {Object.entries(FONT_PRESETS).map(([key, preset]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setFontPreset(key)}
-                  className={`p-3 rounded-xl border-2 transition-all text-left group ${
-                    fontPreset === key
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-space-700 bg-space-800/50 hover:border-space-600'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-bold text-gray-100 truncate" style={{ fontFamily: preset.fontUi }}>
-                      {preset.label.split(' ')[0]}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Affichage */}
+          <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/20' : 'border-gray-200 bg-gray-50'}`}>
+            <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Affichage</p>
+            <p className="text-xs text-gray-500 mb-4">Confort visuel, animations, sidebar.</p>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-200 mb-2">Taille de police</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'sm', label: 'Petite' },
+                    { id: 'md', label: 'Normale' },
+                    { id: 'lg', label: 'Grande' },
+                    { id: 'xl', label: 'Très grande' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setFontSize(opt.id)}
+                      className={`px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all ${
+                        fontSize === opt.id
+                          ? 'border-blue-500 bg-blue-500/10 text-gray-100'
+                          : 'border-space-700 bg-space-800/50 hover:border-space-600 text-gray-200'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Réduire les animations</div>
+                  <div className="text-xs text-gray-500 truncate">Transitions plus sobres (si tu trouves ça “trop animé”).</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={uiReduceMotion}
+                  onChange={(e) => setUiReduceMotion(e.target.checked)}
+                  className="accent-blue-500"
+                />
+              </label>
+
+              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Sidebar compacte</div>
+                  <div className="text-xs text-gray-500 truncate">Réduit la sidebar sur desktop (icônes).</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={uiSidebarCollapsed}
+                  onChange={(e) => setUiSidebarCollapsed(e.target.checked)}
+                  className="accent-blue-500"
+                />
+              </label>
+
+              <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Réponses vocales (TTS)</div>
+                    <div className="text-xs text-gray-500">
+                      Quand un client envoie une note vocale WhatsApp, l’IA peut répondre en vocal (si activé et disponible).
                     </div>
-                    {fontPreset === key && (
-                      <Check className="w-3.5 h-3.5 text-blue-500" />
+                    {!voicePrefs.platformEnabled && (
+                      <div className="text-xs text-amber-400 mt-1">Désactivé au niveau plateforme (Admin).</div>
+                    )}
+                    {!voicePrefs.planEnabled && (
+                      <div className="text-xs text-amber-400 mt-1">Non inclus dans votre plan.</div>
                     )}
                   </div>
-                </button>
-              ))}
+                  <input
+                    type="checkbox"
+                    checked={voicePrefs.userEnabled}
+                    disabled={!voicePrefs.planEnabled || savingVoice}
+                    onChange={(e) => toggleVoice(e.target.checked)}
+                    className="accent-blue-500 mt-1"
+                  />
+                </div>
+                <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-600' : 'text-gray-500'}`}>
+                  Statut effectif: <span className={`font-semibold ${voicePrefs.effectiveEnabled ? 'text-emerald-400' : 'text-gray-400'}`}>{voicePrefs.effectiveEnabled ? 'Actif' : 'Inactif'}</span>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/30' : 'border-gray-200 bg-white'}`}>
+                <p className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.currency')}</p>
+                <p className="text-xs text-gray-500 mt-1 mb-3">{t('settings.currencyDesc')}</p>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  {Object.values(CURRENCIES)
+                    .filter(curr => ['EUR', 'USD', 'XOF'].includes(curr.code))
+                    .map((curr) => (
+                    <button
+                      key={curr.code}
+                      type="button"
+                      onClick={() => setCurrency(curr.code)}
+                      className={`p-3 rounded-xl border-2 transition-all text-center ${
+                        currency === curr.code
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-space-700 bg-space-800/50 hover:border-space-600'
+                      }`}
+                    >
+                      <div className="text-base font-bold text-gold-400 mb-0.5">{curr.symbol}</div>
+                      <div className="text-xs font-medium text-gray-100">{curr.code}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Title Font */}
-          <div>
-            <p className="text-sm font-semibold text-gray-200 mb-2">Police des grands titres</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {Object.entries(FONT_PRESETS).map(([key, preset]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setTitleFontPreset(key)}
-                  className={`p-3 rounded-xl border-2 transition-all text-left group ${
-                    titleFontPreset === key
-                      ? 'border-gold-400 bg-gold-400/10'
-                      : 'border-space-700 bg-space-800/50 hover:border-space-600'
-                  }`}
+          {/* Typographie */}
+          <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/20' : 'border-gray-200 bg-gray-50'}`}>
+            <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Typographie</p>
+            <p className="text-xs text-gray-500 mb-4">Police globale + titres.</p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2">
+                  Police UI / Texte
+                </label>
+                <select
+                  value={fontPreset}
+                  onChange={(e) => setFontPreset(e.target.value)}
+                  className="input-dark w-full rounded-2xl px-4 py-3 text-sm font-semibold"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-black text-gray-100 uppercase truncate" style={{ fontFamily: preset.fontUi }}>
-                      {preset.label.split(' ')[0]}
-                    </div>
-                    {titleFontPreset === key && (
-                      <Check className="w-3.5 h-3.5 text-gold-400" />
-                    )}
+                  {Object.entries(FONT_PRESETS).map(([key, preset]) => (
+                    <option key={key} value={key}>
+                      {preset.label} — {preset.description}
+                    </option>
+                  ))}
+                </select>
+                <div
+                  className="mt-3 p-4 rounded-2xl border border-space-700/60 bg-space-900/30 text-gray-200"
+                  style={{ fontFamily: FONT_PRESETS[fontPreset]?.fontUi }}
+                >
+                  <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Aperçu</div>
+                  <div className="text-base font-semibold leading-snug">
+                    SEVEN-T · Une interface plus lisible, plus premium.
                   </div>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-300 mb-2">{t('settings.currency')}</p>
-            <p className="text-gray-400 text-sm mb-3">
-              {t('settings.currencyDesc')}
-            </p>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              {Object.values(CURRENCIES)
-                .filter(curr => ['EUR', 'USD', 'XOF'].includes(curr.code))
-                .map((curr) => (
-                <button
-                  key={curr.code}
-                  type="button"
-                  onClick={() => setCurrency(curr.code)}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
-                    currency === curr.code
-                      ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-space-700 bg-space-800/50 hover:border-space-600'
-                  }`}
-                >
-                  <div className="text-base font-bold text-gold-400 mb-0.5">{curr.symbol}</div>
-                  <div className="text-xs font-medium text-gray-100">{curr.code}</div>
-                </button>
-              ))}
+                  <div className="text-sm text-gray-400 mt-1">
+                    Le renard brun rapide saute par-dessus le chien paresseux.
+                  </div>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/30' : 'border-gray-200 bg-white'}`}>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">
+                  Titres
+                </div>
+                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <label className="flex items-center gap-2 select-none">
+                    <input
+                      type="checkbox"
+                      checked={titlesMatchBody}
+                      onChange={(e) => setTitlesMatchBody(e.target.checked)}
+                      className="accent-blue-500"
+                    />
+                    Titres = même police que le layout (recommandé)
+                  </label>
+                </div>
+
+                {!titlesMatchBody && (
+                  <div className="mt-3">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2">
+                      Police des grands titres
+                    </label>
+                    <select
+                      value={titleFontPreset}
+                      onChange={(e) => setTitleFontPreset(e.target.value)}
+                      className="input-dark w-full rounded-2xl px-4 py-3 text-sm font-semibold"
+                    >
+                      {Object.entries(FONT_PRESETS).map(([key, preset]) => (
+                        <option key={key} value={key}>
+                          {preset.label} — {preset.description}
+                        </option>
+                      ))}
+                    </select>
+                    <div
+                      className="mt-3 p-4 rounded-2xl border border-space-700/60 bg-space-900/30 text-gray-200"
+                      style={{ fontFamily: FONT_PRESETS[titleFontPreset]?.fontUi }}
+                    >
+                      <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Aperçu</div>
+                      <div className="text-2xl font-black tracking-tight leading-tight">
+                        Support & Tickets
+                      </div>
+                      <div className="text-sm text-gray-400 mt-1">
+                        Des titres plus “brand”, sans perdre en lisibilité.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { BookOpen, MessagesSquare, Settings, ShieldCheck, Mail, PlayCircle, ExternalLink, HelpCircle, FileText, Zap, ShoppingCart, Workflow, CreditCard, ChevronRight } from 'lucide-react'
+import { BookOpen, MessagesSquare, Settings, ShieldCheck, Mail, PlayCircle, ExternalLink, HelpCircle, FileText, Zap, ShoppingCart, Workflow, CreditCard, ChevronRight, LifeBuoy, Bot, Megaphone, Package, MessageSquare, Bell, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { usePageTitle } from '../hooks/usePageTitle'
@@ -37,23 +37,62 @@ export default function Help() {
     {
       title: "Configurer son agent E-commerce",
       icon: <ShoppingCart className="w-5 h-5 text-gold-400" />,
-      desc: "Apprenez à lier votre catalogue produits pour que l'IA puisse détecter les intentions d'achat et créer des commandes."
+      desc: "Liez votre catalogue produits pour que l'IA détecte l'intention d'achat et crée des commandes.",
+      href: "/dashboard/agents"
     },
     {
       title: "Gérer la Base de Connaissances",
       icon: <BookOpen className="w-5 h-5 text-blue-400" />,
-      desc: "Découvrez comment importer des PDF, des URL YouTube ou des sites Web pour rendre votre agent expert sur votre entreprise."
+      desc: "Importez PDF/URL/YouTube pour rendre votre agent expert sur votre business.",
+      href: "/dashboard/knowledge"
     },
     {
       title: "Créer un flux automatisé (Flow Builder)",
       icon: <Workflow className="w-5 h-5 text-emerald-400" />,
-      desc: "Un guide pas-à-pas pour dessiner le parcours conversationnel de vos clients avec des blocs visuels."
+      desc: "Dessinez des parcours conversationnels sans code avec des blocs visuels.",
+      href: "/dashboard/flows"
     },
     {
       title: "Commandes et Paiements",
       icon: <CreditCard className="w-5 h-5 text-cyan-400" />,
-      desc: "Comment valider les commandes détectées par l'IA et générer des liens de paiement sécurisés."
+      desc: "Validez les commandes détectées par l'IA et générez des liens de paiement.",
+      href: "/dashboard/orders"
     }
+  ]
+
+  const quickLinks = [
+    { title: "Tickets support", desc: "Créer une demande et suivre les réponses.", icon: <LifeBuoy className="w-5 h-5 text-blue-400" />, href: "/dashboard/tickets" },
+    { title: "Conversations", desc: "Suivre les messages et reprendre la main.", icon: <MessageSquare className="w-5 h-5 text-emerald-400" />, href: "/dashboard/conversations" },
+    { title: "Agents", desc: "Créer, configurer et connecter WhatsApp.", icon: <Bot className="w-5 h-5 text-violet-400" />, href: "/dashboard/agents" },
+    { title: "Campagnes", desc: "Relances et envois en masse via templates.", icon: <Megaphone className="w-5 h-5 text-amber-400" />, href: "/dashboard/campaigns" },
+    { title: "Produits", desc: "Catalogue (e‑commerce) pour commandes auto.", icon: <Package className="w-5 h-5 text-cyan-400" />, href: "/dashboard/products" },
+    { title: "Notifications", desc: "Voir les alertes et événements récents.", icon: <Bell className="w-5 h-5 text-blue-300" />, href: "/dashboard/notifications" },
+  ]
+
+  const troubleshooting = [
+    {
+      title: "WhatsApp ne se connecte pas",
+      items: [
+        "Vérifie que ton téléphone a du réseau et que WhatsApp est à jour.",
+        "Dans Agents → Outils WhatsApp, régénère le QR code puis rescannne.",
+        "Évite d'avoir WhatsApp Web ouvert ailleurs (ça peut déconnecter).",
+      ]
+    },
+    {
+      title: "L’IA répond à côté",
+      items: [
+        "Vérifie le System Prompt (Agents → Paramètres) et rends-le plus précis.",
+        "Ajoute/actualise ta Base de connaissances (PDF/URL) et supprime les sources obsolètes.",
+        "Si e‑commerce: vérifie tes Produits (noms, prix, catégories).",
+      ]
+    },
+    {
+      title: "Je ne vois pas mes actions / stats",
+      items: [
+        "Vérifie ton plan et tes modules activés dans Paramètres.",
+        "Recharge la page et vérifie les permissions si tu es un compte support.",
+      ]
+    },
   ]
 
   return (
@@ -99,12 +138,41 @@ export default function Help() {
         <div className="lg:col-span-2 space-y-6">
         <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-gold-400" />
+              Accès rapide
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {quickLinks.map((q, idx) => (
+                <Link
+                  key={idx}
+                  to={q.href}
+                  className="p-4 rounded-xl border border-space-700 bg-space-800/30 hover:bg-space-800 hover:border-space-600 transition-all group"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-space-900 rounded-lg group-hover:scale-110 transition-transform">
+                      {q.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-gray-100 truncate">{q.title}</h3>
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{q.desc}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
               <PlayCircle className="w-5 h-5 text-blue-400" />
               Guides rapides
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {guides.map((guide, idx) => (
-                <div key={idx} className="p-4 rounded-xl border border-space-700 bg-space-800/50 hover:bg-space-800 hover:border-space-600 transition-all cursor-pointer group">
+                <Link key={idx} to={guide.href} className="p-4 rounded-xl border border-space-700 bg-space-800/50 hover:bg-space-800 hover:border-space-600 transition-all cursor-pointer group">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-space-900 rounded-lg group-hover:scale-110 transition-transform">
                       {guide.icon}
@@ -112,6 +180,31 @@ export default function Help() {
                     <h3 className="font-semibold text-gray-100">{guide.title}</h3>
                   </div>
                   <p className="text-sm text-gray-400">{guide.desc}</p>
+                  <div className="mt-3 flex justify-end">
+                    <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              Dépannage rapide
+            </h2>
+            <div className="space-y-4">
+              {troubleshooting.map((b, idx) => (
+                <div key={idx} className="p-4 rounded-xl border border-space-700 bg-space-800/30">
+                  <h3 className="font-semibold text-gray-100 mb-2">{b.title}</h3>
+                  <ul className="space-y-1.5 text-sm text-gray-400">
+                    {b.items.map((it, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <span className="text-blue-400 font-bold mt-[2px]">•</span>
+                        <span className="flex-1">{it}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
@@ -141,6 +234,29 @@ export default function Help() {
 
         {/* Right Col - Docs & Resources */}
         <div className="space-y-6">
+          <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <h2 className="text-xl font-display font-bold text-gray-100 mb-4 flex items-center gap-2">
+              <LifeBuoy className="w-5 h-5 text-blue-400" />
+              Support & Tickets
+            </h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Un bug, une question, une demande d’amélioration ? Crée un ticket pour garder l’historique et suivre la résolution.
+            </p>
+            <div className="space-y-2">
+              <Link to="/dashboard/tickets" className="btn-primary w-full inline-flex items-center justify-center gap-2">
+                <LifeBuoy className="w-4 h-4" />
+                Ouvrir mes tickets
+              </Link>
+              <a href="mailto:support@seven-t.com" className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-colors ${isDark ? 'border-space-700 bg-space-950/40 text-gray-200 hover:bg-white/5' : 'border-gray-200 bg-white text-gray-800 hover:bg-gray-50'}`}>
+                <Mail className="w-4 h-4" />
+                Email support
+              </a>
+            </div>
+            <p className="text-xs text-gray-500 mt-4">
+              Astuce: mets un maximum de détails (captures, étapes, résultat attendu) pour accélérer la résolution.
+            </p>
+          </div>
+
         <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
             <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-cyan-400" />
@@ -151,6 +267,13 @@ export default function Help() {
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
                   <span className="font-medium text-gray-200">Documentation technique</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-500" />
+              </Link>
+              <Link to="/dashboard/settings" className="flex items-center justify-between p-3 rounded-xl hover:bg-space-800 transition-colors border border-transparent hover:border-space-700 group">
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-gray-400 group-hover:text-gold-400 transition-colors" />
+                  <span className="font-medium text-gray-200">Paramètres & préférences</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-500" />
               </Link>

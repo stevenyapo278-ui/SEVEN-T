@@ -8,16 +8,10 @@ const router = Router();
 // Middleware to ensure user is an influencer
 const isInfluencer = async (req, res, next) => {
     try {
-        // Fetch permissions from DB (more reliable than role key check if roles aren't perfectly synced)
-        const roles = await db.all(`
-            SELECT r.key FROM user_roles ur
-            JOIN roles r ON ur.role_id = r.id
-            WHERE ur.user_id = ?
-        `, req.user.id);
+        // Check for specific permission or general admin status
+        const canAccess = await userHasPermission(req.user.id, 'influencer.dashboard');
         
-        const isInfluencerRole = roles.some(r => r.key === 'influencer' || r.key === 'owner' || r.key === 'admin');
-        
-        if (!isInfluencerRole && !req.user.is_admin) {
+        if (!canAccess && !req.user.is_admin) {
             return res.status(403).json({ error: 'Accès réservé aux influenceurs' });
         }
         next();
@@ -59,18 +53,29 @@ router.get('/stats', async (req, res) => {
 
         const usageMap = new Map(usages.map(u => [u.coupon_id, u]));
 
-        const stats = coupons.map(c => ({
-            id: c.id,
-            code: c.code,
-            name: c.name,
-            discount: `${c.discount_value}${c.discount_type === 'percentage' ? '%' : ' FCFA'}`,
-            usages: usageMap.get(c.id)?.count || 0,
-            revenue: usageMap.get(c.id)?.revenue || 0,
-            is_active: c.is_active,
-            reward_type: c.influencer_reward_type,
-            reward_value: c.influencer_reward_value,
-            accumulated_reward: (usageMap.get(c.id)?.count || 0) * (c.influencer_reward_value || 0)
-        }));
+        const stats = coupons.map(c => {
+            const usage = usageMap.get(c.id) || { count: 0, revenue: 0 };
+            let accumulatedReward = 0;
+
+            if (c.influencer_reward_type === 'percentage') {
+                accumulatedReward = (usage.revenue || 0) * ((c.influencer_reward_value || 0) / 100);
+            } else if (c.influencer_reward_type === 'fixed') {
+                accumulatedReward = (usage.count || 0) * (c.influencer_reward_value || 0);
+            }
+
+            return {
+                id: c.id,
+                code: c.code,
+                name: c.name,
+                discount: `${c.discount_value}${c.discount_type === 'percentage' ? '%' : ' FCFA'}`,
+                usages: usage.count,
+                revenue: usage.revenue || 0,
+                is_active: c.is_active,
+                reward_type: c.influencer_reward_type,
+                reward_value: c.influencer_reward_value,
+                accumulated_reward: accumulatedReward
+            };
+        });
 
         const totalUsages = stats.reduce((acc, s) => acc + s.usages, 0);
         const totalAccumulated = stats.reduce((acc, s) => acc + s.accumulated_reward, 0);

@@ -819,6 +819,41 @@ export async function initDatabase() {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
+        -- Support Tickets
+        CREATE TABLE IF NOT EXISTS tickets (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            description TEXT,
+            status TEXT NOT NULL DEFAULT 'open',         -- open | in_progress | resolved | closed
+            priority TEXT NOT NULL DEFAULT 'medium',     -- low | medium | high
+            assigned_to TEXT,                            -- user id (support/admin), nullable
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_tickets_user ON tickets(user_id);
+        CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+        CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
+        CREATE INDEX IF NOT EXISTS idx_tickets_assigned_to ON tickets(assigned_to);
+        CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS ticket_messages (
+            id TEXT PRIMARY KEY,
+            ticket_id TEXT NOT NULL,
+            sender_id TEXT,
+            sender_role TEXT NOT NULL DEFAULT 'user',    -- user | admin | support
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
+            FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket ON ticket_messages(ticket_id, created_at ASC);
+        CREATE INDEX IF NOT EXISTS idx_ticket_messages_sender ON ticket_messages(sender_id);
+
         CREATE INDEX IF NOT EXISTS idx_blacklist_agent ON blacklist(agent_id);
         CREATE INDEX IF NOT EXISTS idx_blacklist_contact ON blacklist(contact_jid);
         CREATE INDEX IF NOT EXISTS idx_templates_agent ON templates(agent_id);
@@ -1207,6 +1242,11 @@ export async function initDatabase() {
 
             ['platform.activity.read', 'platform', 'Lire activité plateforme', 'Flux activité / activité système'],
             ['influencer.dashboard', 'influencer', 'Accès Dashboard Influenceur', 'Suivre ses coupons et commissions']
+            ,
+            ['support.tickets.read', 'support', 'Lire tickets support', 'Voir tous les tickets support (admin/support)'],
+            ['support.tickets.reply', 'support', 'Répondre tickets support', 'Répondre aux tickets support (admin/support)'],
+            ['support.tickets.status', 'support', 'Modifier statut tickets', 'Changer le statut d’un ticket support'],
+            ['support.tickets.assign', 'support', 'Assigner tickets', 'Assigner un ticket à un agent support']
         ];
 
         for (const [key, groupKey, name, description] of seedPerms) {
@@ -1221,6 +1261,7 @@ export async function initDatabase() {
         const seedRoles = [
             ['owner', 'Owner', 'Accès total (super admin)'],
             ['support', 'Support', 'Lecture (stats/audit/anomalies), sans actions destructives'],
+            ['support_agent', 'Support Agent', 'Gestion des tickets support'],
             ['user_admin', 'User Admin', 'Gestion des utilisateurs'],
             ['billing_admin', 'Billing Admin', 'Gestion plans & coupons'],
             ['ai_admin', 'AI Admin', 'Gestion IA (modèles/keys/settings/reindex)'],
@@ -1240,6 +1281,7 @@ export async function initDatabase() {
         const rolePerms = {
             owner: '*',
             support: ['platform.stats.read', 'audit.read', 'security.anomalies.read', 'platform.activity.read', 'users.read'],
+            support_agent: ['support.tickets.read', 'support.tickets.reply', 'support.tickets.status', 'support.tickets.assign'],
             security_analyst: ['platform.stats.read', 'audit.read', 'security.anomalies.read'],
             user_admin: ['users.read', 'users.write', 'users.credentials.reset', 'users.credits.write', 'users.delete'],
             billing_admin: ['billing.plans.read', 'billing.plans.write', 'billing.coupons.read', 'billing.coupons.write', 'billing.subscriptions.write'],

@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url';
 import db from '../database/init.js';
 import { getPlan, getEffectivePlanName } from '../config/plans.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../middleware/auth.js';
 import { generateAccessToken, generateRefreshToken, rotateRefreshToken, revokeAllUserTokens, setAuthCookies, clearAuthCookies } from '../utils/tokens.js';
 import { hashToken } from '../utils/crypto.js';
 import { validate, registerSchema, loginSchema } from '../middleware/security.js';
@@ -349,20 +351,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
         const permissions2 = await getUserPermissions(user.id);
         const userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
-        // AUTO-FIX: If not admin, check if linked to a coupon as influencer
         let roleKeys = userRoles.map(r => r.key);
-        if (!user.is_admin && !roleKeys.includes('influencer')) {
-            const hasCoupon = await db.get('SELECT 1 FROM subscription_coupons WHERE influencer_id = ?', user.id);
-            if (hasCoupon) {
-                const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
-                if (influencerRole) {
-                    await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', user.id, influencerRole.id);
-                    await db.run('UPDATE users SET credits = 0 WHERE id = ?', user.id);
-                    roleKeys.push('influencer');
-                    userWithoutPassword.credits = 0; // Update local object for response
-                }
-            }
-        }
 
         const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
 
@@ -377,8 +366,26 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 });
 
 // Get current user
-router.get('/me', authenticateToken, async (req, res) => {
+router.get('/me', async (req, res) => {
     try {
+        // Session probe endpoint: return 200 with user=null when unauthenticated
+        const token =
+            req.cookies?.access_token ||
+            (req.headers?.authorization?.startsWith('Bearer ') ? req.headers.authorization.split(' ')[1] : null);
+
+        if (!token) {
+            return res.json({ user: null });
+        }
+
+        let decoded;
+        try {
+            decoded = jwt.verify(token, JWT_SECRET);
+        } catch (e) {
+            // Invalid/expired token → treat as logged out (avoid 401 spam on page load)
+            return res.json({ user: null });
+        }
+
+        req.user = decoded;
         const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
@@ -390,20 +397,6 @@ router.get('/me', authenticateToken, async (req, res) => {
         const permissions = await getUserPermissions(user.id);
         const userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
         let roleKeys = userRoles.map(r => r.key);
-
-        // AUTO-FIX on Refresh: If not admin, check if linked to a coupon as influencer
-        if (!user.is_admin && !roleKeys.includes('influencer')) {
-            const hasCoupon = await db.get('SELECT 1 FROM subscription_coupons WHERE influencer_id = ?', user.id);
-            if (hasCoupon) {
-                const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
-                if (influencerRole) {
-                    await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', user.id, influencerRole.id);
-                    await db.run('UPDATE users SET credits = 0 WHERE id = ?', user.id);
-                    roleKeys.push('influencer');
-                    user.credits = 0; // Update local object for response
-                }
-            }
-        }
 
         const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
         res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly } });

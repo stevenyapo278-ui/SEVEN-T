@@ -75,7 +75,7 @@ class AdminAnomaliesService {
     /**
      * Get all anomalies with filters
      */
-    async getAll({ resolved = false, severity = null, type = null, limit = 100, offset = 0 } = {}) {
+    async getAll({ resolved = false, resolvedMode = null, severity = null, type = null, q = null, limit = 100, offset = 0 } = {}) {
         try {
             let query = `
                 SELECT a.*, 
@@ -88,9 +88,9 @@ class AdminAnomaliesService {
             `;
             const params = [];
 
-            if (!resolved) {
-                query += ` AND a.is_resolved = 0`;
-            }
+            const mode = resolvedMode || (resolved ? 'all' : 'open');
+            if (mode === 'open') query += ` AND a.is_resolved = 0`;
+            if (mode === 'only') query += ` AND a.is_resolved = 1`;
             if (severity) {
                 query += ` AND a.severity = ?`;
                 params.push(severity);
@@ -98,6 +98,20 @@ class AdminAnomaliesService {
             if (type) {
                 query += ` AND a.type = ?`;
                 params.push(type);
+            }
+            if (q && typeof q === 'string' && q.trim() !== '') {
+                const pat = `%${q.trim()}%`;
+                query += ` AND (
+                    a.title ILIKE ? OR
+                    a.message ILIKE ? OR
+                    a.type ILIKE ? OR
+                    a.severity ILIKE ? OR
+                    COALESCE(u.email, '') ILIKE ? OR
+                    COALESCE(u.name, '') ILIKE ? OR
+                    COALESCE(ag.name, '') ILIKE ? OR
+                    COALESCE(a.metadata, '') ILIKE ?
+                )`;
+                params.push(pat, pat, pat, pat, pat, pat, pat, pat);
             }
 
             query += ` ORDER BY 
@@ -386,11 +400,14 @@ class AdminAnomaliesService {
             }
 
             const stuckOrders = await db.all(`
-                SELECT o.id, o.user_id, o.customer_name, 
-                       ROUND(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - o.created_at)) / 3600)::integer as hours_old
+                SELECT
+                  o.id,
+                  o.user_id,
+                  o.customer_name,
+                  FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - o.created_at)) / 3600)::int as hours_old
                 FROM orders o
-                WHERE o.status = 'pending' 
-                AND o.created_at < CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                WHERE o.status = 'pending'
+                  AND o.created_at < (CURRENT_TIMESTAMP - INTERVAL '24 hours')
             `);
 
             for (const order of stuckOrders) {

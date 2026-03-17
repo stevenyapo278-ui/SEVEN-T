@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
+import { useAuth } from './AuthContext'
 
 // Devises supportées
 export const CURRENCIES = {
@@ -20,6 +21,7 @@ const DEFAULT_CURRENCY = 'XOF'
 const CurrencyContext = createContext()
 
 export function CurrencyProvider({ children }) {
+  const { user } = useAuth()
   const [currency, setCurrencyState] = useState(() => {
     // Charger depuis localStorage au démarrage
     const saved = localStorage.getItem('currency')
@@ -31,6 +33,10 @@ export function CurrencyProvider({ children }) {
   // Charger la préférence depuis le serveur au démarrage
   useEffect(() => {
     const loadCurrency = async () => {
+      if (!user) {
+        setLoading(false)
+        return
+      }
       try {
         const response = await api.get('/users/me')
         if (response.data?.user?.currency && CURRENCIES[response.data.user.currency]) {
@@ -45,7 +51,7 @@ export function CurrencyProvider({ children }) {
       }
     }
     loadCurrency()
-  }, [])
+  }, [user])
 
   // Mettre à jour la devise (locale + serveur)
   const setCurrency = async (newCurrency) => {

@@ -61,16 +61,16 @@ router.get('/stats', authenticateAdmin, requirePermission('platform.stats.read')
         const recentSignupsRow = await db.get(`
             SELECT COUNT(*) as count 
             FROM users 
-            WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
+            WHERE created_at >= (NOW() - INTERVAL '7 days')
         `);
         const recentSignups = recentSignupsRow?.count ?? 0;
 
         // Messages per day (last 7 days)
         const messagesPerDay = await db.all(`
-            SELECT date(created_at) as date, COUNT(*) as count
+            SELECT DATE(created_at) as date, COUNT(*) as count
             FROM messages
-            WHERE created_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'
-            GROUP BY date(created_at)
+            WHERE created_at >= (NOW() - INTERVAL '7 days')
+            GROUP BY DATE(created_at)
             ORDER BY date ASC
         `);
 
@@ -79,7 +79,7 @@ router.get('/stats', authenticateAdmin, requirePermission('platform.stats.read')
             SELECT COUNT(*) as count 
             FROM activity_logs 
             WHERE action = 'login_failed' 
-            AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+            AND created_at >= (NOW() - INTERVAL '24 hours')
         `);
         const failedLogins24h = failedLogins24hRow?.count ?? 0;
 
@@ -87,7 +87,7 @@ router.get('/stats', authenticateAdmin, requirePermission('platform.stats.read')
             SELECT COUNT(*) as count 
             FROM activity_logs 
             WHERE (action LIKE '%delete%' OR action LIKE '%reset_password%' OR action = 'add_credits' OR action = 'update_plan' OR action = 'update_ai_model' OR action = 'rollback_action')
-            AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+            AND created_at >= (NOW() - INTERVAL '24 hours')
         `);
         const criticalActions24h = criticalActions24hRow?.count ?? 0;
 
@@ -925,12 +925,19 @@ router.post('/audit-logs/:id/rollback', authenticateAdmin, requireFullAdmin, asy
 // Get all anomalies
 router.get('/anomalies', authenticateAdmin, requirePermission('security.anomalies.read'), async (req, res) => {
     try {
-        const { resolved, severity, type, limit = 100, offset = 0 } = req.query;
+        const { resolved, severity, type, q, limit = 100, offset = 0 } = req.query;
+
+        const resolvedMode =
+            resolved === 'only' ? 'only'
+            : resolved === 'true' ? 'all'
+            : 'open';
 
         const anomalies = await adminAnomaliesService.getAll({
             resolved: resolved === 'true',
+            resolvedMode,
             severity: severity || null,
             type: type || null,
+            q: typeof q === 'string' ? q : null,
             limit: parseInt(limit),
             offset: parseInt(offset)
         });

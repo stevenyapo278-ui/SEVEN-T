@@ -202,6 +202,23 @@ export function requirePermission(...permissions) {
     };
 }
 
+/**
+ * Require partner (influencer) role.
+ */
+export async function requirePartner(req, res, next) {
+    const userRole = await db.get(`
+        SELECT r.key 
+        FROM user_roles ur 
+        JOIN roles r ON ur.role_id = r.id 
+        WHERE ur.user_id = ? AND r.key = 'influencer'
+    `, req.user?.id);
+
+    if (!userRole && !req.user?.is_admin) {
+        return res.status(403).json({ error: 'Accès réservé aux partenaires' });
+    }
+    next();
+}
+
 // ── Token generation (backwards-compatible) ─────────────────
 export function generateToken(user) {
     const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
@@ -212,4 +229,4 @@ export function generateToken(user) {
     );
 }
 
-export default { authenticateToken, authenticateAdmin, requireAdmin, requireFullAdmin, requirePermission, generateToken, JWT_SECRET };
+export default { authenticateToken, authenticateAdmin, requireAdmin, requireFullAdmin, requirePermission, requirePartner, generateToken, JWT_SECRET };

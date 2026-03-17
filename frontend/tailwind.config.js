@@ -55,7 +55,8 @@ export default {
         code: ['var(--font-code)', 'monospace'],
         display: ['var(--font-display)', 'sans-serif'],
         mono: ['var(--font-code)', 'monospace'],
-        syne: ['Syne', 'sans-serif'],
+        // Keep the class name for compatibility but make it uniform
+        syne: ['var(--font-ui)', 'sans-serif'],
       },
       boxShadow: {
         'glow-gold': '0 0 60px rgba(251, 191, 36, 0.3)',

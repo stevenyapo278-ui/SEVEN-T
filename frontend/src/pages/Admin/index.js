@@ -1,6 +1,7 @@
 export { default as DashboardContent } from './DashboardContent'
 export { default as UsersContent } from './UsersContent'
 export { default as AnomaliesContent } from './AnomaliesContent'
+export { default as AnomaliesTab } from './AnomaliesTab'
 export { default as PlansContent } from './PlansContent'
 export { default as CouponsContent } from './CouponsContent'
 export { default as AuditLogsContent } from './AuditLogsContent'

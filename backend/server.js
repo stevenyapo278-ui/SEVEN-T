@@ -23,6 +23,7 @@ import jwt from 'jsonwebtoken';
 
 // Routes
 import authRoutes from './routes/auth.js';
+import partnerAuthRoutes from './routes/partnerAuth.js';
 import agentRoutes from './routes/agents.js';
 import toolsRoutes from './routes/tools.js';
 import whatsappRoutes from './routes/whatsapp.js';
@@ -53,6 +54,8 @@ import subscriptionRoutes, { handleGeniusPaySubscriptionWebhook } from './routes
 import landingChatRoutes from './routes/landingChat.js';
 import settingsRoutes from './routes/settings.js';
 import serviceRoutes from './routes/services.js';
+import ticketsRoutes from './routes/tickets.js';
+import adminTicketsRoutes from './routes/adminTickets.js';
 
 // Database
 import db, { initDatabase } from './database/init.js';
@@ -144,6 +147,7 @@ app.use('/api', apiLimiter);
 
 // API Routes with specific rate limiters
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/partner/auth', authLimiter, partnerAuthRoutes);
 app.use('/api/agents', agentRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/whatsapp', whatsappLimiter, whatsappRoutes);
@@ -181,6 +185,8 @@ app.use('/api/flows', flowRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/tickets', ticketsRoutes);
+app.use('/api/admin', adminTicketsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/landing-chat', landingChatRoutes);
 

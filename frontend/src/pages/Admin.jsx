@@ -50,7 +50,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import { registerLocale } from 'react-datepicker'
 import fr from 'date-fns/locale/fr'
 registerLocale('fr', fr)
-import { DashboardContent, UsersContent, AnomaliesContent, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
+import { DashboardContent, UsersContent, AnomaliesTab, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
 
 export default function Admin() {
   const { showConfirm } = useConfirm()
@@ -72,10 +72,8 @@ export default function Admin() {
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [promoteAdminModal, setPromoteAdminModal] = useState({ open: false, user: null })
   const [promoteAdminConfirmInput, setPromoteAdminConfirmInput] = useState('')
-  // Anomalies state
-  const [anomalies, setAnomalies] = useState([])
+  // Anomalies are handled inside AnomaliesTab now
   const [anomalyStats, setAnomalyStats] = useState({ total: 0, bySeverity: {}, byType: {} })
-  const [loadingAnomalies, setLoadingAnomalies] = useState(false)
   
   // AI Models state
   const [aiModels, setAiModels] = useState([])
@@ -175,7 +173,7 @@ export default function Admin() {
       }
     } else if (activeTab === 'anomalies') {
       if (adminCaps.canViewStats || adminCaps.isFullAdmin) {
-        loadAnomalies()
+        loadAnomalyStats()
       }
     } else if (activeTab === 'ai-models') {
       if (adminCaps.canManageAI || adminCaps.isFullAdmin) {
@@ -196,6 +194,8 @@ export default function Admin() {
       loadRoles()
     }
   }, [activeTab, pagination.offset, searchQuery, selectedPlan, selectedStatus])
+
+  // (Anomalies fetching is inside AnomaliesTab)
 
 
   // Reload audit logs when filters/pagination change
@@ -517,51 +517,7 @@ export default function Admin() {
     }
   }
 
-  const loadAnomalies = async () => {
-    setLoadingAnomalies(true)
-    try {
-      const response = await api.get('/admin/anomalies')
-      setAnomalies(response.data.anomalies || [])
-      await loadAnomalyStats()
-    } catch (error) {
-      toast.error('Erreur lors du chargement des anomalies')
-    } finally {
-      setLoadingAnomalies(false)
-    }
-  }
-
-  const runHealthCheck = async () => {
-    setLoadingAnomalies(true)
-    try {
-      const response = await api.post('/admin/anomalies/health-check')
-      toast.success(response.data.message)
-      await loadAnomalies()
-    } catch (error) {
-      toast.error('Erreur lors de la vérification')
-    } finally {
-      setLoadingAnomalies(false)
-    }
-  }
-
-  const resolveAnomaly = async (anomalyId) => {
-    try {
-      await api.post(`/admin/anomalies/${anomalyId}/resolve`)
-      toast.success('Anomalie résolue')
-      loadAnomalies()
-    } catch (error) {
-      toast.error('Erreur lors de la résolution')
-    }
-  }
-
-  const resolveByType = async (type) => {
-    try {
-      const response = await api.post(`/admin/anomalies/resolve-type/${type}`)
-      toast.success(response.data.message)
-      loadAnomalies()
-    } catch (error) {
-      toast.error('Erreur lors de la résolution')
-    }
-  }
+  // (Anomalies handlers moved to AnomaliesTab)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -845,15 +801,7 @@ export default function Admin() {
 
       {/* Anomalies Tab */}
       {activeTab === 'anomalies' && (
-        <AnomaliesContent 
-          anomalies={anomalies}
-          stats={anomalyStats}
-          loading={loadingAnomalies}
-          onResolve={resolveAnomaly}
-          onResolveByType={resolveByType}
-          onHealthCheck={runHealthCheck}
-          onRefresh={loadAnomalies}
-        />
+        <AnomaliesTab />
       )}
 
       {/* AI Models Tab */}

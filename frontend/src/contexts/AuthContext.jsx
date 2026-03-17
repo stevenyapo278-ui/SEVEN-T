@@ -28,10 +28,15 @@ const SESSION_IDLE_MINUTES = Number(import.meta.env.VITE_SESSION_IDLE_MINUTES) |
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
   const idleTimeoutRef = useRef(null)
+  const didInitAuthCheckRef = useRef(false)
 
   useEffect(() => {
+    // React StrictMode (dev) mounts effects twice; avoid duplicate /auth/me calls.
+    if (didInitAuthCheckRef.current) return
+    didInitAuthCheckRef.current = true
     checkAuth()
   }, [])
 
@@ -40,11 +45,14 @@ export function AuthProvider({ children }) {
       const response = await api.get('/auth/me')
       if (response.data.user) {
         setUser(decodeUser(response.data.user))
+        setIsAuthenticated(true)
       } else {
         setUser(null)
+        setIsAuthenticated(false)
       }
     } catch (error) {
       setUser(null)
+      setIsAuthenticated(false)
     }
     setLoading(false)
   }
@@ -52,6 +60,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password })
     setUser(decodeUser(response.data.user))
+    setIsAuthenticated(Boolean(response.data.user))
     return response.data
   }
 
@@ -59,6 +68,7 @@ export function AuthProvider({ children }) {
     try {
       const response = await api.post('/auth/exchange-code', { code })
       setUser(decodeUser(response.data.user))
+      setIsAuthenticated(Boolean(response.data.user))
       return response.data
     } catch (error) {
       throw error
@@ -72,6 +82,7 @@ export function AuthProvider({ children }) {
         headers: { Authorization: `Bearer ${token}` }
       })
       setUser(decodeUser(response.data.user))
+      setIsAuthenticated(Boolean(response.data.user))
     } catch (error) {
       throw error
     }
@@ -80,6 +91,7 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const response = await api.post('/auth/register', data)
     setUser(decodeUser(response.data.user))
+    setIsAuthenticated(Boolean(response.data.user))
     return response.data
   }
 
@@ -90,16 +102,19 @@ export function AuthProvider({ children }) {
       console.warn('Logout error:', e)
     }
     setUser(null)
+    setIsAuthenticated(false)
   }
 
   const updateUser = (userData) => {
     setUser(decodeUser(userData))
+    setIsAuthenticated(Boolean(userData))
   }
 
   const refreshUser = useCallback(async () => {
     try {
       const response = await api.get('/auth/me')
       setUser(decodeUser(response.data.user))
+      setIsAuthenticated(Boolean(response.data.user))
     } catch {
       // Keep current user on error
     }
@@ -107,13 +122,13 @@ export function AuthProvider({ children }) {
 
   // Periodic check (optional with cookies)
   useEffect(() => {
-    if (!user) return
     const interval = setInterval(() => {
       checkAuth()
     }, 5 * 60000) // Every 5 minutes
 
     const handleUnauthorized = () => {
       setUser(null);
+      setIsAuthenticated(false)
     }
     window.addEventListener('auth:unauthorized', handleUnauthorized)
 
@@ -121,7 +136,7 @@ export function AuthProvider({ children }) {
       clearInterval(interval)
       window.removeEventListener('auth:unauthorized', handleUnauthorized)
     }
-  }, [user])
+  }, [])
 
   // Idle logout
   useEffect(() => {
@@ -144,7 +159,7 @@ export function AuthProvider({ children }) {
   }, [user])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, exchangeCode, loginWithToken, register, logout, updateUser, refreshUser }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, exchangeCode, loginWithToken, register, logout, updateUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

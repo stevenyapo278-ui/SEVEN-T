@@ -35,13 +35,23 @@ const FlowBuilder = lazy(() => import('./pages/FlowBuilder'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const Tools = lazy(() => import('./pages/Tools'))
-const InfluencerDashboard = lazy(() => import('./pages/InfluencerDashboard'))
 const Help = lazy(() => import('./pages/Help'))
 const Docs = lazy(() => import('./pages/Docs'))
+const Tickets = lazy(() => import('./pages/Tickets'))
+const TicketDetail = lazy(() => import('./pages/TicketDetail'))
+const SupportTickets = lazy(() => import('./pages/SupportTickets'))
+const SupportTicketDetail = lazy(() => import('./pages/SupportTicketDetail'))
+
+// Partner Pages
+const PartnerLogin = lazy(() => import('./pages/Partner/PartnerLogin'))
+const PartnerDashboard = lazy(() => import('./pages/Partner/PartnerDashboard'))
+const PartnerLayout = lazy(() => import('./layouts/PartnerLayout'))
+import { PartnerAuthProvider } from './contexts/PartnerAuthContext'
 
 import ErrorBoundary from './components/ErrorBoundary'
 import CookieConsentBanner from './components/CookieConsentBanner'
 import DashboardLayout from './layouts/DashboardLayout'
+import TrialExpiredBanner from './components/TrialExpiredBanner'
 
 function PageFallback() {
   return <div className="min-h-[50vh] w-full" aria-busy="true" />
@@ -97,6 +107,22 @@ function AdminRoute({ children }) {
   return children
 }
 
+function SupportRoute({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
+      </div>
+    )
+  }
+  if (!user) return <Navigate to="/login" replace />
+
+  const canSupport = Boolean(user.is_admin || (user.permissions || []).includes('support.tickets.read'))
+  if (!canSupport) return <Navigate to="/dashboard" replace />
+  return children
+}
+
 // StandardRoute - Blocks influencer-only users from accessing normal dashboard pages
 function StandardRoute({ children }) {
   const { user, loading } = useAuth()
@@ -127,9 +153,11 @@ function App() {
   const { user } = useAuth()
   return (
     <ErrorBoundary>
-      <OnboardingTourProvider userId={user?.id}>
-        <CookieConsentBanner />
-        <Routes>
+      <PartnerAuthProvider>
+        <OnboardingTourProvider userId={user?.id}>
+          <CookieConsentBanner />
+          <TrialExpiredBanner />
+          <Routes>
         {/* Public routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -138,6 +166,13 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/legal" element={<Legal />} />
+
+        {/* Partner Portal Routes */}
+        <Route path="/partner/login" element={<Suspense fallback={<PageFallback />}><PartnerLogin /></Suspense>} />
+        <Route path="/partner" element={<Suspense fallback={<PageFallback />}><PartnerLayout /></Suspense>}>
+          <Route path="dashboard" element={<Suspense fallback={<PageFallback />}><PartnerDashboard /></Suspense>} />
+          <Route index element={<Navigate to="/partner/dashboard" replace />} />
+        </Route>
 
         {/* Protected routes */}
         <Route
@@ -169,8 +204,9 @@ function App() {
           <Route path="flows/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><FlowBuilder /></Suspense></StandardRoute>} />
           <Route path="reports" element={<StandardRoute><Suspense fallback={<PageFallback />}><Reports /></Suspense></StandardRoute>} />
           <Route path="notifications" element={<StandardRoute><Suspense fallback={<PageFallback />}><Notifications /></Suspense></StandardRoute>} />
+          <Route path="tickets" element={<StandardRoute><Suspense fallback={<PageFallback />}><Tickets /></Suspense></StandardRoute>} />
+          <Route path="tickets/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><TicketDetail /></Suspense></StandardRoute>} />
           <Route path="settings" element={<StandardRoute><Suspense fallback={<PageFallback />}><Settings /></Suspense></StandardRoute>} />
-          <Route path=":influencerName" element={<Suspense fallback={<PageFallback />}><InfluencerDashboard /></Suspense>} />
           <Route path="help" element={<StandardRoute><Suspense fallback={<PageFallback />}><Help /></Suspense></StandardRoute>} />
           <Route path="docs" element={<Suspense fallback={<PageFallback />}><Docs /></Suspense>} />
           <Route path="admin" element={
@@ -178,12 +214,23 @@ function App() {
               <Suspense fallback={<PageFallback />}><Admin /></Suspense>
             </AdminRoute>
           } />
+          <Route path="support" element={
+            <SupportRoute>
+              <Suspense fallback={<PageFallback />}><SupportTickets /></Suspense>
+            </SupportRoute>
+          } />
+          <Route path="support/tickets/:id" element={
+            <SupportRoute>
+              <Suspense fallback={<PageFallback />}><SupportTicketDetail /></Suspense>
+            </SupportRoute>
+          } />
         </Route>
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </OnboardingTourProvider>
+        </OnboardingTourProvider>
+      </PartnerAuthProvider>
     </ErrorBoundary>
   )
 }
