@@ -31,12 +31,14 @@ export const defaultPlans = [
             availability_hours: false,
             voice_responses: false,
             payment_module: false,
+            reports: false,
             next_best_action: false,
             conversion_score: false,
             daily_briefing: false,
             sentiment_routing: false,
             catalog_import: false,
-            human_handoff_alerts: false
+            human_handoff_alerts: false,
+            analytics: false
         })
     },
     {
@@ -66,12 +68,14 @@ export const defaultPlans = [
             availability_hours: true,
             voice_responses: true,
             payment_module: false,
+            reports: false,
             next_best_action: false,
             conversion_score: false,
             daily_briefing: false,
             sentiment_routing: false,
             catalog_import: false,
-            human_handoff_alerts: false
+            human_handoff_alerts: false,
+            analytics: false
         })
     },
     {
@@ -101,12 +105,14 @@ export const defaultPlans = [
             availability_hours: true,
             voice_responses: true,
             payment_module: true,
+            reports: true,
             next_best_action: true,
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true
+            human_handoff_alerts: true,
+            analytics: true
         })
     },
     {
@@ -136,12 +142,14 @@ export const defaultPlans = [
             availability_hours: true,
             voice_responses: true,
             payment_module: true,
+            reports: true,
             next_best_action: true,
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true
+            human_handoff_alerts: true,
+            analytics: true
         })
     },
     {
@@ -171,12 +179,14 @@ export const defaultPlans = [
             availability_hours: true,
             voice_responses: true,
             payment_module: true,
+            reports: true,
             next_best_action: true,
             conversion_score: true,
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true
+            human_handoff_alerts: true,
+            analytics: true
         })
     }
 ];

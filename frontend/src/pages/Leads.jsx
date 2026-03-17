@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -71,9 +71,46 @@ export default function Leads() {
   const [suggestedLeads, setSuggestedLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'all')
+  const [sourceFilter, setSourceFilter] = useState(() => searchParams.get('source') || 'all')
+
+  // Sync filters from URL
+  useEffect(() => {
+    const q = searchParams.get('q')
+    const status = searchParams.get('status')
+    const source = searchParams.get('source')
+    if (q !== null) setSearchQuery(q)
+    if (status !== null) setStatusFilter(status || 'all')
+    if (source !== null) setSourceFilter(source || 'all')
+  }, [searchParams])
+
+  // Sync filters to URL when they change
+  const syncFiltersToUrl = useCallback((updates) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v && v !== 'all') next.set(k, v)
+        else next.delete(k)
+      })
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const handleSearchChange = useCallback((v) => {
+    setSearchQuery(v)
+    syncFiltersToUrl({ q: v || undefined })
+  }, [syncFiltersToUrl])
+
+  const handleStatusFilterChange = useCallback((v) => {
+    setStatusFilter(v)
+    syncFiltersToUrl({ status: v === 'all' ? undefined : v })
+  }, [syncFiltersToUrl])
+
+  const handleSourceFilterChange = useCallback((v) => {
+    setSourceFilter(v)
+    syncFiltersToUrl({ source: v === 'all' ? undefined : v })
+  }, [syncFiltersToUrl])
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingLead, setEditingLead] = useState(null)
   const [showSuggested, setShowSuggested] = useState(true)
@@ -349,14 +386,14 @@ export default function Leads() {
             type="text"
             placeholder="Rechercher un lead (nom, téléphone, email)..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => handleStatusFilterChange(e.target.value)}
             className={`px-4 py-3 rounded-2xl border min-w-[160px] transition-all duration-300 ${
               isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
             }`}
@@ -368,7 +405,7 @@ export default function Leads() {
           </select>
           <select
             value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
+            onChange={(e) => handleSourceFilterChange(e.target.value)}
             className={`px-4 py-3 rounded-2xl border min-w-[160px] transition-all duration-300 ${
               isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
             }`}

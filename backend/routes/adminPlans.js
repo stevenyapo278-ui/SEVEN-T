@@ -24,11 +24,13 @@ const ALL_FEATURE_KEYS = {
     availability_hours: false,
     voice_responses: false,
     payment_module: false,
+    reports: false,
     next_best_action: false,
     conversion_score: false,
     daily_briefing: false,
     sentiment_routing: false,
     catalog_import: false,
+    human_handoff_alerts: false,
     analytics: false
 };
 

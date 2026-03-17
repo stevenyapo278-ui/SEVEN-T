@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useAuth } from '../contexts/AuthContext'
 import {
   FileBarChart,
   Download,
@@ -39,6 +40,8 @@ export default function Reports() {
   const { t } = useTranslation()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+  const { user } = useAuth()
+  const reportsModuleEnabled = !!(user?.plan_features?.reports || user?.reports_module_enabled === 1 || user?.reports_module_enabled === true)
   const { showConfirm } = useConfirm()
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -70,8 +73,12 @@ export default function Reports() {
   }, [showSubModal])
 
   useEffect(() => {
+    if (!reportsModuleEnabled) {
+      setLoading(false)
+      return
+    }
     loadData()
-  }, [])
+  }, [reportsModuleEnabled])
 
   const loadData = async () => {
     try {
@@ -330,6 +337,37 @@ export default function Reports() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+      </div>
+    )
+  }
+
+  if (!reportsModuleEnabled) {
+    return (
+      <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
+        <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 ${
+          isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+        }`}>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                <FileBarChart className="w-6 h-6 text-blue-400" />
+              </div>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {t('reports.title') || 'Rapports'}
+              </h1>
+            </div>
+            <p className={`${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+              Le module Rapports n’est pas activé pour votre plan.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <div className={`px-3 py-2 rounded-xl border text-sm ${
+                isDark ? 'bg-space-800 border-space-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'
+              }`}>
+                Activez le module dans l’admin (Plans → Modules) ou au niveau utilisateur.
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

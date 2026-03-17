@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { getAndClearSessionLocation } from '../utils/sessionLocation'
 import { useAuth } from '../contexts/AuthContext'
 import { Mail, Lock, ArrowRight, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -34,9 +35,18 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate('/dashboard')
+      const redirect = searchParams.get('redirect')
+      // Priorité au paramètre redirect (venant du logout), sinon fallback sur la valeur persistée
+      const savedFromStorage = getAndClearSessionLocation(user.id)
+
+      const target =
+        (redirect && redirect.startsWith('/dashboard') && redirect) ||
+        (savedFromStorage && savedFromStorage.startsWith('/dashboard') && savedFromStorage) ||
+        '/dashboard'
+
+      navigate(target, { replace: true })
     }
-  }, [user, navigate])
+  }, [user, navigate, searchParams])
 
   useEffect(() => {
     const error = searchParams.get('error')
@@ -56,7 +66,7 @@ export default function Login() {
     try {
       await login(email, password)
       toast.success('Connexion réussie!')
-      navigate('/dashboard')
+      // La redirection est gérée par le useEffect (user devient truthy)
     } catch (error) {
       const msg = error.response?.data?.error || 'Erreur de connexion'
       setLoginError(msg)

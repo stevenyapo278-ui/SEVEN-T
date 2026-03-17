@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Plus, LifeBuoy, ChevronRight, Filter, Search, Clock } from 'lucide-react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
@@ -28,6 +28,7 @@ function badgeClass(isDark, kind) {
 
 export default function Tickets() {
   const { isDark } = useTheme()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -37,9 +38,29 @@ export default function Tickets() {
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('medium')
 
-  const [statusFilter, setStatusFilter] = useState('')
-  const [priorityFilter, setPriorityFilter] = useState('')
-  const [q, setQ] = useState('')
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || '')
+  const [priorityFilter, setPriorityFilter] = useState(() => searchParams.get('priority') || '')
+  const [q, setQ] = useState(() => searchParams.get('q') || '')
+
+  useEffect(() => {
+    const s = searchParams.get('status')
+    const p = searchParams.get('priority')
+    const qp = searchParams.get('q')
+    if (s !== null) setStatusFilter(s || '')
+    if (p !== null) setPriorityFilter(p || '')
+    if (qp !== null) setQ(qp || '')
+  }, [searchParams])
+
+  const syncToUrl = useCallback((updates) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v) next.set(k, v)
+        else next.delete(k)
+      })
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   const queryParams = useMemo(() => {
     const p = {}
@@ -114,7 +135,7 @@ export default function Tickets() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+            <select value={statusFilter} onChange={(e) => { const v = e.target.value; setStatusFilter(v); syncToUrl({ status: v || undefined }); }}
               className={`px-2 py-1 rounded-lg text-sm border ${isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'}`}>
               <option value="">Tous les statuts</option>
               <option value="open">Ouvert</option>
@@ -122,7 +143,7 @@ export default function Tickets() {
               <option value="resolved">Résolu</option>
               <option value="closed">Fermé</option>
             </select>
-            <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}
+            <select value={priorityFilter} onChange={(e) => { const v = e.target.value; setPriorityFilter(v); syncToUrl({ priority: v || undefined }); }}
               className={`px-2 py-1 rounded-lg text-sm border ${isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'}`}>
               <option value="">Toutes les priorités</option>
               <option value="low">Basse</option>
@@ -134,7 +155,7 @@ export default function Tickets() {
             <Search className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
             <input
               value={q}
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => { const v = e.target.value; setQ(v); syncToUrl({ q: v || undefined }); }}
               placeholder="Rechercher…"
               className={`bg-transparent outline-none text-sm w-56 ${isDark ? 'text-gray-200 placeholder:text-gray-600' : 'text-gray-900 placeholder:text-gray-400'}`}
             />

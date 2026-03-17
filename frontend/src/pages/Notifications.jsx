@@ -78,8 +78,15 @@ export default function Notifications() {
       if (endDate) url += `&endDate=${endDate}`
 
       const response = await api.get(url)
-      setNotifications(response.data.notifications || [])
-      setUnreadCount(response.data.unreadCount || 0)
+      const all = response.data.notifications || []
+
+      // On exclut les notifications purement \"sécurité\" (metadata.critical === true),
+      // qui sont destinées à l'onglet Admin / Activité.
+      const businessNotifications = all.filter(n => !(n?.metadata && n.metadata.critical))
+
+      setNotifications(businessNotifications)
+      const unread = businessNotifications.filter(n => !n.is_read).length
+      setUnreadCount(unread)
     } catch (error) {
       console.error('Error loading notifications:', error)
       toast.error(t('notifications.errorLoading'))

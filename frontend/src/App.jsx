@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 
 // Public pages (loaded immediately)
@@ -60,6 +60,7 @@ function PageFallback() {
 // Protected Route Component
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -70,7 +71,9 @@ function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    const from = `${location.pathname}${location.search || ''}`
+    const redirect = from.startsWith('/dashboard') ? `?redirect=${encodeURIComponent(from)}` : ''
+    return <Navigate to={`/login${redirect}`} replace />
   }
 
   return children
@@ -79,6 +82,7 @@ function ProtectedRoute({ children }) {
 // Admin Route Component
 function AdminRoute({ children }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return (
@@ -89,7 +93,9 @@ function AdminRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    const from = `${location.pathname}${location.search || ''}`
+    const redirect = from.startsWith('/dashboard') ? `?redirect=${encodeURIComponent(from)}` : ''
+    return <Navigate to={`/login${redirect}`} replace />
   }
 
   const isAnyAdmin = Boolean(

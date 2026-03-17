@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -127,15 +127,36 @@ export default function Conversations() {
   const isDark = theme === 'dark'
   const hasConversionScore = authUser?.plan_features?.conversion_score === true
   
+  const [searchParams, setSearchParams] = useSearchParams()
   const [conversations, setConversations] = useState([])
   const [totalMessagesCount, setTotalMessagesCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [scoreBand, setScoreBand] = useState('')
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
+  const [scoreBand, setScoreBand] = useState(() => searchParams.get('score') || '')
   const [lastPollTime, setLastPollTime] = useState(null)
   const [newMessageCount, setNewMessageCount] = useState(0)
-  const [filterAgent, setFilterAgent] = useState('')
+  const [filterAgent, setFilterAgent] = useState(() => searchParams.get('agent') || '')
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    const score = searchParams.get('score')
+    const agent = searchParams.get('agent')
+    if (q !== null) setSearchQuery(q)
+    if (score !== null) setScoreBand(score || '')
+    if (agent !== null) setFilterAgent(agent || '')
+  }, [searchParams])
+
+  const syncFiltersToUrl = useCallback((updates) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v) next.set(k, v)
+        else next.delete(k)
+      })
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
   const [showFilters, setShowFilters] = useState(false)
   const [bulkMode, setBulkMode] = useState(false)
   const [selectedConversations, setSelectedConversations] = useState(new Set())
@@ -272,7 +293,7 @@ export default function Conversations() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
               <input 
-                type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                type="text" value={searchQuery} onChange={(e) => { const v = e.target.value; setSearchQuery(v); syncFiltersToUrl({ q: v || undefined }); }}
                 placeholder="Rechercher..."
                 className={`w-full pl-10 pr-4 py-2 rounded-xl border focus:outline-none focus:border-gold-400/50 ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200'}`}
               />

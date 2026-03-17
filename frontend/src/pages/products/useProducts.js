@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../../services/api'
 import { useConfirm } from '../../contexts/ConfirmContext'
@@ -7,12 +8,50 @@ import toast from 'react-hot-toast'
 export function useProducts() {
   const { t } = useTranslation()
   const { showConfirm } = useConfirm()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [stockFilter, setStockFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
+  const [categoryFilter, setCategoryFilter] = useState(() => searchParams.get('category') || 'all')
+  const [stockFilter, setStockFilter] = useState(() => searchParams.get('stock') || 'all')
+
+  // Sync filters from URL on mount / when URL changes externally
+  useEffect(() => {
+    const q = searchParams.get('q')
+    const cat = searchParams.get('category')
+    const stock = searchParams.get('stock')
+    if (q !== null) setSearchQuery(q)
+    if (cat !== null) setCategoryFilter(cat || 'all')
+    if (stock !== null) setStockFilter(stock || 'all')
+  }, [searchParams])
+
+  // Sync filters to URL when they change
+  const updateUrl = useCallback((updates) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v && v !== 'all') next.set(k, v)
+        else next.delete(k)
+      })
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const wrappedSetSearchQuery = useCallback((v) => {
+    setSearchQuery(v)
+    updateUrl({ q: v || undefined })
+  }, [updateUrl])
+
+  const wrappedSetCategoryFilter = useCallback((v) => {
+    setCategoryFilter(v)
+    updateUrl({ category: v === 'all' ? undefined : v })
+  }, [updateUrl])
+
+  const wrappedSetStockFilter = useCallback((v) => {
+    setStockFilter(v)
+    updateUrl({ stock: v === 'all' ? undefined : v })
+  }, [updateUrl])
   const [categories, setCategories] = useState([]) // These are the full category objects from DB
   const [loadingCategories, setLoadingCategories] = useState(false)
 
@@ -161,11 +200,11 @@ export function useProducts() {
     loadProducts,
     loadCategories,
     searchQuery,
-    setSearchQuery,
+    setSearchQuery: wrappedSetSearchQuery,
     categoryFilter,
-    setCategoryFilter,
+    setCategoryFilter: wrappedSetCategoryFilter,
     stockFilter,
-    setStockFilter,
+    setStockFilter: wrappedSetStockFilter,
     categories,
     filteredProducts,
     stats: { ...stats, totalMargin },

@@ -1,17 +1,19 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getAndClearSessionLocation } from '../utils/sessionLocation'
 import { Loader2 } from 'lucide-react'
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { exchangeCode, loginWithToken } = useAuth()
+  const { user, exchangeCode, loginWithToken } = useAuth()
 
   useEffect(() => {
     const code = searchParams.get('code')
     const token = searchParams.get('token') // Fallback during migration
     const error = searchParams.get('error')
+    const redirect = searchParams.get('redirect')
 
     if (error) {
       navigate(`/login?error=${encodeURIComponent(error)}`, { replace: true })
@@ -21,12 +23,23 @@ export default function AuthCallback() {
     if (code || token) {
       const finish = async () => {
         try {
+          let resultUserId = user?.id
+
           if (code) {
-            await exchangeCode(code)
+            const result = await exchangeCode(code)
+            resultUserId = result?.user?.id || resultUserId
           } else if (token) {
-            await loginWithToken(token)
+            const result = await loginWithToken(token)
+            resultUserId = result?.user?.id || resultUserId
           }
-          navigate('/dashboard', { replace: true })
+
+          const savedFromStorage = resultUserId ? getAndClearSessionLocation(resultUserId) : null
+          const target =
+            (redirect && redirect.startsWith('/dashboard') && redirect) ||
+            (savedFromStorage && savedFromStorage.startsWith('/dashboard') && savedFromStorage) ||
+            '/dashboard'
+
+          navigate(target, { replace: true })
         } catch {
           navigate('/login', { replace: true })
         }

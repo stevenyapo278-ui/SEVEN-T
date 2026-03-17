@@ -9,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import { AnimatePresence, motion } from 'framer-motion'
 import api from '../services/api'
+import { saveSessionLocation } from '../utils/sessionLocation'
 import {
   LayoutDashboard,
   Bot,
@@ -1007,6 +1008,7 @@ export default function DashboardLayout() {
 
   const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
   const analyticsModuleEnabled = !!(user?.plan_features?.analytics || user?.analytics_module_enabled === 1 || user?.analytics_module_enabled === true)
+  const reportsModuleEnabled = !!(user?.plan_features?.reports || user?.reports_module_enabled === 1 || user?.reports_module_enabled === true)
 
 
   const navGroups = useMemo(() => {
@@ -1017,10 +1019,11 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/tickets') return true;
         if (item.href === '/dashboard/payments') return paymentModuleEnabled;
         if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
+        if (item.href === '/dashboard/reports') return reportsModuleEnabled;
         return true;
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, isInfluencerOnly])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, isInfluencerOnly])
 
   const bottomNav = useMemo(() => {
     if (isInfluencerOnly) return [];
@@ -1045,7 +1048,20 @@ export default function DashboardLayout() {
     return () => { document.body.style.overflow = prevOverflow }
   }, [sidebarOpen])
 
-  const handleLogout = () => { logout(); navigate('/login') }
+  // Sauvegarder la page actuelle à chaque changement (pour restauration après reconnexion)
+  useEffect(() => {
+    if (isAuthenticated && user?.id && location.pathname.startsWith('/dashboard')) {
+      saveSessionLocation(user.id, location.pathname, location.search)
+    }
+  }, [isAuthenticated, user?.id, location.pathname, location.search])
+
+  const handleLogout = () => {
+    // On sauvegarde simplement la page courante pour l'utilisateur courant
+    if (user?.id) {
+      saveSessionLocation(user.id, location.pathname, location.search)
+    }
+    logout()
+  }
 
   const sidebarW = sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
   const contentPl = sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-56'

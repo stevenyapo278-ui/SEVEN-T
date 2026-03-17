@@ -201,6 +201,14 @@ export async function initDatabase() {
             reset_token_expires TIMESTAMP,
             payment_module_enabled INTEGER DEFAULT 0,
             analytics_module_enabled INTEGER DEFAULT 0,
+            reports_module_enabled INTEGER DEFAULT 0,
+            availability_hours_enabled INTEGER DEFAULT 0,
+            next_best_action_enabled INTEGER DEFAULT 0,
+            conversion_score_enabled INTEGER DEFAULT 0,
+            daily_briefing_enabled INTEGER DEFAULT 0,
+            sentiment_routing_enabled INTEGER DEFAULT 0,
+            catalog_import_enabled INTEGER DEFAULT 0,
+            human_handoff_alerts_enabled INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
@@ -226,6 +234,15 @@ export async function initDatabase() {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS analytics_module_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS reports_module_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS availability_hours_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS next_best_action_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS conversion_score_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_briefing_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS sentiment_routing_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS catalog_import_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS human_handoff_alerts_enabled INTEGER DEFAULT 0;
 
         CREATE TABLE IF NOT EXISTS agents (
             id TEXT PRIMARY KEY,
@@ -1154,6 +1171,24 @@ export async function initDatabase() {
     const voiceSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'voice_responses_enabled');
     if (!voiceSetting) {
         await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'voice_responses_enabled', '0');
+    }
+
+    // Seed platform settings: security / brute force protection
+    const bfEnabled = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'security_bruteforce_enabled');
+    if (!bfEnabled) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'security_bruteforce_enabled', '0');
+    }
+    const bfThreshold = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'security_bruteforce_threshold');
+    if (!bfThreshold) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'security_bruteforce_threshold', '5');
+    }
+    const bfWindow = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'security_bruteforce_window_minutes');
+    if (!bfWindow) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'security_bruteforce_window_minutes', '10');
+    }
+    const bfBlock = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'security_bruteforce_block_minutes');
+    if (!bfBlock) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO NOTHING', 'security_bruteforce_block_minutes', '30');
     }
 
     // Migration: users.payment_module_enabled (module Moyens de paiement visible si admin l'active)

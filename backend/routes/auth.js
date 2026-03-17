@@ -293,10 +293,59 @@ router.post('/register', validate(registerSchema), async (req, res) => {
     }
 });
 
+// In-memory brute-force protection (configurable via platform_settings)
+const bruteForceState = new Map(); // ip -> { attempts: number[], blockedUntil: number }
+
+async function getBruteForceConfig() {
+    const enabledRow = await db.get("SELECT value FROM platform_settings WHERE key = 'security_bruteforce_enabled'");
+    const thresholdRow = await db.get("SELECT value FROM platform_settings WHERE key = 'security_bruteforce_threshold'");
+    const windowRow = await db.get("SELECT value FROM platform_settings WHERE key = 'security_bruteforce_window_minutes'");
+    const blockRow = await db.get("SELECT value FROM platform_settings WHERE key = 'security_bruteforce_block_minutes'");
+    return {
+        enabled: enabledRow?.value === '1',
+        threshold: parseInt(thresholdRow?.value || '5', 10),
+        windowMinutes: parseInt(windowRow?.value || '10', 10),
+        blockMinutes: parseInt(blockRow?.value || '30', 10),
+    };
+}
+
+async function isIpBlocked(ip) {
+    if (!ip) return false;
+    const cfg = await getBruteForceConfig();
+    if (!cfg.enabled) return false;
+    const now = Date.now();
+    const entry = bruteForceState.get(ip);
+    return Boolean(entry && entry.blockedUntil && entry.blockedUntil > now);
+}
+
+async function registerFailedAttempt(ip) {
+    if (!ip) return;
+    const cfg = await getBruteForceConfig();
+    if (!cfg.enabled) return;
+    const now = Date.now();
+    const windowMs = cfg.windowMinutes * 60 * 1000;
+    const blockMs = cfg.blockMinutes * 60 * 1000;
+    const entry = bruteForceState.get(ip) || { attempts: [], blockedUntil: 0 };
+    const attempts = entry.attempts.filter(ts => now - ts <= windowMs);
+    attempts.push(now);
+    let blockedUntil = entry.blockedUntil;
+    if (attempts.length >= cfg.threshold) {
+        blockedUntil = now + blockMs;
+    }
+    bruteForceState.set(ip, { attempts, blockedUntil });
+}
+
 // Login with validation
 router.post('/login', validate(loginSchema), async (req, res) => {
     try {
         const { email, password } = req.body;
+        const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().replace('::ffff:', '');
+
+        if (await isIpBlocked(ip)) {
+            return res.status(429).json({
+                error: 'Trop de tentatives de connexion depuis votre adresse IP. Réessayez plus tard.',
+            });
+        }
 
         // Find user (case-insensitive)
         const user = await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', email);
@@ -307,6 +356,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
                 details: { email, reason: 'user_not_found' },
                 req
             });
+            await registerFailedAttempt(ip);
             // Use same error message to prevent email enumeration
             return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
         }
@@ -327,6 +377,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
                 details: { email: user.email, reason: 'invalid_password' },
                 req
             });
+            await registerFailedAttempt(ip);
             return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
         }
 
@@ -386,7 +437,7 @@ router.get('/me', async (req, res) => {
         }
 
         req.user = decoded;
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -443,7 +494,7 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         // Calculate changes
         const changes = {};

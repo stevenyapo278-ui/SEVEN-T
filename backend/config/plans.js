@@ -18,6 +18,7 @@ const FEATURES_BASELINE = {
     availability_hours: false,
     voice_responses: false,
     payment_module: false,
+    reports: false,
     next_best_action: false,
     conversion_score: false,
     daily_briefing: false,
@@ -309,7 +310,22 @@ export const PLANS = {
     }
 };
 
-export const MODULE_KEYS = ['next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts'];
+export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts'];
+
+/** Map plan feature key to users table override column */
+export const MODULE_TO_USER_COLUMN = {
+    availability_hours: 'availability_hours_enabled',
+    voice_responses: 'voice_responses_enabled',
+    payment_module: 'payment_module_enabled',
+    reports: 'reports_module_enabled',
+    analytics: 'analytics_module_enabled',
+    next_best_action: 'next_best_action_enabled',
+    conversion_score: 'conversion_score_enabled',
+    daily_briefing: 'daily_briefing_enabled',
+    sentiment_routing: 'sentiment_routing_enabled',
+    catalog_import: 'catalog_import_enabled',
+    human_handoff_alerts: 'human_handoff_alerts_enabled'
+};
 
 /**
  * Check if a plan module is available (async)

@@ -265,7 +265,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
     try {
         const { 
             name, email, company, plan, credits, is_admin, is_active, 
-            voice_responses_enabled, payment_module_enabled, analytics_module_enabled, subscription_end_date,
+            voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
+            availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
+            sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
+            subscription_end_date,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
             roles
         } = req.body;
@@ -368,6 +371,38 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('analytics_module_enabled = ?');
             params.push(analytics_module_enabled ? 1 : 0);
         }
+        if (reports_module_enabled !== undefined) {
+            setClauses.push('reports_module_enabled = ?');
+            params.push(reports_module_enabled ? 1 : 0);
+        }
+        if (availability_hours_enabled !== undefined) {
+            setClauses.push('availability_hours_enabled = ?');
+            params.push(availability_hours_enabled ? 1 : 0);
+        }
+        if (next_best_action_enabled !== undefined) {
+            setClauses.push('next_best_action_enabled = ?');
+            params.push(next_best_action_enabled ? 1 : 0);
+        }
+        if (conversion_score_enabled !== undefined) {
+            setClauses.push('conversion_score_enabled = ?');
+            params.push(conversion_score_enabled ? 1 : 0);
+        }
+        if (daily_briefing_enabled !== undefined) {
+            setClauses.push('daily_briefing_enabled = ?');
+            params.push(daily_briefing_enabled ? 1 : 0);
+        }
+        if (sentiment_routing_enabled !== undefined) {
+            setClauses.push('sentiment_routing_enabled = ?');
+            params.push(sentiment_routing_enabled ? 1 : 0);
+        }
+        if (catalog_import_enabled !== undefined) {
+            setClauses.push('catalog_import_enabled = ?');
+            params.push(catalog_import_enabled ? 1 : 0);
+        }
+        if (human_handoff_alerts_enabled !== undefined) {
+            setClauses.push('human_handoff_alerts_enabled = ?');
+            params.push(human_handoff_alerts_enabled ? 1 : 0);
+        }
         if (can_manage_users !== undefined) {
             setClauses.push('can_manage_users = ?');
             params.push(can_manage_users ? 1 : 0);
@@ -462,7 +497,9 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
         const fieldsToTrack = [
             'name', 'email', 'plan', 'credits', 'is_admin', 'is_active',
             'can_manage_users', 'can_manage_plans', 'can_view_stats', 'can_manage_ai',
-            'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled'
+            'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled', 'reports_module_enabled',
+            'availability_hours_enabled', 'next_best_action_enabled', 'conversion_score_enabled', 'daily_briefing_enabled',
+            'sentiment_routing_enabled', 'catalog_import_enabled', 'human_handoff_alerts_enabled'
         ];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
@@ -724,7 +761,9 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
     try {
         const { 
             name, email, password, company, plan, credits, is_admin, 
-            voice_responses_enabled, payment_module_enabled, analytics_module_enabled,
+            voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
+            availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
+            sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
             roles,
             generate_coupon
@@ -767,12 +806,18 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
         await db.run(`
             INSERT INTO users (
                 id, name, email, password, company, plan, credits, is_admin, 
-                subscription_status, subscription_end_date, voice_responses_enabled, payment_module_enabled, analytics_module_enabled,
+                subscription_status, subscription_end_date,
+                voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
+                availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
+                sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
                 can_manage_users, can_manage_plans, can_view_stats, can_manage_ai
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, 
-           subscriptionStatus, subscriptionEndDate, voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0,
+           subscriptionStatus, subscriptionEndDate,
+           voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0, reports_module_enabled ? 1 : 0,
+           availability_hours_enabled ? 1 : 0, next_best_action_enabled ? 1 : 0, conversion_score_enabled ? 1 : 0, daily_briefing_enabled ? 1 : 0,
+           sentiment_routing_enabled ? 1 : 0, catalog_import_enabled ? 1 : 0, human_handoff_alerts_enabled ? 1 : 0,
            can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0
         );
 
@@ -1017,6 +1062,53 @@ router.delete('/anomalies/cleanup', authenticateAdmin, requireFullAdmin, async (
         });
     } catch (error) {
         console.error('Cleanup error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// ==================== SECURITY SETTINGS ====================
+
+router.get('/security/bruteforce', authenticateAdmin, requirePermission('platform.stats.read'), async (req, res) => {
+    try {
+        const rows = await db.all('SELECT key, value FROM platform_settings WHERE key LIKE ?', 'security_bruteforce_%');
+        const map = new Map((rows || []).map(r => [r.key, r.value]));
+        res.json({
+            enabled: map.get('security_bruteforce_enabled') === '1',
+            threshold: parseInt(map.get('security_bruteforce_threshold') || '5', 10),
+            windowMinutes: parseInt(map.get('security_bruteforce_window_minutes') || '10', 10),
+            blockMinutes: parseInt(map.get('security_bruteforce_block_minutes') || '30', 10),
+        });
+    } catch (error) {
+        console.error('GET /admin/security/bruteforce error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+router.put('/security/bruteforce', authenticateAdmin, requirePermission('platform.stats.read'), async (req, res) => {
+    try {
+        const { enabled, threshold, windowMinutes, blockMinutes } = req.body || {};
+        const enabledVal = enabled === true || enabled === 1 ? '1' : '0';
+        const th = Number.isFinite(Number(threshold)) ? String(Math.max(1, parseInt(threshold, 10))) : '5';
+        const win = Number.isFinite(Number(windowMinutes)) ? String(Math.max(1, parseInt(windowMinutes, 10))) : '10';
+        const blk = Number.isFinite(Number(blockMinutes)) ? String(Math.max(1, parseInt(blockMinutes, 10))) : '30';
+
+        await db.run(`INSERT INTO platform_settings (key, value, updated_at) VALUES ('security_bruteforce_enabled', ?, CURRENT_TIMESTAMP)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, enabledVal);
+        await db.run(`INSERT INTO platform_settings (key, value, updated_at) VALUES ('security_bruteforce_threshold', ?, CURRENT_TIMESTAMP)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, th);
+        await db.run(`INSERT INTO platform_settings (key, value, updated_at) VALUES ('security_bruteforce_window_minutes', ?, CURRENT_TIMESTAMP)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, win);
+        await db.run(`INSERT INTO platform_settings (key, value, updated_at) VALUES ('security_bruteforce_block_minutes', ?, CURRENT_TIMESTAMP)
+                      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`, blk);
+
+        res.json({
+            enabled: enabledVal === '1',
+            threshold: parseInt(th, 10),
+            windowMinutes: parseInt(win, 10),
+            blockMinutes: parseInt(blk, 10),
+        });
+    } catch (error) {
+        console.error('PUT /admin/security/bruteforce error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

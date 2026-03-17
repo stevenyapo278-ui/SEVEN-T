@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -108,7 +108,7 @@ export default function Orders() {
     const s = statusFromUrl || 'all'
     return ['all', 'pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled'].includes(s) ? s : 'all'
   })
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
   const [selectedOrderView, setSelectedOrderView] = useState(null)
   const [focusStat, setFocusStat] = useState(null)
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
@@ -142,6 +142,22 @@ export default function Orders() {
       setStatusFilter(statusFromUrl)
     }
   }, [statusFromUrl])
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q !== null) setSearchQuery(q)
+  }, [searchParams])
+
+  const syncFiltersToUrl = useCallback((updates) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      Object.entries(updates).forEach(([k, v]) => {
+        if (v && v !== 'all') next.set(k, v)
+        else next.delete(k)
+      })
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
 
   useEffect(() => {
     loadOrders()
@@ -1236,13 +1252,13 @@ export default function Orders() {
               type="text"
               placeholder="Nom, téléphone ou n° commande..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { const v = e.target.value; setSearchQuery(v); syncFiltersToUrl({ q: v || undefined }); }}
               className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { const v = e.target.value; setStatusFilter(v); syncFiltersToUrl({ status: v === 'all' ? undefined : v }); }}
             className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[200px] transition-all duration-300 ${
               isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
             }`}

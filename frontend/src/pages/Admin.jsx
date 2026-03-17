@@ -52,6 +52,21 @@ import fr from 'date-fns/locale/fr'
 registerLocale('fr', fr)
 import { DashboardContent, UsersContent, AnomaliesTab, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
 
+/** Tous les modules des plans, activables par utilisateur (formKey → label) */
+const PLAN_MODULES = [
+  { key: 'availability_hours_enabled', label: 'Heures de disponibilité' },
+  { key: 'voice_responses_enabled', label: 'Réponses vocales' },
+  { key: 'payment_module_enabled', label: 'Moyens de paiement' },
+  { key: 'analytics_module_enabled', label: 'Statistiques & Analytics' },
+  { key: 'reports_module_enabled', label: 'Rapports' },
+  { key: 'next_best_action_enabled', label: 'Next Best Action' },
+  { key: 'conversion_score_enabled', label: 'Score de conversion' },
+  { key: 'daily_briefing_enabled', label: 'Briefing quotidien' },
+  { key: 'sentiment_routing_enabled', label: 'Routage sentiment' },
+  { key: 'catalog_import_enabled', label: 'Import catalogue' },
+  { key: 'human_handoff_alerts_enabled', label: 'Alertes transfert humain' }
+]
+
 export default function Admin() {
   const { showConfirm } = useConfirm()
   const { user } = useAuth()
@@ -1178,9 +1193,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
     can_view_stats: user.can_view_stats || 0,
     can_manage_ai: user.can_manage_ai || 0,
     is_active: user.is_active,
-    voice_responses_enabled: !!user.voice_responses_enabled,
-    payment_module_enabled: !!user.payment_module_enabled,
-    analytics_module_enabled: !!user.analytics_module_enabled,
+    ...Object.fromEntries(PLAN_MODULES.map(m => [m.key, !!user[m.key]])),
     roles: user.roles || [],
     subscription_end_date: user.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : ''
   })
@@ -1428,33 +1441,24 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
               />
               <span className="text-sm text-gray-300">Compte actif</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer py-2">
-              <input
-                type="checkbox"
-                checked={formData.voice_responses_enabled}
-                onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
-              />
-              <span className="text-sm text-gray-300">Réponses vocales</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer py-2">
-              <input
-                type="checkbox"
-                checked={formData.payment_module_enabled}
-                onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
-              />
-              <span className="text-sm text-gray-300">Module Moyens de paiement</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer py-2">
-              <input
-                type="checkbox"
-                checked={formData.analytics_module_enabled}
-                onChange={(e) => setFormData({ ...formData, analytics_module_enabled: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-purple-400 focus:ring-purple-400"
-              />
-              <span className="text-sm text-gray-300">Module Statistiques & Analytics</span>
-            </label>
+
+            <div className="pt-3 border-t border-space-700">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Modules activables</h4>
+              <p className="text-xs text-gray-500 mb-3">Activez ces modules pour cet utilisateur (en plus de ceux inclus dans son plan) :</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {PLAN_MODULES.map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-space-700 hover:border-space-600 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={!!formData[key]}
+                      onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
+                      className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                    />
+                    <span className="text-sm text-gray-300">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           {formData.is_admin === 1 && (
@@ -1558,10 +1562,8 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
     can_manage_plans: 0,
     can_view_stats: 0,
     can_manage_ai: 0,
-    voice_responses_enabled: false,
-    payment_module_enabled: false,
-    analytics_module_enabled: false,
-    generate_coupon: false, // New field for automatic coupon generation
+    ...Object.fromEntries(PLAN_MODULES.map(m => [m.key, false])),
+    generate_coupon: false,
     roles: []
   })
 
@@ -1761,33 +1763,23 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                 <span className="text-xs text-gray-400">Gérer l'IA</span>
               </label>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer py-1">
-              <input
-                type="checkbox"
-                checked={formData.voice_responses_enabled}
-                onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
-              />
-              <span className="text-sm text-gray-300">Réponses vocales</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer py-1">
-              <input
-                type="checkbox"
-                checked={formData.payment_module_enabled}
-                onChange={(e) => setFormData({ ...formData, payment_module_enabled: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-emerald-400 focus:ring-emerald-400"
-              />
-              <span className="text-sm text-gray-300">Module Moyens de paiement</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer py-1">
-              <input
-                type="checkbox"
-                checked={formData.analytics_module_enabled}
-                onChange={(e) => setFormData({ ...formData, analytics_module_enabled: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-purple-400 focus:ring-purple-400"
-              />
-              <span className="text-sm text-gray-300">Module Statistiques & Analytics</span>
-            </label>
+            <div className="pt-3 border-t border-space-700">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Modules activables</h4>
+              <p className="text-xs text-gray-500 mb-3">Activez ces modules pour cet utilisateur (en plus de ceux inclus dans son plan) :</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {PLAN_MODULES.map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-space-700 hover:border-space-600 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={!!formData[key]}
+                      onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
+                      className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                    />
+                    <span className="text-sm text-gray-300">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
 
           {formData.is_admin === 1 && (
