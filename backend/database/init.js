@@ -1224,7 +1224,8 @@ export async function initDatabase() {
             ['user_admin', 'User Admin', 'Gestion des utilisateurs'],
             ['billing_admin', 'Billing Admin', 'Gestion plans & coupons'],
             ['ai_admin', 'AI Admin', 'Gestion IA (modèles/keys/settings/reindex)'],
-            ['security_analyst', 'Security Analyst', 'Lecture audit/anomalies/stats']
+            ['security_analyst', 'Security Analyst', 'Lecture audit/anomalies/stats'],
+            ['influencer', 'Influencer', 'Accès au tableau de bord des coupons']
         ];
 
         for (const [key, name, description] of seedRoles) {

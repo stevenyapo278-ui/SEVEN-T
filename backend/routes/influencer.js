@@ -8,18 +8,21 @@ const router = Router();
 // Middleware to ensure user is an influencer
 const isInfluencer = async (req, res, next) => {
     try {
+        // Fetch permissions from DB (more reliable than role key check if roles aren't perfectly synced)
         const roles = await db.all(`
             SELECT r.key FROM user_roles ur
             JOIN roles r ON ur.role_id = r.id
             WHERE ur.user_id = ?
         `, req.user.id);
         
-        const isInfluencerRole = roles.some(r => r.key === 'influencer' || r.key === 'owner');
-        if (!isInfluencerRole) {
+        const isInfluencerRole = roles.some(r => r.key === 'influencer' || r.key === 'owner' || r.key === 'admin');
+        
+        if (!isInfluencerRole && !req.user.is_admin) {
             return res.status(403).json({ error: 'Accès réservé aux influenceurs' });
         }
         next();
     } catch (error) {
+        console.error('isInfluencer middleware error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };

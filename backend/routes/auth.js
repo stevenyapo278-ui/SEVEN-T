@@ -347,9 +347,28 @@ router.post('/login', validate(loginSchema), async (req, res) => {
             req
         });
 
+        const permissions2 = await getUserPermissions(user.id);
+        const userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
+        // AUTO-FIX: If not admin, check if linked to a coupon as influencer
+        let roleKeys = userRoles.map(r => r.key);
+        if (!user.is_admin && !roleKeys.includes('influencer')) {
+            const hasCoupon = await db.get('SELECT 1 FROM subscription_coupons WHERE influencer_id = ?', user.id);
+            if (hasCoupon) {
+                const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
+                if (influencerRole) {
+                    await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', user.id, influencerRole.id);
+                    await db.run('UPDATE users SET credits = 0 WHERE id = ?', user.id);
+                    roleKeys.push('influencer');
+                    userWithoutPassword.credits = 0; // Update local object for response
+                }
+            }
+        }
+
+        const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
+
         res.json({
             message: 'Connexion réussie',
-            user: { ...userWithoutPassword, plan: effectivePlan, plan_features }
+            user: { ...userWithoutPassword, plan: effectivePlan, plan_features, permissions: permissions2, roles: roleKeys, influencer_only: influencerOnly }
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -369,7 +388,25 @@ router.get('/me', authenticateToken, async (req, res) => {
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
         const permissions = await getUserPermissions(user.id);
-        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions } });
+        const userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
+        let roleKeys = userRoles.map(r => r.key);
+
+        // AUTO-FIX on Refresh: If not admin, check if linked to a coupon as influencer
+        if (!user.is_admin && !roleKeys.includes('influencer')) {
+            const hasCoupon = await db.get('SELECT 1 FROM subscription_coupons WHERE influencer_id = ?', user.id);
+            if (hasCoupon) {
+                const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
+                if (influencerRole) {
+                    await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)', user.id, influencerRole.id);
+                    await db.run('UPDATE users SET credits = 0 WHERE id = ?', user.id);
+                    roleKeys.push('influencer');
+                    user.credits = 0; // Update local object for response
+                }
+            }
+        }
+
+        const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
+        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly } });
     } catch (error) {
         console.error('Get user error:', error);
         res.status(500).json({ error: 'Erreur serveur' });

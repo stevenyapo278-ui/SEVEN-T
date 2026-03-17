@@ -653,6 +653,7 @@ router.post('/coupons', async (req, res) => {
         }
 
         let finalInfluencerId = influencer_id || null;
+        let tempInfluencerPassword = null;
 
         // Auto-create influencer account if requested
         if (create_influencer && influencer_email && influencer_name) {
@@ -666,8 +667,8 @@ router.post('/coupons', async (req, res) => {
                 const hashedPassword = await bcrypt.default.hash(tempPassword, 10);
                 
                 await db.run(`
-                    INSERT INTO users (id, name, email, password, plan, subscription_status)
-                    VALUES (?, ?, ?, ?, 'free', 'active')
+                    INSERT INTO users (id, name, email, password, plan, credits, subscription_status)
+                    VALUES (?, ?, ?, ?, 'free', 0, 'active')
                 `, userId, influencer_name, influencer_email.toLowerCase().trim(), hashedPassword);
 
                 // Assign influencer role
@@ -677,6 +678,7 @@ router.post('/coupons', async (req, res) => {
                 }
                 
                 finalInfluencerId = userId;
+                tempInfluencerPassword = tempPassword;
                 console.log(`[Coupons] Influencer created: ${influencer_email} / Temp pass: ${tempPassword}`);
             }
         }
@@ -698,7 +700,11 @@ router.post('/coupons', async (req, res) => {
             req
         });
 
-        res.status(201).json({ message: 'Coupon créé avec succès', coupon });
+        res.status(201).json({ 
+            message: 'Coupon créé avec succès', 
+            coupon,
+            tempInfluencerPassword
+        });
     } catch (error) {
         console.error('Create coupon error:', error);
         res.status(500).json({ error: 'Erreur lors de la création du coupon' });
@@ -810,5 +816,6 @@ router.delete('/coupons/:id', async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
+
 
 export default router;

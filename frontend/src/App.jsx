@@ -97,6 +97,30 @@ function AdminRoute({ children }) {
   return children
 }
 
+// StandardRoute - Blocks influencer-only users from accessing normal dashboard pages
+function StandardRoute({ children }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center flex-col gap-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 flex-shrink-0" aria-hidden />
+      </div>
+    )
+  }
+
+  if (!user) return <Navigate to="/login" replace />
+
+  // Influencer-only accounts can only access their dedicated page
+  // Uses the server-computed flag to prevent any bypass
+  if (user.influencer_only) {
+    const slug = user.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire'
+    return <Navigate to={`/dashboard/${slug}`} replace />
+  }
+
+  return children
+}
+
 import { OnboardingTourProvider } from './components/Onboarding'
 
 function App() {
@@ -124,30 +148,30 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
-          <Route path="agents" element={<Suspense fallback={<PageFallback />}><Agents /></Suspense>} />
-          <Route path="agents/:id" element={<Suspense fallback={<PageFallback />}><AgentDetail /></Suspense>} />
-          <Route path="products" element={<Suspense fallback={<PageFallback />}><Products /></Suspense>} />
-          <Route path="services" element={<Suspense fallback={<PageFallback />}><Services /></Suspense>} />
-          <Route path="knowledge" element={<Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense>} />
-          <Route path="leads" element={<Suspense fallback={<PageFallback />}><Leads /></Suspense>} />
-          <Route path="orders" element={<Suspense fallback={<PageFallback />}><Orders /></Suspense>} />
-          <Route path="conversations" element={<Suspense fallback={<PageFallback />}><Conversations /></Suspense>} />
-          <Route path="conversations/:id" element={<Suspense fallback={<PageFallback />}><ConversationDetail /></Suspense>} />
-          <Route path="analytics" element={<Suspense fallback={<PageFallback />}><Analytics /></Suspense>} />
-          <Route path="campaigns" element={<Suspense fallback={<PageFallback />}><Campaigns /></Suspense>} />
-          <Route path="templates" element={<Suspense fallback={<PageFallback />}><Templates /></Suspense>} />
-          <Route path="workflows" element={<Suspense fallback={<PageFallback />}><Workflows /></Suspense>} />
-          <Route path="payments" element={<Suspense fallback={<PageFallback />}><Payments /></Suspense>} />
-          <Route path="expenses" element={<Suspense fallback={<PageFallback />}><Expenses /></Suspense>} />
-          <Route path="tools" element={<Suspense fallback={<PageFallback />}><Tools /></Suspense>} />
-          <Route path="flows" element={<Suspense fallback={<PageFallback />}><Flows /></Suspense>} />
-          <Route path="flows/:id" element={<Suspense fallback={<PageFallback />}><FlowBuilder /></Suspense>} />
-          <Route path="reports" element={<Suspense fallback={<PageFallback />}><Reports /></Suspense>} />
-          <Route path="notifications" element={<Suspense fallback={<PageFallback />}><Notifications /></Suspense>} />
-          <Route path="settings" element={<Suspense fallback={<PageFallback />}><Settings /></Suspense>} />
-          <Route path="influencer" element={<Suspense fallback={<PageFallback />}><InfluencerDashboard /></Suspense>} />
-          <Route path="help" element={<Suspense fallback={<PageFallback />}><Help /></Suspense>} />
+          <Route index element={<StandardRoute><Suspense fallback={<PageFallback />}><Dashboard /></Suspense></StandardRoute>} />
+          <Route path="agents" element={<StandardRoute><Suspense fallback={<PageFallback />}><Agents /></Suspense></StandardRoute>} />
+          <Route path="agents/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><AgentDetail /></Suspense></StandardRoute>} />
+          <Route path="products" element={<StandardRoute><Suspense fallback={<PageFallback />}><Products /></Suspense></StandardRoute>} />
+          <Route path="services" element={<StandardRoute><Suspense fallback={<PageFallback />}><Services /></Suspense></StandardRoute>} />
+          <Route path="knowledge" element={<StandardRoute><Suspense fallback={<PageFallback />}><KnowledgeBase /></Suspense></StandardRoute>} />
+          <Route path="leads" element={<StandardRoute><Suspense fallback={<PageFallback />}><Leads /></Suspense></StandardRoute>} />
+          <Route path="orders" element={<StandardRoute><Suspense fallback={<PageFallback />}><Orders /></Suspense></StandardRoute>} />
+          <Route path="conversations" element={<StandardRoute><Suspense fallback={<PageFallback />}><Conversations /></Suspense></StandardRoute>} />
+          <Route path="conversations/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><ConversationDetail /></Suspense></StandardRoute>} />
+          <Route path="analytics" element={<StandardRoute><Suspense fallback={<PageFallback />}><Analytics /></Suspense></StandardRoute>} />
+          <Route path="campaigns" element={<StandardRoute><Suspense fallback={<PageFallback />}><Campaigns /></Suspense></StandardRoute>} />
+          <Route path="templates" element={<StandardRoute><Suspense fallback={<PageFallback />}><Templates /></Suspense></StandardRoute>} />
+          <Route path="workflows" element={<StandardRoute><Suspense fallback={<PageFallback />}><Workflows /></Suspense></StandardRoute>} />
+          <Route path="payments" element={<StandardRoute><Suspense fallback={<PageFallback />}><Payments /></Suspense></StandardRoute>} />
+          <Route path="expenses" element={<StandardRoute><Suspense fallback={<PageFallback />}><Expenses /></Suspense></StandardRoute>} />
+          <Route path="tools" element={<StandardRoute><Suspense fallback={<PageFallback />}><Tools /></Suspense></StandardRoute>} />
+          <Route path="flows" element={<StandardRoute><Suspense fallback={<PageFallback />}><Flows /></Suspense></StandardRoute>} />
+          <Route path="flows/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><FlowBuilder /></Suspense></StandardRoute>} />
+          <Route path="reports" element={<StandardRoute><Suspense fallback={<PageFallback />}><Reports /></Suspense></StandardRoute>} />
+          <Route path="notifications" element={<StandardRoute><Suspense fallback={<PageFallback />}><Notifications /></Suspense></StandardRoute>} />
+          <Route path="settings" element={<StandardRoute><Suspense fallback={<PageFallback />}><Settings /></Suspense></StandardRoute>} />
+          <Route path=":influencerName" element={<Suspense fallback={<PageFallback />}><InfluencerDashboard /></Suspense>} />
+          <Route path="help" element={<StandardRoute><Suspense fallback={<PageFallback />}><Help /></Suspense></StandardRoute>} />
           <Route path="docs" element={<Suspense fallback={<PageFallback />}><Docs /></Suspense>} />
           <Route path="admin" element={
             <AdminRoute>

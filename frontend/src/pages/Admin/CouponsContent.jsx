@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, RefreshCw, Edit, Trash2, Loader2, Save, X, Ticket, Zap } from 'lucide-react'
+import { Plus, RefreshCw, Edit, Trash2, Loader2, Save, X, Ticket, Zap, Copy, Check } from 'lucide-react'
 import api from '../../services/api'
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
@@ -31,6 +31,7 @@ export default function CouponsContent({ users = [] }) {
     influencer_name: ''
   })
   const [saving, setSaving] = useState(false)
+  const [creationResult, setCreationResult] = useState(null)
 
   const loadCoupons = async () => {
     setLoading(true)
@@ -71,6 +72,7 @@ export default function CouponsContent({ users = [] }) {
 
   const handleCreate = () => {
     setEditingCoupon(null)
+    setCreationResult(null)
     setFormData({
       name: '', 
       code: '', 
@@ -123,11 +125,20 @@ export default function CouponsContent({ users = [] }) {
       if (editingCoupon) {
         await api.put(`/admin/coupons/${editingCoupon.id}`, payload)
         toast.success('Coupon mis à jour')
+        setShowModal(false)
       } else {
-        await api.post('/admin/coupons', payload)
+        const res = await api.post('/admin/coupons', payload)
         toast.success('Coupon créé')
+        if (res.data.tempInfluencerPassword) {
+            setCreationResult({
+                email: formData.influencer_email,
+                password: res.data.tempInfluencerPassword
+            })
+            // Don't close modal yet if there's a password to show
+        } else {
+            setShowModal(false)
+        }
       }
-      setShowModal(false)
       loadCoupons()
     } catch (e) {
       toast.error(e.response?.data?.error || 'Erreur lors de la sauvegarde')
@@ -212,6 +223,20 @@ export default function CouponsContent({ users = [] }) {
               </div>
 
               <div className="flex gap-2 pt-3 border-t border-space-700">
+                {coupon.influencer_id && (
+                  <button 
+                    onClick={() => {
+                        const slug = coupon.influencer_name ? coupon.influencer_name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
+                        const link = `${window.location.origin}/dashboard/${slug}`;
+                        navigator.clipboard.writeText(link);
+                        toast.success('Lien du tableau de bord influenceur copié');
+                    }}
+                    className="text-xs px-2 py-1 bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 rounded transition-colors flex-1 flex justify-center items-center"
+                    title="Copier le lien du tableau de bord pour l'influencer"
+                  >
+                    <Copy className="w-3 h-3 mr-1" /> Lien
+                  </button>
+                )}
                 <button onClick={() => handleEdit(coupon)} className="text-xs px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors flex-1 flex justify-center items-center">
                   <Edit className="w-3 h-3 mr-1" /> Modifier
                 </button>
@@ -241,6 +266,39 @@ export default function CouponsContent({ users = [] }) {
 
             {/* Body - Scrollable */}
             <div className="p-5 sm:p-8 space-y-6 overflow-y-auto overscroll-contain flex-1">
+              {creationResult && (
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6 animate-in zoom-in-95">
+                  <h4 className="text-emerald-400 font-bold text-sm mb-2 flex items-center gap-2">
+                    <Check className="w-4 h-4" /> Compte influenceur créé !
+                  </h4>
+                  <p className="text-xs text-gray-400 mb-3">
+                    Veuillez copier et envoyer ces identifiants à l'influenceur car le mot de passe ne sera plus affiché.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between bg-space-950 p-2 rounded border border-space-700">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold">Email</span>
+                      <span className="text-xs text-gray-200 font-mono">{creationResult.email}</span>
+                    </div>
+                    <div className="flex items-center justify-between bg-space-950 p-2 rounded border border-space-700">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold">Mot de passe</span>
+                      <span className="text-xs text-gold-400 font-mono font-bold">{creationResult.password}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const slug = creationResult.name ? creationResult.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
+                        const text = `Voici vos identifiants pour Seven T :\nEmail : ${creationResult.email}\nMot de passe : ${creationResult.password}\nLien : ${window.location.origin}/dashboard/${slug}`;
+                        navigator.clipboard.writeText(text);
+                        toast.success('Identifiants copiés !');
+                      }}
+                      className="w-full mt-2 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Copy className="w-4 h-4" /> Copier tout le message
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <h4 className="text-xs font-bold text-gold-400 uppercase tracking-widest border-b border-gold-400/20 pb-1">Informations de base</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
