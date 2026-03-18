@@ -500,9 +500,7 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
               <select
                 value={form.currency}
                 onChange={(e) => setForm({ ...form, currency: e.target.value })}
-                className={`px-4 py-2 rounded-lg border ${
-                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
-                }`}
+                className="input px-4 py-2 text-sm"
               >
                 <option value="XOF">XOF (FCFA)</option>
                 <option value="EUR">EUR</option>
@@ -533,9 +531,7 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
             <select
               value={form.provider}
               onChange={(e) => setForm({ ...form, provider: e.target.value })}
-              className={`w-full px-4 py-2 rounded-lg border ${
-                isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
-              }`}
+              className="input w-full px-4 py-2 text-sm"
             >
               <option value="manual">Manuel (lien interne)</option>
               {geniuspayConfigured && <option value="geniuspay">GeniusPay (carte / paiement en ligne)</option>}
@@ -552,9 +548,7 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
             <select
               value={form.expires_in_hours}
               onChange={(e) => setForm({ ...form, expires_in_hours: e.target.value })}
-              className={`w-full px-4 py-2 rounded-lg border ${
-                isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
-              }`}
+              className="input w-full px-4 py-2 text-sm"
             >
               <option value="">Pas d'expiration</option>
               <option value="1">1 heure</option>

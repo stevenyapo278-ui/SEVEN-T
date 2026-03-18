@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
-import api, { sendToConversation, getNewConversationMessages, syncMessages, getMessagesWithPagination, deleteMessages } from '../services/api'
+import api, { sendToConversation, getNewConversationMessages, syncMessages, getMessagesWithPagination, deleteMessages, markConversationRead } from '../services/api'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConversationSocket } from '../hooks/useConversationSocket'
@@ -277,6 +277,9 @@ export default function ConversationDetail() {
   const nameInputRef = useRef(null)
   const lastPollTimeRef = useRef(null) // Use ref to avoid stale closure
   const loadConversationRef = useRef(null)
+  const socketRefetchTimerRef = useRef(null)
+  const lastMarkedReadRef = useRef(null)
+  const markReadDebounceRef = useRef(null)
 
   // Real-time: refetch and incrementally update messages when this conversation is updated
   useConversationSocket((convId, message) => {
@@ -292,8 +295,23 @@ export default function ConversationDetail() {
           return merged
         })
       }
-      // Still load everything to ensure state (takeover, conversion score, etc) is correct
-      loadConversationRef.current?.()
+      // Debounced refetch (metadata: takeover/score). Avoid hammering the API on message floods.
+      if (socketRefetchTimerRef.current) clearTimeout(socketRefetchTimerRef.current)
+      socketRefetchTimerRef.current = setTimeout(() => {
+        loadConversationRef.current?.()
+      }, 800)
+
+      // If user is currently viewing this conversation, auto mark as read (debounced)
+      if (markReadDebounceRef.current) clearTimeout(markReadDebounceRef.current)
+      markReadDebounceRef.current = setTimeout(() => {
+        if (!id) return
+        markConversationRead(id)
+          .then(() => {
+            window.dispatchEvent(new Event('seven-t:refresh-unread-counts'))
+            window.dispatchEvent(new CustomEvent('seven-t:conversation-mark-read', { detail: { conversationId: id } }))
+          })
+          .catch(() => {})
+      }, 600)
     }
   })
 
@@ -302,6 +320,14 @@ export default function ConversationDetail() {
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current)
+      }
+      if (socketRefetchTimerRef.current) {
+        clearTimeout(socketRefetchTimerRef.current)
+        socketRefetchTimerRef.current = null
+      }
+      if (markReadDebounceRef.current) {
+        clearTimeout(markReadDebounceRef.current)
+        markReadDebounceRef.current = null
       }
     }
   }, [id])
@@ -368,6 +394,17 @@ export default function ConversationDetail() {
       const now = new Date().toISOString()
       setLastPollTime(now)
       lastPollTimeRef.current = now // Update ref too
+
+      // Mark as read once per conversation open
+      if (id && lastMarkedReadRef.current !== id) {
+        lastMarkedReadRef.current = id
+        markConversationRead(id)
+          .then(() => {
+            window.dispatchEvent(new Event('seven-t:refresh-unread-counts'))
+            window.dispatchEvent(new CustomEvent('seven-t:conversation-mark-read', { detail: { conversationId: id } }))
+          })
+          .catch(() => {})
+      }
     } catch (error) {
       toast.error('Conversation non trouvée')
       navigate('/dashboard/conversations')

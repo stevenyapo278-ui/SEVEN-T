@@ -898,6 +898,15 @@ class WhatsAppManager {
                     INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
                     VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
                 `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
+                await db.run(
+                    `UPDATE conversations
+                     SET last_message_at = ?,
+                         status = 'unread',
+                         unread_messages_count = COALESCE(unread_messages_count, 0) + 1
+                     WHERE id = ?`,
+                    payload.createdAt,
+                    context.conversation.id
+                );
                 humanInterventionService.flagConversation(context.conversation.id, context.agent.user_id, 'audio_transcription_failed');
                 console.log(`[WhatsApp] Audio transcription failed for conversation ${context.conversation.id}, flagged for human`);
                 return;
@@ -909,6 +918,15 @@ class WhatsAppManager {
                     INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
                     VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
                 `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
+                await db.run(
+                    `UPDATE conversations
+                     SET last_message_at = ?,
+                         status = 'unread',
+                         unread_messages_count = COALESCE(unread_messages_count, 0) + 1
+                     WHERE id = ?`,
+                    payload.createdAt,
+                    context.conversation.id
+                );
                 console.log(`[WhatsApp] Message saved: ${context.contactName} -> ${payload.content.substring(0, 30)}...`);
                 void notifyConversationUpdate(context.conversation.id, {
                     id: payload.inMsgId,
@@ -941,7 +959,15 @@ class WhatsAppManager {
                 INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
                 VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
             `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.createdAt);
-            await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', payload.createdAt, context.conversation.id);
+            await db.run(
+                `UPDATE conversations
+                 SET last_message_at = ?,
+                     status = 'unread',
+                     unread_messages_count = COALESCE(unread_messages_count, 0) + 1
+                 WHERE id = ?`,
+                payload.createdAt,
+                context.conversation.id
+            );
             
             // Notify frontend immediately (socket.io) for "instant" appearance
             void notifyConversationUpdate(context.conversation.id, {
@@ -2380,7 +2406,7 @@ class WhatsAppManager {
                 const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 await db.run(`
                     INSERT INTO conversations (id, agent_id, contact_jid, contact_number, contact_name, status, human_takeover)
-                    VALUES (?, ?, ?, ?, ?, 'active', 1)
+                    VALUES (?, ?, ?, ?, ?, 'active', 0)
                 `, conversationId, agentId, lid, displayPhone || normalized.split('@')[0], name);
             }
         } catch (e) {
@@ -2402,6 +2428,150 @@ class WhatsAppManager {
         await sock.sendMessage(jid, { text });
 
         return { success: true };
+    }
+
+    /**
+     * Send an automated/platform message (campaign, system, etc.) and persist it.
+     * Important: must NOT flip human_takeover, and must insert quickly so outgoing capture can skip it.
+     */
+    async sendAutomatedMessageAndSave(toolId, to, text, { messageType = 'campaign' } = {}) {
+        const sock = this.connections.get(toolId);
+        if (!sock) {
+            throw new Error('WhatsApp non connecté');
+        }
+        const agent = await this.getAgentByToolId(toolId);
+        if (!agent) {
+            throw new Error('Aucun agent assigné à cet outil');
+        }
+
+        const phoneJid = normalizeJid(to);
+        if (!phoneJid) {
+            throw new Error('Contact JID invalide');
+        }
+        const jid = await this.resolveJidForSend(toolId, sock, phoneJid);
+
+        const sendResult = await sock.sendMessage(jid, { text });
+        const whatsappId = sendResult?.key?.id || null;
+
+        // Ensure conversation exists (without setting human takeover)
+        const contactNumber = String(to).includes('@') ? String(to).split('@')[0] : String(to);
+        const phoneDigits = String(contactNumber || '').replace(/\D/g, '');
+        let conversation = await db.get(
+            `
+                SELECT * FROM conversations
+                WHERE agent_id = ?
+                  AND (
+                    contact_jid = ?
+                    OR contact_jid = ?
+                    OR contact_number = ?
+                    OR REPLACE(REPLACE(contact_number, ' ', ''), '+', '') = ?
+                  )
+                LIMIT 1
+            `,
+            agent.id,
+            jid,
+            phoneJid,
+            contactNumber,
+            phoneDigits
+        );
+
+        if (!conversation) {
+            const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            await db.run(
+                `
+                    INSERT INTO conversations (id, agent_id, contact_jid, contact_number, contact_name, status, human_takeover)
+                    VALUES (?, ?, ?, ?, ?, 'active', 0)
+                `,
+                conversationId,
+                agent.id,
+                jid,
+                contactNumber,
+                null
+            );
+            conversation = await db.get('SELECT * FROM conversations WHERE id = ?', conversationId);
+        }
+
+        const msgId = uuidv4();
+        await db.run(
+            `
+                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
+                VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?)
+            `,
+            msgId,
+            conversation.id,
+            text,
+            whatsappId,
+            messageType,
+            new Date().toISOString()
+        );
+
+        await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', conversation.id);
+
+        void notifyConversationUpdate(conversation.id, {
+            id: msgId,
+            role: 'assistant',
+            content: text,
+            whatsapp_id: whatsappId,
+            message_type: messageType,
+            created_at: new Date().toISOString()
+        });
+
+        return { success: true, messageId: msgId, whatsappId, conversationId: conversation.id };
+    }
+
+    /**
+     * Send an automated/platform message to an existing conversation and persist it.
+     * Unlike sendMessageAndSave, this must NOT enable human takeover.
+     */
+    async sendAutomatedMessageToConversationAndSave(toolId, conversationId, text, { messageType = 'workflow' } = {}) {
+        const sock = this.connections.get(toolId);
+        const agent = await this.getAgentByToolId(toolId);
+        if (!sock) {
+            throw new Error('WhatsApp non connecté');
+        }
+        if (!agent) {
+            throw new Error('Aucun agent assigné à cet outil');
+        }
+
+        const conversation = await db.get('SELECT * FROM conversations WHERE id = ? AND agent_id = ?', conversationId, agent.id);
+        if (!conversation) {
+            throw new Error('Conversation non trouvée');
+        }
+
+        const recipientJid = resolveJidForSend(conversation) || resolveConversationJid(conversation);
+        if (!recipientJid) {
+            throw new Error('Contact JID invalide');
+        }
+
+        const result = await sock.sendMessage(recipientJid, { text });
+        const whatsappId = result?.key?.id || null;
+
+        const msgId = uuidv4();
+        await db.run(
+            `
+                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
+                VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?)
+            `,
+            msgId,
+            conversationId,
+            text,
+            whatsappId,
+            messageType,
+            new Date().toISOString()
+        );
+
+        await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', conversationId);
+
+        void notifyConversationUpdate(conversationId, {
+            id: msgId,
+            role: 'assistant',
+            content: text,
+            whatsapp_id: whatsappId,
+            message_type: messageType,
+            created_at: new Date().toISOString()
+        });
+
+        return { success: true, messageId: msgId, whatsappId };
     }
 
     getQRCode(toolId) {
@@ -2746,6 +2916,78 @@ class WhatsAppManager {
             return contacts;
         } catch (error) {
             console.error(`[WhatsApp] Get contacts error:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Get ALL contacts from Baileys store (not limited to conversations).
+     * This is closer to the WhatsApp address book and can include contacts with no chat history.
+     */
+    async getStoreContacts(toolId, { q = '', limit = 2000 } = {}) {
+        const store = this.stores.get(toolId);
+        const agent = await this.getAgentByToolId(toolId);
+        if (!agent) return [];
+
+        const safeLimit = Math.max(1, Math.min(parseInt(limit || 2000, 10) || 2000, 5000));
+        const query = String(q || '').trim().toLowerCase();
+
+        try {
+            this.ensureLidMapFromStore(toolId);
+            const lidMap = this.lidToPhoneMap.get(toolId);
+
+            const entries = Object.entries(store?.contacts || {});
+            const out = [];
+            for (const [key, c] of entries) {
+                const rawJid = c?.jid || c?.id || key;
+                if (!rawJid || typeof rawJid !== 'string') continue;
+
+                // Skip groups and broadcasts
+                if (rawJid.includes('@g.us') || rawJid.includes('broadcast')) continue;
+
+                // Resolve LID to phone JID when possible
+                let jid = rawJid;
+                if (jid.endsWith('@lid') && lidMap) {
+                    const phoneJid = lidMap.get(jid) || lidMap.get(c?.id) || lidMap.get(key);
+                    if (phoneJid) jid = phoneJid;
+                }
+
+                // Only keep real phone contacts
+                if (!jid.endsWith('@s.whatsapp.net')) continue;
+
+                const number = jid.split('@')[0];
+                if (!number) continue;
+
+                const name = c?.name || c?.notify || c?.verifiedName || c?.pushName || null;
+                const displayName = (name && String(name).trim()) ? String(name).trim() : number;
+
+                if (query) {
+                    const hay = `${displayName} ${number}`.toLowerCase();
+                    if (!hay.includes(query)) continue;
+                }
+
+                out.push({
+                    jid,
+                    number,
+                    name: displayName,
+                    isMyContact: !!c?.name || !!c?.notify
+                });
+
+                if (out.length >= safeLimit) break;
+            }
+
+            // Best UX: stable ordering (name then number)
+            out.sort((a, b) => {
+                const an = String(a.name || '').toLowerCase();
+                const bn = String(b.name || '').toLowerCase();
+                if (an < bn) return -1;
+                if (an > bn) return 1;
+                return String(a.number || '').localeCompare(String(b.number || ''));
+            });
+
+            return out;
+        } catch (error) {
+            console.error('[WhatsApp] Get store contacts error:', error);
             return [];
         }
     }

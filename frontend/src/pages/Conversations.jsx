@@ -137,14 +137,17 @@ export default function Conversations() {
   const [lastPollTime, setLastPollTime] = useState(null)
   const [newMessageCount, setNewMessageCount] = useState(0)
   const [filterAgent, setFilterAgent] = useState(() => searchParams.get('agent') || '')
+  const [filterMode, setFilterMode] = useState(() => searchParams.get('mode') || '') // 'human' | 'ai' | ''
 
   useEffect(() => {
     const q = searchParams.get('q')
     const score = searchParams.get('score')
     const agent = searchParams.get('agent')
+    const mode = searchParams.get('mode')
     if (q !== null) setSearchQuery(q)
     if (score !== null) setScoreBand(score || '')
     if (agent !== null) setFilterAgent(agent || '')
+    if (mode !== null) setFilterMode(mode || '')
   }, [searchParams])
 
   const syncFiltersToUrl = useCallback((updates) => {
@@ -174,14 +177,62 @@ export default function Conversations() {
   const lastFetchTimeRef = useRef(0)
   const throttledLoadConversations = useCallback(() => {
     const now = Date.now()
-    // Throttle to once every 3 seconds to avoid freezing on message flood
-    if (now - lastFetchTimeRef.current > 3000) {
+    // Throttle to avoid freezing on message flood
+    if (now - lastFetchTimeRef.current > 800) {
       lastFetchTimeRef.current = now
       loadConversationsRef.current?.()
     }
   }, [])
 
-  useConversationSocket(throttledLoadConversations)
+  useConversationSocket((convId, message) => {
+    if (!convId) return
+
+    // Fast path: update list instantly when we have a message payload
+    if (message) {
+      setConversations(prev => {
+        const idx = prev.findIndex(c => c.id === convId)
+        if (idx === -1) {
+          // Conversation might not be in the current 100 results → fallback refetch
+          throttledLoadConversations()
+          return prev
+        }
+        const next = [...prev]
+        const current = next[idx]
+        const content = message.content || (message.message_type === 'image' ? '📷 Image' : message.message_type === 'audio' ? '🎤 Audio' : '')
+        const createdAt = message.created_at || new Date().toISOString()
+        const isIncomingUser = message.role === 'user'
+        const updated = {
+          ...current,
+          last_message: content || current.last_message,
+          last_message_at: createdAt,
+          // If it's an incoming user message, consider the conversation unread until mark-read is called
+          status: isIncomingUser ? 'unread' : current.status,
+          unread_messages_count: isIncomingUser ? Number(current.unread_messages_count || 0) + 1 : current.unread_messages_count
+        }
+        next[idx] = updated
+        // Move updated conversation to the top by last_message_at
+        next.sort((a, b) => new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0))
+        return next
+      })
+      return
+    }
+
+    // Slow path: no payload → refetch (debounced)
+    throttledLoadConversations()
+  })
+
+  // When a conversation is marked read elsewhere (ConversationDetail), update this list immediately
+  useEffect(() => {
+    const onMarkedRead = (e) => {
+      const convId = e?.detail?.conversationId
+      if (!convId) return
+      setConversations(prev =>
+        prev.map(c => (c.id === convId ? { ...c, status: 'read', unread_messages_count: 0 } : c))
+      )
+    }
+    window.addEventListener('seven-t:conversation-mark-read', onMarkedRead)
+    return () => window.removeEventListener('seven-t:conversation-mark-read', onMarkedRead)
+  }, [])
 
   const loadConversations = useCallback(async () => {
     setLoadError(null)
@@ -238,8 +289,22 @@ export default function Conversations() {
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = getDisplayName(conv).toLowerCase().includes(searchQuery.toLowerCase()) || conv.contact_number?.includes(searchQuery)
     const matchesAgent = !filterAgent || conv.agent_name === filterAgent
-    return matchesSearch && matchesAgent
+    const isHuman = conv.human_takeover === 1 || conv.human_takeover === true
+    const matchesMode = !filterMode || (filterMode === 'human' ? isHuman : !isHuman)
+    return matchesSearch && matchesAgent && matchesMode
   })
+
+  const handleToggleTakeover = async (convId, enabled) => {
+    try {
+      await api.post(`/conversations/${convId}/human-takeover`, { enabled })
+      setConversations(prev =>
+        prev.map(c => (c.id === convId ? { ...c, human_takeover: enabled ? 1 : 0 } : c))
+      )
+      toast.success(enabled ? 'Mode humain activé' : 'Mode IA activé')
+    } catch (e) {
+      toast.error('Erreur lors de la mise à jour')
+    }
+  }
 
   const patternDark = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
   const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
@@ -303,9 +368,71 @@ export default function Conversations() {
             </button>
           </div>
 
+          {showFilters && (
+            <div className={`p-4 rounded-2xl border mb-6 ${isDark ? 'bg-space-800/40 border-space-700/50' : 'bg-white border-gray-200'}`}>
+              <div className="flex flex-col md:flex-row gap-3 md:items-end">
+                <div className="flex-1">
+                  <label className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Agent</label>
+                  <select
+                    value={filterAgent}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setFilterAgent(v)
+                      syncFiltersToUrl({ agent: v || undefined })
+                    }}
+                    className={`mt-1 w-full px-3 py-2 rounded-xl border ${isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                  >
+                    <option value="">Tous</option>
+                    {agentsList.map(a => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex-1">
+                  <label className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Mode</label>
+                  <select
+                    value={filterMode}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setFilterMode(v)
+                      syncFiltersToUrl({ mode: v || undefined })
+                    }}
+                    className={`mt-1 w-full px-3 py-2 rounded-xl border ${isDark ? 'bg-space-900 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+                  >
+                    <option value="">Tous</option>
+                    <option value="ai">Mode IA</option>
+                    <option value="human">Mode humain</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSearchQuery('')
+                    setFilterAgent('')
+                    setFilterMode('')
+                    setScoreBand('')
+                    syncFiltersToUrl({ q: undefined, agent: undefined, mode: undefined, score: undefined })
+                  }}
+                  className={`px-4 py-2 rounded-xl border font-medium flex items-center gap-2 ${isDark ? 'bg-space-900 border-space-700 text-gray-300 hover:text-white' : 'bg-white border-gray-200 text-gray-700'}`}
+                >
+                  <X className="w-4 h-4" /> Réinitialiser
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             {filteredConversations.map(conv => (
-              <ConversationRow key={conv.id} conv={conv} isDark={isDark} bulkMode={bulkMode} isSelected={selectedConversations.has(conv.id)} onToggle={() => toggleConversationSelection(conv.id)} />
+              <ConversationRow
+                key={conv.id}
+                conv={conv}
+                isDark={isDark}
+                bulkMode={bulkMode}
+                isSelected={selectedConversations.has(conv.id)}
+                onToggle={() => toggleConversationSelection(conv.id)}
+                onToggleTakeover={handleToggleTakeover}
+              />
             ))}
           </div>
         </>
@@ -329,8 +456,10 @@ function StatItem({ icon: Icon, color, value, label, isDark }) {
   )
 }
 
-function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle }) {
+function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggleTakeover }) {
   const Wrapper = bulkMode ? 'div' : Link
+  const isHuman = conv.human_takeover === 1 || conv.human_takeover === true
+  const unreadCount = Number(conv.unread_messages_count || 0)
   return (
     <Wrapper 
       to={bulkMode ? undefined : `/dashboard/conversations/${conv.id}`}
@@ -346,6 +475,27 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle }) {
         </div>
         <p className="text-sm text-gray-400 truncate">{conv.last_message || 'Aucun message'}</p>
       </div>
+      {!bulkMode && unreadCount > 0 && (
+        <span className="min-w-[28px] h-6 px-2 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200 text-xs font-bold flex items-center justify-center">
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      )}
+      {!bulkMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onToggleTakeover?.(conv.id, !isHuman)
+          }}
+          className={`p-2 rounded-xl border transition-all ${
+            isHuman ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-300' : 'bg-gold-400/10 border-gold-400/30 text-gold-300'
+          }`}
+          title={isHuman ? 'Désactiver le mode humain (réactiver IA)' : 'Activer le mode humain'}
+        >
+          {isHuman ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+        </button>
+      )}
       {!bulkMode && <ChevronRight className="w-4 h-4 text-gray-700" />}
     </Wrapper>
   )

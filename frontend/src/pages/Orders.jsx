@@ -1259,9 +1259,7 @@ export default function Orders() {
           <select
             value={statusFilter}
             onChange={(e) => { const v = e.target.value; setStatusFilter(v); syncFiltersToUrl({ status: v === 'all' ? undefined : v }); }}
-            className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[200px] transition-all duration-300 ${
-              isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
-            }`}
+            className="input min-w-[200px] rounded-2xl px-4 py-3 sm:py-3.5 text-sm"
           >
             <option value="all">Tous les statuts</option>
             {Object.entries(ORDER_STATUSES).map(([key, value]) => (

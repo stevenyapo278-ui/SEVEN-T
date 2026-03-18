@@ -48,7 +48,7 @@ export async function sendCampaign(campaignId) {
             }
             messageText = messageText.replace(/\{\{telephone\}\}/g, recipient.contact_number || '').replace(/\{\{phone\}\}/g, recipient.contact_number || '');
             
-            await whatsappManager.sendMessage(toolId, recipient.contact_number, messageText);
+            await whatsappManager.sendAutomatedMessageAndSave(toolId, recipient.contact_number, messageText, { messageType: 'campaign' });
             
             await db.run("UPDATE campaign_recipients SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?", recipient.id);
             sent++;

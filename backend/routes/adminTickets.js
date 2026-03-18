@@ -424,7 +424,7 @@ router.get(
                 LEFT JOIN user_roles ur ON ur.user_id = u.id
                 LEFT JOIN roles r ON r.id = ur.role_id
                 WHERE u.is_active = 1 AND (
-                  u.is_admin = 1 OR r.key IN ('support_agent', 'support')
+                  u.is_admin = 1 OR u.can_manage_tickets = 1 OR r.key IN ('support_agent', 'support')
                 )
                 ORDER BY u.name ASC
                 `

@@ -126,6 +126,16 @@ export default function Admin() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [confirmAction, setConfirmAction] = useState(null)
 
+  // Bruteforce security settings
+  const [bruteforceSettings, setBruteforceSettings] = useState({
+    enabled: false,
+    threshold: 5,
+    windowMinutes: 10,
+    blockMinutes: 30
+  })
+  const [loadingBruteforce, setLoadingBruteforce] = useState(false)
+  const [savingBruteforce, setSavingBruteforce] = useState(false)
+
   const anyAdminModalOpen = showUserModal || showCreateModal || showDeleteModal || promoteAdminModal.open || showModelModal || showKeyModal || showPlanModal || showConfirmModal || testingModel !== null
 
   useLockBodyScroll(anyAdminModalOpen)
@@ -178,6 +188,7 @@ export default function Admin() {
       if (adminCaps.canViewStats || adminCaps.isFullAdmin) {
         loadStats()
         loadAnomalyStats()
+        loadBruteforceSettings()
       }
     } else if (activeTab === 'users') {
       if (adminCaps.canManageUsers || adminCaps.isFullAdmin) {
@@ -241,6 +252,56 @@ export default function Admin() {
       console.error('Error loading roles:', error)
     } finally {
       setLoadingRoles(false)
+    }
+  }
+
+  const loadBruteforceSettings = async () => {
+    setLoadingBruteforce(true)
+    try {
+      const res = await api.get('/admin/security/bruteforce')
+      const data = res.data || {}
+      setBruteforceSettings({
+        enabled: Boolean(data.enabled),
+        threshold: Number.isFinite(Number(data.threshold)) ? Number(data.threshold) : 5,
+        windowMinutes: Number.isFinite(Number(data.windowMinutes)) ? Number(data.windowMinutes) : 10,
+        blockMinutes: Number.isFinite(Number(data.blockMinutes)) ? Number(data.blockMinutes) : 30
+      })
+    } catch (error) {
+      console.error('Error loading bruteforce settings:', error)
+      toast.error('Impossible de charger la protection brute force')
+    } finally {
+      setLoadingBruteforce(false)
+    }
+  }
+
+  const saveBruteforceSettings = async (partial) => {
+    const next = {
+      ...bruteforceSettings,
+      ...partial
+    }
+    setBruteforceSettings(next)
+    setSavingBruteforce(true)
+    try {
+      const res = await api.put('/admin/security/bruteforce', next)
+      const data = res.data || {}
+      setBruteforceSettings({
+        enabled: Boolean(data.enabled),
+        threshold: Number.isFinite(Number(data.threshold)) ? Number(data.threshold) : next.threshold,
+        windowMinutes: Number.isFinite(Number(data.windowMinutes)) ? Number(data.windowMinutes) : next.windowMinutes,
+        blockMinutes: Number.isFinite(Number(data.blockMinutes)) ? Number(data.blockMinutes) : next.blockMinutes
+      })
+      toast.success('Protection brute force mise à jour')
+    } catch (error) {
+      console.error('Error saving bruteforce settings:', error)
+      toast.error('Erreur lors de la mise à jour de la protection brute force')
+      // Try to reload last known values from server
+      try {
+        await loadBruteforceSettings()
+      } catch {
+        // ignore
+      }
+    } finally {
+      setSavingBruteforce(false)
     }
   }
 
@@ -810,7 +871,11 @@ export default function Admin() {
           stats={stats} 
           loading={loading} 
           anomalyStats={anomalyStats} 
-          onTabChange={setActiveTab} 
+          onTabChange={setActiveTab}
+          bruteforceSettings={bruteforceSettings}
+          loadingBruteforce={loadingBruteforce}
+          savingBruteforce={savingBruteforce}
+          onChangeBruteforce={saveBruteforceSettings}
         />
       )}
 
@@ -1562,6 +1627,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
     can_manage_plans: 0,
     can_view_stats: 0,
     can_manage_ai: 0,
+    can_manage_tickets: 0,
     ...Object.fromEntries(PLAN_MODULES.map(m => [m.key, false])),
     generate_coupon: false,
     roles: []
@@ -1698,7 +1764,8 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                     can_manage_users: val,
                     can_manage_plans: val,
                     can_view_stats: val,
-                    can_manage_ai: val
+                    can_manage_ai: val,
+                    can_manage_tickets: val
                   });
                 }}
                 className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1713,7 +1780,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_manage_users: newVal };
-                    const allChecked = newVal && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai;
+                    const allChecked = newVal && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1727,7 +1794,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_manage_plans: newVal };
-                    const allChecked = nextData.can_manage_users && newVal && nextData.can_view_stats && nextData.can_manage_ai;
+                    const allChecked = nextData.can_manage_users && newVal && nextData.can_view_stats && nextData.can_manage_ai && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1741,7 +1808,7 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_view_stats: newVal };
-                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && newVal && nextData.can_manage_ai;
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && newVal && nextData.can_manage_ai && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1755,12 +1822,26 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_manage_ai: newVal };
-                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && newVal;
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && newVal && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
                 />
                 <span className="text-xs text-gray-400">Gérer l'IA</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_tickets}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_tickets: newVal };
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai && newVal;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gestion tickets</span>
               </label>
             </div>
             <div className="pt-3 border-t border-space-700">

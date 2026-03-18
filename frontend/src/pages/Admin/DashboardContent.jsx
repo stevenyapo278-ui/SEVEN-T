@@ -12,11 +12,12 @@ import {
   Shield,
   Clock,
   ArrowRight,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react'
 import StatCard from './StatCard'
 
-export default function DashboardContent({ stats, loading, anomalyStats, onTabChange }) {
+export default function DashboardContent({ stats, loading, anomalyStats, onTabChange, bruteforceSettings, loadingBruteforce, savingBruteforce, onChangeBruteforce }) {
   if (loading || !stats) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -61,6 +62,13 @@ export default function DashboardContent({ stats, loading, anomalyStats, onTabCh
     if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
     return date.toLocaleDateString();
   };
+
+  const bf = bruteforceSettings || {
+    enabled: false,
+    threshold: 5,
+    windowMinutes: 10,
+    blockMinutes: 30
+  }
 
   return (
     <div className="space-y-6">
@@ -301,6 +309,131 @@ export default function DashboardContent({ stats, loading, anomalyStats, onTabCh
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-red-500/15 border border-red-500/30">
+              <ShieldAlert className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-display font-semibold text-gray-100">
+                Sécurité / Protection brute force
+              </h3>
+              <p className="text-xs text-gray-500">
+                Bloque les tentatives répétées de connexion sur une courte période.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-medium ${bf.enabled ? 'text-emerald-400' : 'text-gray-500'}`}>
+              {bf.enabled ? 'Activée' : 'Désactivée'}
+            </span>
+            <button
+              type="button"
+              onClick={() => onChangeBruteforce?.({ enabled: !bf.enabled })}
+              disabled={savingBruteforce || loadingBruteforce}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                bf.enabled ? 'bg-emerald-500' : 'bg-space-700'
+              } ${savingBruteforce || loadingBruteforce ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  bf.enabled ? 'translate-x-5' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {loadingBruteforce ? (
+          <div className="flex items-center justify-center h-24 text-gray-400">
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+            Chargement de la configuration de sécurité…
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  Tentatives avant blocage
+                </span>
+                <span className="text-sm font-semibold text-gray-100">
+                  {bf.threshold}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={20}
+                step={1}
+                value={bf.threshold}
+                disabled={savingBruteforce}
+                onChange={(e) => onChangeBruteforce?.({ threshold: Number(e.target.value) })}
+                className="w-full accent-red-500"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Nombre d&apos;échecs de connexion autorisés dans la fenêtre glissante.
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  Fenêtre d&apos;observation (min)
+                </span>
+                <span className="text-sm font-semibold text-gray-100">
+                  {bf.windowMinutes} min
+                </span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={60}
+                step={1}
+                value={bf.windowMinutes}
+                disabled={savingBruteforce}
+                onChange={(e) => onChangeBruteforce?.({ windowMinutes: Number(e.target.value) })}
+                className="w-full accent-amber-500"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Période sur laquelle les tentatives échouées sont comptabilisées.
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                  Durée de blocage (min)
+                </span>
+                <span className="text-sm font-semibold text-gray-100">
+                  {bf.blockMinutes} min
+                </span>
+              </div>
+              <input
+                type="range"
+                min={5}
+                max={180}
+                step={5}
+                value={bf.blockMinutes}
+                disabled={savingBruteforce}
+                onChange={(e) => onChangeBruteforce?.({ blockMinutes: Number(e.target.value) })}
+                className="w-full accent-red-500"
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Temps pendant lequel l&apos;adresse IP est bloquée après détection.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {savingBruteforce && !loadingBruteforce && (
+          <p className="flex items-center gap-2 text-xs text-amber-400 mt-4">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Sauvegarde de la configuration…
+          </p>
+        )}
       </div>
     </div>
   )

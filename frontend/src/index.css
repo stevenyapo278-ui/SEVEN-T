@@ -10,6 +10,19 @@
     border-color: var(--border-color);
   }
 
+  /* Selects: même style que .input + chevron intégré */
+  select.input,
+  select.input-dark {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 2.75rem; /* place pour le chevron */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.6' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 0.9rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25rem;
+  }
+
   .light .input-dark, .light .input {
     background: #ffffff;
     border-color: #cbd5e1;
@@ -927,9 +940,10 @@ select.input option {
 }
 
 /* Light mode select dropdown */
+.light select.input,
 .light select.input-dark {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
-  background-position: right 0.75rem center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.6' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.9rem center;
   background-repeat: no-repeat;
   background-size: 1.25rem;
 }
@@ -1077,6 +1091,31 @@ select.input option {
 
 .light .bg-black\/70 {
   background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* Light mode: corriger les modales "dark hardcodées" */
+.light .bg-\[\#0B0F1A\] {
+  background-color: #ffffff !important;
+}
+.light .ring-\[\#0B0F1A\] {
+  --tw-ring-color: #ffffff !important;
+}
+.light .border-white\/10,
+.light .border-white\/5 {
+  border-color: var(--border) !important;
+}
+.light .bg-white\/5,
+.light .hover\:bg-white\/5:hover,
+.light .bg-white\/10,
+.light .hover\:bg-white\/10:hover,
+.light .bg-white\/\[0\.02\],
+.light .hover\:bg-white\/\[0\.02\]:hover,
+.light .bg-white\/\[0\.04\],
+.light .hover\:bg-white\/\[0\.04\]:hover {
+  background-color: rgba(15, 23, 42, 0.04) !important;
+}
+.light .text-white {
+  color: var(--text-primary) !important;
 }
 
 /* Navigation Overrides */

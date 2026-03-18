@@ -24,17 +24,17 @@ export default function EmptyState({
           primaryAction.to ? (
             <Link
               to={primaryAction.to}
-              className="btn-primary"
+              className="btn-primary inline-flex items-center justify-center gap-2"
             >
-              {primaryAction.icon && <primaryAction.icon className="w-4 h-4 mr-2" />}
+              {primaryAction.icon && <primaryAction.icon className="w-4 h-4" />}
               {primaryAction.label}
             </Link>
           ) : (
             <button
               onClick={primaryAction.onClick}
-              className="btn-primary"
+              className="btn-primary inline-flex items-center justify-center gap-2"
             >
-              {primaryAction.icon && <primaryAction.icon className="w-4 h-4 mr-2" />}
+              {primaryAction.icon && <primaryAction.icon className="w-4 h-4" />}
               {primaryAction.label}
             </button>
           )
@@ -46,17 +46,17 @@ export default function EmptyState({
               to={secondaryAction.to}
               target={secondaryAction.external ? "_blank" : undefined}
               rel={secondaryAction.external ? "noopener noreferrer" : undefined}
-              className="px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-gray-200 bg-space-800/50 hover:bg-space-700/50 transition-colors border border-space-700"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-gray-200 bg-space-800/50 hover:bg-space-700/50 transition-colors border border-space-700"
             >
-              {secondaryAction.icon && <secondaryAction.icon className="w-4 h-4 mr-2 inline" />}
+              {secondaryAction.icon && <secondaryAction.icon className="w-4 h-4" />}
               {secondaryAction.label}
             </Link>
           ) : (
             <button
               onClick={secondaryAction.onClick}
-              className="px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-gray-200 bg-space-800/50 hover:bg-space-700/50 transition-colors border border-space-700"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-gray-200 bg-space-800/50 hover:bg-space-700/50 transition-colors border border-space-700"
             >
-              {secondaryAction.icon && <secondaryAction.icon className="w-4 h-4 mr-2 inline" />}
+              {secondaryAction.icon && <secondaryAction.icon className="w-4 h-4" />}
               {secondaryAction.label}
             </button>
           )

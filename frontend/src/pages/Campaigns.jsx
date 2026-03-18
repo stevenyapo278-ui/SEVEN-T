@@ -33,6 +33,7 @@ import {
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import ImportedContactsPicker from '../components/ImportedContactsPicker'
 import { registerLocale } from 'react-datepicker'
 import fr from 'date-fns/locale/fr'
 registerLocale('fr', fr)
@@ -45,6 +46,7 @@ export default function Campaigns() {
   const [campaigns, setCampaigns] = useState([])
   const [stats, setStats] = useState(null)
   const [agents, setAgents] = useState([])
+  const [syncingContacts, setSyncingContacts] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -57,6 +59,7 @@ export default function Campaigns() {
   const [loadingRecipients, setLoadingRecipients] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   useLockBodyScroll(showModal || showRecipientsModal || showHistoryModal)
+  const [importedPickerOpen, setImportedPickerOpen] = useState(false)
   const [historyData, setHistoryData] = useState({ campaign: null, recipients: [] })
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [sendingCampaignId, setSendingCampaignId] = useState(null)
@@ -94,6 +97,40 @@ export default function Campaigns() {
       toast.error('Erreur lors du chargement des campagnes')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSyncWhatsappContacts = async () => {
+    const connectedAgents = (agents || []).filter(a => a.whatsapp_connected)
+    if (connectedAgents.length === 0) {
+      toast.error('Aucun agent WhatsApp connecté')
+      return
+    }
+
+    setSyncingContacts(true)
+    const loadingToastId = toast.loading('Synchronisation des contacts WhatsApp…')
+    try {
+      const results = await Promise.allSettled(
+        connectedAgents.map(agent => api.post(`/whatsapp/sync/${agent.id}`))
+      )
+      const okCount = results.filter(r => r.status === 'fulfilled').length
+      const pendingCount = results
+        .filter(r => r.status === 'fulfilled')
+        .map(r => r.value?.data)
+        .filter(d => d?.pending).length
+
+      toast.dismiss(loadingToastId)
+      if (pendingCount > 0) {
+        toast.success(`Sync lancée (${okCount}/${connectedAgents.length}) • Certaines connexions sont encore en cours`)
+      } else {
+        toast.success(`Contacts WhatsApp mis à jour (${okCount}/${connectedAgents.length})`)
+      }
+      loadData()
+    } catch (error) {
+      toast.dismiss(loadingToastId)
+      toast.error(error.response?.data?.error || 'Erreur lors de la synchronisation')
+    } finally {
+      setSyncingContacts(false)
     }
   }
 
@@ -155,6 +192,40 @@ export default function Campaigns() {
       const added = result.data?.added ?? result.data?.imported ?? 0
       toast.success(added > 0 ? `${added} lead(s) ajouté(s)` : 'Aucun nouveau contact ajouté (déjà présents)')
       setSelectedLeadIds(new Set())
+      const campRes = await api.get(`/campaigns/${recipientsCampaign.id}`)
+      setRecipientsList(campRes.data.recipients || [])
+      setRecipientsCampaign(prev => prev ? { ...prev, campaign: campRes.data.campaign } : null)
+      loadData()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Erreur lors de l\'ajout')
+    }
+  }
+
+  const handleAddImportedContacts = async (contacts) => {
+    if (!recipientsCampaign?.id) return
+    const list = Array.isArray(contacts) ? contacts : []
+    if (list.length === 0) {
+      toast.error('Sélectionnez au moins un contact importé')
+      return
+    }
+    try {
+      const existingNorm = new Set((recipientsList || []).map(r => String(r.contact_number || '').replace(/\D/g, '')))
+      const payload = list
+        .filter(c => c?.contact_number)
+        .map(c => ({ number: c.contact_number, name: c.contact_name || null }))
+        .filter(p => {
+          const norm = String(p.number || '').replace(/\D/g, '')
+          if (!norm) return false
+          if (existingNorm.has(norm)) return false
+          existingNorm.add(norm)
+          return true
+        })
+      if (payload.length === 0) {
+        toast.success('Aucun nouveau contact ajouté (déjà présents)')
+        return
+      }
+      await api.post(`/campaigns/${recipientsCampaign.id}/recipients`, { recipients: payload })
+      toast.success(`${payload.length} contact(s) ajouté(s)`)
       const campRes = await api.get(`/campaigns/${recipientsCampaign.id}`)
       setRecipientsList(campRes.data.recipients || [])
       setRecipientsCampaign(prev => prev ? { ...prev, campaign: campRes.data.campaign } : null)
@@ -343,6 +414,19 @@ export default function Campaigns() {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Actualiser</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSyncWhatsappContacts}
+                disabled={syncingContacts}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title="Récupérer et mettre à jour la liste des contacts WhatsApp"
+              >
+                <Users className="w-4 h-4" />
+                <RefreshCw className={`w-4 h-4 ${syncingContacts ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{syncingContacts ? 'Sync…' : 'Mettre à jour contacts'}</span>
               </button>
               <button
                 onClick={() => {
@@ -840,6 +924,14 @@ export default function Campaigns() {
                       <Plus className="w-4 h-4" />
                       Importer des conversations récentes
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setImportedPickerOpen(true)}
+                      className="mt-3 w-full sm:w-auto h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest text-gold-300 hover:text-black bg-gold-400/10 hover:bg-gold-400 transition-all border border-gold-400/20 flex items-center justify-center gap-2"
+                    >
+                      <Users className="w-4 h-4" />
+                      Ajouter des contacts importés (sélection)
+                    </button>
                   </section>
 
                   {/* Sélectionner des leads */}
@@ -926,6 +1018,18 @@ export default function Campaigns() {
         </div>,
         document.body
       )}
+
+      <ImportedContactsPicker
+        open={importedPickerOpen}
+        onClose={() => setImportedPickerOpen(false)}
+        agentId={recipientsCampaign?.campaign?.agent_id || recipientsCampaign?.campaign?.agentId || ''}
+        title="Contacts importés"
+        mode="multi"
+        onSelect={(contacts) => {
+          setImportedPickerOpen(false)
+          handleAddImportedContacts(contacts)
+        }}
+      />
 
       {/* Modal Historique d'exécution */}
       {showHistoryModal && createPortal(

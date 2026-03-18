@@ -40,7 +40,7 @@ export function useConversationSocket(onUpdate) {
         withCredentials: true,
         transports: ['websocket', 'polling']
       })
-      sharedSocket.on('connect_error', () => {})
+      sharedSocket.on('connect_error', () => setConnected(false))
     }
 
     const socket = sharedSocket
@@ -71,7 +71,7 @@ export function useConversationSocket(onUpdate) {
         }, DISCONNECT_DELAY_MS)
       }
     }
-  }, [stableOnUpdate])
+  }, [user, stableOnUpdate])
 
   return { connected }
 }

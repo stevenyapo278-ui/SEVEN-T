@@ -101,7 +101,11 @@ export default function PlansContent({
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
               <Users className="w-4 h-4" />
-              <span>{plan.user_count || 0} utilisateur(s)</span>
+              <span>
+                {plan.user_count > 0
+                  ? `${plan.user_count} utilisateur(s)`
+                  : 'Aucun utilisateur'}
+              </span>
             </div>
             <div className="flex flex-wrap gap-2 pt-3 border-t border-space-700">
               <button onClick={() => onEditPlan(plan)} className="text-xs px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"><Edit className="w-3 h-3 inline mr-1" /> Modifier</button>

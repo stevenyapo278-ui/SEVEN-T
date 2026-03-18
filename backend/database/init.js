@@ -191,6 +191,7 @@ export async function initDatabase() {
             can_manage_plans INTEGER DEFAULT 0,
             can_view_stats INTEGER DEFAULT 0,
             can_manage_ai INTEGER DEFAULT 0,
+            can_manage_tickets INTEGER DEFAULT 0,
             subscription_status TEXT DEFAULT 'trialing',
             subscription_end_date TIMESTAMP,
             currency TEXT DEFAULT 'XOF',
@@ -314,6 +315,8 @@ export async function initDatabase() {
             contact_number TEXT,
             status TEXT DEFAULT 'active',
             last_message_at TIMESTAMP,
+            last_read_at TIMESTAMP,
+            unread_messages_count INTEGER DEFAULT 0,
             tags TEXT DEFAULT '[]',
             priority TEXT DEFAULT 'normal',
             is_transferred INTEGER DEFAULT 0,
@@ -1198,6 +1201,7 @@ export async function initDatabase() {
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_plans INTEGER DEFAULT 0');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_view_stats INTEGER DEFAULT 0');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_ai INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_tickets INTEGER DEFAULT 0');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS analytics_module_enabled INTEGER DEFAULT 0');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT \'XOF\'');
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS media_model TEXT');
@@ -1381,6 +1385,22 @@ export async function initDatabase() {
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('conversations.suggested_action column migration:', e?.message);
+        }
+    }
+
+    // Migration: conversations - read tracking
+    try {
+        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS last_read_at TIMESTAMP');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('conversations.last_read_at column migration:', e?.message);
+        }
+    }
+    try {
+        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS unread_messages_count INTEGER DEFAULT 0');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('conversations.unread_messages_count column migration:', e?.message);
         }
     }
 

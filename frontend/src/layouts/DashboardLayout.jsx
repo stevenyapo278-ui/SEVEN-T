@@ -705,8 +705,8 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
           </div>
         )}
 
-        {/* Admin / Support */}
-        {!isInfluencerOnly && (user?.is_admin === 1 || user?.can_manage_users || user?.can_manage_plans || user?.can_view_stats || user?.can_manage_ai || user?.permissions?.includes('support.tickets.read')) && (
+        {/* Admin */}
+        {!isInfluencerOnly && (user?.is_admin === 1 || user?.can_manage_users || user?.can_manage_plans || user?.can_view_stats || user?.can_manage_ai) && (
           <div className="space-y-0.5">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</p>
@@ -735,29 +735,36 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 )}
               </NavLink>
             ))}
-            {(user?.permissions?.includes('support.tickets.read') || user?.is_admin === 1) && (
-              <NavLink
-                to="/dashboard/support"
-                viewTransition
-                onMouseEnter={() => prefetchRouteData('/dashboard/support', Boolean(isAuthenticated))}
-                onClick={onItemClick}
-                className={({ isActive }) =>
-                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
-                    isActive
-                      ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
-                      : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
-                    <LifeBuoy className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
-                    {(!collapsed || isMobile) && <span className="truncate">{t('nav.support', 'Support')}</span>}
-                  </>
-                )}
-              </NavLink>
+          </div>
+        )}
+
+        {/* Support (tickets) */}
+        {!isInfluencerOnly && (user?.permissions?.includes('support.tickets.read') || user?.is_admin === 1) && (
+          <div className="space-y-0.5 mt-2">
+            {(!collapsed || isMobile) && (
+              <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Support</p>
             )}
+            <NavLink
+              to="/dashboard/support"
+              viewTransition
+              onMouseEnter={() => prefetchRouteData('/dashboard/support', Boolean(isAuthenticated))}
+              onClick={onItemClick}
+              className={({ isActive }) =>
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
+                  isActive
+                    ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
+                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
+                  <LifeBuoy className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  {(!collapsed || isMobile) && <span className="truncate">{t('nav.support', 'Support')}</span>}
+                </>
+              )}
+            </NavLink>
           </div>
         )}
       </nav>
@@ -936,11 +943,16 @@ export default function DashboardLayout() {
       setReduceMotionOverride(e.detail.value)
       try { localStorage.setItem('seven-t-reduce-motion', String(e.detail.value)) } catch {}
     }
+    const onRefreshUnreadCounts = () => {
+      fetchUnreadCounts()
+    }
     window.addEventListener('seven-t:sidebar-collapsed', onSidebarPref)
     window.addEventListener('seven-t:reduce-motion', onReduceMotionPref)
+    window.addEventListener('seven-t:refresh-unread-counts', onRefreshUnreadCounts)
     return () => {
       window.removeEventListener('seven-t:sidebar-collapsed', onSidebarPref)
       window.removeEventListener('seven-t:reduce-motion', onReduceMotionPref)
+      window.removeEventListener('seven-t:refresh-unread-counts', onRefreshUnreadCounts)
     }
   }, [])
 

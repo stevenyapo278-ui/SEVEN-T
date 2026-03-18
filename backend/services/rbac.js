@@ -36,6 +36,12 @@ const LEGACY_FLAG_TO_PERMS = {
     'audit.read',
     'security.anomalies.read',
     'platform.activity.read'
+  ],
+  can_manage_tickets: [
+    'support.tickets.read',
+    'support.tickets.reply',
+    'support.tickets.status',
+    'support.tickets.assign'
   ]
 };
 
@@ -54,7 +60,7 @@ function toBool(v) {
 async function getLegacyFlags(userId) {
   if (!userId) return null;
   const u = await db.get(
-    `SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai
+    `SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets
      FROM users WHERE id = ?`,
     userId
   );
@@ -64,7 +70,8 @@ async function getLegacyFlags(userId) {
     can_manage_users: toBool(u.can_manage_users),
     can_manage_plans: toBool(u.can_manage_plans),
     can_view_stats: toBool(u.can_view_stats),
-    can_manage_ai: toBool(u.can_manage_ai)
+    can_manage_ai: toBool(u.can_manage_ai),
+    can_manage_tickets: toBool(u.can_manage_tickets)
   };
 }
 

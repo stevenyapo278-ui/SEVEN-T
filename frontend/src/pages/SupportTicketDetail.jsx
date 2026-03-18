@@ -207,9 +207,7 @@ export default function SupportTicketDetail() {
                 value={ticket?.status || 'open'}
                 onChange={(e) => updateStatus(e.target.value)}
                 disabled={!canChangeStatus || updatingMeta}
-                className={`w-full px-3 py-2 rounded-xl border text-sm font-semibold outline-none ${
-                  isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'
-                } disabled:opacity-60`}
+                className="input px-3 py-2 text-sm font-semibold disabled:opacity-60"
               >
                 <option value="open">Ouvert</option>
                 <option value="in_progress">En cours</option>
@@ -231,9 +229,7 @@ export default function SupportTicketDetail() {
                   value={ticket?.assigned_to || 'unassigned'}
                   onChange={(e) => updateAssign(e.target.value === 'unassigned' ? 'unassigned' : e.target.value)}
                   disabled={updatingMeta}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm font-semibold outline-none ${
-                    isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'
-                  } disabled:opacity-60`}
+                  className="input px-3 py-2 text-sm font-semibold disabled:opacity-60"
                 >
                   <option value="unassigned">Non assigné</option>
                   {agents.map((a) => (

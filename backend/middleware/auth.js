@@ -129,7 +129,7 @@ export async function requireAdmin(req, res, next) {
 async function getAdminFlags(userId) {
     if (!userId) return null;
     const user = await db.get(
-        `SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai FROM users WHERE id = ?`,
+        `SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets FROM users WHERE id = ?`,
         userId
     );
     if (!user) return null;
@@ -138,7 +138,8 @@ async function getAdminFlags(userId) {
         can_manage_users: Number(user.can_manage_users) === 1,
         can_manage_plans: Number(user.can_manage_plans) === 1,
         can_view_stats: Number(user.can_view_stats) === 1,
-        can_manage_ai: Number(user.can_manage_ai) === 1
+        can_manage_ai: Number(user.can_manage_ai) === 1,
+        can_manage_tickets: Number(user.can_manage_tickets) === 1
     };
 }
 
@@ -170,7 +171,8 @@ export function requirePermission(...permissions) {
             flags.can_manage_users ||
             flags.can_manage_plans ||
             flags.can_view_stats ||
-            flags.can_manage_ai;
+            flags.can_manage_ai ||
+            flags.can_manage_tickets;
         if (!isAnyAdmin) return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
 
         if (flags.is_admin) return next();
@@ -183,7 +185,8 @@ export function requirePermission(...permissions) {
             can_manage_users: 'users.write',
             can_manage_plans: 'billing.plans.write',
             can_view_stats: 'platform.stats.read',
-            can_manage_ai: 'ai.settings.write'
+            can_manage_ai: 'ai.settings.write',
+            can_manage_tickets: 'support.tickets.assign'
         };
 
         // Evaluate permissions: accept either legacy flags or RBAC permission keys

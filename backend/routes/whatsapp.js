@@ -234,7 +234,7 @@ router.post('/send/:id', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'WhatsApp non connecté' });
         }
 
-        const result = await whatsappManager.sendMessage(toolId, to, message);
+        const result = await whatsappManager.sendAutomatedMessageAndSave(toolId, to, message, { messageType: 'test' });
 
         res.json(result);
     } catch (error) {
@@ -374,6 +374,99 @@ router.get('/contacts/:agentId', authenticateToken, async (req, res) => {
         }
     } catch (error) {
         console.error('Get contacts error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Get imported contacts from Baileys store (full contact list)
+// Optional query params: agent_id, q, limit
+router.get('/imported-contacts', authenticateToken, async (req, res) => {
+    try {
+        const { agent_id, q, limit } = req.query || {};
+        const safeLimit = Math.max(1, Math.min(parseInt(limit || '2000', 10) || 2000, 5000));
+        const search = (q || '').toString().trim();
+
+        let agents = [];
+        if (agent_id) {
+            const agent = await db.get('SELECT id, name, tool_id, whatsapp_connected FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.id);
+            if (!agent) return res.status(404).json({ error: 'Agent non trouvé' });
+            agents = [agent];
+        } else {
+            agents = await db.all(`
+                SELECT id, name, tool_id, whatsapp_connected
+                FROM agents
+                WHERE user_id = ? AND tool_id IS NOT NULL
+                ORDER BY name ASC
+            `, req.user.id);
+        }
+
+        const merged = new Map(); // number -> contact
+
+        for (const a of (agents || [])) {
+            const toolId = a.tool_id;
+            if (!toolId) continue;
+            if (!whatsappManager.isConnected(toolId)) continue;
+
+            const list = await whatsappManager.getStoreContacts(toolId, { q: search, limit: safeLimit });
+            for (const c of (list || [])) {
+                const number = String(c.number || '').replace(/\D/g, '');
+                if (!number) continue;
+                if (!merged.has(number)) {
+                    merged.set(number, {
+                        agent_id: a.id,
+                        agent_name: a.name,
+                        contact_number: c.number,
+                        contact_name: c.name || c.number,
+                        jid: c.jid,
+                        is_my_contact: !!c.isMyContact
+                    });
+                }
+                if (merged.size >= safeLimit) break;
+            }
+            if (merged.size >= safeLimit) break;
+        }
+
+        const contacts = Array.from(merged.values()).sort((x, y) => {
+            const xn = String(x.contact_name || '').toLowerCase();
+            const yn = String(y.contact_name || '').toLowerCase();
+            if (xn < yn) return -1;
+            if (xn > yn) return 1;
+            return String(x.contact_number || '').localeCompare(String(y.contact_number || ''));
+        });
+
+        res.json({ 
+            contacts, 
+            limit: safeLimit, 
+            source: 'baileys_store',
+            reason: contacts.length === 0 ? 'store_empty_or_not_connected' : null
+        });
+    } catch (error) {
+        console.error('Get imported contacts (store) error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Quick diagnostics for Baileys store state (debug)
+router.get('/imported-contacts/debug', authenticateToken, async (req, res) => {
+    try {
+        const { agent_id } = req.query || {};
+        const agents = agent_id
+            ? [await db.get('SELECT id, name, tool_id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.id)]
+            : await db.all('SELECT id, name, tool_id FROM agents WHERE user_id = ? AND tool_id IS NOT NULL ORDER BY name ASC', req.user.id);
+
+        const data = (agents || []).filter(Boolean).map((a) => {
+            const toolId = a.tool_id;
+            const store = toolId ? whatsappManager.stores?.get(toolId) : null;
+            const contactsCount = store?.contacts ? Object.keys(store.contacts).length : 0;
+            const chatsCount = store?.chats ? (store.chats.size || 0) : 0;
+            const connected = toolId ? whatsappManager.isConnected(toolId) : false;
+            const status = toolId ? whatsappManager.getStatus(toolId) : { status: 'no_tool' };
+            return { agent_id: a.id, agent_name: a.name, tool_id: toolId, connected, status, contactsCount, chatsCount };
+        });
+
+        res.json({ agents: data });
+    } catch (error) {
+        console.error('Imported contacts debug error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

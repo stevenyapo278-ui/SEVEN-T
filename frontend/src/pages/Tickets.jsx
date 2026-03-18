@@ -112,31 +112,41 @@ export default function Tickets() {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 py-6">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <h1 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Tickets support</h1>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Crée et suis tes demandes au support.</p>
+    <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
+      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+      }`}>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 min-w-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 mb-2 min-w-0">
+              <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                <LifeBuoy className="w-6 h-6 text-blue-400" />
+              </div>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Tickets support</h1>
+            </div>
+            <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Crée et suis tes demandes au support.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => (showCreate ? setShowCreate(false) : openCreate())}
+              title={showCreate ? 'Fermer le formulaire' : 'Créer un nouveau ticket'}
+              className="btn-primary inline-flex items-center gap-2 min-h-[44px]"
+            >
+              <Plus className="w-5 h-5" />
+              <span>{showCreate ? 'Fermer' : 'Nouveau ticket'}</span>
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => (showCreate ? setShowCreate(false) : openCreate())}
-          title={showCreate ? 'Fermer le formulaire' : 'Créer un nouveau ticket'}
-          className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors ${
-            isDark ? 'bg-blue-500/10 text-blue-300 border-blue-500/30 hover:bg-blue-500/15' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-          }`}
-        >
-          <Plus className="w-4 h-4" />
-          {showCreate ? 'Fermer' : 'Nouveau ticket'}
-        </button>
       </div>
 
       <div className={`rounded-2xl border p-4 ${isDark ? 'bg-space-900 border-space-700/60' : 'bg-white border-gray-200'}`}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <Filter className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
             <select value={statusFilter} onChange={(e) => { const v = e.target.value; setStatusFilter(v); syncToUrl({ status: v || undefined }); }}
-              className={`px-2 py-1 rounded-lg text-sm border ${isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'}`}>
+              className="input w-full sm:w-auto px-3 py-2 sm:py-1.5 text-sm"
+            >
               <option value="">Tous les statuts</option>
               <option value="open">Ouvert</option>
               <option value="in_progress">En cours</option>
@@ -144,20 +154,21 @@ export default function Tickets() {
               <option value="closed">Fermé</option>
             </select>
             <select value={priorityFilter} onChange={(e) => { const v = e.target.value; setPriorityFilter(v); syncToUrl({ priority: v || undefined }); }}
-              className={`px-2 py-1 rounded-lg text-sm border ${isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'}`}>
+              className="input w-full sm:w-auto px-3 py-2 sm:py-1.5 text-sm"
+            >
               <option value="">Toutes les priorités</option>
               <option value="low">Basse</option>
               <option value="medium">Moyenne</option>
               <option value="high">Haute</option>
             </select>
           </div>
-          <div className={`flex items-center gap-2 px-2 py-1 rounded-lg border ${isDark ? 'bg-space-950 border-space-700' : 'bg-white border-gray-200'}`}>
+          <div className={`w-full sm:w-auto flex items-center gap-2 px-3 py-2 sm:px-2 sm:py-1 rounded-lg border ${isDark ? 'bg-space-950 border-space-700' : 'bg-white border-gray-200'}`}>
             <Search className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
             <input
               value={q}
               onChange={(e) => { const v = e.target.value; setQ(v); syncToUrl({ q: v || undefined }); }}
               placeholder="Rechercher…"
-              className={`bg-transparent outline-none text-sm w-56 ${isDark ? 'text-gray-200 placeholder:text-gray-600' : 'text-gray-900 placeholder:text-gray-400'}`}
+              className={`bg-transparent outline-none text-sm w-full sm:w-56 ${isDark ? 'text-gray-200 placeholder:text-gray-600' : 'text-gray-900 placeholder:text-gray-400'}`}
             />
           </div>
         </div>
@@ -242,11 +253,11 @@ export default function Tickets() {
                   placeholder="Décris le problème et les étapes pour le reproduire…"
                 />
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <select
                   value={priority}
                   onChange={(e) => setPriority(e.target.value)}
-                  className={`px-3 py-2 rounded-xl border text-sm ${isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'}`}
+                  className="input w-full sm:w-auto px-3 py-2 text-sm"
                 >
                   <option value="low">Priorité: basse</option>
                   <option value="medium">Priorité: moyenne</option>
@@ -255,7 +266,7 @@ export default function Tickets() {
                 <button
                   type="submit"
                   disabled={creating || !subject.trim()}
-                  className={`ml-auto inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-colors disabled:opacity-60 ${
+                  className={`w-full sm:w-auto sm:ml-auto inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-colors disabled:opacity-60 ${
                     isDark ? 'bg-blue-500/10 text-blue-300 border-blue-500/30 hover:bg-blue-500/15' : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                   }`}
                 >

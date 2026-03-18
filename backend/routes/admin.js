@@ -764,7 +764,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
-            can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
+            can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             roles,
             generate_coupon
         } = req.body;
@@ -810,15 +810,15 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
                 voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
                 availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
                 sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
-                can_manage_users, can_manage_plans, can_view_stats, can_manage_ai
+                can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, 
            subscriptionStatus, subscriptionEndDate,
            voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0, reports_module_enabled ? 1 : 0,
            availability_hours_enabled ? 1 : 0, next_best_action_enabled ? 1 : 0, conversion_score_enabled ? 1 : 0, daily_briefing_enabled ? 1 : 0,
            sentiment_routing_enabled ? 1 : 0, catalog_import_enabled ? 1 : 0, human_handoff_alerts_enabled ? 1 : 0,
-           can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0
+           can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0, can_manage_tickets ? 1 : 0
         );
 
         await activityLogger.log({

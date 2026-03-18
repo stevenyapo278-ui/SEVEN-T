@@ -18,6 +18,79 @@ import { generateConversationPdf } from '../services/conversationPdfExport.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const router = Router();
 
+// Get distinct imported contacts (from conversations)
+// Must be before any "/:id" routes
+router.get('/imported-contacts', authenticateToken, async (req, res) => {
+    try {
+        const { agent_id, q, min_messages, limit } = req.query || {};
+
+        const safeLimit = Math.max(1, Math.min(parseInt(limit || '200', 10) || 200, 500));
+        const safeMinMessages = Math.max(0, parseInt(min_messages || '0', 10) || 0);
+        const search = (q || '').toString().trim();
+
+        if (agent_id) {
+            const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.id);
+            if (!agent) {
+                return res.status(404).json({ error: 'Agent non trouvé' });
+            }
+        }
+
+        const nameExpr = `COALESCE(NULLIF(TRIM(c.contact_name), ''), NULLIF(TRIM(c.push_name), ''), c.contact_number)`;
+
+        let query = `
+            SELECT
+                c.agent_id,
+                a.name as agent_name,
+                c.contact_number,
+                ${nameExpr} as contact_name,
+                MAX(COALESCE(c.last_message_at, c.created_at)) as last_message_at,
+                COUNT(m.id) as message_count
+            FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            LEFT JOIN messages m ON m.conversation_id = c.id
+            WHERE a.user_id = ?
+            AND c.contact_number IS NOT NULL
+            AND TRIM(c.contact_number) != ''
+            AND c.contact_jid NOT LIKE '%@g.us'
+            AND c.contact_jid NOT LIKE '%broadcast%'
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+        `;
+        const params = [req.user.id];
+
+        if (agent_id) {
+            query += ' AND c.agent_id = ?';
+            params.push(agent_id);
+        }
+
+        if (search) {
+            query += ' AND (LOWER(c.contact_number) LIKE ? OR LOWER(c.contact_name) LIKE ? OR LOWER(c.push_name) LIKE ?)';
+            const s = `%${search.toLowerCase()}%`;
+            params.push(s, s, s);
+        }
+
+        query += `
+            GROUP BY c.agent_id, a.name, c.contact_number, ${nameExpr}
+        `;
+
+        if (safeMinMessages > 0) {
+            query += ` HAVING COUNT(m.id) >= ?`;
+            params.push(safeMinMessages);
+        }
+
+        query += `
+            ORDER BY last_message_at DESC
+            LIMIT ?
+        `;
+        params.push(safeLimit);
+
+        const contacts = await db.all(query, ...params);
+        res.json({ contacts: Array.isArray(contacts) ? contacts : [], limit: safeLimit });
+    } catch (error) {
+        console.error('Get imported contacts error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Get all conversations for an agent
 router.get('/agent/:agentId', authenticateToken, async (req, res) => {
     try {
@@ -174,10 +247,10 @@ router.get('/:id/export/pdf', authenticateToken, async (req, res) => {
 router.get('/unread-count', authenticateToken, async (req, res) => {
     try {
         const row = await db.get(`
-            SELECT COUNT(*) as count 
+            SELECT COALESCE(SUM(COALESCE(c.unread_messages_count, 0)), 0) as count
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
-            WHERE a.user_id = ? AND c.status != 'read'
+            WHERE a.user_id = ?
         `, req.user.id);
         res.json({ count: row?.count || 0 });
     } catch (error) {
@@ -537,7 +610,11 @@ router.post('/:id/mark-read', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Conversation non trouvée' });
         }
 
-        await db.run('UPDATE conversations SET status = ? WHERE id = ?', 'read', req.params.id);
+        await db.run(
+            'UPDATE conversations SET status = ?, unread_messages_count = 0, last_read_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'read',
+            req.params.id
+        );
 
         res.json({ message: 'Messages marqués comme lus' });
     } catch (error) {

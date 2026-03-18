@@ -22,6 +22,7 @@ import {
   Tag,
   Search,
   MoreVertical,
+  ChevronDown,
   ChevronRight,
   Target,
   History,
@@ -34,6 +35,7 @@ import {
   Minimize2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ImportedContactsPicker from '../components/ImportedContactsPicker'
 
 const TRIGGER_ICONS = {
   new_message: MessageSquare,
@@ -65,6 +67,7 @@ export default function Workflows() {
   const [types, setTypes] = useState({ triggerTypes: {}, actionTypes: {}, contactRoles: {} })
   const [agents, setAgents] = useState([])
   const [contacts, setContacts] = useState([])
+  const [syncingContacts, setSyncingContacts] = useState(false)
   const [logs, setLogs] = useState([])
   const [logsLoading, setLogsLoading] = useState(false)
   const [retryingLogId, setRetryingLogId] = useState(null)
@@ -79,6 +82,8 @@ export default function Workflows() {
   const [contactForm, setContactForm] = useState({ name: '', phone_number: '', role: 'livreur', notes: '' })
   const [focusedContactId, setFocusedContactId] = useState(null)
   const [messageFocusOpen, setMessageFocusOpen] = useState(null) // index of action being edited fullscreen
+  const [importedPickerOpen, setImportedPickerOpen] = useState(false)
+  const [importedPickerActionIdx, setImportedPickerActionIdx] = useState(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -124,6 +129,40 @@ export default function Workflows() {
       console.error('Error loading workflows:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSyncWhatsappContacts = async () => {
+    const connectedAgents = (agents || []).filter(a => a.whatsapp_connected)
+    if (connectedAgents.length === 0) {
+      toast.error('Aucun agent WhatsApp connecté')
+      return
+    }
+
+    setSyncingContacts(true)
+    const loadingToastId = toast.loading('Synchronisation des contacts WhatsApp…')
+    try {
+      const results = await Promise.allSettled(
+        connectedAgents.map(agent => api.post(`/whatsapp/sync/${agent.id}`))
+      )
+      const okCount = results.filter(r => r.status === 'fulfilled').length
+      const pendingCount = results
+        .filter(r => r.status === 'fulfilled')
+        .map(r => r.value?.data)
+        .filter(d => d?.pending).length
+
+      toast.dismiss(loadingToastId)
+      if (pendingCount > 0) {
+        toast.success(`Sync lancée (${okCount}/${connectedAgents.length}) • Certaines connexions sont encore en cours`)
+      } else {
+        toast.success(`Contacts WhatsApp mis à jour (${okCount}/${connectedAgents.length})`)
+      }
+      loadData()
+    } catch (error) {
+      toast.dismiss(loadingToastId)
+      toast.error(error.response?.data?.error || 'Erreur lors de la synchronisation')
+    } finally {
+      setSyncingContacts(false)
     }
   }
 
@@ -393,6 +432,19 @@ export default function Workflows() {
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Actualiser</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSyncWhatsappContacts}
+                disabled={syncingContacts}
+                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] disabled:opacity-60 disabled:cursor-not-allowed ${
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title="Récupérer et mettre à jour la liste des contacts WhatsApp"
+              >
+                <Users className="w-4 h-4" />
+                <RefreshCw className={`w-4 h-4 ${syncingContacts ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{syncingContacts ? 'Sync…' : 'Mettre à jour contacts'}</span>
               </button>
               <button
                 onClick={() => {
@@ -840,19 +892,16 @@ export default function Workflows() {
                   </div>
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Agent (optionnel)</label>
-                    <div className="relative">
-                      <select
-                        value={form.agent_id}
-                        onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
-                        className="input-dark w-full py-4 px-5 text-base rounded-2xl appearance-none"
-                      >
-                        <option value="">Tous les agents</option>
-                        {agents.map((agent) => (
-                          <option key={agent.id} value={agent.id}>{agent.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                    </div>
+                    <select
+                      value={form.agent_id}
+                      onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
+                      className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                    >
+                      <option value="">Tous les agents</option>
+                      {agents.map((agent) => (
+                        <option key={agent.id} value={agent.id}>{agent.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -955,15 +1004,20 @@ export default function Workflows() {
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Destinataire</label>
                                     <div className="relative">
                                       <select
-                                        value={action.config.send_to === 'contact' ? 'contact' : 'conversation'}
+                                        value={action.config.send_to === 'contact' ? 'contact' : (action.config.send_to === 'imported' ? 'imported' : 'conversation')}
                                         onChange={(e) => updateActionConfig(idx, {
-                                          send_to: e.target.value === 'contact' ? 'contact' : 'conversation',
-                                          contact_id: e.target.value === 'contact' ? (action.config.contact_id || '') : null
+                                          send_to: e.target.value === 'contact'
+                                            ? 'contact'
+                                            : (e.target.value === 'imported' ? 'imported' : 'conversation'),
+                                          contact_id: e.target.value === 'contact' ? (action.config.contact_id || '') : null,
+                                          phone_number: e.target.value === 'imported' ? (action.config.phone_number || '') : null,
+                                          contact_name: e.target.value === 'imported' ? (action.config.contact_name || '') : null
                                         })}
                                         className="input-dark w-full py-4 px-5 text-sm rounded-2xl appearance-none"
                                       >
                                         <option value="conversation">Contact de la conversation</option>
                                         <option value="contact">Contact enregistré</option>
+                                        <option value="imported">Contact importé</option>
                                       </select>
                                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                                     </div>
@@ -984,6 +1038,23 @@ export default function Workflows() {
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                                       </div>
+                                    </div>
+                                  )}
+                                  {action.config.send_to === 'imported' && (
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Choisir le contact importé</label>
+                                      <button
+                                        type="button"
+                                        onClick={() => { setImportedPickerActionIdx(idx); setImportedPickerOpen(true) }}
+                                        className="w-full input-dark py-4 px-5 text-sm rounded-2xl text-left hover:border-white/10 transition-all"
+                                      >
+                                        {action.config.phone_number
+                                          ? `${action.config.contact_name ? `${action.config.contact_name} • ` : ''}${action.config.phone_number}`
+                                          : 'Sélectionner…'}
+                                      </button>
+                                      <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest ml-1">
+                                        Astuce: nécessite un agent WhatsApp connecté pour envoyer.
+                                      </p>
                                     </div>
                                   )}
                                 </div>
@@ -1129,6 +1200,22 @@ export default function Workflows() {
         </div>,
         document.body
       )}
+
+      <ImportedContactsPicker
+        open={importedPickerOpen}
+        onClose={() => { setImportedPickerOpen(false); setImportedPickerActionIdx(null) }}
+        agentId={form.agent_id || ''}
+        title="Contacts importés"
+        mode="single"
+        onSelect={(c) => {
+          if (!c || importedPickerActionIdx == null) return
+          updateActionConfig(importedPickerActionIdx, {
+            send_to: 'imported',
+            phone_number: c.contact_number,
+            contact_name: c.contact_name || ''
+          })
+        }}
+      />
 
       {/* Modal Ajouter/Modifier contact */}
       {showContactModal && createPortal(

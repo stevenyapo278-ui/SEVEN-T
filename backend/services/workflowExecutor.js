@@ -349,9 +349,31 @@ class WorkflowExecutor {
             }
 
             await this.whatsappManager.ensureConversationDisplay(toolId, agentId, phoneJid, contact.name, contact.phone_number);
-            await this.sendMessageWithRetry(() => this.whatsappManager.sendMessage(toolId, phoneJid, processedMessage));
+            await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageAndSave(toolId, phoneJid, processedMessage, { messageType: 'workflow' }));
 
             return { sent: true, recipient: contact.name, phone: contact.phone_number };
+        } else if ((config.send_to === 'imported' || config.send_to === 'phone') && config.phone_number) {
+            // Send to a raw phone number (imported contact)
+            const phone = String(config.phone_number || '').trim();
+            const name = String(config.contact_name || config.name || '').trim() || phone;
+            const phoneJid = normalizeJid(phone);
+            if (!phoneJid) {
+                throw new Error('Contact phone number is invalid');
+            }
+
+            const agentId = workflow.agent_id || triggerData.agentId;
+            if (!agentId) {
+                throw new Error('No agent specified for sending message');
+            }
+            const agentRow = await db.get('SELECT tool_id FROM agents WHERE id = ?', agentId);
+            const toolId = agentRow?.tool_id;
+            if (!toolId) {
+                throw new Error('Aucun outil WhatsApp assigné à cet agent. Vérifiez la configuration de l\'agent.');
+            }
+
+            await this.whatsappManager.ensureConversationDisplay(toolId, agentId, phoneJid, name, phone);
+            await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageAndSave(toolId, phoneJid, processedMessage, { messageType: 'workflow' }));
+            return { sent: true, recipient: name, phone };
         } else {
             // Send to conversation contact (default)
             const conversationId = triggerData.conversationId;
@@ -369,7 +391,7 @@ class WorkflowExecutor {
                 throw new Error('Aucun outil WhatsApp assigné à cet agent. Vérifiez la configuration de l\'agent.');
             }
 
-            await this.sendMessageWithRetry(() => this.whatsappManager.sendMessageAndSave(toolId, conversationId, processedMessage));
+            await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageToConversationAndSave(toolId, conversationId, processedMessage, { messageType: 'workflow' }));
 
             return { sent: true, recipient: 'conversation_contact' };
         }

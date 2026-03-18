@@ -394,9 +394,7 @@ export default function Leads() {
           <select
             value={statusFilter}
             onChange={(e) => handleStatusFilterChange(e.target.value)}
-            className={`px-4 py-3 rounded-2xl border min-w-[160px] transition-all duration-300 ${
-              isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
-            }`}
+            className="input min-w-[160px] rounded-2xl px-4 py-3 text-sm"
           >
             <option value="all">Tous statuts</option>
             {LEAD_STATUSES.map(status => (
@@ -406,9 +404,7 @@ export default function Leads() {
           <select
             value={sourceFilter}
             onChange={(e) => handleSourceFilterChange(e.target.value)}
-            className={`px-4 py-3 rounded-2xl border min-w-[160px] transition-all duration-300 ${
-              isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700 shadow-sm'
-            }`}
+            className="input min-w-[160px] rounded-2xl px-4 py-3 text-sm"
           >
             <option value="all">Toutes sources</option>
             {LEAD_SOURCES.map(source => (
@@ -897,7 +893,7 @@ function LeadModal({ lead, onClose, onSaved }) {
                       className="input-dark w-full py-4 pl-12 pr-12 text-base rounded-2xl appearance-none bg-transparent"
                     >
                     {LEAD_SOURCES.map(source => (
-                      <option key={source.id} value={source.id} className="bg-[#0B0F1A]">{source.label}</option>
+                      <option key={source.id} value={source.id}>{source.label}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />

@@ -7,9 +7,11 @@ import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { registerLocale } from 'react-datepicker'
 import fr from 'date-fns/locale/fr'
+import { useConfirm } from '../../contexts/ConfirmContext'
 registerLocale('fr', fr)
 
 export default function CouponsContent({ users = [] }) {
+  const { showConfirm } = useConfirm()
   const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -93,7 +95,14 @@ export default function CouponsContent({ users = [] }) {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce coupon ?')) return
+    const ok = await showConfirm({
+      title: 'Supprimer ce coupon ?',
+      message: 'Cette action est irréversible. Le coupon ne pourra plus être utilisé.',
+      variant: 'danger',
+      confirmLabel: 'Supprimer',
+      cancelLabel: 'Annuler',
+    })
+    if (!ok) return
     try {
       await api.delete(`/admin/coupons/${id}`)
       toast.success('Coupon supprimé')
@@ -331,7 +340,7 @@ export default function CouponsContent({ users = [] }) {
                     <select
                       value={formData.discount_type}
                       onChange={e => setFormData({ ...formData, discount_type: e.target.value })}
-                      className="w-full px-3 py-2 bg-space-800 border border-space-600 rounded-lg text-white"
+                      className="input px-3 py-2 text-sm"
                     >
                       <option value="percentage">Pourcentage (%)</option>
                       <option value="fixed">Montant fixe</option>
@@ -376,7 +385,7 @@ export default function CouponsContent({ users = [] }) {
                     <select
                       value={formData.influencer_id}
                       onChange={e => setFormData({ ...formData, influencer_id: e.target.value })}
-                      className="w-full px-3 py-2 bg-space-800 border border-space-600 rounded-lg text-white"
+                      className="input px-3 py-2 text-sm"
                     >
                       <option value="">Aucun influenceur</option>
                       {users.map(u => (
@@ -429,7 +438,7 @@ export default function CouponsContent({ users = [] }) {
                     <select
                       value={formData.influencer_reward_type}
                       onChange={e => setFormData({ ...formData, influencer_reward_type: e.target.value })}
-                      className="w-full px-3 py-2 bg-space-800 border border-space-600 rounded-lg text-white"
+                      className="input px-3 py-2 text-sm"
                     >
                       <option value="none">Aucune part</option>
                       <option value="percentage">Pourcentage vente</option>
