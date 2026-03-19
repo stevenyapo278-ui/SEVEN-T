@@ -269,7 +269,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             subscription_end_date,
-            can_manage_users, can_manage_plans, can_view_stats, can_manage_ai,
+            can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             roles
         } = req.body;
 
@@ -419,6 +419,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('can_manage_ai = ?');
             params.push(can_manage_ai ? 1 : 0);
         }
+        if (can_manage_tickets !== undefined) {
+            setClauses.push('can_manage_tickets = ?');
+            params.push(can_manage_tickets ? 1 : 0);
+        }
 
         // Allow explicit override of subscription_end_date (only if plan didn't already set it)
         if (subscription_end_date !== undefined && !planChanged) {
@@ -496,7 +500,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
         const changes = {};
         const fieldsToTrack = [
             'name', 'email', 'plan', 'credits', 'is_admin', 'is_active',
-            'can_manage_users', 'can_manage_plans', 'can_view_stats', 'can_manage_ai',
+            'can_manage_users', 'can_manage_plans', 'can_view_stats', 'can_manage_ai', 'can_manage_tickets',
             'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled', 'reports_module_enabled',
             'availability_hours_enabled', 'next_best_action_enabled', 'conversion_score_enabled', 'daily_briefing_enabled',
             'sentiment_routing_enabled', 'catalog_import_enabled', 'human_handoff_alerts_enabled'

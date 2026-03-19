@@ -484,8 +484,16 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
   const fetchNotifications = async () => {
     try {
       if (!isAuthenticated) return
-      const response = await api.get('/notifications?limit=20')
-      setNotifications(response.data.notifications || [])
+      const response = await api.get('/notifications?limit=40')
+      // Filter out security/critical notifications from the quick-access menu
+      // These belong in the Activities/Admin view, not the user dropdown
+      const allNotifs = response.data.notifications || []
+      const filtered = allNotifs.filter(n => {
+        const isSecurity = n.title?.includes('[SÉCURITÉ]') || n.metadata?.critical === true;
+        return !isSecurity;
+      }).slice(0, 20);
+      
+      setNotifications(filtered)
       setUnreadCountInternal(response.data.unreadCount || 0)
     } catch (error) {
       if (error?.response?.status === 401) return
@@ -706,7 +714,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         )}
 
         {/* Admin */}
-        {!isInfluencerOnly && (user?.is_admin === 1 || user?.can_manage_users || user?.can_manage_plans || user?.can_view_stats || user?.can_manage_ai) && (
+        {!isInfluencerOnly && (user?.is_admin === 1 || user?.can_manage_users === 1 || user?.can_manage_plans === 1 || user?.can_view_stats === 1 || user?.can_manage_ai === 1) && (
           <div className="space-y-0.5">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</p>

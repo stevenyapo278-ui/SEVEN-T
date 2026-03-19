@@ -437,22 +437,39 @@ router.get('/me', async (req, res) => {
         }
 
         req.user = decoded;
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        let user;
+        try {
+            user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+        } catch (e) {
+             throw new Error(`DB SELECT users failed: ${e.message}`);
+        }
         
         if (!user) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
-        const effectivePlan = await getEffectivePlanName(user.plan, user);
-        const planConfig = await getPlan(effectivePlan);
-        const plan_features = planConfig?.features || {};
-        const permissions = await getUserPermissions(user.id);
-        const userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
-        let roleKeys = userRoles.map(r => r.key);
+        
+        let effectivePlan, planConfig, plan_features, permissions, userRoles, roleKeys;
+        try {
+            effectivePlan = await getEffectivePlanName(user.plan, user);
+            planConfig = await getPlan(effectivePlan);
+            plan_features = planConfig?.features || {};
+            permissions = await getUserPermissions(user.id);
+            userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
+            roleKeys = userRoles.map(r => r.key);
+        } catch (e) {
+            throw new Error(`Post-login data gathering failed: ${e.message}`);
+        }
 
         const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
         res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly } });
     } catch (error) {
         console.error('Get user error:', error);
+        try {
+            const fs = await import('fs');
+            fs.appendFileSync('/tmp/auth_error.log', `[${new Date().toISOString()}] Get user error: ${error.message}\n${error.stack}\n\n`);
+        } catch (e) {
+            // ignore logging error
+        }
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

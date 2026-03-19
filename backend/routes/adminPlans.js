@@ -48,14 +48,17 @@ function mergeWithDefaults(plan) {
 }
 
 // All routes require admin
-router.use(authenticateToken, requirePermission('billing.plans.write'));
+router.use(authenticateToken);
+
+// The requirePermission('billing.plans.write') will be applied to specific route groups or individually
+const requirePlans = requirePermission('billing.plans.write');
 
 // ==================== PLANS CRUD ====================
 
 /**
  * Get all subscription plans
  */
-router.get('/plans', async (req, res) => {
+router.get('/plans', requirePlans, async (req, res) => {
     try {
         const plans = await db.all(`
             SELECT * FROM subscription_plans
@@ -95,7 +98,7 @@ router.get('/plans', async (req, res) => {
 /**
  * Restore default plans (delete all and re-insert from config)
  */
-router.post('/plans/restore-defaults', async (req, res) => {
+router.post('/plans/restore-defaults', requirePlans, async (req, res) => {
     try {
         await db.prepare('DELETE FROM subscription_plans').run();
 
@@ -120,7 +123,7 @@ router.post('/plans/restore-defaults', async (req, res) => {
 /**
  * Get a single plan by ID
  */
-router.get('/plans/:id', async (req, res) => {
+router.get('/plans/:id', requirePlans, async (req, res) => {
     try {
         const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
@@ -149,7 +152,7 @@ router.get('/plans/:id', async (req, res) => {
 /**
  * Create a new plan
  */
-router.post('/plans', async (req, res) => {
+router.post('/plans', requirePlans, async (req, res) => {
     try {
         const { 
             name, 
@@ -250,7 +253,7 @@ router.post('/plans', async (req, res) => {
 /**
  * Update a plan
  */
-router.put('/plans/:id', async (req, res) => {
+router.put('/plans/:id', requirePlans, async (req, res) => {
     try {
         const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
@@ -378,7 +381,7 @@ router.put('/plans/:id', async (req, res) => {
 /**
  * Delete a plan
  */
-router.delete('/plans/:id', async (req, res) => {
+router.delete('/plans/:id', requirePlans, async (req, res) => {
     try {
         const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
@@ -427,7 +430,7 @@ router.delete('/plans/:id', async (req, res) => {
 /**
  * Set default plan
  */
-router.post('/plans/:id/set-default', async (req, res) => {
+router.post('/plans/:id/set-default', requirePlans, async (req, res) => {
     try {
         const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
@@ -463,7 +466,7 @@ router.post('/plans/:id/set-default', async (req, res) => {
 /**
  * Duplicate a plan
  */
-router.post('/plans/:id/duplicate', async (req, res) => {
+router.post('/plans/:id/duplicate', requirePlans, async (req, res) => {
     try {
         const plan = await db.prepare('SELECT * FROM subscription_plans WHERE id = ?').get(req.params.id);
         
@@ -514,7 +517,7 @@ router.post('/plans/:id/duplicate', async (req, res) => {
 /**
  * Reorder plans
  */
-router.post('/plans/reorder', async (req, res) => {
+router.post('/plans/reorder', requirePlans, async (req, res) => {
     try {
         const { order } = req.body; // Array of { id, sort_order }
         
@@ -541,7 +544,7 @@ router.post('/plans/reorder', async (req, res) => {
 /**
  * Get plan statistics
  */
-router.get('/plans/stats/overview', async (req, res) => {
+router.get('/plans/stats/overview', requirePlans, async (req, res) => {
     try {
         // Total revenue by plan
         const revenue = await db.prepare(`
@@ -596,7 +599,7 @@ router.get('/plans/stats/overview', async (req, res) => {
 /**
  * Get available AI models for plans (list used in PlanModal "Modèles IA")
  */
-router.get('/available-models', async (req, res) => {
+router.get('/available-models', requirePlans, async (req, res) => {
     try {
         const models = await db.all(`
             SELECT id, name, provider, description, is_free
@@ -618,7 +621,7 @@ router.get('/available-models', async (req, res) => {
 /**
  * Get all coupons
  */
-router.get('/coupons', async (req, res) => {
+router.get('/coupons', requirePlans, async (req, res) => {
     try {
         const coupons = await db.all(`
             SELECT c.*, u.name as influencer_name, u.email as influencer_email 
@@ -636,7 +639,7 @@ router.get('/coupons', async (req, res) => {
 /**
  * Create a coupon
  */
-router.post('/coupons', async (req, res) => {
+router.post('/coupons', requirePlans, async (req, res) => {
     try {
         let { 
             name, code, discount_type, discount_value, max_uses, expires_at, is_active, 
@@ -713,7 +716,7 @@ router.post('/coupons', async (req, res) => {
     }
 });
 
-router.get('/coupons/:id', async (req, res) => {
+router.get('/coupons/:id', requirePlans, async (req, res) => {
     try {
         const coupon = await db.get(`
             SELECT c.*, u.name as influencer_name, u.email as influencer_email 
@@ -732,7 +735,7 @@ router.get('/coupons/:id', async (req, res) => {
 /**
  * Update a coupon
  */
-router.put('/coupons/:id', async (req, res) => {
+router.put('/coupons/:id', requirePlans, async (req, res) => {
     try {
         const { name, code, discount_type, discount_value, max_uses, expires_at, is_active, influencer_id, influencer_reward_type, influencer_reward_value } = req.body;
         
@@ -796,7 +799,7 @@ router.put('/coupons/:id', async (req, res) => {
 /**
  * Delete a coupon
  */
-router.delete('/coupons/:id', async (req, res) => {
+router.delete('/coupons/:id', requirePlans, async (req, res) => {
     try {
         const coupon = await db.get('SELECT * FROM subscription_coupons WHERE id = ?', req.params.id);
         if (!coupon) return res.status(404).json({ error: 'Coupon non trouvé' });

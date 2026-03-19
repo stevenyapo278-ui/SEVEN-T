@@ -66,7 +66,7 @@ export default function PlansContent({
             }`}
           >
             <div className="absolute top-3 right-3 flex gap-1">
-              {plan.is_default && <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">Défaut</span>}
+              {plan.is_default === 1 && <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">Défaut</span>}
               {!plan.is_active && <span className="px-2 py-0.5 text-xs font-medium bg-red-500/20 text-red-400 rounded-full">Inactif</span>}
             </div>
             <div className="mb-4">

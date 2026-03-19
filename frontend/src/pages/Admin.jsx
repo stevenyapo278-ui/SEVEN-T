@@ -149,6 +149,7 @@ export default function Admin() {
       canManagePlans: can(user?.can_manage_plans),
       canViewStats: can(user?.can_view_stats),
       canManageAI: can(user?.can_manage_ai),
+      canManageTickets: can(user?.can_manage_tickets),
     }
   }, [user])
 
@@ -160,6 +161,7 @@ export default function Admin() {
     if (adminCaps.canManageUsers || adminCaps.isFullAdmin) tabs.push('users')
     if (adminCaps.canManageAI || adminCaps.isFullAdmin) tabs.push('ai-models')
     if (adminCaps.canManagePlans || adminCaps.isFullAdmin) tabs.push('plans', 'coupons')
+    if (adminCaps.canManageTickets || adminCaps.isFullAdmin) tabs.push('tickets')
     return tabs
   }, [adminCaps])
 
@@ -789,7 +791,7 @@ export default function Admin() {
               }`}
             >
               <Activity className="w-5 h-5 flex-shrink-0" />
-              <span className="whitespace-nowrap">Activité</span>
+              <span className="whitespace-nowrap">Journal d'activité</span>
             </button>
           )}
           {(adminCaps.canManageUsers || adminCaps.isFullAdmin) && (
@@ -1257,6 +1259,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
     can_manage_plans: user.can_manage_plans || 0,
     can_view_stats: user.can_view_stats || 0,
     can_manage_ai: user.can_manage_ai || 0,
+    can_manage_tickets: user.can_manage_tickets || 0,
     is_active: user.is_active,
     ...Object.fromEntries(PLAN_MODULES.map(m => [m.key, !!user[m.key]])),
     roles: user.roles || [],
@@ -1431,7 +1434,8 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
                     can_manage_users: val,
                     can_manage_plans: val,
                     can_view_stats: val,
-                    can_manage_ai: val
+                    can_manage_ai: val,
+                    can_manage_tickets: val
                   });
                   if (!e.target.checked) setConfirmAdminInput('');
                 }}
@@ -1447,7 +1451,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_manage_users: newVal };
-                    const allChecked = newVal && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai;
+                    const allChecked = newVal && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1461,7 +1465,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_manage_plans: newVal };
-                    const allChecked = nextData.can_manage_users && newVal && nextData.can_view_stats && nextData.can_manage_ai;
+                    const allChecked = nextData.can_manage_users && newVal && nextData.can_view_stats && nextData.can_manage_ai && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1475,7 +1479,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_view_stats: newVal };
-                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && newVal && nextData.can_manage_ai;
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && newVal && nextData.can_manage_ai && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
@@ -1489,12 +1493,26 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
                   onChange={(e) => {
                     const newVal = e.target.checked ? 1 : 0;
                     const nextData = { ...formData, can_manage_ai: newVal };
-                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && newVal;
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && newVal && nextData.can_manage_tickets;
                     setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
                   }}
                   className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
                 />
                 <span className="text-xs text-gray-400">Gérer l'IA</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer py-1">
+                <input
+                  type="checkbox"
+                  checked={formData.can_manage_tickets}
+                  onChange={(e) => {
+                    const newVal = e.target.checked ? 1 : 0;
+                    const nextData = { ...formData, can_manage_tickets: newVal };
+                    const allChecked = nextData.can_manage_users && nextData.can_manage_plans && nextData.can_view_stats && nextData.can_manage_ai && newVal;
+                    setFormData({ ...nextData, is_admin: allChecked ? 1 : 0 });
+                  }}
+                  className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
+                />
+                <span className="text-xs text-gray-400">Gestion tickets</span>
               </label>
             </div>
             <label className="flex items-center gap-2 cursor-pointer py-2">

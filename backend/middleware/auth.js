@@ -83,18 +83,13 @@ export async function authenticateAdmin(req, res, next) {
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
 
-        // Always verify admin status or granular permissions in DB
-        const user = await db.get(`
-            SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai 
-            FROM users WHERE id = ?
-        `, decoded.id);
-
-        if (!user) {
+        const flags = await getAdminFlags(decoded.id);
+        if (!flags) {
             return res.status(401).json({ error: 'Utilisateur non trouvé' });
         }
 
-        const isPartialAdmin = user.can_manage_users || user.can_manage_plans || user.can_view_stats || user.can_manage_ai;
-        if (!user.is_admin && !isPartialAdmin) {
+        const isPartialAdmin = flags.can_manage_users || flags.can_manage_plans || flags.can_view_stats || flags.can_manage_ai || flags.can_manage_tickets;
+        if (!flags.is_admin && !isPartialAdmin) {
             return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
         }
 
@@ -109,18 +104,13 @@ export async function authenticateAdmin(req, res, next) {
 }
 
 export async function requireAdmin(req, res, next) {
-    // Always verify in DB — do not trust JWT payload alone
-    const user = await db.get(`
-        SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai 
-        FROM users WHERE id = ?
-    `, req.user?.id);
-
-    if (!user) {
+    const flags = await getAdminFlags(req.user?.id);
+    if (!flags) {
         return res.status(401).json({ error: 'Utilisateur non trouvé' });
     }
 
-    const isPartialAdmin = user.can_manage_users || user.can_manage_plans || user.can_view_stats || user.can_manage_ai;
-    if (!user.is_admin && !isPartialAdmin) {
+    const isPartialAdmin = flags.can_manage_users || flags.can_manage_plans || flags.can_view_stats || flags.can_manage_ai || flags.can_manage_tickets;
+    if (!flags.is_admin && !isPartialAdmin) {
         return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
     }
     next();
@@ -128,18 +118,26 @@ export async function requireAdmin(req, res, next) {
 
 async function getAdminFlags(userId) {
     if (!userId) return null;
-    const user = await db.get(
-        `SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets FROM users WHERE id = ?`,
-        userId
-    );
+    let user;
+    try {
+        user = await db.get(
+            `SELECT * FROM users WHERE id = ?`,
+            userId
+        );
+    } catch (e) {
+        console.error('getAdminFlags error:', e.message);
+        return null; // treat as not found to be safe
+    }
+    
     if (!user) return null;
+    
     return {
-        is_admin: Number(user.is_admin) === 1,
-        can_manage_users: Number(user.can_manage_users) === 1,
-        can_manage_plans: Number(user.can_manage_plans) === 1,
-        can_view_stats: Number(user.can_view_stats) === 1,
-        can_manage_ai: Number(user.can_manage_ai) === 1,
-        can_manage_tickets: Number(user.can_manage_tickets) === 1
+        is_admin: Boolean(user.is_admin),
+        can_manage_users: Boolean(user.can_manage_users),
+        can_manage_plans: Boolean(user.can_manage_plans),
+        can_view_stats: Boolean(user.can_view_stats),
+        can_manage_ai: Boolean(user.can_manage_ai),
+        can_manage_tickets: Boolean(user.can_manage_tickets)
     };
 }
 
@@ -166,41 +164,45 @@ export function requirePermission(...permissions) {
         if (!flags) return res.status(401).json({ error: 'Utilisateur non trouvé' });
 
         // Must be at least "any admin"
-        const isAnyAdmin =
-            flags.is_admin ||
-            flags.can_manage_users ||
-            flags.can_manage_plans ||
-            flags.can_view_stats ||
-            flags.can_manage_ai ||
-            flags.can_manage_tickets;
-        if (!isAnyAdmin) return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
-
-        if (flags.is_admin) return next();
-
-        if (!permissions || permissions.length === 0) {
-            return next();
+        const isAnyAdmin = flags.is_admin || flags.can_manage_users || flags.can_manage_plans || flags.can_view_stats || flags.can_manage_ai || flags.can_manage_tickets;
+        
+        if (!isAnyAdmin) {
+            console.log(`[auth/requirePermission] Blocked 403: User ${req.user?.id} is not an admin and has no specific flags set.`);
+            return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
         }
 
-        const LEGACY_TO_NEW = {
-            can_manage_users: 'users.write',
-            can_manage_plans: 'billing.plans.write',
-            can_view_stats: 'platform.stats.read',
-            can_manage_ai: 'ai.settings.write',
-            can_manage_tickets: 'support.tickets.assign'
-        };
+        // Map: which RBAC keys does each legacy flag grant? (Simplified)
+        const legacyPerms = new Set();
+        if (flags.is_admin) {
+             legacyPerms.add('*'); // full admin always pass
+        } else {
+            if (flags.can_manage_users) ['users.read', 'users.write', 'users.credentials.reset', 'users.credits.write', 'users.delete'].forEach(p => legacyPerms.add(p));
+            if (flags.can_manage_plans) ['billing.plans.read', 'billing.plans.write', 'billing.coupons.read', 'billing.coupons.write', 'billing.subscriptions.write'].forEach(p => legacyPerms.add(p));
+            if (flags.can_manage_ai) ['ai.models.read', 'ai.models.write', 'ai.keys.read', 'ai.keys.write', 'ai.settings.write', 'ai.reindex.run'].forEach(p => legacyPerms.add(p));
+            if (flags.can_view_stats) ['platform.stats.read', 'audit.read', 'security.anomalies.read', 'platform.activity.read'].forEach(p => legacyPerms.add(p));
+            if (flags.can_manage_tickets) ['support.tickets.read', 'support.tickets.reply', 'support.tickets.status', 'support.tickets.assign'].forEach(p => legacyPerms.add(p));
+        }
 
-        // Evaluate permissions: accept either legacy flags or RBAC permission keys
-        const userPerms = await getUserPermissions(req.user?.id);
+        // Also get actual RBAC permissions from DB via rbac service
+        const rbacPerms = await getUserPermissions(req.user?.id);
+        const userPermsSet = new Set(rbacPerms || []);
+
+        // Check each required permission
         const ok = permissions.every((p) => {
             if (!p) return true;
-            if (p in flags) return Boolean(flags[p]); // legacy flag
-            const mapped = LEGACY_TO_NEW[p];
-            const key = mapped || p;
-            return userPerms.includes(key);
+            if (legacyPerms.has('*')) return true;
+            if (legacyPerms.has(p)) return true;
+            if (userPermsSet.has(p)) return true;
+            // Also accept direct flag check (legacy compatibility)
+            if (flags[p] === true || flags[p] === 1) return true;
+            return false;
         });
+
         if (!ok) {
+            console.log(`[auth/requirePermission] 403 Forbidden: User=${req.user?.id} MissingPerms=${permissions.filter(p => !legacyPerms.has(p) && !userPermsSet.has(p))} CurrentFlags=${JSON.stringify(flags)}`);
             return res.status(403).json({ error: 'Droits insuffisants' });
         }
+        
         return next();
     };
 }

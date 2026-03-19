@@ -354,13 +354,19 @@ export default function AuditLogsContent({ logs, loading, pagination, onPageChan
                   </tr>
                 ) : (
                   logs.map((log) => {
-                    const details = typeof log.details === 'string' ? JSON.parse(log.details || '{}') : (log.details || {});
-                    const styles = getActionStyles(log.action);
-                    const time = formatDate(log.created_at);
-                    const isReversible = !!details.changes;
+                      const details = typeof log.details === 'string' ? JSON.parse(log.details || '{}') : (log.details || {});
+                      const styles = getActionStyles(log.action);
+                      const time = formatDate(log.created_at);
+                      const isReversible = !!details.changes;
+                      const isCritical = log.action === 'login_failed' || log.action === 'brute_force_detected';
 
-                    return (
-                      <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group/row">
+                      return (
+                        <tr 
+                          key={log.id} 
+                          className={`hover:bg-white/[0.02] transition-colors group/row ${
+                            isCritical ? 'bg-red-500/5' : 'bg-transparent'
+                          }`}
+                        >
                         <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
                             <div className={`p-2.5 rounded-xl ${styles.bg} ${styles.border} border ${styles.color} shadow-lg shadow-black/20`}>

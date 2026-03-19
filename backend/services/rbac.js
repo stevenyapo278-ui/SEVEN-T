@@ -59,11 +59,16 @@ function toBool(v) {
 
 async function getLegacyFlags(userId) {
   if (!userId) return null;
-  const u = await db.get(
-    `SELECT is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets
-     FROM users WHERE id = ?`,
-    userId
-  );
+  let u;
+  try {
+    u = await db.get(
+      `SELECT * FROM users WHERE id = ?`,
+      userId
+    );
+  } catch (e) {
+    console.error('getLegacyFlags error:', e.message);
+    return null;
+  }
   if (!u) return null;
   return {
     is_admin: toBool(u.is_admin),
@@ -76,6 +81,8 @@ async function getLegacyFlags(userId) {
 }
 
 export async function getUserPermissions(userId) {
+  const perms = new Set();
+
   // 1) Try RBAC tables
   try {
     const rows = await db.all(
@@ -88,24 +95,29 @@ export async function getUserPermissions(userId) {
       `,
       userId
     );
-    const keys = (rows || []).map((r) => r.key).filter(Boolean);
-    if (keys.length > 0) return keys.sort();
+    (rows || []).forEach((r) => {
+      if (r.key) perms.add(r.key);
+    });
   } catch {
-    // ignore and fallback
+    // ignore RBAC errors
   }
 
-  // 2) Fallback to legacy flags
-  const flags = await getLegacyFlags(userId);
-  if (!flags) return [];
-
-  if (flags.is_admin) {
-    return [...new Set(FULL_ADMIN_PERMS)].sort();
+  // 2) Always add legacy flags permissions (additive)
+  try {
+    const flags = await getLegacyFlags(userId);
+    if (flags) {
+      if (flags.is_admin) {
+        FULL_ADMIN_PERMS.forEach((p) => perms.add(p));
+      } else {
+        for (const [flag, list] of Object.entries(LEGACY_FLAG_TO_PERMS)) {
+          if (flags[flag]) list.forEach((p) => perms.add(p));
+        }
+      }
+    }
+  } catch {
+    // ignore legacy flag errors
   }
 
-  const perms = new Set();
-  for (const [flag, list] of Object.entries(LEGACY_FLAG_TO_PERMS)) {
-    if (flags[flag]) list.forEach((p) => perms.add(p));
-  }
   return [...perms].sort();
 }
 

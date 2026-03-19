@@ -103,7 +103,8 @@ function AdminRoute({ children }) {
     user.can_manage_users ||
     user.can_manage_plans ||
     user.can_view_stats ||
-    user.can_manage_ai
+    user.can_manage_ai ||
+    user.can_manage_tickets
   )
 
   if (!isAnyAdmin) {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
-import { authenticateAdmin, requirePermission, requireFullAdmin } from '../middleware/auth.js';
+import { authenticateToken, requirePermission, requireFullAdmin } from '../middleware/auth.js';
 import { activityLogger } from '../services/activityLogger.js';
 import { notificationService } from '../services/notifications.js';
 
@@ -23,7 +23,7 @@ function senderRoleFromAdmin(req) {
 // List all tickets (support/admin) with filters + pagination
 router.get(
     '/tickets',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.read'),
     async (req, res) => {
         try {
@@ -108,7 +108,7 @@ router.get(
 // NOTE: must be defined before '/tickets/:id'
 router.get(
     '/tickets/stats',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.read'),
     async (req, res) => {
         try {
@@ -195,7 +195,7 @@ router.get(
 // Get ticket detail + messages
 router.get(
     '/tickets/:id',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.read'),
     async (req, res) => {
         try {
@@ -238,7 +238,7 @@ router.get(
 // Reply as support/admin
 router.post(
     '/tickets/:id/messages',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.reply'),
     async (req, res) => {
         try {
@@ -306,7 +306,7 @@ router.post(
 // Change status
 router.patch(
     '/tickets/:id/status',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.status'),
     async (req, res) => {
         try {
@@ -362,7 +362,7 @@ router.patch(
 // Assign ticket (full admin or support with assign perm)
 router.patch(
     '/tickets/:id/assign',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.assign'),
     async (req, res) => {
         try {
@@ -413,7 +413,7 @@ router.patch(
 // List support agents (for assignment UI)
 router.get(
     '/support-agents',
-    authenticateAdmin,
+    authenticateToken,
     requirePermission('support.tickets.assign'),
     async (req, res) => {
         try {

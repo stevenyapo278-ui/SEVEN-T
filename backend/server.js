@@ -294,6 +294,11 @@ async function start() {
     try {
         // Initialize database
         await initDatabase();
+        try {
+            await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS can_manage_tickets INTEGER DEFAULT 0');
+        } catch (e) {
+            // ignore if exists
+        }
         console.log('✅ Database initialized');
 
         // Start Workflow Worker (BullMQ)
