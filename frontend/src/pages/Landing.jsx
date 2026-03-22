@@ -29,6 +29,7 @@ import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import LandingChatbot from '../components/LandingChatbot'
+import HeroScene3D from '../components/HeroScene3D'
 import toast from 'react-hot-toast'
 import AnimatedBackground from '../components/AnimatedBackground'
 
@@ -468,7 +469,7 @@ export default function Landing() {
                   <button onClick={openDemo} className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all text-amber-500 border-amber-400/30 ${isDark ? 'hover:bg-amber-400/10' : 'hover:bg-amber-50'}`}>
                     {t('landing.demo')}
                   </button>
-                  <Link to="/login" className={`px-4 py-2 text-sm font-medium transition-colors ${textMuted} hover:${text}`}>
+                  <Link to="/login" className={`px-4 py-2 text-sm font-medium transition-colors ${textMuted} hover:${text} flex items-center`}>
                     Connexion
                   </Link>
                   <Link to="/register" className={`px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-lg ${isDark ? 'bg-white text-black hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
@@ -533,36 +534,21 @@ export default function Landing() {
 
       {/* ── HERO ──────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-20 px-5 overflow-hidden">
-        <AnimatedBackground />
-        {/* Premium Background — The Star of the Show */}
+        {/* Animation 3D WebGL en fond */}
+        <HeroScene3D isDark={isDark} />
+
+        {/* Arrière-plan supplémentaire : lumières ambiantes douces */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
           {isDark ? (
             <>
-              {/* The Abstract Data Flow Star */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] opacity-20 md:opacity-30 mix-blend-screen scale-110">
-                <img 
-                  src="/home/styapo/.gemini/antigravity/brain/76c72d94-e430-40f3-a464-8a65953c47db/ai_saas_abstract_hero_1772985982735.png" 
-                  alt="" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-blue-600/20 rounded-full blur-[120px]" />
-              <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[120px]" />
+              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-blue-600/10 rounded-full blur-[140px]" />
+              <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-amber-500/8 rounded-full blur-[120px]" />
             </>
           ) : (
-            <>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03] scale-150">
-                <img 
-                   src="/home/styapo/.gemini/antigravity/brain/76c72d94-e430-40f3-a464-8a65953c47db/ai_saas_abstract_hero_1772985982735.png" 
-                   alt="" 
-                   className="w-full h-full object-cover grayscale brightness-200"
-                />
-              </div>
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-amber-100 rounded-full blur-[140px] opacity-60" />
-            </>
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-amber-100 rounded-full blur-[140px] opacity-40" />
           )}
-          {/* Visual Rhyming: Grid and Lines */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+          {/* Grid subtile */}
+          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto text-center px-4">
@@ -580,10 +566,10 @@ export default function Landing() {
             <h1 className={`hero-title mb-10 ${text}`}>
               L'IA qui <span className="text-amber-500 italic">travaille</span>
               <br />
-              quand <span className="opacity-60">vous dormez.</span>
+              quand <span className={isDark ? "opacity-60" : "opacity-80"}>vous dormez.</span>
             </h1>
 
-            <p className={`hero-subtitle mb-14 text-lg md:text-xl font-medium px-4 ${isDark ? 'text-white/60' : 'text-gray-600'}`}>
+            <p className={`hero-subtitle mb-14 text-lg md:text-xl font-medium px-4 ${isDark ? 'text-white/60' : 'text-gray-700'}`}>
               Automatisez vos conversations WhatsApp, qualifiez vos leads et gérez vos ventes en toute simplicité. SEVEN T est le cerveau de votre relation client africaine.
             </p>
 
@@ -595,19 +581,19 @@ export default function Landing() {
                     : 'bg-gray-900 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)]'
                 }`}>
                 Essayer gratuitement
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-white" />
               </Link>
               <button onClick={openDemo}
-                className={`group flex items-center justify-center gap-3 px-10 py-5 glass rounded-2xl font-bold text-lg transition-all hover:bg-white/5 active:scale-95 ${text}`}>
+                className={`group flex items-center justify-center gap-3 px-10 py-5 glass rounded-2xl font-bold text-lg transition-all hover:bg-white/5 active:scale-95 border ${isDark ? 'border-white/10' : 'border-gray-200'} ${text}`}>
                 <Play className="w-5 h-5 text-amber-500 fill-amber-500" />
                 Voir la démo
               </button>
             </div>
 
             {/* Visual Rhyming: Floating Cards (Depth) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
+            <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl transition-all duration-700 ${isDark ? 'opacity-50 grayscale hover:grayscale-0' : 'opacity-90'}`}>
                {['Automatique', '24h/24', 'Précis', 'Local'].map((word, i) => (
-                 <div key={word} className={`p-4 rounded-xl border ${borderFaint} glass text-[10px] font-bold uppercase tracking-widest ${textMuted}`}>
+                 <div key={word} className={`p-4 rounded-xl border ${borderFaint} glass text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
                     {word}
                  </div>
                ))}
@@ -915,12 +901,23 @@ export default function Landing() {
               </ul>
             </div>
           </div>
-          <div className={`pt-8 border-t ${borderFaint} flex flex-col md:flex-row justify-between items-center gap-4`}>
-            <p className={`text-sm ${textFaint}`}>© {new Date().getFullYear()} SEVEN T. Tous droits réservés.</p>
+          <div className={`pt-8 border-t ${borderFaint} flex flex-col md:flex-row justify-between items-center gap-6`}>
+            <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+              <p className={`text-sm ${textFaint}`}>© {new Date().getFullYear()} SEVEN T. Tous droits réservés.</p>
+              <div className="hidden md:block w-px h-4 bg-gray-500/20" />
+              <a 
+                href="https://wa.me/22558519080" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className={`text-xs font-bold tracking-widest uppercase hover:text-amber-500 transition-colors ${textMuted}`}
+              >
+                CONÇU PAR STEVEN YAPO
+              </a>
+            </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
               <Link to="/login" className={`text-sm transition-colors ${textFaint} hover:${textMuted}`}>Connexion</Link>
-              <Link to="/register" className={`text-sm transition-colors ${textFaint} hover:${textMuted}`}>Créer un compte</Link>
+              <Link to="/register" className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${isDark ? 'bg-white text-black' : 'bg-gray-900 text-white'}`}>S'inscrire</Link>
             </div>
           </div>
         </div>

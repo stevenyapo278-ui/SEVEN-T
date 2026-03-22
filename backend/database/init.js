@@ -596,6 +596,31 @@ export async function initDatabase() {
             FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
         );
 
+        -- Reports and Subscriptions
+        CREATE TABLE IF NOT EXISTS generated_reports (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            report_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            data TEXT NOT NULL, -- JSON
+            period_start TIMESTAMP,
+            period_end TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS report_subscriptions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            report_type TEXT NOT NULL,
+            frequency TEXT DEFAULT 'weekly',
+            email TEXT,
+            is_active INTEGER DEFAULT 1,
+            next_send_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS expenses (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,

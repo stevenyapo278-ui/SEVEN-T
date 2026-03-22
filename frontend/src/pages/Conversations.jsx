@@ -334,14 +334,14 @@ export default function Conversations() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-8">
+        <div className="grid grid-cols-3 gap-2 mt-6">
           {loading ? (
-            [1, 2, 3].map(i => <div key={i} className={`h-16 rounded-xl border animate-pulse ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-gray-100 border-gray-200'}`} />)
+            [1, 2, 3].map(i => <div key={i} className={`h-20 rounded-xl border animate-pulse ${isDark ? 'bg-space-800/50 border-space-700' : 'bg-gray-100 border-gray-200'}`} />)
           ) : (
             <>
-              <StatItem icon={MessageCircle} color="emerald" value={conversations.length} label="Conversations" isDark={isDark} />
-              <StatItem icon={Sparkles} color="blue" value={totalMessagesCount.toLocaleString()} label="Messages" isDark={isDark} />
-              <StatItem icon={Bot} color="amber" value={agentsList.length} label="Agents actifs" isDark={isDark} />
+              <StatItem icon={MessageCircle} color="emerald" value={conversations.length} label="Convs" isDark={isDark} />
+              <StatItem icon={Sparkles} color="blue" value={totalMessagesCount.toLocaleString()} label="Msgs" isDark={isDark} />
+              <StatItem icon={Bot} color="amber" value={agentsList.length} label="Agents" isDark={isDark} />
             </>
           )}
         </div>
@@ -442,15 +442,21 @@ export default function Conversations() {
 }
 
 function StatItem({ icon: Icon, color, value, label, isDark }) {
-  const colors = { emerald: 'text-emerald-400 bg-emerald-400/10', blue: 'text-blue-400 bg-blue-400/10', amber: 'text-amber-400 bg-amber-400/10' }
+  const colors = { 
+    emerald: 'text-emerald-400 bg-emerald-400/10', 
+    blue: 'text-blue-400 bg-blue-400/10', 
+    amber: 'text-amber-400 bg-amber-400/10' 
+  }
   return (
-    <div className={`p-4 rounded-xl border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-100 shadow-sm'}`}>
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colors[color]}`}><Icon className="w-4 h-4" /></div>
-        <div className="min-w-0">
-          <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</p>
-          <p className="text-[10px] text-gray-500 uppercase font-bold">{label}</p>
-        </div>
+    <div className={`p-2.5 sm:p-4 rounded-xl border flex flex-col items-center sm:items-start text-center sm:text-left transition-all ${
+      isDark ? 'bg-space-800/50 border-space-700/50 shadow-inner' : 'bg-white border-gray-100 shadow-sm'
+    }`}>
+      <div className={`p-1.5 sm:p-2 rounded-lg mb-2 sm:mb-3 ${colors[color]}`}>
+        <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+      </div>
+      <div className="w-full min-w-0">
+        <p className={`text-base sm:text-xl font-bold truncate leading-none mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</p>
+        <p className="text-[8px] sm:text-[10px] text-gray-500 uppercase font-black tracking-tighter sm:tracking-normal truncate">{label}</p>
       </div>
     </div>
   )

@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
             LEFT JOIN agents a ON f.agent_id = a.id
             WHERE f.user_id = ?
             ORDER BY f.updated_at DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         flows.forEach(f => {
             try {
@@ -114,7 +114,7 @@ router.get('/:id', async (req, res) => {
             FROM chatbot_flows f
             LEFT JOIN agents a ON f.agent_id = a.id
             WHERE f.id = ? AND f.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!flow) {
             return res.status(404).json({ error: 'Flow non trouvé' });
@@ -159,7 +159,7 @@ router.post('/', async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `,
             id,
-            req.user.id,
+            req.user.ownerId,
             agent_id || null,
             name.trim(),
             description?.trim() || null,
@@ -185,7 +185,7 @@ router.put('/:id', async (req, res) => {
     try {
         const { name, description, agent_id, nodes, edges, trigger_keywords, is_active } = req.body;
 
-        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!existing) {
             return res.status(404).json({ error: 'Flow non trouvé' });
         }
@@ -229,7 +229,7 @@ router.put('/:id', async (req, res) => {
 // Toggle flow active state
 router.post('/:id/toggle', async (req, res) => {
     try {
-        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!existing) {
             return res.status(404).json({ error: 'Flow non trouvé' });
         }
@@ -247,7 +247,7 @@ router.post('/:id/toggle', async (req, res) => {
 // Delete flow
 router.delete('/:id', async (req, res) => {
     try {
-        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!existing) {
             return res.status(404).json({ error: 'Flow non trouvé' });
         }
@@ -263,7 +263,7 @@ router.delete('/:id', async (req, res) => {
 // Duplicate flow
 router.post('/:id/duplicate', async (req, res) => {
     try {
-        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!existing) {
             return res.status(404).json({ error: 'Flow non trouvé' });
         }
@@ -274,7 +274,7 @@ router.post('/:id/duplicate', async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
         `,
             newId,
-            req.user.id,
+            req.user.ownerId,
             existing.agent_id,
             `${existing.name} (copie)`,
             existing.description,

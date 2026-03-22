@@ -50,10 +50,13 @@ export default function Settings() {
   }, [uiReduceMotion])
 
   useEffect(() => {
+    if (!user) return
+    let isMounted = true
     api.get('/settings/voice-responses')
-      .then((r) => setVoicePrefs(r.data || { platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }))
-      .catch(() => setVoicePrefs({ platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }))
-  }, [])
+      .then((r) => { if (isMounted) setVoicePrefs(r.data || { platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }) })
+      .catch(() => { if (isMounted) setVoicePrefs({ platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }) })
+    return () => { isMounted = false }
+  }, [user?.id])
 
   const toggleVoice = async (enabled) => {
     if (savingVoice) return
@@ -166,7 +169,7 @@ export default function Settings() {
   }
   useEffect(() => {
     loadDailyBriefing()
-  }, [user?.plan_features?.daily_briefing])
+  }, [user?.plan_features?.daily_briefing, user?.id])
 
   useEffect(() => {
     if (!user?.id) return
@@ -200,7 +203,9 @@ export default function Settings() {
       setPaymentProvidersLoading(false)
     }
   }
-  useEffect(() => { loadPaymentProviders() }, [])
+  useEffect(() => { 
+    if (user?.id) loadPaymentProviders() 
+  }, [user?.id])
 
   const handleSavePaymentProvider = async (e) => {
     e.preventDefault()

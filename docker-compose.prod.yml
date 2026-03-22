@@ -31,6 +31,8 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
     volumes:
       - uploads_data:/app/uploads
+      - sessions_data:/app/sessions
+      - baileys_data:/app/auth_info_baileys
     depends_on:
       postgres:
         condition: service_healthy
@@ -55,6 +57,10 @@ services:
       - REDIS_URL=redis://redis:6379
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - uploads_data:/app/uploads
+      - sessions_data:/app/sessions
+      - baileys_data:/app/auth_info_baileys
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,3 +131,5 @@ volumes:
   postgres_data:
   redis_data:
   uploads_data:
+  sessions_data:
+  baileys_data:

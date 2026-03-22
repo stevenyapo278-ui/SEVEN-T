@@ -221,6 +221,29 @@ export async function createPaymentLink(userId, opts = {}) {
     return payment;
 }
 
+// Get payment links for user
+router.get('/', async (req, res) => {
+    try {
+        const payments = await db.all(`
+            SELECT * FROM payment_links 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC
+        `, req.user.id);
+        
+        // Add short_id and payment_url to each result
+        const enhanced = payments.map(p => ({
+            ...p,
+            short_id: p.id.split('-')[0].toUpperCase(),
+            payment_url: p.payment_url_external || `${baseUrl()}/pay/${p.id.split('-')[0].toUpperCase()}`
+        }));
+
+        res.json({ payments: enhanced });
+    } catch (error) {
+        console.error('Get payments error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Create payment link
 router.post('/', validate(createPaymentLinkSchema), async (req, res) => {
     try {

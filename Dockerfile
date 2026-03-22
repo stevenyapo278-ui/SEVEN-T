@@ -48,8 +48,8 @@ COPY backend/ ./backend/
 # Copy frontend build
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Create upload directory (sessions go to Redis, no sessions dir needed)
-RUN mkdir -p uploads \
+# Create directories for persistence (uploads and whatsapp sessions)
+RUN mkdir -p uploads sessions auth_info_baileys \
     && chown -R nodejs:nodejs /app
 
 USER nodejs
