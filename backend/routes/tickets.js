@@ -35,7 +35,7 @@ router.post('/', authenticateToken, async (req, res) => {
             `INSERT INTO tickets (id, user_id, subject, description, status, priority)
              VALUES (?, ?, ?, ?, 'open', ?)`,
             id,
-            req.user.id,
+            req.user.ownerId,
             subj,
             desc || null,
             prio
@@ -48,7 +48,7 @@ router.post('/', authenticateToken, async (req, res) => {
                  VALUES (?, ?, ?, 'user', ?)`,
                 uuidv4(),
                 id,
-                req.user.id,
+                req.user.ownerId,
                 firstMsg
             );
         }
@@ -63,7 +63,7 @@ router.post('/', authenticateToken, async (req, res) => {
         });
 
         // Notify creator
-        await notificationService.create(req.user.id, {
+        await notificationService.create(req.user.ownerId, {
             type: 'info',
             title: 'Ticket créé',
             message: `Votre ticket "${subj}" a été créé.`,
@@ -83,7 +83,7 @@ router.post('/', authenticateToken, async (req, res) => {
         );
         for (const s of staff || []) {
             if (!s?.id) continue;
-            if (s.id === req.user.id) continue;
+            if (s.id === req.user.ownerId) continue;
             await notificationService.create(s.id, {
                 type: 'info',
                 title: 'Nouveau ticket support',
@@ -96,7 +96,7 @@ router.post('/', authenticateToken, async (req, res) => {
         const ticket = await db.get(
             `SELECT * FROM tickets WHERE id = ? AND user_id = ?`,
             id,
-            req.user.id
+            req.user.ownerId
         );
 
         return res.status(201).json({ ticket });
@@ -114,7 +114,7 @@ router.get('/', authenticateToken, async (req, res) => {
         const offset = clampInt(req.query?.offset, { min: 0, max: 100000, fallback: 0 });
 
         const where = ['t.user_id = ?'];
-        const params = [req.user.id];
+        const params = [req.user.ownerId];
 
         if (typeof status === 'string' && status) {
             if (!STATUSES.has(status)) return res.status(400).json({ error: 'Statut invalide' });
@@ -157,7 +157,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get my ticket detail + messages
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
-        const ticket = await db.get(`SELECT * FROM tickets WHERE id = ? AND user_id = ?`, req.params.id, req.user.id);
+        const ticket = await db.get(`SELECT * FROM tickets WHERE id = ? AND user_id = ?`, req.params.id, req.user.ownerId);
         if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' });
 
         const messages = await db.all(
@@ -180,7 +180,7 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
         if (!msg) return res.status(400).json({ error: 'Message requis' });
         if (msg.length > 5000) return res.status(400).json({ error: 'Message trop long (max 5000)' });
 
-        const ticket = await db.get(`SELECT * FROM tickets WHERE id = ? AND user_id = ?`, req.params.id, req.user.id);
+        const ticket = await db.get(`SELECT * FROM tickets WHERE id = ? AND user_id = ?`, req.params.id, req.user.ownerId);
         if (!ticket) return res.status(404).json({ error: 'Ticket introuvable' });
 
         if (ticket.status === 'closed') return res.status(400).json({ error: 'Ticket fermé' });
@@ -191,7 +191,7 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
              VALUES (?, ?, ?, 'user', ?)`,
             id,
             req.params.id,
-            req.user.id,
+            req.user.ownerId,
             msg
         );
 

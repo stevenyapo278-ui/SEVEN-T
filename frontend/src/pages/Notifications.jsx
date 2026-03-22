@@ -80,9 +80,9 @@ export default function Notifications() {
       const response = await api.get(url)
       const all = response.data.notifications || []
 
-      // On exclut les notifications purement \"sécurité\" (metadata.critical === true),
-      // qui sont destinées à l'onglet Admin / Activité.
-      const businessNotifications = all.filter(n => !(n?.metadata && n.metadata.critical))
+      // On inclut désormais toutes les notifications pour éviter les décalages avec le badge,
+      // même si elles sont aussi visibles dans l'onglet Activité.
+      const businessNotifications = all;
 
       setNotifications(businessNotifications)
       const unread = businessNotifications.filter(n => !n.is_read).length

@@ -2,9 +2,11 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { hasFeature } from '../config/plans.js';
+import { requireModule } from '../middleware/requireModule.js';
 
 const router = Router();
+router.use(authenticateToken);
+router.use(requireModule('reports'));
 
 // Tables report_subscriptions and generated_reports are created in database/init.js
 
@@ -37,12 +39,12 @@ const REPORT_TYPES = {
 };
 
 // Get report types
-router.get('/types', authenticateToken, requireReportsAccess, (req, res) => {
+router.get('/types', requireReportsAccess, (req, res) => {
     res.json({ reportTypes: REPORT_TYPES });
 });
 
 // Generate a report
-router.post('/generate', authenticateToken, requireReportsAccess, async (req, res) => {
+router.post('/generate', requireReportsAccess, async (req, res) => {
     try {
         const { report_type, period = '7d' } = req.body;
 
@@ -108,7 +110,7 @@ router.post('/generate', authenticateToken, requireReportsAccess, async (req, re
 });
 
 // Get generated reports history
-router.get('/history', authenticateToken, requireReportsAccess, async (req, res) => {
+router.get('/history', requireReportsAccess, async (req, res) => {
     try {
         const reports = await db.prepare(`
             SELECT id, report_type, title, period_start, period_end, created_at
@@ -126,7 +128,7 @@ router.get('/history', authenticateToken, requireReportsAccess, async (req, res)
 });
 
 // Get report subscriptions (MUST be before /:id route)
-router.get('/subscriptions', authenticateToken, requireReportsAccess, async (req, res) => {
+router.get('/subscriptions', requireReportsAccess, async (req, res) => {
     try {
         const subscriptions = await db.prepare('SELECT * FROM report_subscriptions WHERE user_id = ?').all(req.user.id);
         res.json({ subscriptions });
@@ -137,7 +139,7 @@ router.get('/subscriptions', authenticateToken, requireReportsAccess, async (req
 });
 
 // Get a specific generated report
-router.get('/:id', authenticateToken, requireReportsAccess, async (req, res) => {
+router.get('/:id', requireReportsAccess, async (req, res) => {
     try {
         const report = await db.prepare('SELECT * FROM generated_reports WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
 
@@ -159,7 +161,7 @@ router.get('/:id', authenticateToken, requireReportsAccess, async (req, res) => 
 });
 
 // Delete a generated report
-router.delete('/:id', authenticateToken, requireReportsAccess, async (req, res) => {
+router.delete('/:id', requireReportsAccess, async (req, res) => {
     try {
         await db.prepare('DELETE FROM generated_reports WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
         res.json({ message: 'Rapport supprimé' });
@@ -170,7 +172,7 @@ router.delete('/:id', authenticateToken, requireReportsAccess, async (req, res) 
 });
 
 // Create/update report subscription
-router.post('/subscriptions', authenticateToken, requireReportsAccess, async (req, res) => {
+router.post('/subscriptions', requireReportsAccess, async (req, res) => {
     try {
         const { report_type, frequency = 'weekly', email } = req.body;
 
@@ -225,7 +227,7 @@ router.post('/subscriptions', authenticateToken, requireReportsAccess, async (re
 });
 
 // Toggle subscription active state
-router.post('/subscriptions/:id/toggle', authenticateToken, requireReportsAccess, async (req, res) => {
+router.post('/subscriptions/:id/toggle', requireReportsAccess, async (req, res) => {
     try {
         const existing = await db.prepare('SELECT * FROM report_subscriptions WHERE id = ? AND user_id = ?')
             .get(req.params.id, req.user.id);
@@ -245,7 +247,7 @@ router.post('/subscriptions/:id/toggle', authenticateToken, requireReportsAccess
 });
 
 // Delete subscription
-router.delete('/subscriptions/:id', authenticateToken, requireReportsAccess, async (req, res) => {
+router.delete('/subscriptions/:id', requireReportsAccess, async (req, res) => {
     try {
         await db.prepare('DELETE FROM report_subscriptions WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
         res.json({ message: 'Abonnement supprimé' });

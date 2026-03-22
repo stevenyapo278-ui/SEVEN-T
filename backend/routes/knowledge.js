@@ -48,7 +48,7 @@ const upload = multer({
 // Get all knowledge items for an agent
 router.get('/agent/:agentId', authenticateToken, async (req, res) => {
     try {
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -99,13 +99,13 @@ router.post('/agent/:agentId', authenticateToken, async (req, res) => {
     try {
         const { title, content, type, metadata, url } = req.body;
 
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
 
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM knowledge_base WHERE agent_id = ?', req.params.agentId);
         const itemsCount = itemsCountRow?.count ?? 0;
@@ -191,14 +191,14 @@ router.post('/agent/:agentId/upload', authenticateToken, upload.single('file'), 
     try {
         const { title } = req.body;
 
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         if (!agent) {
             if (req.file) fs.unlinkSync(req.file.path);
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
 
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM knowledge_base WHERE agent_id = ?', req.params.agentId);
         const itemsCount = itemsCountRow?.count ?? 0;
@@ -316,7 +316,7 @@ router.post('/agent/:agentId/extract-url', authenticateToken, async (req, res) =
     try {
         const { url, title } = req.body;
 
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -411,7 +411,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
             SELECT k.* FROM knowledge_base k
             JOIN agents a ON k.agent_id = a.id
             WHERE k.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!item) {
             return res.status(404).json({ error: 'Élément non trouvé' });
@@ -479,7 +479,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
             SELECT k.id FROM knowledge_base k
             JOIN agents a ON k.agent_id = a.id
             WHERE k.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (item) {
             await deleteChunksBySource('agent', req.params.id);
@@ -496,7 +496,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
             return res.json({ message: 'Élément supprimé' });
         }
 
-        item = await db.get('SELECT id FROM global_knowledge WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        item = await db.get('SELECT id FROM global_knowledge WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         
         if (item) {
             await deleteChunksBySource('global', req.params.id);
@@ -531,7 +531,7 @@ router.get('/global', authenticateToken, async (req, res) => {
             SELECT * FROM global_knowledge 
             WHERE user_id = ?
             ORDER BY created_at DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         const parsedItems = items.map(item => {
             let metadata = {};
@@ -556,7 +556,7 @@ router.post('/global', authenticateToken, async (req, res) => {
         const { title, content, type } = req.body;
 
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         
         if (effectivePlan === 'free_expired') {
@@ -566,7 +566,7 @@ router.post('/global', authenticateToken, async (req, res) => {
             });
         }
 
-        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.ownerId);
         const itemsCount = itemsCountRow?.count ?? 0;
 
         if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
@@ -590,7 +590,7 @@ router.post('/global', authenticateToken, async (req, res) => {
         await db.run(`
             INSERT INTO global_knowledge (id, user_id, title, content, type, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, itemId, req.user.id, title, finalContent, type || 'text', JSON.stringify({ characters: finalContent.length }));
+        `, itemId, req.user.ownerId, title, finalContent, type || 'text', JSON.stringify({ characters: finalContent.length }));
 
         const item = await db.get('SELECT * FROM global_knowledge WHERE id = ?', itemId);
         let parsedMetadata = {};
@@ -630,7 +630,7 @@ router.post('/global', authenticateToken, async (req, res) => {
 router.post('/global/upload', authenticateToken, upload.single('file'), async (req, res) => {
     try {
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         
         if (effectivePlan === 'free_expired') {
@@ -641,7 +641,7 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
             });
         }
 
-        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.ownerId);
         const itemsCount = itemsCountRow?.count ?? 0;
 
         if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
@@ -702,7 +702,7 @@ router.post('/global/upload', authenticateToken, upload.single('file'), async (r
         await db.run(`
             INSERT INTO global_knowledge (id, user_id, title, content, type, metadata)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, itemId, req.user.id, title, content, metadata.type, JSON.stringify(metadata));
+        `, itemId, req.user.ownerId, title, content, metadata.type, JSON.stringify(metadata));
 
         const item = await db.get('SELECT * FROM global_knowledge WHERE id = ?', itemId);
         let parsedMetadata = {};
@@ -747,7 +747,7 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
         const { url, title } = req.body;
 
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         
         if (effectivePlan === 'free_expired') {
@@ -757,7 +757,7 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
             });
         }
 
-        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const itemsCountRow = await db.get('SELECT COUNT(*) as count FROM global_knowledge WHERE user_id = ?', req.user.ownerId);
         const itemsCount = itemsCountRow?.count ?? 0;
 
         if (await isLimitReached(effectivePlan, 'knowledge_items', itemsCount)) {
@@ -796,7 +796,7 @@ router.post('/global/extract-url', authenticateToken, async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?)
         `,
             itemId, 
-            req.user.id, 
+            req.user.ownerId, 
             finalTitle, 
             result.content, 
             result.metadata?.type || 'website',
@@ -855,7 +855,7 @@ router.put('/global/:id', authenticateToken, async (req, res) => {
         const item = await db.get(`
             SELECT * FROM global_knowledge 
             WHERE id = ? AND user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!item) {
             return res.status(404).json({ error: 'Élément non trouvé' });

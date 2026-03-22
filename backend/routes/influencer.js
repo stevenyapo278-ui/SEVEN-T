@@ -9,7 +9,7 @@ const router = Router();
 const isInfluencer = async (req, res, next) => {
     try {
         // Check for specific permission or general admin status
-        const canAccess = await userHasPermission(req.user.id, 'influencer.dashboard');
+        const canAccess = await userHasPermission(req.user.ownerId, 'influencer.dashboard');
         
         if (!canAccess && !req.user.is_admin) {
             return res.status(403).json({ error: 'Accès réservé aux influenceurs' });
@@ -31,7 +31,7 @@ router.get('/stats', async (req, res) => {
         const coupons = await db.all(`
             SELECT * FROM subscription_coupons 
             WHERE influencer_id = ?
-        `, req.user.id);
+        `, req.user.ownerId);
 
         if (coupons.length === 0) {
             return res.json({
@@ -104,7 +104,7 @@ router.get('/usages', async (req, res) => {
             WHERE c.influencer_id = ?
             ORDER BY u.created_at DESC
             LIMIT 100
-        `, req.user.id);
+        `, req.user.ownerId);
 
         res.json({ usages });
     } catch (error) {

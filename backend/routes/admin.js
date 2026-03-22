@@ -133,10 +133,24 @@ router.get('/roles', authenticateAdmin, async (req, res) => {
 // Get all users with stats
 router.get('/users', authenticateAdmin, requirePermission('users.read'), async (req, res) => {
     try {
-        const { search, plan, status, sort = 'created_at', order = 'desc', limit = 50, offset = 0 } = req.query;
+        const { search, plan, status, sort = 'created_at', order = 'desc', limit = 50, offset = 0, parent_id } = req.query;
 
         let query = `
             SELECT u.*,
+                   p.name as parent_name,
+                   p.plan as parent_plan,
+                   p.availability_hours_enabled as p_availability_hours_enabled,
+                   p.voice_responses_enabled as p_voice_responses_enabled,
+                   p.payment_module_enabled as p_payment_module_enabled,
+                   p.analytics_module_enabled as p_analytics_module_enabled,
+                   p.reports_module_enabled as p_reports_module_enabled,
+                   p.next_best_action_enabled as p_next_best_action_enabled,
+                   p.conversion_score_enabled as p_conversion_score_enabled,
+                   p.daily_briefing_enabled as p_daily_briefing_enabled,
+                   p.sentiment_routing_enabled as p_sentiment_routing_enabled,
+                   p.catalog_import_enabled as p_catalog_import_enabled,
+                   p.human_handoff_alerts_enabled as p_human_handoff_alerts_enabled,
+                   p.flows_module_enabled as p_flows_module_enabled,
                    (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
                    (SELECT COUNT(*) FROM conversations c 
                     JOIN agents a ON c.agent_id = a.id 
@@ -144,16 +158,27 @@ router.get('/users', authenticateAdmin, requirePermission('users.read'), async (
                    (SELECT COUNT(*) FROM messages m 
                     JOIN conversations c ON m.conversation_id = c.id 
                     JOIN agents a ON c.agent_id = a.id 
-                    WHERE a.user_id = u.id) as messages_count
+                    WHERE a.user_id = u.id) as messages_count,
+                   (SELECT COUNT(*) FROM users WHERE parent_user_id = u.id) as managers_count
             FROM users u
+            LEFT JOIN users p ON u.parent_user_id = p.id
             WHERE 1=1
         `;
         const params = [];
+
+        if (req.query.only_owners === 'true') {
+            query += ` AND u.parent_user_id IS NULL`;
+        }
 
         if (search) {
             query += ` AND (u.name LIKE ? OR u.email LIKE ? OR u.company LIKE ?)`;
             const searchTerm = `%${search}%`;
             params.push(searchTerm, searchTerm, searchTerm);
+        }
+
+        if (req.query.parent_id) {
+            query += ` AND u.parent_user_id = ?`;
+            params.push(req.query.parent_id);
         }
 
         if (plan) {
@@ -667,12 +692,23 @@ router.delete('/users/:id', authenticateAdmin, requirePermission('users.delete')
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
 
+        // Get all managers for this user
+        const managers = await db.all('SELECT id, name, email FROM users WHERE parent_user_id = ?', req.params.id);
+
         // Get all agents for this user
         const agents = await db.all('SELECT id, whatsapp_connected FROM agents WHERE user_id = ?', req.params.id);
         
         // Disconnect all WhatsApp sessions and clean up session files
         const cleanupResults = [];
-        for (const agent of agents) {
+        const allRelevantAgents = [...agents];
+        
+        // Also get agents of managers to clean them up
+        for (const manager of managers) {
+            const managerAgents = await db.all('SELECT id, whatsapp_connected FROM agents WHERE user_id = ?', manager.id);
+            allRelevantAgents.push(...managerAgents);
+        }
+
+        for (const agent of allRelevantAgents) {
             try {
                 if (whatsappManager.isConnected(agent.id)) {
                     await whatsappManager.disconnect(agent.id, false);
@@ -690,20 +726,34 @@ router.delete('/users/:id', authenticateAdmin, requirePermission('users.delete')
         }
 
         if (soft_delete === 'true') {
-            await db.run(`UPDATE users SET is_active = 0, email = email || '_deleted_' || ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, Date.now(), req.params.id);
+            const timestamp = Date.now();
+            await db.run(`UPDATE users SET is_active = 0, email = email || '_deleted_' || ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, timestamp, req.params.id);
             await db.run('UPDATE agents SET is_active = 0, whatsapp_connected = 0 WHERE user_id = ?', req.params.id);
             
+            // Soft delete managers too
+            if (managers.length > 0) {
+                await db.run(`UPDATE users SET is_active = 0, email = email || '_deleted_' || ?, updated_at = CURRENT_TIMESTAMP WHERE parent_user_id = ?`, timestamp, req.params.id);
+                for (const manager of managers) {
+                    await db.run('UPDATE agents SET is_active = 0, whatsapp_connected = 0 WHERE user_id = ?', manager.id);
+                }
+            }
+
             await activityLogger.log({
                 userId: req.user.id,
                 action: 'soft_delete_user',
                 entityType: 'user',
                 entityId: req.params.id,
-                details: { email: existing.email },
+                details: { email: existing.email, managers_count: managers.length },
                 req
             });
 
-            res.json({ message: 'Utilisateur désactivé avec succès', soft_deleted: true, cleanup: cleanupResults });
+            res.json({ message: 'Utilisateur et ses gérants désactivés avec succès', soft_deleted: true, cleanup: cleanupResults });
         } else {
+            // Hard delete managers first (to respect potential FKs, though it's the same table)
+            if (managers.length > 0) {
+                await db.run('DELETE FROM users WHERE parent_user_id = ?', req.params.id);
+            }
+            
             await db.run('DELETE FROM users WHERE id = ?', req.params.id);
 
             await activityLogger.log({
@@ -711,11 +761,20 @@ router.delete('/users/:id', authenticateAdmin, requirePermission('users.delete')
                 action: 'hard_delete_user',
                 entityType: 'user',
                 entityId: req.params.id,
-                details: { email: existing.email },
+                details: { email: existing.email, managers_deleted: managers.length },
                 req
             });
 
-            res.json({ message: 'Utilisateur et toutes ses données supprimés définitivement', soft_deleted: false, cleanup: cleanupResults, deleted: { agents: agents.length, sessions_cleaned: cleanupResults.filter(r => r.action === 'session_deleted').length } });
+            res.json({ 
+                message: 'Utilisateur, ses gérants et toutes leurs données supprimés définitivement', 
+                soft_deleted: false, 
+                cleanup: cleanupResults, 
+                deleted: { 
+                    agents: allRelevantAgents.length, 
+                    managers: managers.length,
+                    sessions_cleaned: cleanupResults.filter(r => r.action === 'session_deleted').length 
+                } 
+            });
         }
     } catch (error) {
         console.error('Delete user error:', error);
@@ -769,6 +828,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
+            parent_user_id,
             roles,
             generate_coupon
         } = req.body;
@@ -814,15 +874,17 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
                 voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
                 availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
                 sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
-                can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets
+                can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
+                parent_user_id, role
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, userId, name, email, hashedPassword, company || '', planToUse, credits ?? 500, is_admin || 0, 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, userId, name, email, hashedPassword, company || '', planToUse, credits || 0, is_admin || 0, 
            subscriptionStatus, subscriptionEndDate,
            voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0, reports_module_enabled ? 1 : 0,
            availability_hours_enabled ? 1 : 0, next_best_action_enabled ? 1 : 0, conversion_score_enabled ? 1 : 0, daily_briefing_enabled ? 1 : 0,
            sentiment_routing_enabled ? 1 : 0, catalog_import_enabled ? 1 : 0, human_handoff_alerts_enabled ? 1 : 0,
-           can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0, can_manage_tickets ? 1 : 0
+           can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0, can_manage_tickets ? 1 : 0,
+           parent_user_id || null, parent_user_id ? 'manager' : 'user' // Set role to 'manager' if parent_user_id is provided
         );
 
         await activityLogger.log({

@@ -13,7 +13,7 @@ router.get('/', authenticateToken, async (req, res) => {
             SELECT * FROM services
             WHERE user_id = ?
             ORDER BY created_at DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         res.json({ services });
     } catch (error) {
@@ -28,7 +28,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         const service = await db.get(`
             SELECT * FROM services
             WHERE id = ? AND user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!service) {
             return res.status(404).json({ error: 'Service non trouvé' });
@@ -52,7 +52,7 @@ router.post('/', authenticateToken, validate(serviceCreateSchema), async (req, r
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `, 
             id, 
-            req.user.id, 
+            req.user.ownerId, 
             name, 
             price || 0, 
             duration || 30, 
@@ -74,7 +74,7 @@ router.put('/:id', authenticateToken, validate(serviceUpdateSchema), async (req,
     try {
         const { name, price, duration, category, description, image_url, is_active } = req.body;
 
-        const service = await db.get('SELECT * FROM services WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const service = await db.get('SELECT * FROM services WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!service) {
             return res.status(404).json({ error: 'Service non trouvé' });
         }
@@ -112,7 +112,7 @@ router.put('/:id', authenticateToken, validate(serviceUpdateSchema), async (req,
 // Delete service
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const service = await db.get('SELECT id FROM services WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const service = await db.get('SELECT id FROM services WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!service) {
             return res.status(404).json({ error: 'Service non trouvé' });
         }

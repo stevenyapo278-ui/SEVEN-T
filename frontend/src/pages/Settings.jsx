@@ -73,8 +73,12 @@ export default function Settings() {
     name: user?.name || '',
     company: user?.company || '',
     media_model: user?.media_model || '',
-    notification_number: user?.notification_number || ''
+    notification_number: user?.notification_number || '',
+    analytics_module_enabled: user?.analytics_module_enabled === 0 ? false : (user?.analytics_module_enabled === 1 || !!user?.plan_features?.analytics),
+    flows_module_enabled: user?.flows_module_enabled === 0 ? false : (user?.flows_module_enabled === 1 || !!user?.plan_features?.flows)
   })
+
+
   const [saving, setSaving] = useState(false)
   const [exportingData, setExportingData] = useState(false)
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
@@ -88,10 +92,14 @@ export default function Settings() {
         name: user.name ?? prev.name,
         company: user.company ?? prev.company,
         media_model: user.media_model ?? prev.media_model ?? '',
-        notification_number: user.notification_number ?? prev.notification_number ?? ''
+        notification_number: user.notification_number ?? prev.notification_number ?? '',
+        analytics_module_enabled: user.analytics_module_enabled === 0 ? false : (user.analytics_module_enabled === 1 || !!user.plan_features?.analytics),
+        flows_module_enabled: user.flows_module_enabled === 0 ? false : (user.flows_module_enabled === 1 || !!user.plan_features?.flows)
       }))
     }
-  }, [user?.id, user?.name, user?.company, user?.media_model, user?.notification_number])
+  }, [user?.id, user?.name, user?.company, user?.media_model, user?.notification_number, user?.analytics_module_enabled, user?.flows_module_enabled, user?.plan_features])
+
+
   const [plans, setPlans] = useState([])
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [validCoupon, setValidCoupon] = useState(null)
@@ -613,6 +621,37 @@ export default function Settings() {
                   className="accent-blue-500"
                 />
               </label>
+
+              <div className="pt-2 border-t border-space-700/50 mt-2 mb-1">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Modules Optionnels</p>
+              </div>
+
+              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Statistiques & Analytics</div>
+                  <div className="text-xs text-gray-500 truncate">Activer la vue détaillée des statistiques de vos agents.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.analytics_module_enabled}
+                  onChange={(e) => setFormData({ ...formData, analytics_module_enabled: e.target.checked })}
+                  className="accent-blue-500"
+                />
+              </label>
+
+              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Flows (Flux de travail)</div>
+                  <div className="text-xs text-gray-500 truncate">Activer le créateur de flux pour automatiser vos processus.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.flows_module_enabled}
+                  onChange={(e) => setFormData({ ...formData, flows_module_enabled: e.target.checked })}
+                  className="accent-blue-500"
+                />
+              </label>
+
 
               <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
                 <div className="flex items-start justify-between gap-3">

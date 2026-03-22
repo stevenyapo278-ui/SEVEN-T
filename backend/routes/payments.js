@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requireModule } from '../middleware/requireModule.js';
 import { validate, createPaymentLinkSchema } from '../middleware/security.js';
 import * as paymentProviders from '../services/paymentProviders.js';
 import { hasFeature } from '../config/plans.js';
@@ -19,65 +20,7 @@ const PAYMENT_PROVIDERS_DISPLAY = {
     mtn_momo: { name: 'MTN MoMo', icon: '🟡' }
 };
 
-// Get all payment links for user
-router.get('/', authenticateToken, async (req, res) => {
-    try {
-        const { status } = req.query;
-        let query = 'SELECT * FROM payment_links WHERE user_id = ?';
-        const params = [req.user.id];
-        if (status) {
-            query += ' AND status = ?';
-            params.push(status);
-        }
-        query += ' ORDER BY created_at DESC';
-        const payments = await db.all(query, ...params);
-        for (const p of payments) {
-            p.short_id = p.id ? p.id.split('-')[0].toUpperCase() : null;
-            p.payment_url = p.payment_url_external || `${baseUrl()}/pay/${p.short_id}`;
-        }
-        res.json({ payments });
-    } catch (error) {
-        console.error('Get payments error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-// Export payment links as CSV
-router.get('/export', authenticateToken, async (req, res) => {
-    try {
-        const { status } = req.query;
-        let query = 'SELECT * FROM payment_links WHERE user_id = ?';
-        const params = [req.user.id];
-        if (status) {
-            query += ' AND status = ?';
-            params.push(status);
-        }
-        query += ' ORDER BY created_at DESC LIMIT 5000';
-        const payments = await db.all(query, ...params);
-        const headers = ['id', 'short_id', 'date', 'statut', 'montant', 'devise', 'description', 'payé_le'];
-        const escape = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
-        const row = (p) => [
-            escape(p.id),
-            escape(p.id ? p.id.split('-')[0].toUpperCase() : ''),
-            escape(p.created_at),
-            escape(p.status),
-            escape(p.amount),
-            escape(p.currency),
-            escape(p.description),
-            escape(p.paid_at)
-        ].map((c) => `"${c}"`).join(',');
-        const csv = [headers.join(','), ...payments.map(row)].join('\n');
-        const bom = '\uFEFF';
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename="paiements_${new Date().toISOString().slice(0, 10)}.csv"`);
-        res.send(bom + csv);
-    } catch (error) {
-        console.error('Export payments error:', error);
-        res.status(500).json({ error: 'Erreur export' });
-    }
-});
-
-
+// 1. PUBLIC ROUTES (No auth)
 // GeniusPay webhook
 router.post('/webhook/geniuspay', async (req, res) => {
     try {
@@ -94,7 +37,7 @@ router.post('/webhook/geniuspay', async (req, res) => {
         const externalId = String(data.id || data.reference);
         const refId = data.metadata?.reference_id;
 
-        // 1. Find the payment link first to know which user this belongs to
+        // Find the payment link first to know which user this belongs to
         const payment = await db.get(
             'SELECT * FROM payment_links WHERE (external_id = ? OR id = ?) AND status != ?', 
             externalId, refId || '', 'paid'
@@ -105,7 +48,7 @@ router.post('/webhook/geniuspay', async (req, res) => {
             return res.status(200).send('OK');
         }
 
-        // 2. Get user config to verify signature with THEIR secret
+        // Get user config to verify signature with THEIR secret
         const config = await paymentProviders.getProviderConfig(payment.user_id, 'geniuspay');
         const userSecret = config?.webhook_secret;
         const platformSecret = process.env.GENIUSPAY_WEBHOOK_SECRET;
@@ -125,7 +68,7 @@ router.post('/webhook/geniuspay', async (req, res) => {
             }
         }
 
-        // 3. Update payment status
+        // Update payment status
         await db.run("UPDATE payment_links SET status = 'paid', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.id);
         if (payment.order_id) {
             await db.run("UPDATE orders SET status = 'completed', paid_at = CURRENT_TIMESTAMP WHERE id = ?", payment.order_id);
@@ -139,8 +82,12 @@ router.post('/webhook/geniuspay', async (req, res) => {
     }
 });
 
+// 2. PROTECTED ROUTES (Auto-auth + requireModule)
+router.use(authenticateToken);
+router.use(requireModule('payment_module'));
+
 // Get payment providers (list + per-user configured status). Only if plan includes payment_module and admin enabled for this user.
-router.get('/providers', authenticateToken, async (req, res) => {
+router.get('/providers', async (req, res) => {
     try {
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
@@ -162,7 +109,7 @@ router.get('/providers', authenticateToken, async (req, res) => {
 });
 
 // Put provider config (save credentials for current user). Only if plan + admin enabled payment module for this user.
-router.put('/providers/:provider', authenticateToken, async (req, res) => {
+router.put('/providers/:provider', async (req, res) => {
     try {
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
@@ -195,7 +142,7 @@ router.put('/providers/:provider', authenticateToken, async (req, res) => {
 });
 
 // Delete provider config for current user. Only if plan + admin enabled payment module.
-router.delete('/providers/:provider', authenticateToken, async (req, res) => {
+router.delete('/providers/:provider', async (req, res) => {
     try {
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
@@ -275,7 +222,7 @@ export async function createPaymentLink(userId, opts = {}) {
 }
 
 // Create payment link
-router.post('/', authenticateToken, validate(createPaymentLinkSchema), async (req, res) => {
+router.post('/', validate(createPaymentLinkSchema), async (req, res) => {
     try {
         const { amount, currency, description, provider, order_id, conversation_id, expires_in_hours } = req.body;
         const payment = await createPaymentLink(req.user.id, {
@@ -321,7 +268,7 @@ router.get('/public/:shortId', async (req, res) => {
 });
 
 // Mark payment as paid (webhook or manual)
-router.post('/:id/confirm', authenticateToken, async (req, res) => {
+router.post('/:id/confirm', async (req, res) => {
     try {
         const payment = await db.get('SELECT * FROM payment_links WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!payment) {
@@ -339,7 +286,7 @@ router.post('/:id/confirm', authenticateToken, async (req, res) => {
 });
 
 // Cancel payment
-router.post('/:id/cancel', authenticateToken, async (req, res) => {
+router.post('/:id/cancel', async (req, res) => {
     try {
         const payment = await db.get('SELECT * FROM payment_links WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!payment) {
@@ -357,7 +304,7 @@ router.post('/:id/cancel', authenticateToken, async (req, res) => {
 });
 
 // Delete payment link
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const payment = await db.get('SELECT * FROM payment_links WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!payment) {
@@ -372,7 +319,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // Get payment stats
-router.get('/stats', authenticateToken, async (req, res) => {
+router.get('/stats', async (req, res) => {
     try {
         const [t, p, pd, ta, pa] = await Promise.all([
             db.get('SELECT COUNT(*) as count FROM payment_links WHERE user_id = ?', req.user.id),
@@ -396,7 +343,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 });
 
 // Get payment stats overview (alias)
-router.get('/stats/overview', authenticateToken, async (req, res) => {
+router.get('/stats/overview', async (req, res) => {
     try {
         const [t, p, pd, c, ta, pa] = await Promise.all([
             db.get('SELECT COUNT(*) as count FROM payment_links WHERE user_id = ?', req.user.id),
@@ -431,7 +378,7 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
 });
 
 // Generate payment message for WhatsApp
-router.get('/:id/message', authenticateToken, async (req, res) => {
+router.get('/:id/message', async (req, res) => {
     try {
         const payment = await db.get('SELECT * FROM payment_links WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!payment) {

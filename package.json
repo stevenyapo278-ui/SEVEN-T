@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
     "baileys": "^6.7.9",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.71.0",

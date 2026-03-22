@@ -62,6 +62,8 @@ export function authenticateToken(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        // Important: Use ownerId for all resource filtering (agents, products, etc.)
+        decoded.ownerId = decoded.parent_user_id || decoded.id;
         req.user = decoded;
         next();
     } catch (error) {
@@ -228,7 +230,13 @@ export async function requirePartner(req, res, next) {
 export function generateToken(user) {
     const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
     return jwt.sign(
-        { id: user.id, email: user.email, is_admin: user.is_admin || 0 },
+        { 
+            id: user.id, 
+            email: user.email, 
+            is_admin: user.is_admin || 0,
+            parent_user_id: user.parent_user_id || null,
+            role: user.role || 'owner'
+        },
         JWT_SECRET,
         { expiresIn }
     );

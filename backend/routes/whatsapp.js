@@ -54,7 +54,7 @@ async function resolveToolAndAgent(userId, id, { createToolIfMissing = false } =
 // Get connection status for a tool (or agent fallback)
 router.get('/status/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error, code: resolved.code, limit: resolved.limit, current: resolved.current });
         }
@@ -80,7 +80,7 @@ router.get('/status/:id', authenticateToken, async (req, res) => {
 router.post('/connect/:id', authenticateToken, async (req, res) => {
     try {
         const { forceNew } = req.body;
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id, { createToolIfMissing: true });
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id, { createToolIfMissing: true });
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error, code: resolved.code, limit: resolved.limit, current: resolved.current });
         }
@@ -102,7 +102,7 @@ router.post('/connect/:id', authenticateToken, async (req, res) => {
 router.post('/reconnect/:id', authenticateToken, async (req, res) => {
     try {
         const { keepConversations = false } = req.body;
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id, { createToolIfMissing: true });
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id, { createToolIfMissing: true });
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error, code: resolved.code, limit: resolved.limit, current: resolved.current });
         }
@@ -148,7 +148,7 @@ router.post('/reconnect/:id', authenticateToken, async (req, res) => {
 // Clear all conversations for an agent (manual action)
 router.post('/clear-conversations/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -172,7 +172,7 @@ router.post('/clear-conversations/:id', authenticateToken, async (req, res) => {
 // Get QR code for a tool (or agent fallback)
 router.get('/qr/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -197,7 +197,7 @@ router.get('/qr/:id', authenticateToken, async (req, res) => {
 // Disconnect WhatsApp for a tool (or agent fallback)
 router.post('/disconnect/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -221,7 +221,7 @@ router.post('/send/:id', authenticateToken, async (req, res) => {
     try {
         const { to, message } = req.body;
 
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -248,7 +248,7 @@ router.post('/send/:id', authenticateToken, async (req, res) => {
 // Sync all chats for a tool (or agent fallback)
 router.post('/sync/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -277,7 +277,7 @@ router.post('/sync/:id', authenticateToken, async (req, res) => {
 // Get sync status for a tool (or agent fallback)
 router.get('/sync-status/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -302,7 +302,7 @@ router.get('/sync-status/:id', authenticateToken, async (req, res) => {
 // Cleanup empty conversations (no messages)
 router.post('/cleanup/:id', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.id);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.id);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error });
         }
@@ -326,7 +326,7 @@ router.post('/cleanup/:id', authenticateToken, async (req, res) => {
 router.post('/sync-messages/:agentId/:conversationId', authenticateToken, async (req, res) => {
     try {
         const { limit } = req.body;
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.agentId);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.agentId);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error, code: resolved.code, limit: resolved.limit, current: resolved.current });
         }
@@ -350,7 +350,7 @@ router.post('/sync-messages/:agentId/:conversationId', authenticateToken, async 
 // Get contacts for an agent
 router.get('/contacts/:agentId', authenticateToken, async (req, res) => {
     try {
-        const resolved = await resolveToolAndAgent(req.user.id, req.params.agentId);
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.agentId);
         if (resolved.error) {
             return res.status(resolved.status || 400).json({ error: resolved.error, code: resolved.code, limit: resolved.limit, current: resolved.current });
         }
@@ -388,7 +388,7 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
 
         let agents = [];
         if (agent_id) {
-            const agent = await db.get('SELECT id, name, tool_id, whatsapp_connected FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.id);
+            const agent = await db.get('SELECT id, name, tool_id, whatsapp_connected FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.ownerId);
             if (!agent) return res.status(404).json({ error: 'Agent non trouvé' });
             agents = [agent];
         } else {
@@ -397,7 +397,7 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
                 FROM agents
                 WHERE user_id = ? AND tool_id IS NOT NULL
                 ORDER BY name ASC
-            `, req.user.id);
+            `, req.user.ownerId);
         }
 
         const merged = new Map(); // number -> contact
@@ -451,8 +451,8 @@ router.get('/imported-contacts/debug', authenticateToken, async (req, res) => {
     try {
         const { agent_id } = req.query || {};
         const agents = agent_id
-            ? [await db.get('SELECT id, name, tool_id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.id)]
-            : await db.all('SELECT id, name, tool_id FROM agents WHERE user_id = ? AND tool_id IS NOT NULL ORDER BY name ASC', req.user.id);
+            ? [await db.get('SELECT id, name, tool_id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.ownerId)]
+            : await db.all('SELECT id, name, tool_id FROM agents WHERE user_id = ? AND tool_id IS NOT NULL ORDER BY name ASC', req.user.ownerId);
 
         const data = (agents || []).filter(Boolean).map((a) => {
             const toolId = a.tool_id;
@@ -475,7 +475,7 @@ router.get('/imported-contacts/debug', authenticateToken, async (req, res) => {
 router.get('/profile-picture/:agentId/:contactJid', authenticateToken, async (req, res) => {
     const contactJid = decodeURIComponent(req.params.contactJid || '');
     try {
-        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
@@ -497,7 +497,7 @@ router.post('/profile-pictures/:agentId', authenticateToken, async (req, res) =>
     try {
         const { contactJids } = req.body;
         
-        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
@@ -526,7 +526,7 @@ router.post('/send-to-conversation/:agentId/:conversationId', authenticateToken,
             return res.status(400).json({ error: 'Message requis' });
         }
 
-        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
@@ -559,7 +559,7 @@ router.get('/new-messages/:agentId', authenticateToken, async (req, res) => {
     try {
         const { since } = req.query;
 
-        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });

@@ -64,7 +64,8 @@ const PLAN_MODULES = [
   { key: 'daily_briefing_enabled', label: 'Briefing quotidien' },
   { key: 'sentiment_routing_enabled', label: 'Routage sentiment' },
   { key: 'catalog_import_enabled', label: 'Import catalogue' },
-  { key: 'human_handoff_alerts_enabled', label: 'Alertes transfert humain' }
+  { key: 'human_handoff_alerts_enabled', label: 'Alertes transfert humain' },
+  { key: 'flows_module_enabled', label: 'Flows (Flux de travail)' }
 ]
 
 export default function Admin() {
@@ -600,12 +601,17 @@ export default function Admin() {
   const loadUsers = async () => {
     setLoading(true)
     try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const parentId = urlParams.get('parent_id');
+
       const params = new URLSearchParams({
         limit: pagination.limit,
         offset: pagination.offset,
         ...(searchQuery && { search: searchQuery }),
         ...(selectedPlan && { plan: selectedPlan }),
-        ...(selectedStatus && { status: selectedStatus })
+        ...(selectedStatus && { status: selectedStatus }),
+        ...(parentId && { parent_id: parentId }),
+        ...(!parentId && !searchQuery && { only_owners: 'true' })
       })
       const response = await api.get(`/admin/users?${params}`)
       setUsers(response.data.users)
@@ -1281,13 +1287,32 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
     if (!currentIsActive) {
       const defaultPlan = activePlans.find(p => p.is_default) || activePlans[0]
       const fallback = defaultPlan?.name || defaultPlan?.id || 'free'
-      setFormData(prev => ({ ...prev, plan: fallback, credits: getCreditsForPlan(plans, fallback) }))
+      const defaultCredits = getCreditsForPlan(plans, fallback)
+      const selectedPlanObj = plans.find(p => (p.name || p.id) === fallback)
+      const features = selectedPlanObj?.features || {}
+      
+      const moduleFeatures = {}
+      PLAN_MODULES.forEach(m => {
+        const featKey = m.key.replace('_enabled', '')
+        moduleFeatures[m.key] = !!features[featKey] || !!features[m.key]
+      })
+
+      setFormData(prev => ({ ...prev, plan: fallback, credits: defaultCredits, ...moduleFeatures }))
     }
   }, [activePlans.length])
 
   const handlePlanChange = (planId) => {
     const defaultCredits = getCreditsForPlan(plans, planId)
-    setFormData(prev => ({ ...prev, plan: planId, credits: defaultCredits }))
+    const selectedPlanObj = plans.find(p => (p.name || p.id) === planId)
+    const features = selectedPlanObj?.features || {}
+    
+    const moduleFeatures = {}
+    PLAN_MODULES.forEach(m => {
+      const featKey = m.key.replace('_enabled', '')
+      moduleFeatures[m.key] = !!features[featKey] || !!features[m.key]
+    })
+
+    setFormData(prev => ({ ...prev, plan: planId, credits: defaultCredits, ...moduleFeatures }))
   }
 
   const handleSubmit = async (e) => {
@@ -1529,17 +1554,31 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Modules activables</h4>
               <p className="text-xs text-gray-500 mb-3">Activez ces modules pour cet utilisateur (en plus de ceux inclus dans son plan) :</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {PLAN_MODULES.map(({ key, label }) => (
-                  <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-space-700 hover:border-space-600 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={!!formData[key]}
-                      onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
-                      className="w-4 h-4 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
-                    />
-                    <span className="text-sm text-gray-300">{label}</span>
-                  </label>
-                ))}
+                {PLAN_MODULES.map(({ key, label }) => { const isManager = !!user.parent_user_id; let ownerAllowed = true; if (isManager) { const parentPlanName = user.parent_plan || "free"; const parentPlan = (plans || []).find(p => (p.name || p.id) === parentPlanName); const moduleBaseKey = key.replace("_enabled", ""); const planHas = parentPlan?.features?.[moduleBaseKey] === true || parentPlan?.features?.[moduleBaseKey] === 1; const overrideHas = user[`p_${key}`] === 1 || user[`p_${key}`] === true; ownerAllowed = planHas || overrideHas; } return (
+                    <label 
+                      key={key} 
+                      className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
+                        !ownerAllowed 
+                          ? 'opacity-50 border-red-500/20 bg-red-500/5 cursor-not-allowed' 
+                          : 'cursor-pointer border-space-700 hover:border-space-600'
+                      }`}
+                      title={!ownerAllowed ? "Le client (owner) n'a pas accès à ce module." : ""}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!formData[key]}
+                        disabled={!ownerAllowed}
+                        onChange={(e) => setFormData({ ...formData, [key]: e.target.checked })}
+                        className={`w-4 h-4 rounded border-space-700 bg-space-800 focus:ring-gold-400 ${
+                          !ownerAllowed ? 'text-gray-600' : 'text-gold-400'
+                        }`}
+                      />
+                      <div className="flex flex-col text-left">
+                        <span className={`text-[13px] ${!ownerAllowed ? 'text-red-400/80 font-medium' : 'text-gray-300'}`}>{label}</span>
+                        {!ownerAllowed && <span className="text-[8px] text-red-500/60 uppercase font-bold tracking-tighter italic">Limité par le client</span>}
+                      </div>
+                    </label>
+                  ); })}
               </div>
             </div>
           </div>
@@ -1660,13 +1699,31 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
       initialCreditsSyncedRef.current = true
       const defaultPlan = activePlans.find(p => p.is_default) || activePlans.find(p => p.name === 'free') || activePlans[0]
       const planName = defaultPlan?.name ?? defaultPlan?.id ?? 'free'
-      setFormData(prev => ({ ...prev, plan: planName, credits: getCreditsForPlan(plans, planName) }))
+      const defaultCredits = getCreditsForPlan(plans, planName)
+      
+      const features = defaultPlan?.features || {}
+      const moduleFeatures = {}
+      PLAN_MODULES.forEach(m => {
+        const featKey = m.key.replace('_enabled', '')
+        moduleFeatures[m.key] = !!features[featKey] || !!features[m.key]
+      })
+
+      setFormData(prev => ({ ...prev, plan: planName, credits: defaultCredits, ...moduleFeatures }))
     }
   }, [plans])
 
   const handlePlanChange = (planId) => {
     const defaultCredits = getCreditsForPlan(plans, planId)
-    setFormData(prev => ({ ...prev, plan: planId, credits: defaultCredits }))
+    const selectedPlanObj = plans.find(p => (p.name || p.id) === planId)
+    const features = selectedPlanObj?.features || {}
+    
+    const moduleFeatures = {}
+    PLAN_MODULES.forEach(m => {
+      const featKey = m.key.replace('_enabled', '')
+      moduleFeatures[m.key] = !!features[featKey] || !!features[m.key]
+    })
+
+    setFormData(prev => ({ ...prev, plan: planId, credits: defaultCredits, ...moduleFeatures }))
   }
 
   const handleSubmit = async (e) => {
@@ -2802,8 +2859,10 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'sentiment_routing', label: 'Module 7 : Sentiment routing', desc: 'Transfère à un humain si le client semble frustré.' },
     { key: 'catalog_import', label: 'Module 8 : Import catalogue', desc: 'L\'IA connaît vos produits via URL ou fichiers.' },
     { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' },
-    { key: 'analytics', label: 'Module 10 : Analytics & Statistiques', desc: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' }
+    { key: 'analytics', label: 'Module 10 : Analytics & Statistiques', desc: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' },
+    { key: 'flows', label: 'Module 11 : Flows (Flux de travail)', desc: 'Créez des scénarios d\'automatisation visuels.' }
   ]
+
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>

@@ -264,7 +264,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, trialEndDate.toISOString());
 
         // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, created_at, subscription_end_date FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, created_at, subscription_end_date FROM users WHERE id = ?', userId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
@@ -440,6 +440,7 @@ router.get('/me', async (req, res) => {
         let user;
         try {
             user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+
         } catch (e) {
              throw new Error(`DB SELECT users failed: ${e.message}`);
         }
@@ -451,6 +452,15 @@ router.get('/me', async (req, res) => {
         let effectivePlan, planConfig, plan_features, permissions, userRoles, roleKeys;
         try {
             effectivePlan = await getEffectivePlanName(user.plan, user);
+            
+            // Managers inherit the owner's plan benefits
+            if (user.parent_user_id) {
+                const owner = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', user.parent_user_id);
+                if (owner) {
+                    effectivePlan = await getEffectivePlanName(owner.plan, owner);
+                }
+            }
+
             planConfig = await getPlan(effectivePlan);
             plan_features = planConfig?.features || {};
             permissions = await getUserPermissions(user.id);
@@ -476,8 +486,9 @@ router.get('/me', async (req, res) => {
 
 router.put('/me', authenticateToken, async (req, res) => {
     try {
-        const existing = await db.get('SELECT name, company, currency, media_model, notification_number FROM users WHERE id = ?', req.user.id);
-        const { name, company, currency, media_model, notification_number } = req.body;
+        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled FROM users WHERE id = ?', req.user.id);
+        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled } = req.body;
+
 
         // Build dynamic update query
         const updates = [];
@@ -503,6 +514,15 @@ router.put('/me', authenticateToken, async (req, res) => {
             updates.push('notification_number = ?');
             values.push(notification_number === '' ? null : notification_number);
         }
+        if (analytics_module_enabled !== undefined) {
+            updates.push('analytics_module_enabled = ?');
+            values.push(analytics_module_enabled ? 1 : 0);
+        }
+        if (flows_module_enabled !== undefined) {
+            updates.push('flows_module_enabled = ?');
+            values.push(flows_module_enabled ? 1 : 0);
+        }
+
 
         if (updates.length > 0) {
             updates.push('updated_at = CURRENT_TIMESTAMP');
@@ -511,16 +531,17 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, notification_number FROM users WHERE id = ?', req.user.id);
         
         // Calculate changes
         const changes = {};
-        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number'];
+        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number', 'analytics_module_enabled', 'flows_module_enabled'];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
                 changes[field] = { old: existing[field], new: req.body[field] };
             }
         });
+
 
         if (Object.keys(changes).length > 0) {
             await activityLogger.log({
@@ -678,7 +699,7 @@ router.post('/exchange-code', async (req, res) => {
         }
 
         const user = await db.get(
-            'SELECT id, email, name, company, plan, credits, is_admin, subscription_status, subscription_end_date FROM users WHERE id = ? AND is_active = 1',
+            'SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, subscription_status, subscription_end_date FROM users WHERE id = ? AND is_active = 1',
             record.userId
         );
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });

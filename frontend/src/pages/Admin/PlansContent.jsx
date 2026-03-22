@@ -96,7 +96,10 @@ export default function PlansContent({
                 {plan.features?.sentiment_routing && <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-300 rounded">Module 7 : Sentiment</span>}
                 {plan.features?.catalog_import && <span className="px-2 py-0.5 text-xs bg-teal-500/20 text-teal-300 rounded">Module 8 : Catalogue</span>}
                 {plan.features?.human_handoff_alerts && <span className="px-2 py-0.5 text-xs bg-rose-500/20 text-rose-300 rounded">Module 9 : Alertes Transfert</span>}
+                {plan.features?.analytics && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-300 rounded">Module 10 : Analytics</span>}
+                {plan.features?.flows && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 11 : Flows</span>}
                 {plan.features?.models?.length > 0 && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">{plan.features.models.length} modèle(s) IA</span>}
+
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">

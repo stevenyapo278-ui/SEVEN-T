@@ -15,7 +15,7 @@ router.get('/', authenticateToken, async (req, res) => {
             LEFT JOIN agents a ON l.agent_id = a.id
             WHERE l.user_id = ? AND l.is_suggested = 0 AND l.status != 'rejected'
             ORDER BY l.is_favorite DESC, l.created_at DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         res.json({ leads });
     } catch (error) {
@@ -27,7 +27,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get suggested leads (AI-detected, pending validation)
 router.get('/suggested', authenticateToken, async (req, res) => {
     try {
-        const leads = await leadAnalyzer.getSuggestedLeads(req.user.id);
+        const leads = await leadAnalyzer.getSuggestedLeads(req.user.ownerId);
         res.json({ leads });
     } catch (error) {
         console.error('Get suggested leads error:', error);
@@ -38,7 +38,7 @@ router.get('/suggested', authenticateToken, async (req, res) => {
 // Validate a suggested lead
 router.post('/:id/validate', authenticateToken, async (req, res) => {
     try {
-        const result = await leadAnalyzer.validateLead(req.params.id, req.user.id);
+        const result = await leadAnalyzer.validateLead(req.params.id, req.user.ownerId);
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
@@ -52,7 +52,7 @@ router.post('/:id/validate', authenticateToken, async (req, res) => {
 // Reject a suggested lead
 router.post('/:id/reject', authenticateToken, async (req, res) => {
     try {
-        const result = await leadAnalyzer.rejectLead(req.params.id, req.user.id);
+        const result = await leadAnalyzer.rejectLead(req.params.id, req.user.ownerId);
         if (result.error) {
             return res.status(400).json({ error: result.error });
         }
@@ -70,7 +70,7 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
             SELECT * FROM leads 
             WHERE user_id = ? AND status = ?
             ORDER BY created_at DESC
-        `, req.user.id, req.params.status);
+        `, req.user.ownerId, req.params.status);
 
         res.json({ leads });
     } catch (error) {
@@ -85,7 +85,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
         const lead = await db.get(`
             SELECT * FROM leads 
             WHERE id = ? AND user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!lead) {
             return res.status(404).json({ error: 'Lead non trouvé' });
@@ -115,7 +115,7 @@ router.post('/', authenticateToken, async (req, res) => {
             const existingByPhone = await db.get(`
                 SELECT id, name FROM leads 
                 WHERE user_id = ? AND phone = ?
-            `, req.user.id, trimmedPhone);
+            `, req.user.ownerId, trimmedPhone);
             if (existingByPhone) {
                 return res.status(400).json({
                     error: 'Un lead avec ce numéro existe déjà',
@@ -129,7 +129,7 @@ router.post('/', authenticateToken, async (req, res) => {
             const existingByEmail = await db.get(`
                 SELECT id, name FROM leads 
                 WHERE user_id = ? AND LOWER(email) = ?
-            `, req.user.id, trimmedEmail);
+            `, req.user.ownerId, trimmedEmail);
             if (existingByEmail) {
                 return res.status(400).json({
                     error: 'Un lead avec cet email existe déjà',
@@ -145,7 +145,7 @@ router.post('/', authenticateToken, async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
             id, 
-            req.user.id, 
+            req.user.ownerId, 
             name, 
             trimmedPhone || null, 
             trimmedEmail || null, 
@@ -175,7 +175,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     try {
         const { name, phone, email, company, source, status, tags, notes, is_favorite } = req.body;
 
-        const lead = await db.get('SELECT id FROM leads WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const lead = await db.get('SELECT id FROM leads WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!lead) {
             return res.status(404).json({ error: 'Lead non trouvé' });
         }
@@ -211,7 +211,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete lead
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const lead = await db.get('SELECT id FROM leads WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const lead = await db.get('SELECT id FROM leads WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!lead) {
             return res.status(404).json({ error: 'Lead non trouvé' });
         }
@@ -238,7 +238,7 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
                 SUM(CASE WHEN status = 'lost' THEN 1 ELSE 0 END) as lost_count
             FROM leads 
             WHERE user_id = ?
-        `, req.user.id);
+        `, req.user.ownerId);
 
         res.json({ stats });
     } catch (error) {

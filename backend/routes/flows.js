@@ -2,8 +2,11 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requireModule } from '../middleware/requireModule.js';
 
 const router = Router();
+router.use(authenticateToken);
+router.use(requireModule('flows'));
 
 // Flow node types for visual chatbot builder
 const NODE_TYPES = {
@@ -17,12 +20,12 @@ const NODE_TYPES = {
 };
 
 // Get node types
-router.get('/node-types', authenticateToken, (req, res) => {
+router.get('/node-types', (req, res) => {
     res.json({ nodeTypes: NODE_TYPES });
 });
 
 // Get flow config/templates
-router.get('/config/templates', authenticateToken, (req, res) => {
+router.get('/config/templates', (req, res) => {
     const templates = [
         {
             id: 'welcome',
@@ -74,7 +77,7 @@ router.get('/config/templates', authenticateToken, (req, res) => {
 });
 
 // Get all flows for user
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const flows = await db.all(`
             SELECT f.*, a.name as agent_name
@@ -104,7 +107,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get flow by ID
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const flow = await db.get(`
             SELECT f.*, a.name as agent_name
@@ -135,7 +138,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create flow
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { name, description, agent_id, nodes = [], edges = [], trigger_keywords = [] } = req.body;
 
@@ -178,7 +181,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update flow
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const { name, description, agent_id, nodes, edges, trigger_keywords, is_active } = req.body;
 
@@ -224,7 +227,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Toggle flow active state
-router.post('/:id/toggle', authenticateToken, async (req, res) => {
+router.post('/:id/toggle', async (req, res) => {
     try {
         const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
@@ -242,7 +245,7 @@ router.post('/:id/toggle', authenticateToken, async (req, res) => {
 });
 
 // Delete flow
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
@@ -258,7 +261,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 // Duplicate flow
-router.post('/:id/duplicate', authenticateToken, async (req, res) => {
+router.post('/:id/duplicate', async (req, res) => {
     try {
         const existing = await db.get('SELECT * FROM chatbot_flows WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {

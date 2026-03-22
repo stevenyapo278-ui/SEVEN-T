@@ -52,7 +52,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import ToolAssignmentModal from '../components/ToolAssignmentModal'
-import AuditLogsContent from './Admin/AuditLogsContent'
+
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
 function decodeHtmlEntities(str) {
@@ -143,8 +143,8 @@ const TABS = (t) => [
   { id: 'knowledge', label: t('agents.detail.tabs.knowledge'), icon: BookOpen },
   { id: 'settings', label: t('agents.detail.tabs.settings'), icon: Settings },
   { id: 'playground', label: t('agents.detail.tabs.playground'), icon: Play },
-  { id: 'logs', label: 'Journal', icon: FileText },
 ]
+
 
 // Get the best display name for a contact
 const getDisplayName = (conv, t) => {
@@ -175,7 +175,7 @@ export default function AgentDetail() {
   const [toggling, setToggling] = useState(false)
   
   // Get tab from URL or default to 'overview'
-  const validTabs = ['overview', 'conversations', 'knowledge', 'settings', 'playground', 'logs']
+  const validTabs = ['overview', 'conversations', 'knowledge', 'settings', 'playground']
   const tabFromUrl = searchParams.get('tab')
   const activeTab = validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview'
   
@@ -375,8 +375,8 @@ export default function AgentDetail() {
       {activeTab === 'knowledge' && <KnowledgeTab agentId={agent.id} />}
       {activeTab === 'settings' && <SettingsTab agent={agent} onUpdate={loadAgent} />}
       {activeTab === 'playground' && <PlaygroundTab agent={agent} />}
-      {activeTab === 'logs' && <LogsTab agentId={agent.id} />}
     </div>
+
   )
 }
 
@@ -3264,62 +3264,3 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
   )
 }
 
-function LogsTab({ agentId }) {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [pagination, setPagination] = useState({ limit: 20, offset: 0, total: 0 });
-  const [filters, setFilters] = useState({ action: '' });
-
-  const loadLogs = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/admin/audit-logs', {
-        params: {
-          limit: pagination.limit,
-          offset: pagination.offset,
-          action: filters.action,
-          entityId: agentId
-        }
-      });
-      setLogs(response.data.logs);
-      setPagination(prev => ({ ...prev, total: response.data.total }));
-    } catch (error) {
-      console.error('Failed to load logs:', error);
-      toast.error('Erreur lors du chargement des logs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRollback = async (logId) => {
-    try {
-      if (!window.confirm('Êtes-vous sûr de vouloir annuler cette action ? cela restaurera les valeurs précédentes.')) {
-        return;
-      }
-      const response = await api.post(`/admin/audit-logs/${logId}/rollback`);
-      toast.success(response.data.message || 'Action annulée');
-      loadLogs();
-    } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'annulation');
-    }
-  };
-
-  useEffect(() => {
-    loadLogs();
-  }, [agentId, pagination.offset, filters]);
-
-  return (
-    <div className="card p-4 sm:p-6 overflow-hidden">
-      <AuditLogsContent 
-        logs={logs}
-        loading={loading}
-        pagination={pagination}
-        onPageChange={(offset) => setPagination(prev => ({ ...prev, offset }))}
-        filters={filters}
-        onFilterChange={setFilters}
-        onRefresh={loadLogs}
-        onRollback={handleRollback}
-      />
-    </div>
-  );
-}

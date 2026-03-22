@@ -53,7 +53,7 @@ router.get('/', authenticateToken, async (req, res) => {
             WHERE p.user_id = ?
             GROUP BY p.id
             ORDER BY p.created_at DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         // Enrichir avec marge et taux de marge
         const enriched = products.map(p => {
@@ -90,10 +90,10 @@ router.post('/import-from-url', authenticateToken, requireModule('catalog_import
             await db.run(`
                 INSERT INTO products (id, user_id, name, sku, price, cost_price, stock, category, description, image_url)
                 VALUES (?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)
-            `, id, req.user.id, item.title || 'Sans nom', null, price, item.description || null, item.imageUrl || null);
+            `, id, req.user.ownerId, item.title || 'Sans nom', null, price, item.description || null, item.imageUrl || null);
             created.push({ id, name: item.title || 'Sans nom', price, image_url: item.imageUrl || null });
         }
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
         
         await activityLogger.log({
             userId: req.user.id,
@@ -122,7 +122,7 @@ router.get('/stats/margins', authenticateToken, async (req, res) => {
                 COALESCE(SUM(stock * COALESCE(price, 0)), 0) AS total_stock_value
             FROM products
             WHERE user_id = ?
-        `, req.user.id);
+        `, req.user.ownerId);
 
         const total_stock_cost = Number(row?.total_stock_cost ?? 0) || 0;
         const total_stock_value = Number(row?.total_stock_value ?? 0) || 0;
@@ -146,7 +146,7 @@ router.get('/history', authenticateToken, async (req, res) => {
         const productId = req.query.product_id || null;
         let rows;
         if (productId) {
-            const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', productId, req.user.id);
+            const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', productId, req.user.ownerId);
             if (!product) {
                 return res.status(404).json({ error: 'Produit non trouvé' });
             }
@@ -157,7 +157,7 @@ router.get('/history', authenticateToken, async (req, res) => {
                 WHERE pl.product_id = ? AND pl.user_id = ?
                 ORDER BY pl.created_at DESC
                 LIMIT ?
-            `, productId, req.user.id, limit);
+            `, productId, req.user.ownerId, limit);
         } else {
             rows = await db.all(`
                 SELECT pl.id, pl.product_id, pl.user_id, pl.action, pl.quantity_change, pl.stock_before, pl.stock_after, pl.order_id, pl.notes, pl.details, pl.created_at, p.name as product_name
@@ -166,7 +166,7 @@ router.get('/history', authenticateToken, async (req, res) => {
                 WHERE pl.user_id = ?
                 ORDER BY pl.created_at DESC
                 LIMIT ?
-            `, req.user.id, limit);
+            `, req.user.ownerId, limit);
         }
         const logs = (rows || []).map(row => ({
             ...row,
@@ -236,7 +236,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
             LEFT JOIN orders o ON oi.order_id = o.id
             WHERE p.id = ? AND p.user_id = ?
             GROUP BY p.id
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
@@ -273,7 +273,7 @@ router.post('/', authenticateToken, validate(productCreateSchema), async (req, r
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, 
             id, 
-            req.user.id, 
+            req.user.ownerId, 
             name, 
             sku || null, 
             parsedPrice, 
@@ -294,9 +294,9 @@ router.post('/', authenticateToken, validate(productCreateSchema), async (req, r
         await db.run(`
             INSERT INTO product_logs (id, product_id, user_id, action, quantity_change, stock_before, stock_after, notes)
             VALUES (?, ?, ?, 'created', 0, 0, ?, ?)
-        `, logId, id, req.user.id, parseInt(stock) || 0, 'Produit créé');
+        `, logId, id, req.user.ownerId, parseInt(stock) || 0, 'Produit créé');
 
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
 
         await activityLogger.log({
             userId: req.user.id,
@@ -325,7 +325,7 @@ router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req,
     try {
         const { name, sku, price, cost_price, stock, category, description, image_url, is_active } = req.body;
 
-        const product = await db.get('SELECT * FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT * FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -377,14 +377,14 @@ router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req,
             await db.run(`
                 INSERT INTO product_logs (id, product_id, user_id, action, quantity_change, stock_before, stock_after, notes, details)
                 VALUES (?, ?, ?, 'updated', ?, ?, ?, ?, ?)
-            `, logId, req.params.id, req.user.id, quantityChange, stockBefore, stockAfter, 'Modification produit', detailsJson);
+            `, logId, req.params.id, req.user.ownerId, quantityChange, stockBefore, stockAfter, 'Modification produit', detailsJson);
         }
         const salePrice = Number(updated.price ?? 0) || 0;
         const updatedCostPrice = Number(updated.cost_price ?? 0) || 0;
         const margin = salePrice - updatedCostPrice;
         const marginRate = updatedCostPrice > 0 ? margin / updatedCostPrice : null;
 
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
 
         // Calculate audit changes (formatting for activityLogger)
         const auditChanges = {};
@@ -426,11 +426,11 @@ router.put('/:id', authenticateToken, validate(productUpdateSchema), async (req,
 // Delete product
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const result = await db.run('DELETE FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const result = await db.run('DELETE FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!result.rowCount || result.rowCount === 0) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
 
         await activityLogger.log({
             userId: req.user.id,
@@ -460,14 +460,14 @@ router.post('/bulk-delete', authenticateToken, async (req, res) => {
         const count = await db.get(`
             SELECT COUNT(*) as c FROM products 
             WHERE id IN (${placeholders}) AND user_id = ?
-        `, ...ids, req.user.id);
+        `, ...ids, req.user.ownerId);
 
         if (Number(count.c) !== ids.length) {
             return res.status(403).json({ error: 'Certains produits ne vous appartiennent pas ou n\'existent plus' });
         }
 
         await db.run(`DELETE FROM products WHERE id IN (${placeholders})`, ...ids);
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
         
         res.json({ message: `${ids.length} produits supprimés` });
     } catch (error) {
@@ -494,7 +494,7 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
         let errors = [];
 
         // Pre-fetch existing categories to avoid redundant inserts
-        const existingCats = await db.all('SELECT name FROM product_categories WHERE user_id = ?', req.user.id);
+        const existingCats = await db.all('SELECT name FROM product_categories WHERE user_id = ?', req.user.ownerId);
         const catSet = new Set(existingCats.map(c => c.name.toLowerCase()));
 
         for (const record of records) {
@@ -509,7 +509,7 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
                     await db.run(`
                         INSERT INTO product_categories (id, user_id, name)
                         VALUES (?, ?, ?)
-                    `, catId, req.user.id, catName);
+                    `, catId, req.user.ownerId, catName);
                     catSet.add(catName.toLowerCase());
                 }
 
@@ -529,7 +529,7 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `,
                     id, 
-                    req.user.id, 
+                    req.user.ownerId, 
                     record.name, 
                     record.sku || null, 
                     safePrice, 
@@ -550,7 +550,7 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
             total: records.length,
             errors: errors.length > 0 ? errors : undefined
         });
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
     } catch (error) {
         console.error('Import products error:', error);
         res.status(500).json({ error: 'Erreur lors de l\'import: ' + error.message });
@@ -562,7 +562,7 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
 // Get images for a product
 router.get('/:id/images', authenticateToken, async (req, res) => {
     try {
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -582,7 +582,7 @@ router.post('/:id/images', authenticateToken, async (req, res) => {
     try {
         const { url, alt_text, is_primary } = req.body;
 
-        const product = await db.get('SELECT id, image_url FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT id, image_url FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -614,7 +614,7 @@ router.post('/:id/images', authenticateToken, async (req, res) => {
             await db.run('UPDATE products SET image_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', url.trim(), req.params.id);
         }
 
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
         const image = await db.get('SELECT * FROM product_images WHERE id = ?', id);
         res.status(201).json({ image });
     } catch (error) {
@@ -626,13 +626,13 @@ router.post('/:id/images', authenticateToken, async (req, res) => {
 // Delete product image
 router.delete('/:productId/images/:imageId', authenticateToken, async (req, res) => {
     try {
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.productId, req.user.id);
+        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.productId, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
 
         await db.run('DELETE FROM product_images WHERE id = ? AND product_id = ?', req.params.imageId, req.params.productId);
-        messageAnalyzer.invalidateProductCache(req.user.id);
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
         res.json({ message: 'Image supprimée' });
     } catch (error) {
         console.error('Delete product image error:', error);
@@ -645,7 +645,7 @@ router.delete('/:productId/images/:imageId', authenticateToken, async (req, res)
 // Get variants for a product
 router.get('/:id/variants', authenticateToken, async (req, res) => {
     try {
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -673,7 +673,7 @@ router.post('/:id/variants', authenticateToken, async (req, res) => {
     try {
         const { name, sku, price, stock, attributes = {} } = req.body;
 
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -705,7 +705,7 @@ router.put('/:productId/variants/:variantId', authenticateToken, async (req, res
     try {
         const { name, sku, price, stock, attributes, is_active } = req.body;
 
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.productId, req.user.id);
+        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.productId, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -751,7 +751,7 @@ router.put('/:productId/variants/:variantId', authenticateToken, async (req, res
 // Delete variant
 router.delete('/:productId/variants/:variantId', authenticateToken, async (req, res) => {
     try {
-        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.productId, req.user.id);
+        const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.productId, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
@@ -781,7 +781,7 @@ router.get('/categories/all', authenticateToken, async (req, res) => {
             FROM product_categories c
             WHERE c.user_id = ?
             ORDER BY c.position ASC, c.name ASC
-        `, req.user.id, req.user.id);
+        `, req.user.ownerId, req.user.ownerId);
 
         res.json({ categories });
     } catch (error) {
@@ -803,7 +803,7 @@ router.post('/categories', authenticateToken, async (req, res) => {
         await db.run(`
             INSERT INTO product_categories (id, user_id, name, description, parent_id)
             VALUES (?, ?, ?, ?, ?)
-        `, id, req.user.id, name.trim(), description || null, parent_id || null);
+        `, id, req.user.ownerId, name.trim(), description || null, parent_id || null);
 
         const category = await db.get('SELECT * FROM product_categories WHERE id = ?', id);
         res.status(201).json({ category });
@@ -816,7 +816,7 @@ router.post('/categories', authenticateToken, async (req, res) => {
 // Delete category
 router.delete('/categories/:id', authenticateToken, async (req, res) => {
     try {
-        const category = await db.get('SELECT id FROM product_categories WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const category = await db.get('SELECT id FROM product_categories WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!category) {
             return res.status(404).json({ error: 'Catégorie non trouvée' });
         }
@@ -832,7 +832,7 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
 // Get product with full details (images, variants)
 router.get('/:id/full', authenticateToken, async (req, res) => {
     try {
-        const product = await db.get('SELECT * FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const product = await db.get('SELECT * FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
             return res.status(404).json({ error: 'Produit non trouvé' });
         }

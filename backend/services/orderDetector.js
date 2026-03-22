@@ -151,44 +151,45 @@ class OrderDetector {
         const lowerMessage = message.toLowerCase();
         const productNameLower = product.name.toLowerCase();
         
-        // Exact match
+        // 1. Exact match
         if (lowerMessage.includes(productNameLower)) {
             return { matched: true, score: 10 };
         }
         
-        // Singular/Plural handling (Pluralized in text or singular in DB/text)
+        // 2. Singular/Plural handling
         if (lowerMessage.includes(productNameLower + 's') || lowerMessage.includes(productNameLower.replace(/s$/, ''))) {
              return { matched: true, score: 9 };
         }
 
-        // Word-based matching
-        const stopwords = ['pour', 'avec', 'les', 'des', 'une', 'aux', 'sur'];
+        // 3. Word-based matching with higher tolerance
+        const stopwords = ['pour', 'avec', 'les', 'des', 'une', 'aux', 'sur', 'dans'];
         const productWords = productNameLower.split(/\s+/).filter(w => w.length > 2 && !stopwords.includes(w));
         
-        // Helper to check if a single word is inside the message
+        if (productWords.length === 0) return { matched: false, score: 0 };
+
         const wordInMessage = (word) => {
             if (lowerMessage.includes(word)) return true;
-            if (!word.endsWith('s') && lowerMessage.includes(word + 's')) return true; // match plural
-            if (word.endsWith('s') && lowerMessage.includes(word.slice(0, -1))) return true; // match singular
+            if (!word.endsWith('s') && lowerMessage.includes(word + 's')) return true;
+            if (word.endsWith('s') && lowerMessage.includes(word.slice(0, -1))) return true;
             return false;
         };
 
         const matchedWords = productWords.filter(wordInMessage);
         
-        // Dynamic formula: at least half of the significant words must match
-        const requiredWords = Math.max(1, Math.ceil(productWords.length / 2));
-        
-        if (matchedWords.length >= requiredWords) {
-            return { matched: true, score: matchedWords.length };
+        // Match if at least 60% of significant words are present (more fuzzy)
+        const matchRatio = matchedWords.length / productWords.length;
+        if (matchRatio >= 0.6) {
+            return { matched: true, score: Math.round(matchRatio * 10) };
         }
         
-        // Check SKU if available
+        // 4. SKU Check
         if (product.sku && lowerMessage.includes(product.sku.toLowerCase())) {
             return { matched: true, score: 8 };
         }
         
         return { matched: false, score: 0 };
     }
+
 
     /**
      * Check if message contains delivery information
@@ -215,7 +216,8 @@ class OrderDetector {
      * @param {Object} conversation - Conversation object
      * @returns {Object|null} - Detected order or null
      */
-    async analyzeMessage(message, userId, conversation) {
+    async analyzeMessage(message, userId, conversation, knowledgeBase = []) {
+
         const lowerMessage = message.toLowerCase();
         const trimmedMessage = lowerMessage.trim();
 
@@ -309,9 +311,12 @@ class OrderDetector {
 
         // Require explicit confirmation or delivery info to create an order
         if (!hasExplicitConfirmation && !hasDeliveryInfo) {
-            console.log('[OrderDetector] Purchase intent detected but missing explicit confirmation/delivery info');
+            console.log('[OrderDetector] No purchase intent or delivery info. skipping auto-order.');
             return null;
         }
+        
+        console.log('[OrderDetector] Order detection triggered:', { hasExplicitConfirmation, hasDeliveryInfo });
+
 
 
         // Get user's products
@@ -383,18 +388,34 @@ class OrderDetector {
             }
         }
 
+        console.log(`[OrderDetector] Found ${detectedItems.length} items to order.`);
+
         if (detectedItems.length === 0) {
             // #region agent log
             debugIngest({
                 location: 'orderDetector.js:analyzeMessage',
-                message: 'return null no items',
-                data: { reason: 'no product in current message', conversationContextSnippet: conversationContext.substring(0, 120) },
-                timestamp: Date.now(),
-                hypothesisId: 'H4'
+                message: 'checking knowledge fallback',
+                timestamp: Date.now()
             });
             // #endregion
-            return null; // No products matched
+
+            // FALLBACK (Mechanism 2): Search for price/product patterns in knowledge chunks
+            // This handles cases where product isn't in structured table but is in documents
+            if (knowledgeBase && knowledgeBase.length > 0) {
+                for (const chunk of knowledgeBase) {
+                    const content = chunk.content.toLowerCase();
+                    // Basic heuristic: if chunk contains "Prix" and looks like a product description
+                    if (content.includes('prix') && lowerMessage.split(/\s+/).some(w => w.length > 3 && content.includes(w))) {
+                         console.log('[OrderDetector] Potential product match found in Knowledge Base (Unstructured)');
+                         // We don't create the DB entry yet to avoid "garbage" orders, 
+                         // but we could return a special flag or just rely on the Discrepancy Alert.
+                    }
+                }
+            }
+
+            return null; // Return null - let the discrepancy alert handle it for human follow-up
         }
+
 
         const existingOrder = await db.get(`
             SELECT id, notes FROM orders 

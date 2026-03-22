@@ -29,7 +29,7 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
         const search = (q || '').toString().trim();
 
         if (agent_id) {
-            const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.id);
+            const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.ownerId);
             if (!agent) {
                 return res.status(404).json({ error: 'Agent non trouvé' });
             }
@@ -55,7 +55,7 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
             AND c.contact_jid NOT LIKE '%broadcast%'
             AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
         `;
-        const params = [req.user.id];
+        const params = [req.user.ownerId];
 
         if (agent_id) {
             query += ' AND c.agent_id = ?';
@@ -94,7 +94,7 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
 // Get all conversations for an agent
 router.get('/agent/:agentId', authenticateToken, async (req, res) => {
     try {
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -121,7 +121,7 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
 // Get all conversations for user (across all agents)
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, plan FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, plan FROM users WHERE id = ?', req.user.ownerId);
         const planName = user?.plan || 'free';
         const hasConversionScore = await hasModule(planName, 'conversion_score');
 
@@ -146,7 +146,7 @@ router.get('/', authenticateToken, async (req, res) => {
             ${scoreClause}
             ORDER BY c.last_message_at DESC
             LIMIT 100
-        `, req.user.id);
+        `, req.user.ownerId);
 
         const totalMessagesRow = await db.get(`
             SELECT COUNT(*) as count FROM messages m
@@ -156,7 +156,7 @@ router.get('/', authenticateToken, async (req, res) => {
             AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
             AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
-        `, req.user.id);
+        `, req.user.ownerId);
         const totalMessages = totalMessagesRow?.count ?? 0;
 
         res.json({ conversations, totalMessages: Number(totalMessages) });
@@ -175,7 +175,7 @@ router.get('/:convId/messages/:msgId/media', authenticateToken, async (req, res)
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE m.id = ? AND c.id = ? AND a.user_id = ?
-        `, req.params.msgId, req.params.convId, req.user.id);
+        `, req.params.msgId, req.params.convId, req.user.ownerId);
         if (!msg || !msg.media_url) {
             return res.status(404).json({ error: 'Média non trouvé' });
         }
@@ -208,7 +208,7 @@ router.get('/:id/export/pdf', authenticateToken, async (req, res) => {
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -251,7 +251,7 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ?
-        `, req.user.id);
+        `, req.user.ownerId);
         res.json({ count: row?.count || 0 });
     } catch (error) {
         console.error('Get unread conversation count error:', error);
@@ -267,7 +267,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -304,7 +304,7 @@ router.put('/:id/status', authenticateToken, validate(updateConversationStatusSc
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -326,7 +326,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -355,7 +355,7 @@ router.put('/bulk/takeover', authenticateToken, validate(bulkTakeoverSchema), as
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id IN (${placeholders}) AND a.user_id = ?
-        `, ...conversation_ids, req.user.id);
+        `, ...conversation_ids, req.user.ownerId);
 
         if (ownedConversations.length !== conversation_ids.length) {
             return res.status(403).json({ error: 'Certaines conversations ne vous appartiennent pas' });
@@ -387,7 +387,7 @@ router.put('/:id/takeover', authenticateToken, validate(toggleTakeoverSchema), a
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -418,7 +418,7 @@ router.put('/:id/contact', authenticateToken, validate(updateConversationContact
             SELECT c.id, c.contact_jid, c.agent_id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -429,7 +429,7 @@ router.put('/:id/contact', authenticateToken, validate(updateConversationContact
         await db.run(`
             UPDATE conversations SET contact_name = ? 
             WHERE contact_jid = ? AND agent_id IN (SELECT id FROM agents WHERE user_id = ?)
-        `, contact_name.trim(), conversation.contact_jid, req.user.id);
+        `, contact_name.trim(), conversation.contact_jid, req.user.ownerId);
 
         res.json({ message: 'Nom du contact mis à jour', contact_name: contact_name.trim() });
     } catch (error) {
@@ -452,7 +452,7 @@ router.get('/:id/new-messages', authenticateToken, async (req, res) => {
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -496,14 +496,14 @@ router.get('/updates/all', authenticateToken, async (req, res) => {
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND c.last_message_at > ?
             ORDER BY c.last_message_at DESC
-        `, sinceDate, req.user.id, sinceDate);
+        `, sinceDate, req.user.ownerId, sinceDate);
 
         const totalNew = await db.get(`
             SELECT COUNT(*) as count FROM messages m
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND m.created_at > ?
-        `, req.user.id, sinceDate);
+        `, req.user.ownerId, sinceDate);
 
         res.json({ 
             updates,
@@ -525,7 +525,7 @@ router.get('/:id/messages', authenticateToken, async (req, res) => {
             SELECT c.* FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -569,7 +569,7 @@ router.delete('/:id/messages', authenticateToken, validate(deleteMessagesSchema)
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -604,7 +604,7 @@ router.post('/:id/mark-read', authenticateToken, async (req, res) => {
             SELECT c.id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -632,7 +632,7 @@ router.post('/:id/human-takeover', authenticateToken, async (req, res) => {
             SELECT c.*, a.id as agent_id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -663,7 +663,7 @@ router.post('/:id/send', authenticateToken, async (req, res) => {
             SELECT c.*, a.id as agent_id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
@@ -675,7 +675,7 @@ router.post('/:id/send', authenticateToken, async (req, res) => {
             conversation.agent_id, 
             req.params.id, 
             message.trim(),
-            req.user.id
+            req.user.ownerId
         );
 
         res.json({ 
@@ -699,7 +699,7 @@ router.get('/needs-human', authenticateToken, async (req, res) => {
             WHERE a.user_id = ?
             AND (c.needs_human = 1 OR c.human_takeover = 1)
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         res.json({ conversations });
     } catch (error) {

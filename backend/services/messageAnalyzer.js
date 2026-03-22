@@ -208,11 +208,17 @@ class MessageAnalyzer {
         const intent_hint = insult ? 'insulte' : intent.primary;
 
         const isConfirmation = this._isConfirmationMessage(lowerMessage);
+        const deliveryInfo = this.extractDeliveryInfo(lowerMessage);
         const contextText = conv?.id ? await this._getRecentConversationContext(conv.id) : null;
+        
+        // Use context if is confirmation OR if we have delivery info (as it implies an order in progress)
+        const useContextMatch = isConfirmation || deliveryInfo.hasDeliveryInfo;
+        
         const productAnalysis = await this.analyzeProducts(sanitizedMessage, userId, {
             contextText,
-            useContextIfNoMatch: isConfirmation
+            useContextIfNoMatch: useContextMatch
         });
+
 
         const hasConfirmationProduct = isConfirmation && productAnalysis.matchedProducts.length > 0;
         if (hasConfirmationProduct && (intent.primary === 'general' || intent.primary === 'greeting')) {
@@ -223,8 +229,8 @@ class MessageAnalyzer {
         // 3. Get customer history
         const customerHistory = await this.getCustomerHistory(userId, conv);
 
-        // 4. Extract delivery info if present
-        const deliveryInfo = this.extractDeliveryInfo(lowerMessage);
+        // 4. Delivery info already extracted above for product context matching
+
 
         // 5. Check for quantity mentions
         const quantities = this.extractQuantities(lowerMessage);

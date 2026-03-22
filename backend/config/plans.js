@@ -26,7 +26,9 @@ const FEATURES_BASELINE = {
     catalog_import: false,
     human_handoff_alerts: false,
     analytics: false,
+    flows: false,
     models: []
+
 };
 
 /**
@@ -245,7 +247,8 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true, analytics: true
+            human_handoff_alerts: true, analytics: true, flows: true
+
         }
     },
     business: {
@@ -275,7 +278,8 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true, analytics: true
+            human_handoff_alerts: true, analytics: true, flows: true
+
         }
     },
     enterprise: {
@@ -305,12 +309,14 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true, analytics: true
+            human_handoff_alerts: true, analytics: true, flows: true
+
         }
     }
 };
 
-export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts'];
+export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows'];
+
 
 /** Map plan feature key to users table override column */
 export const MODULE_TO_USER_COLUMN = {
@@ -324,7 +330,9 @@ export const MODULE_TO_USER_COLUMN = {
     daily_briefing: 'daily_briefing_enabled',
     sentiment_routing: 'sentiment_routing_enabled',
     catalog_import: 'catalog_import_enabled',
-    human_handoff_alerts: 'human_handoff_alerts_enabled'
+    human_handoff_alerts: 'human_handoff_alerts_enabled',
+    flows: 'flows_module_enabled'
+
 };
 
 /**

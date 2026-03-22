@@ -20,6 +20,7 @@ export const ANOMALY_TYPES = {
     SYSTEM_ERROR: 'system_error',           // General system error
     LOW_STOCK: 'low_stock',                 // Product stock critically low
     ORDER_STUCK: 'order_stuck',             // Order pending for too long
+    AUTOMATION_DISCREPANCY: 'automation_discrepancy', // AI detected intent but system failed to execute
 };
 
 // Severity levels
@@ -75,7 +76,7 @@ class AdminAnomaliesService {
     /**
      * Get all anomalies with filters
      */
-    async getAll({ resolved = false, resolvedMode = null, severity = null, type = null, q = null, limit = 100, offset = 0 } = {}) {
+    async getAll({ resolved = false, resolvedMode = null, severity = null, type = null, q = null, userId = null, limit = 100, offset = 0 } = {}) {
         try {
             let query = `
                 SELECT a.*, 
@@ -91,6 +92,12 @@ class AdminAnomaliesService {
             const mode = resolvedMode || (resolved ? 'all' : 'open');
             if (mode === 'open') query += ` AND a.is_resolved = 0`;
             if (mode === 'only') query += ` AND a.is_resolved = 1`;
+            
+            if (userId) {
+                query += ` AND a.user_id = ?`;
+                params.push(userId);
+            }
+
             if (severity) {
                 query += ` AND a.severity = ?`;
                 params.push(severity);
@@ -140,29 +147,31 @@ class AdminAnomaliesService {
     /**
      * Get count by severity
      */
-    async getStats() {
+    /**
+     * Get statistics about current anomalies
+     */
+    async getStats(userId = null) {
         try {
+            const whereClause = userId ? 'AND user_id = ?' : '';
+            const params = userId ? [userId] : [];
+
             const stats = await db.all(`
-                SELECT 
-                    severity,
-                    COUNT(*) as count
+                SELECT severity, COUNT(*) as count
                 FROM admin_anomalies
-                WHERE is_resolved = 0
+                WHERE is_resolved = 0 ${whereClause}
                 GROUP BY severity
-            `);
+            `, ...params);
 
             const byType = await db.all(`
-                SELECT 
-                    type,
-                    COUNT(*) as count
+                SELECT type, COUNT(*) as count
                 FROM admin_anomalies
-                WHERE is_resolved = 0
+                WHERE is_resolved = 0 ${whereClause}
                 GROUP BY type
-            `);
+            `, ...params);
 
             const totalRow = await db.get(`
-                SELECT COUNT(*) as count FROM admin_anomalies WHERE is_resolved = 0
-            `);
+                SELECT COUNT(*) as count FROM admin_anomalies WHERE is_resolved = 0 ${whereClause}
+            `, ...params);
             const total = totalRow?.count ?? 0;
 
             return {
@@ -171,6 +180,7 @@ class AdminAnomaliesService {
                 byType: byType.reduce((acc, t) => ({ ...acc, [t.type]: Number(t.count) }), {})
             };
         } catch (error) {
+            console.error('[AdminAnomalies] getStats error:', error);
             return { total: 0, bySeverity: {}, byType: {} };
         }
     }
@@ -178,28 +188,38 @@ class AdminAnomaliesService {
     /**
      * Mark as resolved
      */
-    async resolve(anomalyId, adminId) {
+    async resolve(anomalyId, resolvedById, userId = null) {
         try {
-            await db.run(`
+            const query = `
                 UPDATE admin_anomalies 
                 SET is_resolved = 1, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            `, adminId, anomalyId);
+                WHERE id = ? ${userId ? 'AND user_id = ?' : ''}
+            `;
+            const params = [resolvedById, anomalyId];
+            if (userId) params.push(userId);
+
+            await db.run(query, ...params);
             return true;
         } catch (error) {
+            console.error('[AdminAnomalies] Resolve error:', error);
             return false;
         }
     }
 
-    async resolveByType(type, adminId) {
+    async resolveByType(type, resolvedById, userId = null) {
         try {
-            const result = await db.run(`
+            const query = `
                 UPDATE admin_anomalies 
                 SET is_resolved = 1, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP
-                WHERE type = ? AND is_resolved = 0
-            `, adminId, type);
+                WHERE type = ? AND is_resolved = 0 ${userId ? 'AND user_id = ?' : ''}
+            `;
+            const params = [resolvedById, type];
+            if (userId) params.push(userId);
+
+            const result = await db.run(query, ...params);
             return result?.rowCount ?? 0;
         } catch (error) {
+            console.error('[AdminAnomalies] ResolveByType error:', error);
             return 0;
         }
     }
@@ -341,18 +361,21 @@ class AdminAnomaliesService {
     // ==================== SYSTEM HEALTH CHECK ====================
 
     /**
-     * Run a full system health check and log anomalies
+     * Run a system health check and log anomalies
      */
-    async runHealthCheck() {
-        console.log('[AdminAnomalies] Running health check...');
+    async runHealthCheck(userId = null) {
+        console.log(`[AdminAnomalies] Running health check${userId ? ` for user ${userId}` : ''}...`);
         let anomaliesFound = 0;
 
         try {
+            const userFilter = userId ? 'AND id = ?' : '';
+            const userParams = userId ? [userId] : [];
+
             const usersNoCredits = await db.all(`
                 SELECT id, name, email, credits, plan 
                 FROM users 
-                WHERE credits <= 0 AND plan != 'enterprise' AND is_active = 1
-            `);
+                WHERE credits <= 0 AND plan != 'enterprise' AND is_active = 1 ${userId ? 'AND id = ?' : ''}
+            `, ...userParams);
 
             for (const user of usersNoCredits) {
                 if (Number(user.credits) < 0) {
@@ -371,8 +394,8 @@ class AdminAnomaliesService {
                        (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
                        (SELECT COUNT(*) FROM agents WHERE user_id = u.id AND whatsapp_connected = 1) as wa_count
                 FROM users u
-                WHERE u.is_active = 1
-            `);
+                WHERE u.is_active = 1 ${userId ? 'AND u.id = ?' : ''}
+            `, ...userParams);
 
             for (const user of users) {
                 const plan = await getPlan(user.plan);
@@ -391,8 +414,8 @@ class AdminAnomaliesService {
             const outOfStock = await db.all(`
                 SELECT p.id, p.name, p.stock, p.user_id
                 FROM products p
-                WHERE p.is_active = 1 AND p.stock = 0
-            `);
+                WHERE p.is_active = 1 AND p.stock = 0 ${userId ? 'AND p.user_id = ?' : ''}
+            `, ...userParams);
 
             for (const product of outOfStock) {
                 await this.logLowStock(product.user_id, product.name, product.stock);
@@ -408,7 +431,8 @@ class AdminAnomaliesService {
                 FROM orders o
                 WHERE o.status = 'pending'
                   AND o.created_at < (CURRENT_TIMESTAMP - INTERVAL '24 hours')
-            `);
+                  ${userId ? 'AND o.user_id = ?' : ''}
+            `, ...userParams);
 
             for (const order of stuckOrders) {
                 await this.logOrderStuck(order.user_id, order.id, order.customer_name, order.hours_old);
@@ -419,7 +443,7 @@ class AdminAnomaliesService {
             return anomaliesFound;
         } catch (error) {
             console.error('[AdminAnomalies] Health check error:', error);
-            await this.logSystemError(`Health check failed: ${error.message}`);
+            if (!userId) await this.logSystemError(`Health check failed: ${error.message}`);
             return -1;
         }
     }

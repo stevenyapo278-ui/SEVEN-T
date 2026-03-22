@@ -16,7 +16,7 @@ router.get('/', authenticateToken, async (req, res) => {
         const status = req.query.status || null;
         const limit = parseInt(req.query.limit) || 50;
         
-        const orders = await orderService.getOrders(req.user.id, { status, limit });
+        const orders = await orderService.getOrders(req.user.ownerId, { status, limit });
         res.json({ orders });
     } catch (error) {
         console.error('Get orders error:', error);
@@ -27,7 +27,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // Get order stats
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
-        const stats = await orderService.getStats(req.user.id);
+        const stats = await orderService.getStats(req.user.ownerId);
         res.json(stats);
     } catch (error) {
         res.status(500).json({ error: 'Erreur' });
@@ -38,7 +38,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
 router.get('/analytics', authenticateToken, async (req, res) => {
     try {
         const { period = '30d' } = req.query; // 7d, 30d, 90d, all
-        const analytics = await orderService.getAnalytics(req.user.id, period);
+        const analytics = await orderService.getAnalytics(req.user.ownerId, period);
         res.json(analytics);
     } catch (error) {
         console.error('Get analytics error:', error);
@@ -49,7 +49,7 @@ router.get('/analytics', authenticateToken, async (req, res) => {
 // Get pending orders count
 router.get('/pending-count', authenticateToken, async (req, res) => {
     try {
-        const count = await orderService.getPendingCount(req.user.id);
+        const count = await orderService.getPendingCount(req.user.ownerId);
         res.json({ count });
     } catch (error) {
         res.status(500).json({ error: 'Erreur' });
@@ -61,7 +61,7 @@ router.get('/export', authenticateToken, async (req, res) => {
     try {
         const status = req.query.status || null;
         const limit = parseInt(req.query.limit) || 5000;
-        const orders = await orderService.getOrders(req.user.id, { status, limit });
+        const orders = await orderService.getOrders(req.user.ownerId, { status, limit });
         const headers = ['id', 'date', 'client', 'téléphone', 'statut', 'montant', 'devise', 'payé_le'];
         const escape = (v) => (v == null ? '' : String(v).replace(/"/g, '""'));
         const row = (o) => [
@@ -89,7 +89,7 @@ router.get('/export', authenticateToken, async (req, res) => {
 router.get('/logs/all', authenticateToken, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 100;
-        const logs = await orderService.getAllProductLogs(req.user.id, limit);
+        const logs = await orderService.getAllProductLogs(req.user.ownerId, limit);
         res.json({ logs });
     } catch (error) {
         res.status(500).json({ error: 'Erreur' });
@@ -99,7 +99,7 @@ router.get('/logs/all', authenticateToken, async (req, res) => {
 // Get product logs for one product (must be before /:id)
 router.get('/products/:productId/logs', authenticateToken, async (req, res) => {
     try {
-        const logs = await orderService.getProductLogs(req.params.productId, req.user.id);
+        const logs = await orderService.getProductLogs(req.params.productId, req.user.ownerId);
         res.json({ logs });
     } catch (error) {
         res.status(500).json({ error: 'Erreur' });
@@ -109,7 +109,7 @@ router.get('/products/:productId/logs', authenticateToken, async (req, res) => {
 // Get order by ID
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
-        const order = await orderService.getOrderById(req.params.id, req.user.id);
+        const order = await orderService.getOrderById(req.params.id, req.user.ownerId);
         if (!order) {
             return res.status(404).json({ error: 'Commande non trouvée' });
         }
@@ -128,7 +128,7 @@ router.post('/', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Nom du client et articles requis' });
         }
 
-        const order = await orderService.createOrder(req.user.id, {
+        const order = await orderService.createOrder(req.user.ownerId, {
             customerName,
             customerPhone,
             items,
@@ -151,7 +151,7 @@ router.post('/', authenticateToken, async (req, res) => {
 // Validate order
 router.post('/:id/validate', authenticateToken, async (req, res) => {
     try {
-        const result = await orderService.validateOrder(req.params.id, req.user.id, req.user.name);
+        const result = await orderService.validateOrder(req.params.id, req.user.ownerId, req.user.name);
         
         if (!result.success) {
             return res.status(400).json({ 
@@ -171,7 +171,7 @@ router.post('/:id/validate', authenticateToken, async (req, res) => {
 router.patch('/:id/payment-method', authenticateToken, async (req, res) => {
     try {
         const { payment_method: paymentMethod } = req.body;
-        const result = await orderService.updatePaymentMethod(req.params.id, req.user.id, paymentMethod);
+        const result = await orderService.updatePaymentMethod(req.params.id, req.user.ownerId, paymentMethod);
         if (!result.success) return res.status(400).json({ error: result.error });
         res.json({ success: true, order: result.order });
     } catch (error) {
@@ -183,7 +183,7 @@ router.patch('/:id/payment-method', authenticateToken, async (req, res) => {
 // Mark order as delivered (paiement à la livraison reçu)
 router.post('/:id/mark-delivered', authenticateToken, async (req, res) => {
     try {
-        const result = await orderService.markAsDelivered(req.params.id, req.user.id);
+        const result = await orderService.markAsDelivered(req.params.id, req.user.ownerId);
         if (!result.success) return res.status(400).json({ error: result.error });
         res.json({ success: true, order: result.order });
     } catch (error) {
@@ -195,7 +195,7 @@ router.post('/:id/mark-delivered', authenticateToken, async (req, res) => {
 // Unmark order as delivered (back to validated)
 router.post('/:id/unmark-delivered', authenticateToken, async (req, res) => {
     try {
-        const result = await orderService.unmarkAsDelivered(req.params.id, req.user.id);
+        const result = await orderService.unmarkAsDelivered(req.params.id, req.user.ownerId);
         if (!result.success) return res.status(400).json({ error: result.error });
         res.json({ success: true, order: result.order });
     } catch (error) {
@@ -207,7 +207,7 @@ router.post('/:id/unmark-delivered', authenticateToken, async (req, res) => {
 // Revert order to pending (restores stock)
 router.post('/:id/revert-to-pending', authenticateToken, async (req, res) => {
     try {
-        const result = await orderService.revertToPending(req.params.id, req.user.id);
+        const result = await orderService.revertToPending(req.params.id, req.user.ownerId);
         if (!result.success) return res.status(400).json({ error: result.error });
         res.json({ success: true, order: result.order });
     } catch (error) {
@@ -221,7 +221,7 @@ router.post('/bulk-validate', authenticateToken, async (req, res) => {
     try {
         const { orderIds } = req.body;
         if (!Array.isArray(orderIds)) return res.status(400).json({ error: 'Liste d\'identifiants requise' });
-        const results = await orderService.bulkValidateOrders(orderIds, req.user.id, req.user.name);
+        const results = await orderService.bulkValidateOrders(orderIds, req.user.ownerId, req.user.name);
         res.json(results);
     } catch (error) {
         console.error('Bulk validate error:', error);
@@ -234,7 +234,7 @@ router.post('/bulk-mark-delivered', authenticateToken, async (req, res) => {
     try {
         const { orderIds } = req.body;
         if (!Array.isArray(orderIds)) return res.status(400).json({ error: 'Liste d\'identifiants requise' });
-        const results = await orderService.bulkMarkAsDelivered(orderIds, req.user.id);
+        const results = await orderService.bulkMarkAsDelivered(orderIds, req.user.ownerId);
         res.json(results);
     } catch (error) {
         console.error('Bulk mark delivered error:', error);
@@ -245,14 +245,14 @@ router.post('/bulk-mark-delivered', authenticateToken, async (req, res) => {
 // Send payment link in WhatsApp conversation (checkout 100% in-app)
 router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (req, res) => {
     try {
-        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.ownerId);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
         const paymentModuleEnabled = planHasPayment && userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Module paiement non inclus dans votre plan ou désactivé par l\'administrateur' });
         }
-        const order = await orderService.getOrderById(req.params.id, req.user.id);
+        const order = await orderService.getOrderById(req.params.id, req.user.ownerId);
         if (!order) return res.status(404).json({ error: 'Commande non trouvée' });
         if (order.status === 'rejected' || order.status === 'cancelled') {
             return res.status(400).json({ error: 'Impossible d\'envoyer un lien pour cette commande' });
@@ -265,7 +265,7 @@ router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (
             SELECT c.id, c.agent_id, a.tool_id FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
-        `, order.conversation_id, req.user.id);
+        `, order.conversation_id, req.user.ownerId);
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation non trouvée' });
         }
@@ -277,9 +277,9 @@ router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (
             .map(i => `${i.product_name || 'Article'} x${i.quantity || 1}`)
             .join(', ');
         const description = itemsList ? `Commande: ${itemsList}` : `Commande #${(order.id || '').slice(0, 8)}`;
-        const usePaymetrust = paymentModuleEnabled && await paymentProviders.isProviderConfiguredForUser(req.user.id, 'paymetrust');
+        const usePaymetrust = paymentModuleEnabled && await paymentProviders.isProviderConfiguredForUser(req.user.ownerId, 'paymetrust');
         const provider = usePaymetrust ? 'paymetrust' : 'manual';
-        const payment = await createPaymentLink(req.user.id, {
+        const payment = await createPaymentLink(req.user.ownerId, {
             amount: order.total_amount,
             currency: order.currency || 'XOF',
             description,
@@ -329,7 +329,7 @@ ${payment.payment_url}
 router.post('/:id/reject', authenticateToken, async (req, res) => {
     try {
         const { reason } = req.body;
-        const result = await orderService.rejectOrder(req.params.id, req.user.id, reason);
+        const result = await orderService.rejectOrder(req.params.id, req.user.ownerId, reason);
         
         if (!result.success) {
             return res.status(400).json({ error: result.error });
@@ -345,14 +345,14 @@ router.post('/:id/reject', authenticateToken, async (req, res) => {
 // Create payment link from order (for sending to client - e.g. WhatsApp)
 router.post('/:id/payment-link', authenticateToken, validate(orderPaymentLinkSchema), async (req, res) => {
     try {
-        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
+        const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.ownerId);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
         const paymentModuleEnabled = planHasPayment && userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Module paiement non inclus dans votre plan ou désactivé par l\'administrateur' });
         }
-        const order = await orderService.getOrderById(req.params.id, req.user.id);
+        const order = await orderService.getOrderById(req.params.id, req.user.ownerId);
         if (!order) {
             return res.status(404).json({ error: 'Commande non trouvée' });
         }
@@ -368,7 +368,7 @@ router.post('/:id/payment-link', authenticateToken, validate(orderPaymentLinkSch
             : `Commande #${(order.id || '').slice(0, 8)}`;
 
         const provider = req.body.provider;
-        const payment = await createPaymentLink(req.user.id, {
+        const payment = await createPaymentLink(req.user.ownerId, {
             amount: order.total_amount,
             currency: order.currency || 'XOF',
             description,
@@ -416,7 +416,7 @@ ${payment.payment_url}
 // Delete a single order
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const result = await orderService.deleteOrder(req.params.id, req.user.id);
+        const result = await orderService.deleteOrder(req.params.id, req.user.ownerId);
         
         if (!result.success) {
             return res.status(400).json({ error: result.error });
@@ -439,7 +439,7 @@ router.delete('/bulk/:status', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Statut invalide' });
         }
 
-        const result = await orderService.deleteOrdersByStatus(req.user.id, status);
+        const result = await orderService.deleteOrdersByStatus(req.user.ownerId, status);
         
         if (!result.success) {
             return res.status(400).json({ error: result.error });
@@ -457,7 +457,7 @@ router.post('/cleanup', authenticateToken, async (req, res) => {
     try {
         const { daysOld = 30, statuses = ['rejected', 'cancelled'] } = req.body;
         
-        const result = await orderService.cleanupOldOrders(req.user.id, daysOld, statuses);
+        const result = await orderService.cleanupOldOrders(req.user.ownerId, daysOld, statuses);
         
         if (!result.success) {
             return res.status(400).json({ error: result.error });
@@ -479,7 +479,7 @@ router.delete('/logs/clear', authenticateToken, async (req, res) => {
     try {
         const { daysOld } = req.query;
         
-        const result = await orderService.clearProductLogs(req.user.id, daysOld ? parseInt(daysOld) : null);
+        const result = await orderService.clearProductLogs(req.user.ownerId, daysOld ? parseInt(daysOld) : null);
         
         if (!result.success) {
             return res.status(400).json({ error: result.error });

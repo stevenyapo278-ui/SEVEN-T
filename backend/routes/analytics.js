@@ -1,13 +1,16 @@
 import { Router } from 'express';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requireModule } from '../middleware/requireModule.js';
 
 const router = Router();
+router.use(authenticateToken);
+router.use(requireModule('analytics'));
 
 // Get comprehensive analytics overview
-router.get('/overview', authenticateToken, async (req, res) => {
+router.get('/overview', async (req, res) => {
     try {
-        const userId = req.user.id;
+        const reqUserId = req.user.ownerId;
         const { period = '7d' } = req.query;
 
         let daysBack = 7;
@@ -22,31 +25,31 @@ router.get('/overview', authenticateToken, async (req, res) => {
         prevStartDate.setDate(prevStartDate.getDate() - daysBack);
         const prevStartDateStr = prevStartDate.toISOString();
 
-        const r1 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND c.created_at >= ?`, userId, startDateStr);
+        const r1 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND c.created_at >= ?`, reqUserId, startDateStr);
         const currentConversations = r1?.count ?? 0;
 
-        const r2 = await db.get(`SELECT COUNT(*) as count FROM messages m JOIN conversations c ON m.conversation_id = c.id JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND m.created_at >= ?`, userId, startDateStr);
+        const r2 = await db.get(`SELECT COUNT(*) as count FROM messages m JOIN conversations c ON m.conversation_id = c.id JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND m.created_at >= ?`, reqUserId, startDateStr);
         const currentMessages = r2?.count ?? 0;
 
-        const r3 = await db.get(`SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at >= ?`, userId, startDateStr);
+        const r3 = await db.get(`SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at >= ?`, reqUserId, startDateStr);
         const currentLeads = r3?.count ?? 0;
 
-        const r4 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at >= ?`, userId, startDateStr);
+        const r4 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at >= ?`, reqUserId, startDateStr);
         const currentOrders = r4?.count ?? 0;
 
-        const r5 = await db.get(`SELECT SUM(total_amount) as sum FROM orders WHERE user_id = ? AND status = 'completed' AND created_at >= ?`, userId, startDateStr);
+        const r5 = await db.get(`SELECT SUM(total_amount) as sum FROM orders WHERE user_id = ? AND status = 'completed' AND created_at >= ?`, reqUserId, startDateStr);
         const currentRevenue = r5?.sum ?? 0;
 
-        const r6 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND c.created_at >= ? AND c.created_at < ?`, userId, prevStartDateStr, startDateStr);
+        const r6 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND c.created_at >= ? AND c.created_at < ?`, reqUserId, prevStartDateStr, startDateStr);
         const prevConversations = r6?.count ?? 0;
 
-        const r7 = await db.get(`SELECT COUNT(*) as count FROM messages m JOIN conversations c ON m.conversation_id = c.id JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND m.created_at >= ? AND m.created_at < ?`, userId, prevStartDateStr, startDateStr);
+        const r7 = await db.get(`SELECT COUNT(*) as count FROM messages m JOIN conversations c ON m.conversation_id = c.id JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND m.created_at >= ? AND m.created_at < ?`, reqUserId, prevStartDateStr, startDateStr);
         const prevMessages = r7?.count ?? 0;
 
-        const r8 = await db.get(`SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at >= ? AND created_at < ?`, userId, prevStartDateStr, startDateStr);
+        const r8 = await db.get(`SELECT COUNT(*) as count FROM leads WHERE user_id = ? AND created_at >= ? AND created_at < ?`, reqUserId, prevStartDateStr, startDateStr);
         const prevLeads = r8?.count ?? 0;
 
-        const r9 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at >= ? AND created_at < ?`, userId, prevStartDateStr, startDateStr);
+        const r9 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at >= ? AND created_at < ?`, reqUserId, prevStartDateStr, startDateStr);
         const prevOrders = r9?.count ?? 0;
 
         // Calculate growth percentages
@@ -87,7 +90,7 @@ router.get('/overview', authenticateToken, async (req, res) => {
 });
 
 // Get messages over time chart data
-router.get('/messages-timeline', authenticateToken, async (req, res) => {
+router.get('/messages-timeline', async (req, res) => {
     try {
         const { period = '7d' } = req.query;
         let daysBack = 7;
@@ -108,7 +111,7 @@ router.get('/messages-timeline', authenticateToken, async (req, res) => {
             ${req.query.agentId ? 'AND a.id = ?' : ''}
             GROUP BY (m.created_at AT TIME ZONE 'UTC')::date
             ORDER BY date ASC
-        `, req.user.id, since.toISOString(), ...(req.query.agentId ? [req.query.agentId] : []));
+        `, req.user.ownerId, since.toISOString(), ...(req.query.agentId ? [req.query.agentId] : []));
 
         res.json({ data });
     } catch (error) {
@@ -118,7 +121,7 @@ router.get('/messages-timeline', authenticateToken, async (req, res) => {
 });
 
 // Get response time analytics
-router.get('/response-time', authenticateToken, async (req, res) => {
+router.get('/response-time', async (req, res) => {
     try {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -133,7 +136,7 @@ router.get('/response-time', authenticateToken, async (req, res) => {
                 GROUP BY m1.id, m1.created_at
                 HAVING MIN(m2.created_at) IS NOT NULL
             ) t
-        `, req.user.id, sevenDaysAgo.toISOString());
+        `, req.user.ownerId, sevenDaysAgo.toISOString());
 
         const avg = Number(avgResponseTime?.avg_minutes) || 0;
         res.json({
@@ -156,7 +159,7 @@ function formatDuration(minutes) {
 }
 
 // Get product sales timeline
-router.get('/agent-performance', authenticateToken, async (req, res) => {
+router.get('/agent-performance', async (req, res) => {
     try {
         const agents = await db.all(`
             SELECT 
@@ -175,7 +178,7 @@ router.get('/agent-performance', authenticateToken, async (req, res) => {
             WHERE a.user_id = ?
             GROUP BY a.id, a.name, a.is_active, a.whatsapp_connected
             ORDER BY messages DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         res.json({ agents });
     } catch (error) {
@@ -185,7 +188,7 @@ router.get('/agent-performance', authenticateToken, async (req, res) => {
 });
 
 // Get peak hours analysis
-router.get('/peak-hours', authenticateToken, async (req, res) => {
+router.get('/peak-hours', async (req, res) => {
     try {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -199,7 +202,7 @@ router.get('/peak-hours', authenticateToken, async (req, res) => {
             WHERE a.user_id = ? AND m.role = 'user' AND m.created_at >= ?
             GROUP BY EXTRACT(HOUR FROM (m.created_at AT TIME ZONE 'UTC'))
             ORDER BY hour
-        `, req.user.id, thirtyDaysAgo.toISOString());
+        `, req.user.ownerId, thirtyDaysAgo.toISOString());
 
         // Fill in missing hours
         const fullData = [];
@@ -224,21 +227,21 @@ router.get('/peak-hours', authenticateToken, async (req, res) => {
 });
 
 // Get conversion funnel
-router.get('/conversion-funnel', authenticateToken, async (req, res) => {
+router.get('/conversion-funnel', async (req, res) => {
     try {
-        const r1 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ?`, req.user.id);
+        const r1 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ?`, req.user.ownerId);
         const conversations = r1?.count ?? 0;
 
-        const r2 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) >= 3`, req.user.id);
+        const r2 = await db.get(`SELECT COUNT(*) as count FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE a.user_id = ? AND (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id) >= 3`, req.user.ownerId);
         const activeConversations = r2?.count ?? 0;
 
-        const r3 = await db.get(`SELECT COUNT(*) as count FROM leads WHERE user_id = ?`, req.user.id);
+        const r3 = await db.get(`SELECT COUNT(*) as count FROM leads WHERE user_id = ?`, req.user.ownerId);
         const leads = r3?.count ?? 0;
 
-        const r4 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`, req.user.id);
+        const r4 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`, req.user.ownerId);
         const orders = r4?.count ?? 0;
 
-        const r5 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status = 'completed'`, req.user.id);
+        const r5 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status = 'completed'`, req.user.ownerId);
         const completedOrders = r5?.count ?? 0;
 
         res.json({
@@ -257,7 +260,7 @@ router.get('/conversion-funnel', authenticateToken, async (req, res) => {
 });
 
 // Get top products
-router.get('/top-products', authenticateToken, async (req, res) => {
+router.get('/top-products', async (req, res) => {
     try {
         const { period = '7d' } = req.query;
         let daysBack = 7;
@@ -281,7 +284,7 @@ router.get('/top-products', authenticateToken, async (req, res) => {
             GROUP BY p.id, p.name, p.price
             ORDER BY total_sold DESC
             LIMIT 10
-        `, req.user.id, since.toISOString());
+        `, req.user.ownerId, since.toISOString());
 
         res.json({ products });
     } catch (error) {
@@ -291,9 +294,9 @@ router.get('/top-products', authenticateToken, async (req, res) => {
 });
 
 // Get yearly seasonality for top 5 products (Current Year)
-router.get('/products-seasonality', authenticateToken, async (req, res) => {
+router.get('/products-seasonality', async (req, res) => {
     try {
-        const userId = req.user.id;
+        const reqUserId = req.user.ownerId;
         const currentYear = new Date().getFullYear();
 
         // 1. Get top 5 products of all time
@@ -306,7 +309,7 @@ router.get('/products-seasonality', authenticateToken, async (req, res) => {
             GROUP BY p.id, p.name
             ORDER BY SUM(oi.quantity) DESC
             LIMIT 5
-        `, userId);
+        `, reqUserId);
 
         if (top5.length === 0) return res.json({ data: [], products: [] });
 
@@ -327,7 +330,7 @@ router.get('/products-seasonality', authenticateToken, async (req, res) => {
             AND p.id IN (${placeholders})
             GROUP BY month, p.name
             ORDER BY month ASC
-        `, userId, currentYear, ...productIds);
+        `, reqUserId, currentYear, ...productIds);
 
         const monthNames = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
         
@@ -350,9 +353,9 @@ router.get('/products-seasonality', authenticateToken, async (req, res) => {
 });
 
 // Get activity heatmap (Day of week vs Hour)
-router.get('/weekly-heatmap', authenticateToken, async (req, res) => {
+router.get('/weekly-heatmap', async (req, res) => {
     try {
-        const userId = req.user.id;
+        const reqUserId = req.user.ownerId;
         const since = new Date();
         since.setDate(since.getDate() - 30); // Last 30 days for heatmap
 
@@ -367,7 +370,7 @@ router.get('/weekly-heatmap', authenticateToken, async (req, res) => {
             WHERE a.user_id = ? AND m.role = 'user' AND m.created_at >= ?
             GROUP BY dow, hour
             ORDER BY dow, hour
-        `, userId, since.toISOString());
+        `, reqUserId, since.toISOString());
 
         const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
         const heatmap = [];
@@ -391,7 +394,7 @@ router.get('/weekly-heatmap', authenticateToken, async (req, res) => {
 });
 
 // Get product sales timeline
-router.get('/products-timeline', authenticateToken, async (req, res) => {
+router.get('/products-timeline', async (req, res) => {
     try {
         const { period = '7d' } = req.query;
         let daysBack = 7;
@@ -411,7 +414,7 @@ router.get('/products-timeline', authenticateToken, async (req, res) => {
             GROUP BY p.id, p.name
             ORDER BY SUM(oi.quantity) DESC
             LIMIT 5
-        `, req.user.id, since.toISOString());
+        `, req.user.ownerId, since.toISOString());
 
         if (top5.length === 0) return res.json({ data: [], products: [] });
 
@@ -431,7 +434,7 @@ router.get('/products-timeline', authenticateToken, async (req, res) => {
             AND p.id IN (${placeholders})
             GROUP BY date, p.name
             ORDER BY date ASC
-        `, req.user.id, since.toISOString(), ...productIds);
+        `, req.user.ownerId, since.toISOString(), ...productIds);
 
         // Reformat for chart (one entry per date with product names as keys)
         const timelineObj = {};

@@ -25,6 +25,8 @@ export function generateAccessToken(user) {
             id: user.id,
             email: user.email,
             is_admin: user.is_admin || 0,
+            parent_user_id: user.parent_user_id || null,
+            role: user.role || 'owner'
         },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_TTL }
@@ -86,7 +88,7 @@ export async function rotateRefreshToken(oldToken) {
 
     // Load user
     const user = await db.get(
-        'SELECT id, email, name, plan, credits, is_admin, is_active FROM users WHERE id = ?',
+        'SELECT id, email, name, plan, credits, is_admin, is_active, parent_user_id, role FROM users WHERE id = ?',
         record.user_id
     );
     if (!user || user.is_active === 0) return null;
@@ -141,7 +143,13 @@ export function clearAuthCookies(res) {
  */
 export function generateToken(user) {
     return jwt.sign(
-        { id: user.id, email: user.email, is_admin: user.is_admin || 0 },
+        { 
+            id: user.id, 
+            email: user.email, 
+            is_admin: user.is_admin || 0,
+            parent_user_id: user.parent_user_id || null,
+            role: user.role || 'owner'
+        },
         JWT_SECRET,
         { expiresIn: '7d' }
     );

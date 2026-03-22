@@ -677,15 +677,20 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             if (analysis.confirmation?.isConfirmation || analysis.confirmation?.hasConfirmationProduct) {
                 // Client a confirmé ("oui", "je veux", "oui oui", etc.) → NE PAS redemander une confirmation !
                 parts.push('\n🎯 INTENTION CONFIRMÉE: Le client a déjà exprimé son intention d\'achat clairement.');
-                parts.push('INSTRUCTION CRITIQUE: NE REDEMANDE JAMAIS "Confirmez-vous la commande ?". Le client a déjà dit OUI.');
                 if (missing.length > 0) {
+                    parts.push('INSTRUCTION CRITIQUE: NE REDEMANDE JAMAIS "Confirmez-vous la commande ?". Le client a déjà dit OUI.');
                     parts.push(`PROCHAINE ÉTAPE: Passe directement à la collecte des infos de livraison. Demande de façon naturelle et directe: ${missing.join(', ')}.`);
                     parts.push('Exemple de réponse CORRECTE: "Parfait ! 🎉 Pour finaliser votre livraison, j\'ai besoin de votre ville et quartier, ainsi qu\'un numéro de contact."');
                     parts.push('INTERDIT: Proposer un récapitulatif suivi d\'une question de confirmation.');
+                } else if (!analysis.orderCreated) {
+                    parts.push('Toutes les infos de livraison sont là, mais la commande n\'a pas pu être créée automatiquement (produit non identifié dans la base structurée).');
+                    parts.push('INSTRUCTION: Informe le client que sa demande est bien transmise et qu\'un conseiller va finaliser la commande avec lui dès que possible. Ne dis PAS que c\'est déjà enregistré.');
+                    parts.push('Passe le relais à un humain (need_human: true).');
                 } else {
-                    parts.push('Toutes les infos de livraison sont collectées. Synthétise-les et confirme que la commande est en cours de traitement.');
+                    parts.push('Toutes les infos de livraison sont collectées et la commande est créée. Synthétise-les et confirme que tout est en ordre.');
                 }
             } else {
+
                 // Client exprime une intention mais sans confirmation explicite → demander les infos ou confirmer
                 if (missing.length > 0) {
                     parts.push(`\n📝 POUR FINALISER LA COMMANDE: Présente un bref récapitulatif et demande: ${missing.join(', ')}.`);

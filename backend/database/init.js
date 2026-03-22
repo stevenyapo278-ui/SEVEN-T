@@ -200,18 +200,26 @@ export async function initDatabase() {
             notification_number TEXT,
             reset_token TEXT,
             reset_token_expires TIMESTAMP,
-            payment_module_enabled INTEGER DEFAULT 0,
-            analytics_module_enabled INTEGER DEFAULT 0,
-            reports_module_enabled INTEGER DEFAULT 0,
-            availability_hours_enabled INTEGER DEFAULT 0,
-            next_best_action_enabled INTEGER DEFAULT 0,
-            conversion_score_enabled INTEGER DEFAULT 0,
-            daily_briefing_enabled INTEGER DEFAULT 0,
-            sentiment_routing_enabled INTEGER DEFAULT 0,
-            catalog_import_enabled INTEGER DEFAULT 0,
-            human_handoff_alerts_enabled INTEGER DEFAULT 0,
+            payment_module_enabled INTEGER,
+            analytics_module_enabled INTEGER,
+            reports_module_enabled INTEGER,
+            availability_hours_enabled INTEGER,
+            next_best_action_enabled INTEGER,
+            conversion_score_enabled INTEGER,
+            daily_briefing_enabled INTEGER,
+            sentiment_routing_enabled INTEGER,
+            catalog_import_enabled INTEGER,
+            human_handoff_alerts_enabled INTEGER,
+            flows_module_enabled INTEGER,
+            -- Multi-user / Manager support
+            parent_user_id TEXT,
+            role TEXT DEFAULT 'owner', -- 'owner', 'manager'
+            permissions TEXT, -- JSON array of specific permissions
+
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
         -- Activity Logs Table (Audit Trail)
@@ -234,16 +242,25 @@ export async function initDatabase() {
         -- Add columns if they don't exist (for existing databases)
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS analytics_module_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS reports_module_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS availability_hours_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS next_best_action_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS conversion_score_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_briefing_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS sentiment_routing_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS catalog_import_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS human_handoff_alerts_enabled INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS analytics_module_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS reports_module_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS availability_hours_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS next_best_action_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS conversion_score_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_briefing_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS sentiment_routing_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS catalog_import_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS human_handoff_alerts_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS flows_module_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'owner';
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT;
+
+        -- Set default role for existing users
+        UPDATE users SET role = 'owner' WHERE role IS NULL;
+
+
 
         CREATE TABLE IF NOT EXISTS agents (
             id TEXT PRIMARY KEY,
@@ -1576,6 +1593,12 @@ export async function initDatabase() {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('saas_subscription_payments coupon columns migration:', e?.message);
         }
+    }
+
+    try {
+        await db.run("UPDATE users SET role = 'owner' WHERE role IS NULL");
+    } catch (e) {
+        console.warn('User role default migration:', e?.message);
     }
 
     console.log('PostgreSQL schema initialized successfully');

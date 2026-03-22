@@ -72,12 +72,55 @@ const silentLogger = {
     child: () => silentLogger
 };
 
-// Simple in-memory store for chats and contacts
+// Improved SimpleStore for chats and contacts
 class SimpleStore {
     constructor() {
         this.chats = new Map();
         this.contacts = {};
         this.messages = {};
+    }
+
+    bind(ev) {
+        ev.on('messaging-history.set', ({ chats, contacts, messages, isLatest }) => {
+            console.log(`[WhatsApp] Received messaging-history.set: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages`);
+            for (const chat of chats) this.addChat(chat);
+            for (const contact of contacts) this.addContact(contact.id, contact);
+            for (const message of messages) {
+                if (message.key?.remoteJid) this.addMessage(message.key.remoteJid, message);
+            }
+        });
+
+        ev.on('chats.upsert', (chats) => {
+            for (const chat of chats) this.addChat(chat);
+        });
+
+        ev.on('chats.update', (updates) => {
+            for (const update of updates) {
+                const existing = this.chats.get(update.id);
+                if (existing) {
+                    this.chats.set(update.id, { ...existing, ...update });
+                } else {
+                    this.addChat(update);
+                }
+            }
+        });
+
+        ev.on('contacts.upsert', (contacts) => {
+            for (const contact of contacts) this.addContact(contact.id, contact);
+        });
+
+        ev.on('contacts.update', (updates) => {
+            for (const update of updates) {
+                const existing = this.contacts[update.id] || {};
+                this.contacts[update.id] = { ...existing, ...update };
+            }
+        });
+
+        ev.on('messages.upsert', ({ messages: msgs }) => {
+            for (const msg of msgs) {
+                if (msg.key?.remoteJid) this.addMessage(msg.key.remoteJid, msg);
+            }
+        });
     }
 
     addChat(chat) {
@@ -93,14 +136,14 @@ class SimpleStore {
             this.messages[jid] = [];
         }
         this.messages[jid].push(message);
-        // Keep only last 100 messages per chat
         if (this.messages[jid].length > 100) {
             this.messages[jid] = this.messages[jid].slice(-100);
         }
     }
 
-    getChats() {
-        return Array.from(this.chats.values());
+    // Official-like method for loading messages
+    async loadMessages(jid, count) {
+        return (this.messages[jid] || []).slice(-count);
     }
 
     toJSON() {
@@ -112,15 +155,9 @@ class SimpleStore {
     }
 
     fromJSON(data) {
-        if (data.chats) {
-            this.chats = new Map(data.chats);
-        }
-        if (data.contacts) {
-            this.contacts = data.contacts;
-        }
-        if (data.messages) {
-            this.messages = data.messages;
-        }
+        if (data.chats) this.chats = new Map(data.chats);
+        if (data.contacts) this.contacts = data.contacts;
+        if (data.messages) this.messages = data.messages;
     }
 }
 
@@ -282,7 +319,7 @@ class WhatsAppManager {
             
             const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [2, 2413, 1] }));
 
-            // Create simple store for this agent
+            // Create improved simple store for this agent
             const store = new SimpleStore();
             this.stores.set(toolId, store);
             
@@ -362,6 +399,9 @@ class WhatsAppManager {
 
             this.stores.set(toolId, store);
             this.connections.set(toolId, sock);
+            
+            // BIND STORE TO SOCKET EVENTS
+            store.bind(sock.ev);
 
             // Periodically save store to Redis
             const storeInterval = setInterval(async () => {
@@ -374,31 +414,11 @@ class WhatsAppManager {
             }, 60000); // More relaxed interval for Redis
             this.storeIntervals.set(toolId, storeInterval);
 
-            // Listen for chat updates
-            sock.ev.on('chats.upsert', (chats) => {
-                for (const chat of chats) {
-                    store.addChat(chat);
-                    console.log(`[WhatsApp] Chat added: ${chat.id}`);
-                }
-            });
-
-            sock.ev.on('chats.update', (updates) => {
-                for (const update of updates) {
-                    const existing = store.chats.get(update.id);
-                    if (existing) {
-                        store.chats.set(update.id, { ...existing, ...update });
-                    } else {
-                        store.addChat(update);
-                    }
-                }
-            });
-
-            // Listen for contact updates
+            // Listen for contact updates to keep Database in sync
             sock.ev.on('contacts.upsert', async (contacts) => {
                 console.log(`[WhatsApp] contacts.upsert event with ${contacts.length} contacts`);
                 for (const contact of contacts) {
-                    store.addContact(contact.id, contact);
-                    console.log(`[WhatsApp] Contact upsert: ${contact.id} - name: "${contact.name || ''}", notify: "${contact.notify || ''}", jid: "${contact.jid || ''}", lid: "${contact.lid || ''}"`);
+                    console.log(`[WhatsApp] Contact upsert: ${contact.id} - name: "${contact.name || ''}", notify: "${contact.notify || ''}"`);
                     const agent = await this.getAgentByToolId(toolId);
                     this.ensureLidMapFromStore(toolId);
                     if (agent) {
@@ -410,22 +430,11 @@ class WhatsAppManager {
             sock.ev.on('contacts.update', async (updates) => {
                 console.log(`[WhatsApp] contacts.update event with ${updates.length} updates`);
                 for (const update of updates) {
-                    const existing = store.contacts[update.id] || {};
-                    store.contacts[update.id] = { ...existing, ...update };
                     console.log(`[WhatsApp] Contact update: ${update.id} - notify: "${update.notify || ''}", verifiedName: "${update.verifiedName || ''}"`);
                     const agent = await this.getAgentByToolId(toolId);
                     this.ensureLidMapFromStore(toolId);
                     if (agent) {
                         await this.updateContactInDB(agent.id, update);
-                    }
-                }
-            });
-
-            // Listen for messages to store history
-            sock.ev.on('messages.upsert', ({ messages: msgs }) => {
-                for (const msg of msgs) {
-                    if (msg.key?.remoteJid) {
-                        store.addMessage(msg.key.remoteJid, msg);
                     }
                 }
             });
@@ -1349,12 +1358,24 @@ class WhatsAppManager {
 
             if (shouldDetectOrder) {
                 try {
-                    detectedOrder = await orderDetector.analyzeMessage(messageText, userId, conversation);
+                    const knowledgeBase = await retrieveRelevantChunks(messageText, agent.id, 10);
+                    detectedOrder = await orderDetector.analyzeMessage(messageText, userId, conversation, knowledgeBase);
+
                     if (detectedOrder) {
                          // Enrich messageAnalysis for the AI
                          messageAnalysis.orderCreated = true;
                          messageAnalysis.orderId = detectedOrder.id;
                          console.log(`[WhatsApp] Order ${detectedOrder.id} detected before AI call`);
+                    } else if (messageAnalysis.intent?.primary === 'order' && isEcommerce) {
+                        // AI thinks it's an order but detector didn't create it
+                        // Could be missing product or low confidence
+                         adminAnomaliesService.log(
+                             'automation_discrepancy',
+                             'medium',
+                             'Discordance d\'automatisation (Commande)',
+                             `L'IA a détecté une intention d'achat, mais aucune commande n'a été créée automatiquement.`,
+                             { userId, agentId: agent.id, metadata: { messageText, intent: messageAnalysis.intent } }
+                         );
                     }
                 } catch (err) {
                     console.error('[WhatsApp] Order detection error (early):', err.message);
@@ -1795,10 +1816,23 @@ class WhatsAppManager {
             }
 
             if (!detectedOrder) {
+                // Mechanism 1: Discrepancy Alert
+                if (messageAnalysis.isLikelyOrder) {
+                    await adminAnomaliesService.log(
+                        'UNUSUAL_ACTIVITY',
+                        'MEDIUM',
+                        'Commande non capturée (Produit manquant)',
+                        `L'IA a détecté une commande pour ${contactName} mais le produit n'est pas dans le catalogue structuré.`,
+                        { userId, agentId, metadata: { conversation_id: conversation.id, message: messageText } }
+                    );
+                    console.log(`[WhatsApp] ALERTE: Commande potentielle détectée sans produit structuré dans la conv ${conversation.id}`);
+                }
+
                 this.analyzeForLead(conversation, agentId, userId).catch(err => {
                     console.error('[WhatsApp] Lead analysis error:', err.message);
                 });
             }
+
 
             if (decision.action === 'send' && aiResponse?.content) {
                 const noInterventionCheck = ['greeting', 'order', 'inquiry'].includes(intentHint);
@@ -2698,10 +2732,10 @@ class WhatsAppManager {
             let totalSynced = 0;
             for (const conv of conversations) {
                 try {
-                    // Try to get recent messages from store
-                    const storeMessages = store.messages?.[conv.contact_jid];
+                    // Try to get recent messages from store (official Baileys store method)
+                    const storeMessages = await store.loadMessages(conv.contact_jid, 20);
                     if (storeMessages && Array.isArray(storeMessages)) {
-                        for (const msg of storeMessages.slice(-10)) { // Last 10 messages
+                        for (const msg of storeMessages.slice(-20)) { // Check last 20 messages
                             const msgId = msg.key?.id;
                             if (!msgId) continue;
 

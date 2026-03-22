@@ -58,7 +58,7 @@ router.get('/system-templates/:id', authenticateToken, (req, res) => {
  */
 router.get('/available-models', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT plan, subscription_end_date, is_admin FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date, is_admin FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const models = await db.all('SELECT * FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
         
@@ -81,18 +81,18 @@ router.get('/available-models', authenticateToken, async (req, res) => {
 // Get user quotas and plan info
 router.get('/quotas', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT plan, credits, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, credits, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const plan = await getPlan(effectivePlan);
 
         // Get current usage
-        const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.id);
+        const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.ownerId);
         const agentsCount = agentsCountRow?.count ?? 0;
         
         // Connected tools by type
-        const whatsappRow = await db.get('SELECT COUNT(*) as count FROM tools WHERE user_id = ? AND type = ?', req.user.id, 'whatsapp');
+        const whatsappRow = await db.get('SELECT COUNT(*) as count FROM tools WHERE user_id = ? AND type = ?', req.user.ownerId, 'whatsapp');
         const whatsappConnected = whatsappRow?.count ?? 0;
-        const outlookRow = await db.get('SELECT COUNT(*) as count FROM tools WHERE user_id = ? AND type = ?', req.user.id, 'outlook');
+        const outlookRow = await db.get('SELECT COUNT(*) as count FROM tools WHERE user_id = ? AND type = ?', req.user.ownerId, 'outlook');
         const outlookConnected = outlookRow?.count ?? 0;
         
         const thisMonth = new Date();
@@ -107,7 +107,7 @@ router.get('/quotas', authenticateToken, async (req, res) => {
             AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
             AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
-        `, req.user.id, monthStart);
+        `, req.user.ownerId, monthStart);
         const conversationsThisMonth = convRow?.count ?? 0;
 
         const msgRow = await db.get(`
@@ -118,26 +118,26 @@ router.get('/quotas', authenticateToken, async (req, res) => {
             AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
             AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
-        `, req.user.id, monthStart);
+        `, req.user.ownerId, monthStart);
         const messagesThisMonth = msgRow?.count ?? 0;
 
         const kbRow = await db.get(`
             SELECT COUNT(*) as count FROM knowledge_base kb
             JOIN agents a ON kb.agent_id = a.id
             WHERE a.user_id = ?
-        `, req.user.id);
+        `, req.user.ownerId);
         const knowledgeItems = kbRow?.count ?? 0;
 
         const tplRow = await db.get(`
             SELECT COUNT(*) as count FROM templates t
             JOIN agents a ON t.agent_id = a.id
             WHERE a.user_id = ?
-        `, req.user.id);
+        `, req.user.ownerId);
         const templates = tplRow?.count ?? 0;
 
         // Get credit warnings and monthly usage
-        const creditWarning = await checkCreditWarnings(req.user.id);
-        const monthlyUsage = await getMonthlyUsage(req.user.id);
+        const creditWarning = await checkCreditWarnings(req.user.ownerId);
+        const monthlyUsage = await getMonthlyUsage(req.user.ownerId);
 
         res.json({
             plan: {
@@ -200,7 +200,7 @@ router.get('/', authenticateToken, async (req, res) => {
             FROM agents a 
             WHERE a.user_id = ?
             ORDER BY a.created_at DESC
-        `, req.user.id);
+        `, req.user.ownerId);
 
         // Afficher "Connecté" si l'agent a whatsapp_connected OU si son outil assigné est connecté
         const agents = rows.map((a) => {
@@ -230,7 +230,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
                 (SELECT status FROM tools WHERE id = a.calendar_tool_id AND user_id = a.user_id LIMIT 1) as calendar_tool_status
             FROM agents a
             WHERE a.id = ? AND a.user_id = ?
-        `, req.params.id, req.user.id);
+        `, req.params.id, req.user.ownerId);
 
         if (!row) {
             return res.status(404).json({ error: 'Agent non trouvé' });
@@ -282,9 +282,9 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
-        const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.id);
+        const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.ownerId);
         const agentsCount = agentsCountRow?.count ?? 0;
         const plan = await getPlan(effectivePlan);
 
@@ -324,7 +324,7 @@ router.post('/', authenticateToken, async (req, res) => {
         await db.run(`
             INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, template, tool_id, calendar_tool_id, outlook_tool_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, agentId, req.user.id, name, description || promptConfig.description, system_prompt || promptConfig.prompt, finalModel, temperature || promptConfig.temperature, max_tokens || 500, language || 'fr', 10, template || null, tool_id || null, calendar_tool_id || null, outlook_tool_id || null);
+        `, agentId, req.user.ownerId, name, description || promptConfig.description, system_prompt || promptConfig.prompt, finalModel, temperature || promptConfig.temperature, max_tokens || 500, language || 'fr', 10, template || null, tool_id || null, calendar_tool_id || null, outlook_tool_id || null);
 
         const agent = await db.get('SELECT * FROM agents WHERE id = ?', agentId);
 
@@ -354,15 +354,15 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
         const { new_name } = req.body;
 
         // Get original agent
-        const original = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const original = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!original) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
 
         // Check plan limits
-        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
         const effectivePlanName = await getEffectivePlanName(user.plan, user);
-        const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.id);
+        const agentsCountRow = await db.get('SELECT COUNT(*) as count FROM agents WHERE user_id = ?', req.user.ownerId);
         const agentsCount = agentsCountRow?.count ?? 0;
         const plan = await getPlan(effectivePlanName);
 
@@ -380,7 +380,7 @@ router.post('/:id/duplicate', authenticateToken, async (req, res) => {
         await db.run(`
             INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, auto_reply, availability_enabled, availability_start, availability_end, availability_days, availability_timezone, absence_message, human_transfer_enabled, human_transfer_keywords, human_transfer_message, max_messages_per_day, template, tool_id, calendar_tool_id, outlook_tool_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, agentId, req.user.id, duplicateName, original.description, original.system_prompt, original.model, original.temperature, original.max_tokens, original.language, original.response_delay || 0, original.auto_reply ?? 1, original.availability_enabled || 0, original.availability_start || '09:00', original.availability_end || '18:00', original.availability_days || '1,2,3,4,5', original.availability_timezone || 'Europe/Paris', original.absence_message, original.human_transfer_enabled || 0, original.human_transfer_keywords, original.human_transfer_message, original.max_messages_per_day || 0, original.template ?? null, original.tool_id, original.calendar_tool_id, original.outlook_tool_id);
+        `, agentId, req.user.ownerId, duplicateName, original.description, original.system_prompt, original.model, original.temperature, original.max_tokens, original.language, original.response_delay || 0, original.auto_reply ?? 1, original.availability_enabled || 0, original.availability_start || '09:00', original.availability_end || '18:00', original.availability_days || '1,2,3,4,5', original.availability_timezone || 'Europe/Paris', original.absence_message, original.human_transfer_enabled || 0, original.human_transfer_keywords, original.human_transfer_message, original.max_messages_per_day || 0, original.template ?? null, original.tool_id, original.calendar_tool_id, original.outlook_tool_id);
 
         // Copy knowledge base items
         const knowledgeItems = await db.all('SELECT * FROM knowledge_base WHERE agent_id = ?', req.params.id);
@@ -472,7 +472,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
         } = req.body;
 
         // Check ownership and current model
-        const existing = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const existing = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!existing) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -486,7 +486,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
                     finalModel = existing.model; // Rollback if model doesn't exist
                 }
             } else {
-                const userRow = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
+                const userRow = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
                 const effectivePlan = await getEffectivePlanName(userRow.plan, userRow);
                 const planAllowedIds = await getAvailableModels(effectivePlan);
                 const allowedModels = dbModels.filter(m => planAllowedIds.includes(m.id)).map(m => m.id);
@@ -552,7 +552,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         // Si on vient d'assigner un outil déjà connecté, synchroniser whatsapp_connected
         if (toolIdValue) {
-            const tool = await db.get('SELECT status, meta FROM tools WHERE id = ? AND user_id = ?', toolIdValue, req.user.id);
+            const tool = await db.get('SELECT status, meta FROM tools WHERE id = ? AND user_id = ?', toolIdValue, req.user.ownerId);
             if (tool?.status === 'connected') {
                 const meta = tool.meta ? JSON.parse(tool.meta) : {};
                 await db.run('UPDATE agents SET whatsapp_connected = 1, whatsapp_number = ? WHERE id = ?', meta.phone || null, req.params.id);
@@ -602,7 +602,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // Delete agent
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
-        const agent = await db.get('SELECT id, name, tool_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id, name, tool_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -652,7 +652,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
             : [];
 
         // Get agent
-        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -661,12 +661,12 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         const agentKnowledge = await db.all('SELECT title, content FROM knowledge_base WHERE agent_id = ?', req.params.id);
         
         // Get global knowledge base (user-level, shared across all agents)
-        const globalKnowledge = await db.all('SELECT title, content FROM global_knowledge WHERE user_id = ?', req.user.id);
+        const globalKnowledge = await db.all('SELECT title, content FROM global_knowledge WHERE user_id = ?', req.user.ownerId);
         
         // E-commerce only: inject products catalog and order rules (same as WhatsApp: id, product_images)
         const isEcommerce = agent.template === 'ecommerce';
         const products = isEcommerce
-            ? await db.all('SELECT id, name, sku, price, stock, category, description, image_url FROM products WHERE user_id = ? AND is_active = 1', req.user.id)
+            ? await db.all('SELECT id, name, sku, price, stock, category, description, image_url FROM products WHERE user_id = ? AND is_active = 1', req.user.ownerId)
             : [];
         let imagesByProductId = {};
         if (isEcommerce && products.length > 0) {
@@ -729,7 +729,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
         // Generate AI response
         console.log(`[Playground] Testing agent ${agent.name} with message: ${message.substring(0, 50)}...`);
         
-        const response = await aiService.generateResponse(agent, conversationHistory, message, knowledge, req.user.id);
+        const response = await aiService.generateResponse(agent, conversationHistory, message, knowledge, req.user.ownerId);
 
         console.log(`[Playground] Response: ${response.content.substring(0, 50)}...`);
 
@@ -753,7 +753,7 @@ router.post('/:id/test', authenticateToken, async (req, res) => {
 router.get('/:id/blacklist', authenticateToken, async (req, res) => {
     try {
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -781,7 +781,7 @@ router.post('/:id/blacklist', authenticateToken, async (req, res) => {
         }
 
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -816,7 +816,7 @@ router.post('/:id/blacklist', authenticateToken, async (req, res) => {
 router.delete('/:id/blacklist/:blacklistId', authenticateToken, async (req, res) => {
     try {
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -840,7 +840,7 @@ router.delete('/:id/blacklist/:blacklistId', authenticateToken, async (req, res)
 router.get('/:id/templates', authenticateToken, async (req, res) => {
     try {
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -868,7 +868,7 @@ router.post('/:id/templates', authenticateToken, async (req, res) => {
         }
 
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -898,7 +898,7 @@ router.put('/:id/templates/:templateId', authenticateToken, async (req, res) => 
         const { name, content, shortcut, category } = req.body;
 
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -925,7 +925,7 @@ router.put('/:id/templates/:templateId', authenticateToken, async (req, res) => 
 router.delete('/:id/templates/:templateId', authenticateToken, async (req, res) => {
     try {
         // Check ownership
-        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
@@ -961,7 +961,7 @@ router.post('/:id/templates/:templateId/use', authenticateToken, async (req, res
 // Get global knowledge assigned to an agent
 router.get('/:id/global-knowledge', authenticateToken, async (req, res) => {
     try {
-        const agent = await db.get('SELECT id, user_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id, user_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
@@ -988,7 +988,7 @@ router.post('/:id/global-knowledge', authenticateToken, async (req, res) => {
     try {
         const { knowledgeIds } = req.body; // Array of global_knowledge IDs
 
-        const agent = await db.get('SELECT id, user_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        const agent = await db.get('SELECT id, user_id FROM agents WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
@@ -1004,7 +1004,7 @@ router.post('/:id/global-knowledge', authenticateToken, async (req, res) => {
             const validItems = await db.all(`
                 SELECT id FROM global_knowledge 
                 WHERE id IN (${placeholders}) AND user_id = ?
-            `, ...knowledgeIds, req.user.id);
+            `, ...knowledgeIds, req.user.ownerId);
 
             if (validItems.length !== knowledgeIds.length) {
                 return res.status(400).json({ error: 'Certaines connaissances n\'existent pas ou ne vous appartiennent pas' });

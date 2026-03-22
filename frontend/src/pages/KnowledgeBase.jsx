@@ -36,7 +36,9 @@ import {
   LayoutGrid,
   List as ListIcon,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Target,
+  MessageSquare
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -90,6 +92,7 @@ export default function KnowledgeBase() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [expandedItem, setExpandedItem] = useState(null)
+  const [showGuideModal, setShowGuideModal] = useState(false)
 
   useEffect(() => {
     loadKnowledge()
@@ -180,6 +183,15 @@ export default function KnowledgeBase() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+            <button
+              onClick={() => setShowGuideModal(true)}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
+                isDark ? 'bg-space-800 text-gray-400 hover:text-white border border-space-700/50' : 'bg-gray-100 text-gray-600 hover:text-gray-900'
+              }`}
+              title="Aide sur la structure"
+            >
+              <Info className="w-4 h-4" />
+            </button>
             <button
               onClick={() => loadKnowledge()}
               className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
@@ -325,8 +337,7 @@ export default function KnowledgeBase() {
           }}
           secondaryAction={{
             label: 'Comment structurer sa base ?',
-            onClick: () => window.open('https://help.seven-t.com/knowledge', '_blank'),
-            external: true
+            onClick: () => setShowGuideModal(true)
           }}
         />
       ) : (
@@ -349,7 +360,7 @@ export default function KnowledgeBase() {
         </div>
       )}
 
-      {/* Modals are kept with premium feel but platform-aligned colors */}
+      {/* Modals */}
       <AnimatePresence>
         {(showAddModal || editingItem) && (
           <KnowledgeModal
@@ -365,8 +376,95 @@ export default function KnowledgeBase() {
             }}
           />
         )}
+        {showGuideModal && (
+          <KnowledgeStructureModal onClose={() => setShowGuideModal(false)} />
+        )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function KnowledgeStructureModal({ onClose }) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  useLockBodyScroll(true)
+
+  const tips = [
+    {
+      title: "Un sujet par document",
+      description: "Ne mélangez pas tout. Créez un document pour 'Politique de Retour' et un autre pour 'Délais de Livraison'.",
+      icon: LayoutGrid
+    },
+    {
+      title: "Utilisez des listes à puces",
+      description: "L'IA adore la structure claire. Privilégiez les tirets plutôt que de longs paragraphes narratifs.",
+      icon: ListIcon
+    },
+    {
+      title: "Soyez factuel",
+      description: "Allez droit au but. Évitez les formules de politesse ou le remplissage. L'IA a besoin de faits précis.",
+      icon: Target
+    },
+    {
+      title: "Identifiez les questions",
+      description: "Le format Q&R (Question / Réponse) est extrêmement efficace pour entraîner un agent conversationnel.",
+      icon: MessageSquare
+    }
+  ]
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border p-6 sm:p-8 ${
+          isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
+        }`}
+        onClick={e => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+        
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-gold-400/10 rounded-2xl">
+            <Sparkles className="w-6 h-6 text-gold-400" />
+          </div>
+          <div>
+            <h2 className={`text-2xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Structurer votre Savoir
+            </h2>
+            <p className="text-gray-500">Optimisez l'intelligence de vos agents en quelques étapes.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {tips.map((tip, idx) => (
+            <div key={idx} className={`p-5 rounded-2xl border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-gray-50 border-gray-100'}`}>
+              <div className="p-2 w-9 h-9 bg-gold-400/10 rounded-lg mb-3 flex items-center justify-center">
+                <tip.icon className="w-5 h-5 text-gold-400" />
+              </div>
+              <h3 className={`font-bold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{tip.title}</h3>
+              <p className="text-sm text-gray-500 leading-relaxed font-medium">{tip.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className={`mt-8 p-6 rounded-2xl border-2 border-dashed ${isDark ? 'border-space-700 bg-space-800/30' : 'bg-gray-50 border-gray-200'}`}>
+          <h4 className={`text-sm font-bold uppercase tracking-widest mb-3 ${isDark ? 'text-gold-400' : 'text-blue-600'}`}>Astuce Pro</h4>
+          <p className={`text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+            Si vous importez un site web ou un PDF, vérifiez que le contenu est bien à jour. Une information obsolète dans la base peut faire mentir votre agent. Supprimez les informations contradictoires entre deux documents.
+          </p>
+        </div>
+
+        <button 
+          onClick={onClose}
+          className="w-full mt-8 py-4 bg-gold-400 text-black font-bold rounded-2xl hover:bg-gold-500 transition-all shadow-lg"
+        >
+          J'ai compris, je commence !
+        </button>
+      </motion.div>
+    </div>,
+    document.body
   )
 }
 

@@ -45,7 +45,10 @@ import {
   ChevronLeft,
   Gift,
   LifeBuoy,
+  Activity,
+  Users,
 } from 'lucide-react'
+
 
 // ─── Navigation config ───────────────────────────────────────────────────────
 const navigationGroups = [
@@ -100,12 +103,18 @@ const navigationGroups = [
 ]
 
 const bottomNavigation = [
+  { nameKey: 'nav.logs', href: '/dashboard/logs', icon: Activity, tourId: 'nav-logs' },
   { nameKey: 'nav.settings', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
   { nameKey: 'nav.help' , href: '/dashboard/help', icon: HelpCircle, tourId: 'nav-help' },
 ]
 
+
 const adminNavigation = [
   { nameKey: 'nav.admin', href: '/dashboard/admin', icon: Shield },
+]
+
+const teamNavigation = [
+  { nameKey: 'nav.team', title: 'Equipe', href: '/dashboard/team', icon: Users, tourId: 'nav-team' },
 ]
 
 // ─── Page title map ──────────────────────────────────────────────────────────
@@ -485,13 +494,8 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
     try {
       if (!isAuthenticated) return
       const response = await api.get('/notifications?limit=40')
-      // Filter out security/critical notifications from the quick-access menu
-      // These belong in the Activities/Admin view, not the user dropdown
       const allNotifs = response.data.notifications || []
-      const filtered = allNotifs.filter(n => {
-        const isSecurity = n.title?.includes('[SÉCURITÉ]') || n.metadata?.critical === true;
-        return !isSecurity;
-      }).slice(0, 20);
+      const filtered = allNotifs.slice(0, 20);
       
       setNotifications(filtered)
       setUnreadCountInternal(response.data.unreadCount || 0)
@@ -652,6 +656,39 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
 
         {/* Divider */}
         {!isInfluencerOnly && <div className={`pt-2 mt-2 border-t ${isDark ? 'border-space-700/60' : 'border-gray-200'}`} />}
+
+        {/* Team (Owners only) */}
+        {user?.role === 'owner' && (
+          <div className="space-y-0.5">
+            {(!collapsed || isMobile) && (
+              <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Gérer</p>
+            )}
+            {teamNavigation.map((item) => (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                viewTransition
+                onMouseEnter={() => prefetchRouteData(item.href, Boolean(isAuthenticated))}
+                onClick={onItemClick}
+                className={({ isActive }) =>
+                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    isActive
+                      ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
+                      : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
+                    <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    {(!collapsed || isMobile) && <span className="truncate">{item.title || t(item.nameKey)}</span>}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        )}
 
         {/* Bottom nav */}
         <div className="space-y-0.5">
@@ -1026,9 +1063,36 @@ export default function DashboardLayout() {
         })
       }
 
-  const paymentModuleEnabled = !!(user?.plan_features?.payment_module || user?.payment_module_enabled === 1 || user?.payment_module_enabled === true)
-  const analyticsModuleEnabled = !!(user?.plan_features?.analytics || user?.analytics_module_enabled === 1 || user?.analytics_module_enabled === true)
-  const reportsModuleEnabled = !!(user?.plan_features?.reports || user?.reports_module_enabled === 1 || user?.reports_module_enabled === true)
+  const isEnabled = (key, feat, override) => {
+    // Vérification exhaustive des overrides (noms de colonnes possibles)
+    const isOverrideTrue = (
+      override === 1 || override === '1' || override === true ||
+      user[`${key}_enabled`] === 1 || user[`${key}_enabled`] === true ||
+      user[`${key}_module_enabled`] === 1 || user[`${key}_module_enabled`] === true
+    );
+    const isOverrideFalse = (
+      override === 0 || override === '0' ||
+      user[`${key}_enabled`] === 0 ||
+      user[`${key}_module_enabled`] === 0
+    );
+
+    // Propriétaires (ceux qui n'ont pas de parent) : Forfait (feat) OU Override True
+    // (L'override True gagne même si le forfait ne l'a pas, comme Starter + Analytics débloqué)
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false; // Bloqué manuellement
+      return !!feat || isOverrideTrue;
+    }
+
+    // Gérants : Uniquement si explicitement débloqué par le propriétaire
+    return isOverrideTrue;
+  }
+
+  const paymentModuleEnabled = isEnabled('payment', user?.plan_features?.payment_module, user?.payment_module_enabled)
+  const analyticsModuleEnabled = isEnabled('analytics', user?.plan_features?.analytics, user?.analytics_module_enabled)
+  const reportsModuleEnabled = isEnabled('reports', user?.plan_features?.reports, user?.reports_module_enabled)
+  const flowsModuleEnabled = isEnabled('flows', user?.plan_features?.flows, user?.flows_module_enabled)
+
+
 
 
   const navGroups = useMemo(() => {
@@ -1040,10 +1104,12 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/payments') return paymentModuleEnabled;
         if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
         if (item.href === '/dashboard/reports') return reportsModuleEnabled;
+        if (item.href === '/dashboard/flows') return flowsModuleEnabled;
         return true;
+
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, isInfluencerOnly])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, flowsModuleEnabled, isInfluencerOnly])
 
   const bottomNav = useMemo(() => {
     if (isInfluencerOnly) return [];
