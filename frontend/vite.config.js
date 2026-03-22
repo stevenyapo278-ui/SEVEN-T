@@ -9,7 +9,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui-vendor': ['lucide-react', 'framer-motion', 'canvas-confetti'],
-          'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+          'three-vendor': ['three'],
           'chart-vendor': ['recharts']
         }
       }
