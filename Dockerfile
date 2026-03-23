@@ -11,8 +11,12 @@ WORKDIR /app/frontend
 # Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install all deps (including devDeps for Vite build)
-RUN npm ci --ignore-scripts
+# Install all deps with network resilience
+RUN npm config set fetch-retries 6 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 600000 && \
+    npm config set timeout 600000 && \
+    (npm ci --ignore-scripts || (sleep 15 && npm ci --ignore-scripts) || (sleep 30 && npm ci --ignore-scripts))
 
 # Copy frontend source
 COPY frontend/ ./
@@ -39,8 +43,13 @@ RUN addgroup -g 1001 -S nodejs \
 
 # Install backend production dependencies
 COPY package*.json ./
-RUN npm ci --only=production --ignore-scripts \
-    && npm cache clean --force
+# Install backend production dependencies with network resilience
+RUN npm config set fetch-retries 6 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 600000 && \
+    npm config set timeout 600000 && \
+    (npm ci --only=production --ignore-scripts || (sleep 15 && npm ci --only=production --ignore-scripts)) && \
+    npm cache clean --force
 
 # Copy backend source
 COPY backend/ ./backend/

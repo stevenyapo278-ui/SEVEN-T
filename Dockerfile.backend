@@ -8,9 +8,12 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies for potential build steps if any
-# (Baileys might need some build tools in some environments, but Alpine is usually fine)
-RUN npm ci
+# Install ALL dependencies with network resilience
+RUN npm config set fetch-retries 6 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 600000 && \
+    npm config set timeout 600000 && \
+    (npm ci || (sleep 15 && npm ci) || (sleep 30 && npm ci))
 
 # Copy backend source
 COPY backend/ ./backend/
@@ -31,10 +34,14 @@ RUN apk add --no-cache ca-certificates wget
 RUN addgroup -g 1001 -S nodejs \
     && adduser -S nodejs -u 1001 -G nodejs
 
-# Install ONLY production dependencies
+# Install ONLY production dependencies with network resilience
 COPY package*.json ./
-RUN npm ci --only=production --ignore-scripts \
-    && npm cache clean --force
+RUN npm config set fetch-retries 6 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 600000 && \
+    npm config set timeout 600000 && \
+    (npm ci --only=production --ignore-scripts || (sleep 15 && npm ci --only=production --ignore-scripts)) && \
+    npm cache clean --force
 
 # Copy source from builder
 COPY --from=builder /app/backend ./backend
