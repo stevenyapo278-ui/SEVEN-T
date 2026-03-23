@@ -16,11 +16,16 @@ import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 
 import { usePartnerAuth } from '../../contexts/PartnerAuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const PartnerDashboard = () => {
     const { partner } = usePartnerAuth();
+    const { user } = useAuth();
     const { isDark } = useTheme();
+    
+    // Support both entry points (Partner Portal or Main Dashboard)
+    const effectiveUser = partner || user;
     const [stats, setStats] = useState(null);
     const [usages, setUsages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -98,7 +103,7 @@ const PartnerDashboard = () => {
             {/* Header */}
             <div>
                 <h1 className={`text-3xl font-bold flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                    Tableau de bord {partner?.name || 'Partenaire'}
+                    Tableau de bord {effectiveUser?.name || 'Partenaire'}
                     <span className="px-2 py-1 text-xs font-semibold bg-gold-400/20 text-gold-400 rounded-full">Partenaire</span>
                 </h1>
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'} mt-2`}>Suivez vos performances et vos commissions en temps réel.</p>

@@ -220,6 +220,8 @@ function App() {
           <Route path="team" element={<StandardRoute><Suspense fallback={<PageFallback />}><Team /></Suspense></StandardRoute>} />
           <Route path="logs" element={<StandardRoute><Suspense fallback={<PageFallback />}><Logs /></Suspense></StandardRoute>} />
           <Route path="help" element={<StandardRoute><Suspense fallback={<PageFallback />}><Help /></Suspense></StandardRoute>} />
+          
+          <Route path=":slug" element={<Suspense fallback={<PageFallback />}><PartnerDashboard /></Suspense>} />
 
           <Route path="docs" element={<Suspense fallback={<PageFallback />}><Docs /></Suspense>} />
           <Route path="admin" element={
