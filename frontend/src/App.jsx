@@ -186,7 +186,7 @@ function App() {
 
         {/* Protected routes */}
         <Route
-          path="/dashboard"
+          path="/dashboard/*"
           element={
             <ProtectedRoute>
               <DashboardLayout />
@@ -194,6 +194,7 @@ function App() {
           }
         >
           <Route index element={<StandardRoute><Suspense fallback={<PageFallback />}><Dashboard /></Suspense></StandardRoute>} />
+          <Route path=":slug" element={<Suspense fallback={<PageFallback />}><PartnerDashboard /></Suspense>} />
           <Route path="agents" element={<StandardRoute><Suspense fallback={<PageFallback />}><Agents /></Suspense></StandardRoute>} />
           <Route path="agents/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><AgentDetail /></Suspense></StandardRoute>} />
           <Route path="products" element={<StandardRoute><Suspense fallback={<PageFallback />}><Products /></Suspense></StandardRoute>} />
@@ -237,8 +238,6 @@ function App() {
               <Suspense fallback={<PageFallback />}><SupportTicketDetail /></Suspense>
             </SupportRoute>
           } />
-
-          <Route path=":slug" element={<Suspense fallback={<PageFallback />}><PartnerDashboard /></Suspense>} />
         </Route>
 
         {/* Catch all */}
