@@ -404,7 +404,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         const userRoles = await db.all(`SELECT r.key FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = ?`, user.id);
         let roleKeys = userRoles.map(r => r.key);
 
-        const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
+        const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1 && user.company === 'Partenaire';
 
         res.json({
             message: 'Connexion réussie',
@@ -470,7 +470,7 @@ router.get('/me', async (req, res) => {
             throw new Error(`Post-login data gathering failed: ${e.message}`);
         }
 
-        const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
+        const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1 && user.company === 'Partenaire';
         res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly } });
     } catch (error) {
         console.error('Get user error:', error);
