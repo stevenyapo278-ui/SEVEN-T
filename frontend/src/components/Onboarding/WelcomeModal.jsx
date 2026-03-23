@@ -13,7 +13,9 @@ import {
   CheckCircle,
   Rocket,
   Zap,
-  Users,
+  Briefcase,
+  Headset,
+  ShoppingCart,
   X,
   ChevronRight,
   ShieldCheck,
@@ -65,12 +67,11 @@ function getSteps(t) {
       description: t('onboarding.stepAgentDesc'),
       icon: Bot,
       content: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { id: 'commercial', icon: Target, color: 'blue' },
-            { id: 'support', icon: MessageSquare, color: 'emerald' },
-            { id: 'ecommerce', icon: Package, color: 'gold' },
-            { id: 'faq', icon: Users, color: 'purple' }
+            { id: 'commercial', icon: Briefcase, color: 'blue' },
+            { id: 'support', icon: Headset, color: 'emerald' },
+            { id: 'ecommerce', icon: ShoppingCart, color: 'gold' }
           ].map((item) => (
             <MotionDiv
               key={item.id}
