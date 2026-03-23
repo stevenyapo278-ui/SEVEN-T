@@ -15,7 +15,6 @@ COPY frontend/package*.json ./
 RUN npm config set fetch-retries 6 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 600000 && \
-    npm config set timeout 600000 && \
     (npm ci --ignore-scripts || (sleep 15 && npm ci --ignore-scripts) || (sleep 30 && npm ci --ignore-scripts))
 
 # Copy frontend source
@@ -47,7 +46,6 @@ COPY package*.json ./
 RUN npm config set fetch-retries 6 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 600000 && \
-    npm config set timeout 600000 && \
     (npm ci --only=production --ignore-scripts || (sleep 15 && npm ci --only=production --ignore-scripts)) && \
     npm cache clean --force
 
