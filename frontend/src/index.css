@@ -910,7 +910,7 @@ select.input option {
   inset: 0;
   pointer-events: none;
   opacity: 0.03;
-  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  /* background-image removed: grainy-gradients.vercel.app returned 403 */
   mix-blend-mode: overlay;
   z-index: 10;
 }
