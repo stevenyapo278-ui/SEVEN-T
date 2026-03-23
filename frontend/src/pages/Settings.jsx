@@ -204,8 +204,8 @@ export default function Settings() {
     }
   }
   useEffect(() => { 
-    if (user?.id) loadPaymentProviders() 
-  }, [user?.id])
+    if (user?.id && user?.plan_features?.payment_module) loadPaymentProviders() 
+  }, [user?.id, user?.plan_features?.payment_module])
 
   const handleSavePaymentProvider = async (e) => {
     e.preventDefault()

@@ -496,9 +496,9 @@ router.put('/me', authenticateToken, async (req, res) => {
 
         // Check plan features to prevent unauthorized module enablement
         const currentUserData = await db.get('SELECT plan, subscription_status, subscription_end_date FROM users WHERE id = ?', req.user.id);
-        const effectivePlanName = await getEffectivePlanName(currentUserData.plan, currentUserData);
-        const planConfig = await getPlan(effectivePlanName);
-        const planFeatures = planConfig?.features || {};
+        const effectivePlanNameForCheck = await getEffectivePlanName(currentUserData.plan, currentUserData);
+        const userPlanConfig = await getPlan(effectivePlanNameForCheck);
+        const userPlanFeatures = userPlanConfig?.features || {};
 
         if (name !== undefined) {
             updates.push('name = ?');
@@ -524,7 +524,7 @@ router.put('/me', authenticateToken, async (req, res) => {
         // Only allow enabling if it's in the plan features. Disabling is always allowed.
         if (analytics_module_enabled !== undefined) {
             let valueToSet = analytics_module_enabled ? 1 : 0;
-            if (valueToSet === 1 && !planFeatures.analytics) {
+            if (valueToSet === 1 && !userPlanFeatures.analytics) {
                 // Ignore request to enable if not in plan
                 valueToSet = 0; 
             }
@@ -533,7 +533,7 @@ router.put('/me', authenticateToken, async (req, res) => {
         }
         if (flows_module_enabled !== undefined) {
             let valueToSet = flows_module_enabled ? 1 : 0;
-            if (valueToSet === 1 && !planFeatures.flows) {
+            if (valueToSet === 1 && !userPlanFeatures.flows) {
                 // Ignore request to enable if not in plan
                 valueToSet = 0;
             }
@@ -542,7 +542,7 @@ router.put('/me', authenticateToken, async (req, res) => {
         }
         if (reports_module_enabled !== undefined) {
             let valueToSet = reports_module_enabled ? 1 : 0;
-            if (valueToSet === 1 && !planFeatures.reports) {
+            if (valueToSet === 1 && !userPlanFeatures.reports) {
                 // Ignore request to enable if not in plan
                 valueToSet = 0;
             }
@@ -582,10 +582,10 @@ router.put('/me', authenticateToken, async (req, res) => {
         }
 
         const effectivePlan = await getEffectivePlanName(user.plan, user);
-        const planConfig = await getPlan(effectivePlan);
-        const plan_features = planConfig?.features || {};
+        const updatedPlanConfig = await getPlan(effectivePlan);
+        const updatedPlanFeatures = updatedPlanConfig?.features || {};
         const permissions = await getUserPermissions(user.id);
-        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions } });
+        res.json({ user: { ...user, plan: effectivePlan, plan_features: updatedPlanFeatures, permissions } });
     } catch (error) {
         console.error('Update user error:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour' });
