@@ -517,6 +517,32 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
                 }
             });
         }
+        
+        // Auto-generate influencer coupon if requested during update
+        if (req.body.generate_coupon) {
+            const existingCoupon = await db.get('SELECT id FROM subscription_coupons WHERE influencer_id = ? AND is_active = 1', req.params.id);
+            
+            if (!existingCoupon) {
+                const userName = name || existing.name;
+                const couponCode = `${userName.substring(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
+                const couponId = uuidv4();
+                
+                // On crée le coupon avec une commission de 20% par défaut pour l'influenceur
+                await db.run(`
+                    INSERT INTO subscription_coupons (
+                        id, name, code, discount_type, discount_value, max_uses, is_active, 
+                        influencer_id, bonus_credits, influencer_reward_type, influencer_reward_value
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, couponId, `Coupon ${userName}`, couponCode, 'percentage', 10, null, 1, req.params.id, 500, 'percentage', 20.0);
+            }
+
+            // On s'assure que l'utilisateur a le rôle influenceur
+            const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
+            if (influencerRole) {
+                await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING', req.params.id, influencerRole.id);
+            }
+        }
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;
@@ -913,10 +939,14 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
         if (generate_coupon) {
             const couponCode = `${name.substring(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
             const couponId = uuidv4();
+            // On crée le coupon avec 10% pour le client et 20% de commission pour l'influenceur
             await db.run(`
-                INSERT INTO subscription_coupons (id, name, code, discount_type, discount_value, max_uses, is_active, influencer_id, bonus_credits)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, couponId, `Coupon ${name}`, couponCode, 'percentage', 10, null, 1, userId, 500);
+                INSERT INTO subscription_coupons (
+                    id, name, code, discount_type, discount_value, max_uses, is_active, 
+                    influencer_id, bonus_credits, influencer_reward_type, influencer_reward_value
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, couponId, `Coupon ${name}`, couponCode, 'percentage', 10, null, 1, userId, 500, 'percentage', 20.0);
 
             // Ensure user has influencer role
             const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
