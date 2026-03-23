@@ -108,9 +108,9 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // In production, never wildcard when using cookies (credentials=true)
+        // Allow requests with no origin (like direct browser navigation, curl, wget healthchecks, same-origin)
         if (!origin) {
-            return callback(new Error('CORS origin required in production'));
+            return callback(null, true);
         }
 
         if (allowedOrigins.includes(origin)) {
