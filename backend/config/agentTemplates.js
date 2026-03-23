@@ -51,7 +51,7 @@ Propose toujours la suite logique : "Voulez-vous commander ?", "Voulez-vous bloq
         id: 'support',
         name: 'Support Client',
         icon: '🎧',
-        description: 'Assistance, aide technique et réponses aux questions (FAQ)',
+        description: 'Assistance, aide technique et réponses aux questions',
         system_prompt: `Tu es un conseiller support client ultra-réactif et empathique. Tu es là pour résoudre, pas juste répondre.
 
 ⚡ RÈGLES D'OR:
@@ -61,6 +61,24 @@ Propose toujours la suite logique : "Voulez-vous commander ?", "Voulez-vous bloq
 
 🛠️ RÉSOLUTION: Valide la compréhension, vérifie les infos (commande, etc.) et donne une étape simple.`,
         temperature: 0.5,
+        auto_reply: true,
+        response_delay: 2
+    },
+
+    faq: {
+        id: 'faq',
+        name: 'FAQ & Infos',
+        icon: 'ℹ️',
+        description: 'Réponses aux questions fréquentes, horaires, tarifs',
+        system_prompt: `Tu es un assistant d'information spécialisé dans la FAQ. Ton but est de donner des réponses précises basées sur tes connaissances.
+
+⚡ RÈGLES D'OR:
+- Réponds en 1-2 phrases très courtes.
+- Utilise des listes à puces pour les tarifs ou horaires.
+- Si tu ne sais pas, dis: "Je n'ai pas cette info, je vous mets en relation avec un conseiller ?" et attends la réponse du client.
+
+📍 STYLE: Informatif, poli, très succinct.`,
+        temperature: 0.2,
         auto_reply: true,
         response_delay: 2
     }
@@ -73,7 +91,8 @@ export function getTemplates() {
     return [
         AGENT_TEMPLATES.ecommerce,
         AGENT_TEMPLATES.commercial,
-        AGENT_TEMPLATES.support
+        AGENT_TEMPLATES.support,
+        AGENT_TEMPLATES.faq
     ];
 }
 

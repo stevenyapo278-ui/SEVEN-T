@@ -54,8 +54,14 @@ const trialEndDate = new Date();
 trialEndDate.setDate(trialEndDate.getDate() + trialDays);
 
 await db.run(`
-  INSERT INTO users (id, email, password, name, company, plan, subscription_status, subscription_end_date, credits, is_admin)
-  VALUES (?, ?, ?, ?, '', 'free', 'trialing', ?, 500, 1)
+  INSERT INTO users (
+    id, email, password, name, company, plan, 
+    subscription_status, subscription_end_date, credits, is_admin,
+    can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
+    analytics_module_enabled, flows_module_enabled, payments_module_enabled, reports_module_enabled, 
+    voice_responses_enabled
+  )
+  VALUES (?, ?, ?, ?, '', 'free', 'trialing', ?, 5000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 `, id, email, hashedPassword, name, trialEndDate.toISOString());
 
 console.log('Admin créé avec succès.');

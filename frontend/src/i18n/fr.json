@@ -513,6 +513,8 @@
     "stepAgentSupportSub": "Aide et dépannage",
     "stepAgentEcommerce": "E-commerce",
     "stepAgentEcommerceSub": "Vente de produits",
+    "stepAgentFaq": "FAQ & Infos",
+    "stepAgentFaqSub": "Réponses aux questions",
     "stepWhatsAppTitle": "Connectez WhatsApp",
     "stepWhatsAppDesc": "Scannez un QR code pour lier votre compte.",
     "stepWhatsAppIntro": "Liez votre compte WhatsApp en scannant un simple QR code sécurisé. Votre agent pourra alors chatter en votre nom.",

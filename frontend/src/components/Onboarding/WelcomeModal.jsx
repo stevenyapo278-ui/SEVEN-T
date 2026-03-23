@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Target,
-  Clock
+  Clock,
+  Info
 } from 'lucide-react'
 
 const MotionDiv = motion.div
@@ -67,11 +68,12 @@ function getSteps(t) {
       description: t('onboarding.stepAgentDesc'),
       icon: Bot,
       content: (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { id: 'commercial', icon: Briefcase, color: 'blue' },
             { id: 'support', icon: Headset, color: 'emerald' },
-            { id: 'ecommerce', icon: ShoppingCart, color: 'gold' }
+            { id: 'ecommerce', icon: ShoppingCart, color: 'gold' },
+            { id: 'faq', icon: Info, color: 'purple' }
           ].map((item) => (
             <MotionDiv
               key={item.id}

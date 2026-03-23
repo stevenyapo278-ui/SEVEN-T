@@ -487,12 +487,18 @@ router.get('/me', async (req, res) => {
 router.put('/me', authenticateToken, async (req, res) => {
     try {
         const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled FROM users WHERE id = ?', req.user.id);
-        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled } = req.body;
+        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled } = req.body;
 
 
         // Build dynamic update query
         const updates = [];
         const values = [];
+
+        // Check plan features to prevent unauthorized module enablement
+        const currentUserData = await db.get('SELECT plan, subscription_status, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const effectivePlanName = await getEffectivePlanName(currentUserData.plan, currentUserData);
+        const planConfig = await getPlan(effectivePlanName);
+        const planFeatures = planConfig?.features || {};
 
         if (name !== undefined) {
             updates.push('name = ?');
@@ -514,13 +520,34 @@ router.put('/me', authenticateToken, async (req, res) => {
             updates.push('notification_number = ?');
             values.push(notification_number === '' ? null : notification_number);
         }
+
+        // Only allow enabling if it's in the plan features. Disabling is always allowed.
         if (analytics_module_enabled !== undefined) {
+            let valueToSet = analytics_module_enabled ? 1 : 0;
+            if (valueToSet === 1 && !planFeatures.analytics) {
+                // Ignore request to enable if not in plan
+                valueToSet = 0; 
+            }
             updates.push('analytics_module_enabled = ?');
-            values.push(analytics_module_enabled ? 1 : 0);
+            values.push(valueToSet);
         }
         if (flows_module_enabled !== undefined) {
+            let valueToSet = flows_module_enabled ? 1 : 0;
+            if (valueToSet === 1 && !planFeatures.flows) {
+                // Ignore request to enable if not in plan
+                valueToSet = 0;
+            }
             updates.push('flows_module_enabled = ?');
-            values.push(flows_module_enabled ? 1 : 0);
+            values.push(valueToSet);
+        }
+        if (reports_module_enabled !== undefined) {
+            let valueToSet = reports_module_enabled ? 1 : 0;
+            if (valueToSet === 1 && !planFeatures.reports) {
+                // Ignore request to enable if not in plan
+                valueToSet = 0;
+            }
+            updates.push('reports_module_enabled = ?');
+            values.push(valueToSet);
         }
 
 

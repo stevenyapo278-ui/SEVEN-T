@@ -478,22 +478,39 @@ router.put('/:id', authenticateToken, async (req, res) => {
         }
 
         // Enforce model availability for the user's plan if not an admin
+        const userRow = await db.get('SELECT plan, subscription_end_date, is_admin FROM users WHERE id = ?', req.user.ownerId);
+        const effectivePlan = await getEffectivePlanName(userRow.plan, userRow);
+        const planConfig = await getPlan(effectivePlan);
+        const planFeatures = planConfig?.features || {};
+
         let finalModel = model;
         if (model) {
             const dbModels = await db.all('SELECT id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC, name ASC');
-            if (req.user.is_admin) {
+            if (req.user.is_admin || userRow.is_admin) {
                 if (!dbModels.some(m => m.id === model)) {
                     finalModel = existing.model; // Rollback if model doesn't exist
                 }
             } else {
-                const userRow = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.ownerId);
-                const effectivePlan = await getEffectivePlanName(userRow.plan, userRow);
                 const planAllowedIds = await getAvailableModels(effectivePlan);
                 const allowedModels = dbModels.filter(m => planAllowedIds.includes(m.id)).map(m => m.id);
                 if (!allowedModels.includes(model)) {
                     // If not allowed, try to keep existing if still allowed, otherwise take the first allowed
                     finalModel = allowedModels.includes(existing.model) ? existing.model : (allowedModels[0] || 'gemini-1.5-flash');
                 }
+            }
+        }
+
+        // Enforce other module restrictions unless admin
+        let finalAvailabilityEnabled = availability_enabled;
+        let finalHumanTransferEnabled = human_transfer_enabled;
+
+        if (!req.user.is_admin && !userRow.is_admin) {
+            // Only allow enabling if it's in the plan features. Disabling is always allowed.
+            if (availability_enabled === 1 && !planFeatures.availability_hours) {
+                finalAvailabilityEnabled = 0;
+            }
+            if (human_transfer_enabled === 1 && !planFeatures.human_handoff_alerts) {
+                finalHumanTransferEnabled = 0;
             }
         }
 
@@ -530,8 +547,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
         const values = [
             name, description, system_prompt, finalModel || null, media_model, temperature, max_tokens, language,
             response_delay, auto_reply, is_active,
-            availability_enabled, availability_start, availability_end, availability_days, availability_timezone, absence_message,
-            human_transfer_enabled, human_transfer_keywords, human_transfer_message,
+            finalAvailabilityEnabled, availability_start, availability_end, availability_days, availability_timezone, absence_message,
+            finalHumanTransferEnabled, human_transfer_keywords, human_transfer_message,
             max_messages_per_day,
             templateValue
         ];

@@ -1759,7 +1759,7 @@ function SettingsTab({ agent, onUpdate }) {
                   <div className="flex items-center gap-2">
                     <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableAvailability', 'Enable schedules')}</label>
                     {!(user?.plan_features?.availability_hours || user?.is_admin) && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-gold-400/10 text-[10px] font-bold text-gold-400 border border-gold-400/20 uppercase tracking-wider">Module 1</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-[10px] font-bold text-amber-500 border border-amber-500/20 uppercase tracking-wider">Module 1</span>
                     )}
                   </div>
                   <p className="text-xs text-gray-500">{t('agents.detail.settings.availabilityHint', 'The agent only responds during defined hours')}</p>
@@ -1786,10 +1786,10 @@ function SettingsTab({ agent, onUpdate }) {
               </div>
 
               {!(user?.plan_features?.availability_hours || user?.is_admin) && (
-                <div className="p-3 bg-gold-400/5 border border-gold-400/10 rounded-xl">
-                  <p className="text-xs text-gold-400/80 flex items-center gap-2">
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                  <p className="text-xs text-amber-500/80 flex items-center gap-2 font-medium">
                     <Lock className="w-3 h-3" />
-                    Le Module 1 (Heures de disponibilité) est réservé aux plans supérieurs.
+                    Le Module 1 (Disponibilité) est réservé aux plans supérieurs.
                   </p>
                 </div>
               )}
@@ -1886,16 +1886,27 @@ function SettingsTab({ agent, onUpdate }) {
             <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('agents.detail.settings.transfer', 'Human Transfer')}</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableTransfer', 'Enable transfer')}</label>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableTransfer', 'Enable transfer')}</label>
+                    {!(user?.plan_features?.human_handoff_alerts || user?.is_admin) && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-[10px] font-bold text-amber-500 border border-amber-500/20 uppercase tracking-wider">Module 4</span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">{t('agents.detail.settings.transferHint', 'Allows customers to ask to speak to a human')}</p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, human_transfer_enabled: !formData.human_transfer_enabled })}
+                  onClick={() => {
+                    if (!(user?.plan_features?.human_handoff_alerts || user?.is_admin)) {
+                      toast.error("Ce module n'est pas inclus dans votre plan actuel.");
+                      return;
+                    }
+                    setFormData({ ...formData, human_transfer_enabled: !formData.human_transfer_enabled })
+                  }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     formData.human_transfer_enabled ? 'bg-gold-400' : 'bg-space-700'
-                  }`}
+                  } ${!(user?.plan_features?.human_handoff_alerts || user?.is_admin) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -1904,6 +1915,15 @@ function SettingsTab({ agent, onUpdate }) {
                   />
                 </button>
               </div>
+
+              {!(user?.plan_features?.human_handoff_alerts || user?.is_admin) && (
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                  <p className="text-xs text-amber-500/80 flex items-center gap-2 font-medium">
+                    <Lock className="w-3 h-3" />
+                    Le Module 4 (Transfert Humain) est réservé aux plans supérieurs.
+                  </p>
+                </div>
+              )}
 
               {formData.human_transfer_enabled && (
                 <>
