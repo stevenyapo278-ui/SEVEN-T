@@ -1114,23 +1114,8 @@ export default function DashboardLayout() {
 
   const bottomNav = useMemo(() => {
     if (isInfluencerOnly) return [];
-
-    const navs = [...bottomNavigation];
-    
-    // Add partner space shortcut for SaaS users who are also partners
-    if (user?.roles?.includes('influencer')) {
-      navs.push({ 
-        nameKey: 'Espace Partenaire', 
-        name: 'Espace Partenaire', 
-        href: '/partner/dashboard', 
-        icon: Crown, 
-        tourId: 'nav-partner',
-        external: true // Indicate this might be a special navigation
-      });
-    }
-
-    return navs;
-  }, [isInfluencerOnly, user?.roles])
+    return bottomNavigation;
+  }, [isInfluencerOnly])
 
   // Open sidebar during tour on mobile
   useEffect(() => {
