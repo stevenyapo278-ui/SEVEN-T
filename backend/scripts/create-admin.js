@@ -33,15 +33,23 @@ if (password.length < 6) {
 }
 
 const existing = await db.get('SELECT id, is_admin FROM users WHERE LOWER(email) = ?', email);
-if (existing) {
-  if (existing.is_admin === 1) {
-    console.log('Un admin avec cet email existe déjà.');
-    process.exit(0);
-  }
-  await db.run('UPDATE users SET is_admin = 1 WHERE id = ?', existing.id);
-  console.log('Utilisateur existant promu admin:', email);
-  process.exit(0);
-}
+    if (existing) {
+        // Mise à jour de TOUTES les colonnes de droits, même pour un utilisateur existant
+        await db.run(`
+            UPDATE users SET 
+                is_admin = 1,
+                can_manage_users = 1, can_manage_plans = 1, can_view_stats = 1, 
+                can_manage_ai = 1, can_manage_tickets = 1,
+                analytics_module_enabled = 1, flows_module_enabled = 1, 
+                payment_module_enabled = 1, reports_module_enabled = 1, 
+                voice_responses_enabled = 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `, existing.id);
+        
+        console.log('Droits administrateur et modules mis à jour pour:', email);
+        process.exit(0);
+    }
 
 const id = uuidv4();
 const hashedPassword = await bcrypt.hash(password, 12);
