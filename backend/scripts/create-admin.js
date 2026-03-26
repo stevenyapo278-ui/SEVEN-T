@@ -58,7 +58,7 @@ await db.run(`
     id, email, password, name, company, plan, 
     subscription_status, subscription_end_date, credits, is_admin,
     can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
-    analytics_module_enabled, flows_module_enabled, payments_module_enabled, reports_module_enabled, 
+    analytics_module_enabled, flows_module_enabled, payment_module_enabled, reports_module_enabled, 
     voice_responses_enabled
   )
   VALUES (?, ?, ?, ?, '', 'free', 'trialing', ?, 5000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
