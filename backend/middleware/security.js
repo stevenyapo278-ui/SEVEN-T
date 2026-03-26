@@ -78,6 +78,7 @@ export const helmetConfig = helmet({
     strictTransportSecurity: (isProduction && !disableStrictSecurity),
     crossOriginEmbedderPolicy: false,
     crossOriginOpenerPolicy: false,
+    originAgentCluster: false,
 });
 
 // ==================== INPUT VALIDATION SCHEMAS ====================
