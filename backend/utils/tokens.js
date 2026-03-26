@@ -112,18 +112,20 @@ export async function revokeAllUserTokens(userId) {
  */
 export function setAuthCookies(res, accessToken, refreshToken) {
     const isProduction = process.env.NODE_ENV === 'production';
+    const disableStrictSecurity = process.env.DISABLE_STRICT_SECURITY === 'true';
+    const secure = isProduction && !disableStrictSecurity;
 
     res.cookie('access_token', accessToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: 'strict',
+        secure: secure,
+        sameSite: 'lax',
         maxAge: 15 * 60 * 1000, // 15 min
     });
 
     res.cookie('refresh_token', refreshToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: 'strict',
+        secure: secure,
+        sameSite: 'lax',
         maxAge: REFRESH_TOKEN_TTL_MS, // 30 days
         path: '/api/auth/refresh',    // Cookie sent ONLY to this endpoint
     });
