@@ -93,7 +93,9 @@ api.interceptors.response.use(
       const url = originalRequest?.url
 
       // Session probes: do not attempt refresh (avoid noise/loops)
-      if (url && (url.includes('/auth/me') || url.includes('/partner/auth/me') || url.includes('/users/me'))) {
+      // Special session probes should still allow refresh if possible,
+      // but we shouldn't trigger global logout too aggressively on background polls
+      if (url && (url.includes('/partner/auth/me') || url.includes('/conversations/updates'))) {
         window.dispatchEvent(new Event('auth:unauthorized'))
         return Promise.reject(error)
       }

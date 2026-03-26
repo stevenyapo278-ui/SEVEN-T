@@ -12,7 +12,12 @@ export function requireModule(moduleKey) {
         try {
             const userCol = MODULE_TO_USER_COLUMN[moduleKey];
             const selectCols = userCol ? `plan, ${userCol}` : 'plan';
-            const user = await db.get(`SELECT ${selectCols}, parent_user_id FROM users WHERE id = ?`, req.user.id);
+            const user = await db.get(`SELECT ${selectCols}, parent_user_id, is_admin FROM users WHERE id = ?`, req.user.id);
+            if (!user) return res.status(401).json({ error: 'Utilisateur non trouvé' });
+
+            // Admin bypass: always allowed
+            if (user.is_admin === 1) return next();
+
             const planName = user?.plan || 'free';
             const userOverride = userCol && (user?.[userCol] === 1 || user?.[userCol] === true);
 

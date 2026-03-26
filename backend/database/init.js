@@ -1096,22 +1096,17 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_landing_chat_leads_created ON landing_chat_leads(created_at);
     `);
 
-    // Seed default AI models disabled - admin will configure models via UI
-    /*
     const modelCountRow = await db.get('SELECT COUNT(*) as count FROM ai_models');
     const modelCount = Number(modelCountRow?.count ?? 0);
     if (modelCount === 0) {
         const defaultModels = [
             // Google Gemini
-            { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'gemini', model_id: 'gemini-2.0-flash', description: 'Dernier modèle Google, très rapide', credits: 1, category: 'fast', order: 1 },
-            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'gemini', model_id: 'gemini-1.5-flash', description: 'Rapide et efficace', credits: 1, category: 'fast', order: 2 },
-            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini', model_id: 'gemini-1.5-pro', description: 'Intelligent et polyvalent', credits: 2, category: 'smart', order: 3 },
+            { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'google', model_id: 'gemini-1.5-flash', description: 'Rapide et efficace (Recommandé)', credits: 1, category: 'fast', order: 1 },
+            { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'google', model_id: 'gemini-1.5-pro', description: 'Intelligent et polyvalent', credits: 2, category: 'smart', order: 2 },
+            { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'google', model_id: 'gemini-2.0-flash', description: 'Dernier modèle, très performant', credits: 1, category: 'fast', order: 0 },
             // OpenAI
             { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', model_id: 'gpt-4o-mini', description: 'Rapide et économique', credits: 1, category: 'fast', order: 10 },
-            { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', model_id: 'gpt-4o', description: 'Modèle phare OpenAI', credits: 3, category: 'smart', order: 11 },
-            // OpenRouter Free
-            { id: 'deepseek-r1t-chimera', name: 'DeepSeek R1T Chimera', provider: 'openrouter', model_id: 'tngtech/deepseek-r1t-chimera:free', description: 'Gratuit, bon raisonnement', credits: 0, category: 'free', order: 20, is_free: 1 },
-            { id: 'qwen3-80b', name: 'Qwen3 80B', provider: 'openrouter', model_id: 'qwen/qwen3-next-80b-a3b-instruct:free', description: 'Gratuit, très puissant', credits: 0, category: 'free', order: 21, is_free: 1 }
+            { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai', model_id: 'gpt-4o', description: 'Modèle phare OpenAI', credits: 3, category: 'smart', order: 11 }
         ];
 
         for (const model of defaultModels) {
@@ -1133,7 +1128,6 @@ export async function initDatabase() {
             );
         }
     }
-    */
 
     // Seed default media model setting if missing
     const mediaSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'default_media_model');
