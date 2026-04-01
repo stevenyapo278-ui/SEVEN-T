@@ -729,8 +729,9 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
         }
 
         // If immediate, send it right away
+        let sendResult;
         try {
-            const sendResult = await whatsappManager.sendStatus(toolId, {
+            sendResult = await whatsappManager.sendStatus(toolId, {
                 type: type || 'text',
                 text: type === 'text' ? (text || '') : (caption || ''), 
                 backgroundColor: backgroundColor || null,
