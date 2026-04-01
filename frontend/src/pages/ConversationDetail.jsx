@@ -482,7 +482,7 @@ export default function ConversationDetail() {
     } catch (error) {
       // Remove temp message on error
       setMessages(prev => prev.filter(m => m.id !== tempId))
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'envoi')
+      toast.error(error.response?.data?.error || "Erreur lors de l'envoi")
     } finally {
       setSending(false)
     }

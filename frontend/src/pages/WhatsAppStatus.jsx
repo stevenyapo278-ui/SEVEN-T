@@ -256,7 +256,7 @@ export default function WhatsAppStatus() {
 
       loadHistoryData()
     } catch (error) {
-      const msg = error.response?.data?.error || 'Erreur lors de l\\'envoi du statut'
+      const msg = error.response?.data?.error || "Erreur lors de l'envoi du statut"
       toast.error(msg)
     } finally {
       setSending(false)

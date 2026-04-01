@@ -263,7 +263,7 @@ router.post('/send/:id', authenticateToken, async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Send message error:', error);
-        res.status(500).json({ error: 'Erreur lors de l\'envoi' });
+        res.status(500).json({ error: "Erreur lors de l'envoi" });
     }
 });
 
@@ -574,7 +574,7 @@ router.post('/send-to-conversation/:agentId/:conversationId', authenticateToken,
         res.json(result);
     } catch (error) {
         console.error('Send to conversation error:', error);
-        res.status(500).json({ error: error.message || 'Erreur lors de l\'envoi' });
+        res.status(500).json({ error: error.message || "Erreur lors de l'envoi" });
     }
 });
 
@@ -729,7 +729,7 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
         res.json({ success: true, result, statusId });
     } catch (error) {
         console.error('Send status error:', error);
-        res.status(500).json({ error: error.message || 'Erreur lors de l\'envoi du statut' });
+        res.status(500).json({ error: error.message || "Erreur lors de l'envoi du statut" });
     }
 });
 

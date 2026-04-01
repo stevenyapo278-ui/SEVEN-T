@@ -303,7 +303,7 @@ export default function Campaigns() {
       loadData()
     } catch (error) {
       toast.dismiss(loadingToastId)
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'envoi')
+      toast.error(error.response?.data?.error || "Erreur lors de l'envoi")
     } finally {
       setSendingCampaignId(null)
     }
