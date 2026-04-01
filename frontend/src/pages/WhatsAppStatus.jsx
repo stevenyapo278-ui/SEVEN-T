@@ -151,6 +151,9 @@ export default function WhatsAppStatus() {
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [selectedProductIds, setSelectedProductIds] = useState([])
   const [batchSending, setBatchSending] = useState(false)
+  const [batchProgress, setBatchProgress] = useState('')
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
   useEffect(() => {
     loadAgents()
@@ -191,9 +194,13 @@ export default function WhatsAppStatus() {
     let successCount = 0
     
     try {
+      let count = 0
       for (const pid of selectedProductIds) {
+        count++
         const product = products.find(p => p.id === pid)
         if (!product) continue
+
+        setBatchProgress(`Envoi de "${product.name}" (${count}/${selectedProductIds.length})...`)
 
         const isImage = !!product.image_url
         const payload = {
@@ -204,17 +211,24 @@ export default function WhatsAppStatus() {
             caption: `${product.name} - ${product.price} XOF`
           } : {
             text: `${product.name}\n\n*Prix: ${product.price} XOF*`,
-            backgroundColor: backgroundColor, // Use current selected theme color
+            backgroundColor: backgroundColor,
             font: font
           })
         }
 
         await api.post(`/whatsapp/status/${selectedAgent}`, payload)
         successCount++
+        
+        // Wait 5 seconds before next one (if not the last one)
+        if (count < selectedProductIds.length) {
+            setBatchProgress(`Attente avant le prochain envoi... (${count}/${selectedProductIds.length})`)
+            await sleep(5000)
+        }
       }
       
       toast.success(`${successCount} statut(s) publié(s) avec succès !`)
       setSelectedProductIds([])
+      setBatchProgress('')
       loadHistoryData()
     } catch (err) {
         toast.error("Erreur lors de l'envoi groupé")
@@ -685,14 +699,15 @@ export default function WhatsAppStatus() {
                   <button
                     onClick={handleSendBatch}
                     disabled={batchSending}
-                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25"
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold flex flex-col items-center justify-center gap-1 transition-all shadow-lg shadow-emerald-500/25"
                   >
-                    {batchSending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                        {batchSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        <span>{batchSending ? 'Envoi en cours...' : `Publier la sélection (${selectedProductIds.length})`}</span>
+                    </div>
+                    {batchSending && batchProgress && (
+                        <span className="text-[9px] font-medium opacity-80 animate-pulse">{batchProgress}</span>
                     )}
-                    Publier la sélection ({selectedProductIds.length})
                   </button>
                 </div>
               )}
