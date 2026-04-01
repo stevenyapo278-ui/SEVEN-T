@@ -52,20 +52,19 @@ import fr from 'date-fns/locale/fr'
 registerLocale('fr', fr)
 import { DashboardContent, UsersContent, AnomaliesTab, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
 
-/** Tous les modules des plans, activables par utilisateur (formKey → label) */
 const PLAN_MODULES = [
-  { key: 'availability_hours_enabled', label: 'Heures de disponibilité' },
-  { key: 'voice_responses_enabled', label: 'Réponses vocales' },
-  { key: 'payment_module_enabled', label: 'Moyens de paiement' },
-  { key: 'analytics_module_enabled', label: 'Statistiques & Analytics' },
-  { key: 'reports_module_enabled', label: 'Rapports' },
-  { key: 'next_best_action_enabled', label: 'Next Best Action' },
-  { key: 'conversion_score_enabled', label: 'Score de conversion' },
-  { key: 'daily_briefing_enabled', label: 'Briefing quotidien' },
-  { key: 'sentiment_routing_enabled', label: 'Routage sentiment' },
-  { key: 'catalog_import_enabled', label: 'Import catalogue' },
-  { key: 'human_handoff_alerts_enabled', label: 'Alertes transfert humain' },
-  { key: 'flows_module_enabled', label: 'Flows (Flux de travail)' }
+  { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité' },
+  { key: 'voice_responses_enabled', label: 'Module 2 : Réponses vocales' },
+  { key: 'payment_module_enabled', label: 'Module 3 : Paiement & Encaissement' },
+  { key: 'next_best_action_enabled', label: 'Module 4 : Next Best Action' },
+  { key: 'conversion_score_enabled', label: 'Module 5 : Score de conversion' },
+  { key: 'daily_briefing_enabled', label: 'Module 6 : Daily Briefing' },
+  { key: 'sentiment_routing_enabled', label: 'Module 7 : Sentiment routing' },
+  { key: 'catalog_import_enabled', label: 'Module 8 : Import catalogue' },
+  { key: 'human_handoff_alerts_enabled', label: 'Module 9 : Alertes Transfert Humain' },
+  { key: 'analytics_module_enabled', label: 'Module 10 : Analytics & Statistiques' },
+  { key: 'flows_module_enabled', label: 'Module 11 : Flows (Flux de travail)' },
+  { key: 'whatsapp_status_enabled', label: 'Module 12 : Statut WhatsApp' }
 ]
 
 export default function Admin() {
