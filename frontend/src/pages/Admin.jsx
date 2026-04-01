@@ -2791,6 +2791,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
       catalog_import: false,
       human_handoff_alerts: false,
       analytics: false,
+      flows: false,
+      whatsapp_status: false,
       ...(plan?.features || {})
     }
   })
@@ -2860,7 +2862,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'catalog_import', label: 'Module 8 : Import catalogue', desc: 'L\'IA connaît vos produits via URL ou fichiers.' },
     { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' },
     { key: 'analytics', label: 'Module 10 : Analytics & Statistiques', desc: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' },
-    { key: 'flows', label: 'Module 11 : Flows (Flux de travail)', desc: 'Créez des scénarios d\'automatisation visuels.' }
+    { key: 'flows', label: 'Module 11 : Flows (Flux de travail)', desc: 'Créez des scénarios d\'automatisation visuels.' },
+    { key: 'whatsapp_status', label: 'Module 12 : Statut WhatsApp', desc: 'Publication de statuts WhatsApp via l\'IA ou l\'interface.' }
   ]
 
 
