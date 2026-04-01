@@ -3379,6 +3379,10 @@ class WhatsAppManager {
         const store = this.stores.get(toolId);
         // We filter for personal JIDs to avoid sending to groups in statusJidList
         const statusJidList = store ? Object.keys(store.contacts).filter(jid => jid.endsWith('@s.whatsapp.net')) : [];
+        if (statusJidList.length === 0) {
+            console.warn('[WhatsApp] No contacts found in store. Status might fail or be invisible.');
+            // Some Baileys versions require at least one recipient to render colors/media correctly
+        }
         
         const options = { 
             broadcast: true,
@@ -3445,9 +3449,20 @@ class WhatsAppManager {
         }
 
         console.log(`[WhatsApp] Sending status (${type}) for tool ${toolId} to ${statusJidList.length} contacts`);
-        const result = await sock.sendMessage('status@broadcast', message, options);
-        console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
-        return { success: true, messageId: result?.key?.id, key: result.key };
+        
+        try {
+            const result = await sock.sendMessage('status@broadcast', message, options);
+            console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
+            return { success: true, messageId: result?.key?.id, key: result.key };
+        } catch (sendErr) {
+            console.error('[WhatsApp] sendMessage error:', {
+                toolId,
+                type,
+                error: sendErr.message,
+                stack: sendErr.stack
+            });
+            throw sendErr;
+        }
     }
 
     /**

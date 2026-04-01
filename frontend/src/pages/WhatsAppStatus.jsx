@@ -192,6 +192,7 @@ export default function WhatsAppStatus() {
 
     setBatchSending(true)
     let stopBatch = false
+    let successCount = 0
     try {
       let count = 0
       for (const pid of selectedProductIds) {
