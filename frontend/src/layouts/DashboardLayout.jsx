@@ -222,15 +222,20 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
   const { isDark } = useTheme()
   const { isAuthenticated } = useAuth()
   const location = useLocation()
-  const [isExpanded, setIsExpanded] = useState(false)
   const isGroupActive = group.items.some(item => location.pathname === item.href || location.pathname.startsWith(item.href + '/'))
+  const [isExpanded, setIsExpanded] = useState(isGroupActive)
   const isFirstGroup = group.nameKey === 'nav.main'
+
+  // Sync expansion with active state on route changes
+  useEffect(() => {
+    if (isGroupActive) setIsExpanded(true)
+  }, [isGroupActive])
 
   useEffect(() => {
     if (forceExpand && isMobile) setIsExpanded(true)
   }, [forceExpand, isMobile])
 
-  const shouldBeOpen = isFirstGroup || isGroupActive || forceExpand || isExpanded
+  const shouldBeOpen = isFirstGroup || forceExpand || isExpanded
 
   if (isFirstGroup) {
     return (
