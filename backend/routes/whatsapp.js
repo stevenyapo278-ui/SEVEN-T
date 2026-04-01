@@ -667,11 +667,11 @@ router.delete('/statuses/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Statut introuvable' });
         }
 
-        // If it was already sent and we have a message ID, try to revoke it from WhatsApp
-        if (row.status === 'sent' && row.whatsapp_message_id && row.tool_id) {
+        // If it was already sent and we have a message key, try to revoke it from WhatsApp
+        if (row.status === 'sent' && row.whatsapp_message_key && row.tool_id) {
             try {
                 if (whatsappManager.isConnected(row.tool_id)) {
-                    await whatsappManager.revokeStatus(row.tool_id, row.whatsapp_message_id);
+                    await whatsappManager.revokeStatus(row.tool_id, row.whatsapp_message_key);
                 }
             } catch (revokeError) {
                 console.warn(`[WhatsApp] Failed to revoke status ${row.id} on WhatsApp:`, revokeError.message);
@@ -740,8 +740,8 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
                 caption,
                 mimeType
             });
-            if (result.messageId) {
-                await db.run('UPDATE whatsapp_statuses SET whatsapp_message_id = ? WHERE id = ?', result.messageId, statusId);
+            if (result.key) {
+                await db.run('UPDATE whatsapp_statuses SET whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', result.messageId, JSON.stringify(result.key), statusId);
             }
         } catch (sendError) {
             await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusId);
