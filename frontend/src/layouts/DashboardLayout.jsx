@@ -60,29 +60,24 @@ const navigationGroups = [
       { nameKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
       { nameKey: 'nav.analytics', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
       { nameKey: 'nav.notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
-      { nameKey: 'nav.tickets', href: '/dashboard/tickets', icon: LifeBuoy, tourId: 'nav-tickets' },
+    ]
+  },
+  {
+    nameKey: 'nav.crm',
+    icon: Users,
+    items: [
+      { nameKey: 'nav.leads', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
+      { nameKey: 'nav.deals', href: '/dashboard/deals', icon: Briefcase, tourId: 'nav-deals' },
+      { nameKey: 'nav.orders', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
     ]
   },
   {
     nameKey: 'nav.agentsAndMessages',
-    icon: Bot,
+    icon: MessageSquare,
     items: [
       { nameKey: 'nav.agents', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
       { nameKey: 'nav.conversations', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
       { nameKey: 'nav.knowledge', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
-      { nameKey: 'nav.tools', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
-    ]
-  },
-  {
-    nameKey: 'nav.sales',
-    icon: Store,
-    items: [
-      { nameKey: 'nav.products', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
-      { nameKey: 'nav.services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
-      { nameKey: 'nav.orders', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
-      { nameKey: 'nav.payments', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
-      { nameKey: 'nav.leads', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
-      { nameKey: 'nav.expenses', href: '/dashboard/expenses', icon: Wallet, tourId: 'nav-expenses' },
     ]
   },
   {
@@ -95,8 +90,17 @@ const navigationGroups = [
     ]
   },
   {
+    nameKey: 'nav.productsAndServices',
+    icon: Package,
+    items: [
+      { nameKey: 'nav.products', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
+      { nameKey: 'nav.tools', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
+    ]
+  },
+  {
     nameKey: 'nav.automation',
-    icon: Wrench,
+    icon: Zap,
     items: [
       { nameKey: 'nav.workflows', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
       { nameKey: 'nav.flowBuilder', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
@@ -858,18 +862,18 @@ const ROUTE_SEMANTICS = {
   '/dashboard':                   { zone: 'main',       idx: 0 },
   '/dashboard/analytics':         { zone: 'main',       idx: 1 },
   '/dashboard/notifications':     { zone: 'main',       idx: 2 },
+  '/dashboard/leads':             { zone: 'crm',        idx: 0 },
+  '/dashboard/deals':             { zone: 'crm',        idx: 1 },
+  '/dashboard/orders':            { zone: 'crm',        idx: 2 },
   '/dashboard/agents':            { zone: 'agents',     idx: 0 },
   '/dashboard/conversations':     { zone: 'agents',     idx: 1 },
   '/dashboard/knowledge':         { zone: 'agents',     idx: 2 },
-  '/dashboard/tools':             { zone: 'agents',     idx: 3 },
-  '/dashboard/products':          { zone: 'sales',      idx: 0 },
-  '/dashboard/services':          { zone: 'sales',      idx: 1 },
-  '/dashboard/orders':            { zone: 'sales',      idx: 2 },
-  '/dashboard/payments':          { zone: 'sales',      idx: 3 },
-  '/dashboard/leads':             { zone: 'sales',      idx: 4 },
-  '/dashboard/expenses':          { zone: 'sales',      idx: 5 },
   '/dashboard/campaigns':         { zone: 'marketing',  idx: 0 },
   '/dashboard/templates':         { zone: 'marketing',  idx: 1 },
+  '/dashboard/whatsapp-status':   { zone: 'marketing',  idx: 2 },
+  '/dashboard/products':          { zone: 'products',   idx: 0 },
+  '/dashboard/services':          { zone: 'products',   idx: 1 },
+  '/dashboard/tools':             { zone: 'products',   idx: 2 },
   '/dashboard/workflows':         { zone: 'automation', idx: 0 },
   '/dashboard/flows':             { zone: 'automation', idx: 1 },
   '/dashboard/reports':           { zone: 'automation', idx: 2 },
@@ -889,7 +893,7 @@ const resolveSemantics = (pathname) => {
 }
 
 // Zones dans leur ordre d'apparition dans la sidebar (pour la direction horizontale)
-const ZONE_ORDER = ['main', 'agents', 'sales', 'marketing', 'automation', 'config']
+const ZONE_ORDER = ['main', 'crm', 'agents', 'marketing', 'products', 'automation', 'config']
 
 // ─── Main Layout ──────────────────────────────────────────────────────────────
 export default function DashboardLayout() {

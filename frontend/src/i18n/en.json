@@ -70,16 +70,23 @@
     "knowledge": "Knowledge base",
     "products": "Products",
     "whatsappStatus": "WhatsApp Status",
-    "workflows": "Workflows",
+    "automation": "Automations",
     "flowBuilder": "Flow Builder",
     "reports": "Reports",
     "admin": "Administration",
     "main": "Main",
-    "agentsAndMessages": "Agents & Messages",
-    "sales": "Sales & Catalog",
+    "agentsAndMessages": "Conversations",
+    "sales": "CRM",
+    "crm": "CRM",
+    "marketing": "Marketing",
+    "productsAndServices": "Products & Services",
+    "organisation": "Organisation",
     "expenses": "Expenses",
     "logs": "Activity Log",
-    "help": "Help"
+    "help": "Help",
+    "support": "Support",
+    "team": "Team",
+    "deals": "Deals"
 
   },
   "landing": {
