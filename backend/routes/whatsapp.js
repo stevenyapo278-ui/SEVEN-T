@@ -695,9 +695,9 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
         const finalStatus = isScheduled ? 'scheduled' : 'sent';
 
         await db.run(`
-            INSERT INTO whatsapp_statuses (id, user_id, agent_id, type, content, background_color, font, status, scheduled_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, statusId, req.user.ownerId, req.params.agentId, type || 'text', contentStr, backgroundColor || null, font || null, finalStatus, isScheduled ? scheduled_at : null);
+            INSERT INTO whatsapp_statuses (id, user_id, agent_id, type, content, caption, mime_type, background_color, font, status, scheduled_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, statusId, req.user.ownerId, req.params.agentId, type || 'text', contentStr, caption || null, mimeType || null, backgroundColor || null, font || null, finalStatus, isScheduled ? scheduled_at : null);
 
         // If it's scheduled for the future, we return immediately
         if (isScheduled) {

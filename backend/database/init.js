@@ -717,6 +717,8 @@ export async function initDatabase() {
             agent_id TEXT NOT NULL,
             type TEXT NOT NULL,
             content TEXT NOT NULL,
+            caption TEXT,
+            mime_type TEXT,
             background_color TEXT,
             font INTEGER,
             status TEXT DEFAULT 'scheduled',
@@ -1635,6 +1637,15 @@ export async function initDatabase() {
         await db.run("UPDATE users SET role = 'owner' WHERE role IS NULL");
     } catch (e) {
         console.warn('User role default migration:', e?.message);
+    }
+
+    try {
+        await db.run('ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS caption TEXT');
+        await db.run('ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS mime_type TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('whatsapp_statuses migration error:', e?.message);
+        }
     }
 
     console.log('PostgreSQL schema initialized successfully');

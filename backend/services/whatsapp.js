@@ -3375,34 +3375,56 @@ class WhatsAppManager {
 
         const { type = 'text', text, backgroundColor, font, mediaUrl, caption, mimeType } = payload;
 
+        // Options prerequisites for visibility
+        const store = this.stores.get(toolId);
+        // We filter for personal JIDs to avoid sending to groups in statusJidList
+        const statusJidList = store ? Object.keys(store.contacts).filter(jid => jid.endsWith('@s.whatsapp.net')) : [];
+        
+        const options = { 
+            broadcast: true,
+            statusJidList
+        };
+
         let message;
 
         if (type === 'text') {
             if (!text?.trim()) throw new Error('Le texte du statut est requis');
             message = {
                 text: text.trim(),
-                ...(backgroundColor && { backgroundColor }),
-                ...(font !== undefined && { font: Number(font) })
-            };
-        } else if (type === 'image') {
-            if (!mediaUrl?.trim()) throw new Error("L'URL de l'image est requise");
-            message = {
-                image: { url: mediaUrl.trim() },
-                ...(caption?.trim() && { caption: caption.trim() })
-            };
-        } else if (type === 'video') {
-            if (!mediaUrl?.trim()) throw new Error("L'URL de la vidéo est requise");
-            message = {
-                video: { url: mediaUrl.trim() },
-                ...(caption?.trim() && { caption: caption.trim() }),
-                ...(mimeType && { mimetype: mimeType })
+                backgroundColor: backgroundColor || '#128C7E',
+                font: font !== undefined ? Number(font) : 2
             };
         } else {
-            throw new Error(`Type de statut non supporté: ${type}`);
+            // Resolve media to Buffer if it's a local /api/ path
+            let mediaSource = mediaUrl;
+            if (mediaUrl && mediaUrl.startsWith('/api/whatsapp/status/media/')) {
+                const filename = mediaUrl.split('/').pop();
+                const filepath = join(__dirname, '..', '..', 'uploads', 'status', filename);
+                if (existsSync(filepath)) {
+                    mediaSource = readFileSync(filepath);
+                }
+            }
+
+            if (type === 'image') {
+                if (!mediaSource) throw new Error("L'URL ou le contenu de l'image est requis");
+                message = {
+                    image: Buffer.isBuffer(mediaSource) ? mediaSource : { url: mediaSource.trim() },
+                    caption: caption?.trim() || undefined
+                };
+            } else if (type === 'video') {
+                if (!mediaSource) throw new Error("L'URL ou le contenu de la vidéo est requis");
+                message = {
+                    video: Buffer.isBuffer(mediaSource) ? mediaSource : { url: mediaSource.trim() },
+                    caption: caption?.trim() || undefined,
+                    mimetype: mimeType || 'video/mp4'
+                };
+            } else {
+                throw new Error(`Type de statut non supporté: ${type}`);
+            }
         }
 
-        console.log(`[WhatsApp] Sending status (${type}) for tool ${toolId}`);
-        const result = await sock.sendMessage('status@broadcast', message);
+        console.log(`[WhatsApp] Sending status (${type}) for tool ${toolId} to ${statusJidList.length} contacts`);
+        const result = await sock.sendMessage('status@broadcast', message, options);
         console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
         return { success: true, messageId: result?.key?.id };
     }
@@ -3440,26 +3462,15 @@ export async function runStatusSchedulerJob() {
             }
 
             try {
-                // Determine mediaUrl / text
-                let text = undefined, mediaUrl = undefined;
-                if (statusRow.type === 'text') {
-                    text = statusRow.content;
-                } else {
-                    // For image/video, if it's a relative URL, resolve it or if it's external, just pass it
-                    mediaUrl = statusRow.content;
-                    if (mediaUrl.startsWith('/api/')) {
-                        // We need the absolute path for Baileys, or local file path
-                        mediaUrl = `http://localhost:${process.env.PORT || 3001}${mediaUrl}`;
-                    }
-                }
-
+                // The sendStatus method handles media resolution (Buffer, etc.) and broadcast options
                 await whatsappManager.sendStatus(statusRow.tool_id, {
                     type: statusRow.type,
-                    text: text,
+                    text: statusRow.type === 'text' ? statusRow.content : undefined,
                     backgroundColor: statusRow.background_color,
                     font: statusRow.font,
-                    mediaUrl: mediaUrl,
-                    caption: statusRow.type !== 'text' ? statusRow.content : undefined
+                    mediaUrl: statusRow.content,
+                    caption: statusRow.caption,
+                    mimeType: statusRow.mime_type
                 });
 
                 await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'sent', statusRow.id);
