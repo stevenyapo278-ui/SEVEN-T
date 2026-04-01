@@ -149,6 +149,8 @@ export default function WhatsAppStatus() {
   // Products
   const [products, setProducts] = useState([])
   const [loadingProducts, setLoadingProducts] = useState(false)
+  const [selectedProductIds, setSelectedProductIds] = useState([])
+  const [batchSending, setBatchSending] = useState(false)
 
   useEffect(() => {
     loadAgents()
@@ -173,17 +175,52 @@ export default function WhatsAppStatus() {
     }
   }
 
-  const handleProductSelect = (product) => {
-    if (product.image_url) {
-        setTab('image')
-        setMediaUrl(product.image_url)
-        setSelectedFile(null)
-    } else {
-        setTab('text')
-        setText(`${product.name}\n\n*Prix: ${product.price} XOF*`)
+  const toggleProductSelection = (productId) => {
+    setSelectedProductIds(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId) 
+        : [...prev, productId]
+    )
+  }
+
+  const handleSendBatch = async () => {
+    if (!selectedAgent) return toast.error('Sélectionnez un agent')
+    if (selectedProductIds.length === 0) return toast.error('Sélectionnez au moins un produit')
+
+    setBatchSending(true)
+    let successCount = 0
+    
+    try {
+      for (const pid of selectedProductIds) {
+        const product = products.find(p => p.id === pid)
+        if (!product) continue
+
+        const isImage = !!product.image_url
+        const payload = {
+          type: isImage ? 'image' : 'text',
+          scheduled_at: isScheduled ? scheduledAt.toISOString() : null,
+          ...(isImage ? {
+            mediaUrl: product.image_url,
+            caption: `${product.name} - ${product.price} XOF`
+          } : {
+            text: `${product.name}\n\n*Prix: ${product.price} XOF*`,
+            backgroundColor: backgroundColor, // Use current selected theme color
+            font: font
+          })
+        }
+
+        await api.post(`/whatsapp/status/${selectedAgent}`, payload)
+        successCount++
+      }
+      
+      toast.success(`${successCount} statut(s) publié(s) avec succès !`)
+      setSelectedProductIds([])
+      loadHistoryData()
+    } catch (err) {
+        toast.error("Erreur lors de l'envoi groupé")
+    } finally {
+      setBatchSending(false)
     }
-    setCaption(`${product.name} - ${product.price} XOF`)
-    toast.success(`Produit "${product.name}" sélectionné`)
   }
 
   const loadAgents = async () => {
@@ -613,9 +650,11 @@ export default function WhatsAppStatus() {
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => handleProductSelect(p)}
+                      onClick={() => toggleProductSelection(p.id)}
                       className={`group relative flex flex-col text-left rounded-2xl border transition-all duration-300 overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 ${
-                        isDark ? 'bg-space-800 border-white/5 hover:border-emerald-500/50' : 'bg-white border-gray-200 hover:border-emerald-500/50'
+                        selectedProductIds.includes(p.id)
+                          ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-lg'
+                          : isDark ? 'bg-space-800 border-white/5 hover:border-emerald-500/50' : 'bg-white border-gray-200 hover:border-emerald-500/50'
                       }`}
                     >
                       <div className="aspect-square bg-black/40 flex items-center justify-center overflow-hidden">
@@ -629,13 +668,32 @@ export default function WhatsAppStatus() {
                         <p className="text-xs font-bold truncate pr-1 text-white">{p.name}</p>
                         <p className="text-[10px] text-emerald-400 font-bold mt-0.5">{p.price} XOF</p>
                       </div>
-                      <div className="absolute top-2 right-2 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                        <div className="p-1.5 bg-emerald-500 text-white rounded-lg shadow-lg">
+                      <div className={`absolute top-2 right-2 transition-all duration-300 ${
+                        selectedProductIds.includes(p.id) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0'
+                      }`}>
+                        <div className={`p-1.5 rounded-lg shadow-lg ${selectedProductIds.includes(p.id) ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white backdrop-blur-md'}`}>
                           <CheckCircle2 className="w-3.5 h-3.5" />
                         </div>
                       </div>
                     </button>
                   ))}
+                </div>
+              )}
+
+              {selectedProductIds.length > 0 && (
+                <div className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <button
+                    onClick={handleSendBatch}
+                    disabled={batchSending}
+                    className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/25"
+                  >
+                    {batchSending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Publier la sélection ({selectedProductIds.length})
+                  </button>
                 </div>
               )}
             </div>

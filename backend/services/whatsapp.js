@@ -3389,18 +3389,23 @@ class WhatsAppManager {
 
         if (type === 'text') {
             if (!text?.trim()) throw new Error('Le texte du statut est requis');
-            message = { text: text.trim() };
-            // Baileys often expects backgroundColor as a 32-bit signed integer for statuses
-            let colorInt = -15562114; // Default #128C7E as signed Int32
+            // Baileys often expects backgroundColor as a 32-bit signed integer or hex in the message itself
+            let colorInt = -15562114; // Default #128C7E
             if (backgroundColor) {
                 try {
                     const hex = backgroundColor.replace('#', '');
-                    // Convert hex to ARGB (0xAARRGGBB) then to signed Int32
                     colorInt = parseInt('FF' + hex, 16) << 0; 
                 } catch (e) {
                     console.error('[WhatsApp] Color parsing error:', e);
                 }
             }
+            message = { 
+                text: text.trim(),
+                backgroundColor: colorInt,
+                backgroundArgb: colorInt, // Added for dual compatibility
+                font: font !== undefined ? Number(font) : 2
+            };
+            // Keep in options too as backup for some Baileys versions
             options.backgroundColor = colorInt;
             options.font = font !== undefined ? Number(font) : 2;
         } else {
@@ -3457,7 +3462,7 @@ class WhatsAppManager {
         if (!sock) throw new Error('WhatsApp non connecté');
 
         // To delete a status, we send a protocol message with type 'REVOKE'
-        // The key must match the original message exactly, including participant for broadcasts
+        // The key must match the original message exactly. For statuses, participant is required.
         const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
         
         return await sock.sendMessage('status@broadcast', { 
