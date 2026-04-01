@@ -764,7 +764,7 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
             throw sendError;
         }
 
-        res.json({ success: true, result, statusId });
+        res.json({ success: true, result: sendResult, statusId });
     } catch (error) {
         console.error('[WhatsApp Status API] Error detail:', {
             message: error.message,

@@ -191,11 +191,11 @@ export default function WhatsAppStatus() {
     if (selectedProductIds.length === 0) return toast.error('Sélectionnez au moins un produit')
 
     setBatchSending(true)
-    let successCount = 0
-    
+    let stopBatch = false
     try {
       let count = 0
       for (const pid of selectedProductIds) {
+        if (stopBatch) break
         count++
         const product = products.find(p => p.id === pid)
         if (!product) continue
@@ -216,28 +216,34 @@ export default function WhatsAppStatus() {
           })
         }
 
-        await api.post(`/whatsapp/status/${selectedAgent}`, payload)
-        successCount++
-        
-        // Wait 5 seconds before next one (if not the last one)
-        if (count < selectedProductIds.length) {
-            setBatchProgress(`Attente avant le prochain envoi... (${count}/${selectedProductIds.length})`)
-            await sleep(5000)
+        try {
+          await api.post(`/whatsapp/status/${selectedAgent}`, payload)
+          successCount++
+          
+          if (count < selectedProductIds.length) {
+              setBatchProgress(`Attente avant le prochain envoi... (${count}/${selectedProductIds.length})`)
+              await sleep(5000)
+          }
+        } catch (err) {
+            console.error('Batch item send error:', err)
+            if (err.response?.status === 401) {
+                toast.error("Session expirée. Veuillez vous reconnecter.")
+                stopBatch = true
+                break
+            }
+            toast.error(`Erreur (${count}/${selectedProductIds.length}) : ${err.response?.data?.error || 'Problème serveur'}`)
         }
       }
       
-      toast.success(`${successCount} statut(s) publié(s) avec succès !`)
+      if (successCount > 0) {
+        toast.success(`${successCount} statut(s) publié(s) !`)
+        loadHistoryData()
+      }
       setSelectedProductIds([])
       setBatchProgress('')
-      loadHistoryData()
     } catch (err) {
-        console.error('Batch send error:', err)
-        if (err.response?.status === 401) {
-            toast.error("Session expirée. Veuillez vous reconnecter.")
-            break
-        }
-        toast.error(`Erreur (${count}/${selectedProductIds.length}) : ${err.response?.data?.error || 'Problème serveur'}`)
-        // Continue to next product if it's not an auth error
+        console.error('Batch outer error:', err)
+        toast.error("Une erreur inattendue est survenue lors de l'envoi groupé")
     } finally {
       setBatchSending(false)
     }
