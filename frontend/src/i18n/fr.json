@@ -69,10 +69,8 @@
     "tickets": "Tickets",
     "knowledge": "Base de connaissances",
     "products": "Produits",
-    "leads": "Leads",
-    "campaigns": "Campagnes",
-    "templates": "Templates",
-    "workflows": "Workflows",
+    "whatsappStatus": "Statut WhatsApp",
+    "automation": "Automatisation",
     "flowBuilder": "Flow Builder",
     "reports": "Rapports",
     "admin": "Administration",
@@ -80,8 +78,6 @@
     "agentsAndMessages": "Agents & Messages",
     "sales": "Vente & Catalogue",
     "expenses": "Dépenses",
-    "marketing": "Marketing",
-    "automation": "Automatisation",
     "logs": "Journal d'activité",
     "help": "Aide"
 

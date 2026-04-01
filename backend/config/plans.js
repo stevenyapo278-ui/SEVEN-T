@@ -27,6 +27,7 @@ const FEATURES_BASELINE = {
     human_handoff_alerts: false,
     analytics: false,
     flows: false,
+    whatsapp_status: false,
     models: []
 
 };
@@ -247,8 +248,8 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true, analytics: true, flows: true
-
+            human_handoff_alerts: true, analytics: true, flows: true,
+            whatsapp_status: true
         }
     },
     business: {
@@ -278,8 +279,8 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true, analytics: true, flows: true
-
+            human_handoff_alerts: true, analytics: true, flows: true,
+            whatsapp_status: true
         }
     },
     enterprise: {
@@ -309,13 +310,13 @@ export const PLANS = {
             daily_briefing: true,
             sentiment_routing: true,
             catalog_import: true,
-            human_handoff_alerts: true, analytics: true, flows: true
-
+            human_handoff_alerts: true, analytics: true, flows: true,
+            whatsapp_status: true
         }
     }
 };
 
-export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows'];
+export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows', 'whatsapp_status'];
 
 
 /** Map plan feature key to users table override column */
@@ -331,8 +332,8 @@ export const MODULE_TO_USER_COLUMN = {
     sentiment_routing: 'sentiment_routing_enabled',
     catalog_import: 'catalog_import_enabled',
     human_handoff_alerts: 'human_handoff_alerts_enabled',
-    flows: 'flows_module_enabled'
-
+    flows: 'flows_module_enabled',
+    whatsapp_status: 'whatsapp_status_enabled'
 };
 
 /**

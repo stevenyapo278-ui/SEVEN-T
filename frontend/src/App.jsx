@@ -43,6 +43,7 @@ const SupportTickets = lazy(() => import('./pages/SupportTickets'))
 const SupportTicketDetail = lazy(() => import('./pages/SupportTicketDetail'))
 const Logs = lazy(() => import('./pages/Logs'))
 const Team = lazy(() => import('./pages/Team'))
+const WhatsAppStatus = lazy(() => import('./pages/WhatsAppStatus'))
 
 
 // Partner Pages
@@ -219,6 +220,7 @@ function App() {
           <Route path="tickets/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><TicketDetail /></Suspense></StandardRoute>} />
           <Route path="settings" element={<StandardRoute><Suspense fallback={<PageFallback />}><Settings /></Suspense></StandardRoute>} />
           <Route path="team" element={<StandardRoute><Suspense fallback={<PageFallback />}><Team /></Suspense></StandardRoute>} />
+          <Route path="whatsapp-status" element={<StandardRoute><Suspense fallback={<PageFallback />}><WhatsAppStatus /></Suspense></StandardRoute>} />
           <Route path="logs" element={<StandardRoute><Suspense fallback={<PageFallback />}><Logs /></Suspense></StandardRoute>} />
           <Route path="help" element={<StandardRoute><Suspense fallback={<PageFallback />}><Help /></Suspense></StandardRoute>} />
 

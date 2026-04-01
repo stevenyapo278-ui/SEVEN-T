@@ -211,6 +211,7 @@ export async function initDatabase() {
             catalog_import_enabled INTEGER,
             human_handoff_alerts_enabled INTEGER,
             flows_module_enabled INTEGER,
+            whatsapp_status_enabled INTEGER,
             -- Multi-user / Manager support
             parent_user_id TEXT,
             role TEXT DEFAULT 'owner', -- 'owner', 'manager'
@@ -253,6 +254,7 @@ export async function initDatabase() {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS catalog_import_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS human_handoff_alerts_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS flows_module_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_status_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'owner';
         ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT;

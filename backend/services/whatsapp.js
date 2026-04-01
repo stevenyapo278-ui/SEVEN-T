@@ -3361,6 +3361,51 @@ class WhatsAppManager {
             return { reconnected: 0, failed: 0, error: error.message };
         }
     }
+
+    /**
+     * Send a WhatsApp Status (Story) to status@broadcast
+     * @param {string} toolId
+     * @param {Object} payload - { type: 'text'|'image'|'video', text, backgroundColor, font, mediaUrl, caption, mimeType }
+     */
+    async sendStatus(toolId, payload) {
+        const sock = this.connections.get(toolId);
+        if (!sock) {
+            throw new Error('WhatsApp non connecté');
+        }
+
+        const { type = 'text', text, backgroundColor, font, mediaUrl, caption, mimeType } = payload;
+
+        let message;
+
+        if (type === 'text') {
+            if (!text?.trim()) throw new Error('Le texte du statut est requis');
+            message = {
+                text: text.trim(),
+                ...(backgroundColor && { backgroundColor }),
+                ...(font !== undefined && { font: Number(font) })
+            };
+        } else if (type === 'image') {
+            if (!mediaUrl?.trim()) throw new Error("L'URL de l'image est requise");
+            message = {
+                image: { url: mediaUrl.trim() },
+                ...(caption?.trim() && { caption: caption.trim() })
+            };
+        } else if (type === 'video') {
+            if (!mediaUrl?.trim()) throw new Error("L'URL de la vidéo est requise");
+            message = {
+                video: { url: mediaUrl.trim() },
+                ...(caption?.trim() && { caption: caption.trim() }),
+                ...(mimeType && { mimetype: mimeType })
+            };
+        } else {
+            throw new Error(`Type de statut non supporté: ${type}`);
+        }
+
+        console.log(`[WhatsApp] Sending status (${type}) for tool ${toolId}`);
+        const result = await sock.sendMessage('status@broadcast', message);
+        console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
+        return { success: true, messageId: result?.key?.id };
+    }
 }
 
 export const whatsappManager = new WhatsAppManager();

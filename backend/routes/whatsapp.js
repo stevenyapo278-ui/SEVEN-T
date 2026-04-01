@@ -583,4 +583,41 @@ router.get('/new-messages/:agentId', authenticateToken, async (req, res) => {
     }
 });
 
+// ==================== STATUS (STORY) ROUTE ====================
+
+// Send a WhatsApp Status (Story) - broadcasts to status@broadcast
+router.post('/status/:agentId', authenticateToken, async (req, res) => {
+    try {
+        const { type, text, backgroundColor, font, mediaUrl, caption, mimeType } = req.body;
+
+        const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.agentId);
+        if (resolved.error) {
+            return res.status(resolved.status || 400).json({ error: resolved.error });
+        }
+        const toolId = resolved.tool?.id;
+        if (!toolId) {
+            return res.status(404).json({ error: 'Outil WhatsApp non trouvé' });
+        }
+
+        if (!whatsappManager.isConnected(toolId)) {
+            return res.status(400).json({ error: 'WhatsApp non connecté. Veuillez connecter votre agent WhatsApp.' });
+        }
+
+        const result = await whatsappManager.sendStatus(toolId, {
+            type: type || 'text',
+            text,
+            backgroundColor,
+            font,
+            mediaUrl,
+            caption,
+            mimeType
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error('Send status error:', error);
+        res.status(500).json({ error: error.message || 'Erreur lors de l\'envoi du statut' });
+    }
+});
+
 export default router;

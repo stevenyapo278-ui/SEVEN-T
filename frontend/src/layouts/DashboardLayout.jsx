@@ -48,6 +48,7 @@ import {
   Activity,
   Users,
   Crown,
+  Radio,
 } from 'lucide-react'
 
 
@@ -90,6 +91,7 @@ const navigationGroups = [
     items: [
       { nameKey: 'nav.campaigns', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
       { nameKey: 'nav.templates', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
+      { nameKey: 'nav.whatsappStatus', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
     ]
   },
   {
@@ -133,6 +135,7 @@ const pathToTitle = (pathname) => {
     reports: 'Rapports', settings: 'Paramètres', help: 'Aide',
     templates: 'Templates', tools: 'Outils', workflows: 'Workflows',
     admin: 'Admin', expenses: 'Dépenses', influencer: 'Influenceur',
+    'whatsapp-status': 'Statut WhatsApp',
   }
   return map[first] || first
 }
