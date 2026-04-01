@@ -3446,22 +3446,27 @@ class WhatsAppManager {
         console.log(`[WhatsApp] Sending status (${type}) for tool ${toolId} to ${statusJidList.length} contacts`);
         const result = await sock.sendMessage('status@broadcast', message, options);
         console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
-        return { success: true, messageId: result?.key?.id, key: result?.key };
+        return { success: true, messageId: result?.key?.id };
     }
 
     /**
      * Revoke (Delete) a status from WhatsApp
-     * @param {string} toolId
-     * @param {Object} key - The full Baileys key object { remoteJid, fromMe, id, participant }
      */
-    async revokeStatus(toolId, key) {
+    async revokeStatus(toolId, messageId) {
         const sock = this.connections.get(toolId);
         if (!sock) throw new Error('WhatsApp non connecté');
 
-        // To delete a message, we pass the exact key that was received when sending
-        console.log(`[WhatsApp] Revoking status for tool ${toolId}, key:`, JSON.stringify(key));
+        // To delete a status, we send a protocol message with type 'REVOKE'
+        // The key must match the original message exactly, including participant for broadcasts
+        const myJid = sock.user.id.split(':')[0] + '@s.whatsapp.net';
+        
         return await sock.sendMessage('status@broadcast', { 
-            delete: key
+            delete: { 
+                remoteJid: 'status@broadcast', 
+                fromMe: true, 
+                id: messageId,
+                participant: myJid
+            } 
         });
     }
 }
@@ -3509,8 +3514,7 @@ export async function runStatusSchedulerJob() {
                     mimeType: statusRow.mime_type
                 });
 
-                await db.run('UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', 
-                    'sent', result.messageId, JSON.stringify(result.key), statusRow.id);
+                await db.run('UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ? WHERE id = ?', 'sent', result.messageId, statusRow.id);
             } catch (error) {
                 console.error(`[StatusScheduler] Failed to send status ${statusRow.id}:`, error);
                 await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
