@@ -719,6 +719,7 @@ export async function initDatabase() {
             content TEXT NOT NULL,
             caption TEXT,
             mime_type TEXT,
+            whatsapp_message_id TEXT,
             background_color TEXT,
             font INTEGER,
             status TEXT DEFAULT 'scheduled',
@@ -1642,6 +1643,7 @@ export async function initDatabase() {
     try {
         await db.run('ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS caption TEXT');
         await db.run('ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS mime_type TEXT');
+        await db.run('ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS whatsapp_message_id TEXT');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('whatsapp_statuses migration error:', e?.message);

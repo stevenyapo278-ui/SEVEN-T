@@ -653,15 +653,34 @@ router.get('/statuses/:agentId', authenticateToken, async (req, res) => {
     }
 });
 
-// Delete a scheduled status
+// Delete or revoke a status
 router.delete('/statuses/:id', authenticateToken, async (req, res) => {
     try {
-        const status = await db.get('SELECT * FROM whatsapp_statuses WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
-        if (!status) {
+        const row = await db.get(`
+            SELECT ws.*, a.tool_id 
+            FROM whatsapp_statuses ws
+            JOIN agents a ON ws.agent_id = a.id
+            WHERE ws.id = ? AND ws.user_id = ?
+        `, req.params.id, req.user.ownerId);
+
+        if (!row) {
             return res.status(404).json({ error: 'Statut introuvable' });
         }
+
+        // If it was already sent and we have a message ID, try to revoke it from WhatsApp
+        if (row.status === 'sent' && row.whatsapp_message_id && row.tool_id) {
+            try {
+                if (whatsappManager.isConnected(row.tool_id)) {
+                    await whatsappManager.revokeStatus(row.tool_id, row.whatsapp_message_id);
+                }
+            } catch (revokeError) {
+                console.warn(`[WhatsApp] Failed to revoke status ${row.id} on WhatsApp:`, revokeError.message);
+                // We still proceed with deleting from DB
+            }
+        }
+
         await db.run('DELETE FROM whatsapp_statuses WHERE id = ?', req.params.id);
-        res.json({ success: true });
+        res.json({ success: true, message: 'Statut supprimé' });
     } catch (error) {
         console.error('Delete status error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -721,6 +740,9 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
                 caption,
                 mimeType
             });
+            if (result.messageId) {
+                await db.run('UPDATE whatsapp_statuses SET whatsapp_message_id = ? WHERE id = ?', result.messageId, statusId);
+            }
         } catch (sendError) {
             await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusId);
             throw sendError;

@@ -3389,19 +3389,28 @@ class WhatsAppManager {
 
         if (type === 'text') {
             if (!text?.trim()) throw new Error('Le texte du statut est requis');
-            message = {
-                text: text.trim(),
-                backgroundColor: backgroundColor || '#128C7E',
-                font: font !== undefined ? Number(font) : 2
-            };
+            message = { text: text.trim() };
+            // Baileys requires backgroundColor and font in the options/quoted for status
+            options.backgroundColor = backgroundColor || '#128C7E';
+            options.font = font !== undefined ? Number(font) : 2;
         } else {
             // Resolve media to Buffer if it's a local /api/ path
             let mediaSource = mediaUrl;
+            let resolvedMimeType = mimeType;
+
             if (mediaUrl && mediaUrl.startsWith('/api/whatsapp/status/media/')) {
                 const filename = mediaUrl.split('/').pop();
                 const filepath = join(__dirname, '..', '..', 'uploads', 'status', filename);
                 if (existsSync(filepath)) {
                     mediaSource = readFileSync(filepath);
+                    // Infer mimetype from extension if not provided
+                    if (!resolvedMimeType) {
+                        const ext = filename.split('.').pop().toLowerCase();
+                        if (ext === 'jpg' || ext === 'jpeg') resolvedMimeType = 'image/jpeg';
+                        else if (ext === 'png') resolvedMimeType = 'image/png';
+                        else if (ext === 'gif') resolvedMimeType = 'image/gif';
+                        else if (ext === 'mp4') resolvedMimeType = 'video/mp4';
+                    }
                 }
             }
 
@@ -3409,14 +3418,15 @@ class WhatsAppManager {
                 if (!mediaSource) throw new Error("L'URL ou le contenu de l'image est requis");
                 message = {
                     image: Buffer.isBuffer(mediaSource) ? mediaSource : { url: mediaSource.trim() },
-                    caption: caption?.trim() || undefined
+                    caption: caption?.trim() || undefined,
+                    mimetype: resolvedMimeType || 'image/jpeg'
                 };
             } else if (type === 'video') {
                 if (!mediaSource) throw new Error("L'URL ou le contenu de la vidéo est requis");
                 message = {
                     video: Buffer.isBuffer(mediaSource) ? mediaSource : { url: mediaSource.trim() },
                     caption: caption?.trim() || undefined,
-                    mimetype: mimeType || 'video/mp4'
+                    mimetype: resolvedMimeType || 'video/mp4'
                 };
             } else {
                 throw new Error(`Type de statut non supporté: ${type}`);
@@ -3427,6 +3437,24 @@ class WhatsAppManager {
         const result = await sock.sendMessage('status@broadcast', message, options);
         console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
         return { success: true, messageId: result?.key?.id };
+    }
+
+    /**
+     * Revoke (Delete) a status from WhatsApp
+     */
+    async revokeStatus(toolId, messageId) {
+        const sock = this.connections.get(toolId);
+        if (!sock) throw new Error('WhatsApp non connecté');
+
+        // To delete a status, we send a protocol message with type 'REVOKE'
+        // Baileys provides a shorthand for this
+        return await sock.sendMessage('status@broadcast', { 
+            delete: { 
+                remoteJid: 'status@broadcast', 
+                fromMe: true, 
+                id: messageId 
+            } 
+        });
     }
 }
 
@@ -3463,7 +3491,7 @@ export async function runStatusSchedulerJob() {
 
             try {
                 // The sendStatus method handles media resolution (Buffer, etc.) and broadcast options
-                await whatsappManager.sendStatus(statusRow.tool_id, {
+                const result = await whatsappManager.sendStatus(statusRow.tool_id, {
                     type: statusRow.type,
                     text: statusRow.type === 'text' ? statusRow.content : undefined,
                     backgroundColor: statusRow.background_color,
@@ -3473,7 +3501,7 @@ export async function runStatusSchedulerJob() {
                     mimeType: statusRow.mime_type
                 });
 
-                await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'sent', statusRow.id);
+                await db.run('UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ? WHERE id = ?', 'sent', result.messageId, statusRow.id);
             } catch (error) {
                 console.error(`[StatusScheduler] Failed to send status ${statusRow.id}:`, error);
                 await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);

@@ -16,7 +16,8 @@ import {
   Info,
   Calendar,
   X,
-  UploadCloud
+  UploadCloud,
+  ShoppingBag
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DatePicker, { registerLocale } from 'react-datepicker'
@@ -145,6 +146,10 @@ export default function WhatsAppStatus() {
   const [isScheduled, setIsScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(null)
 
+  // Products
+  const [products, setProducts] = useState([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
+
   useEffect(() => {
     loadAgents()
   }, [])
@@ -152,8 +157,34 @@ export default function WhatsAppStatus() {
   useEffect(() => {
     if (selectedAgent) {
         loadHistoryData()
+        loadProducts()
     }
   }, [selectedAgent])
+
+  const loadProducts = async () => {
+    setLoadingProducts(true)
+    try {
+      const res = await api.get('/products')
+      setProducts(res.data?.products || [])
+    } catch {
+      console.error('Failed to load products')
+    } finally {
+      setLoadingProducts(false)
+    }
+  }
+
+  const handleProductSelect = (product) => {
+    if (product.image_url) {
+        setTab('image')
+        setMediaUrl(product.image_url)
+        setSelectedFile(null)
+    } else {
+        setTab('text')
+        setText(`${product.name}\n\n*Prix: ${product.price} XOF*`)
+    }
+    setCaption(`${product.name} - ${product.price} XOF`)
+    toast.success(`Produit "${product.name}" sélectionné`)
+  }
 
   const loadAgents = async () => {
     setLoadingAgents(true)
@@ -184,13 +215,13 @@ export default function WhatsAppStatus() {
       }
   }
 
-  const handleDeleteScheduled = async (id) => {
+  const handleDeleteStatus = async (id, isSent = false) => {
       try {
           await api.delete(`/whatsapp/statuses/${id}`)
-          toast.success('Statut programmé annulé')
+          toast.success(isSent ? 'Statut révoqué (supprimé) de WhatsApp' : 'Statut programmé annulé')
           loadHistoryData()
       } catch (err) {
-          toast.error('Erreur lors de la suppression')
+          toast.error(err.response?.data?.error || 'Erreur lors de la suppression')
       }
   }
 
@@ -285,6 +316,7 @@ export default function WhatsAppStatus() {
     { id: 'text', label: 'Texte', icon: Type },
     { id: 'image', label: 'Image', icon: Image },
     { id: 'video', label: 'Vidéo', icon: Video },
+    { id: 'product', label: 'Produits', icon: ShoppingBag },
   ]
 
   return (
@@ -549,6 +581,66 @@ export default function WhatsAppStatus() {
             </div>
           )}
 
+          {tab === 'product' && (
+            <div className={`card p-5 space-y-4 ${isDark ? 'bg-space-900/50' : 'bg-gray-50/50'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                  Sélectionnez un produit à publier
+                </label>
+                <button 
+                  onClick={(e) => { e.preventDefault(); loadProducts(); }}
+                  className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingProducts ? 'animate-spin' : ''}`} />
+                  Actualiser
+                </button>
+              </div>
+
+              {loadingProducts ? (
+                <div className="flex flex-col items-center justify-center py-12 opacity-50">
+                  <Loader2 className="w-8 h-8 animate-spin mb-3 text-emerald-500" />
+                  <p className="text-xs font-medium">Chargement du catalogue...</p>
+                </div>
+              ) : products.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-2xl">
+                  <ShoppingBag className="w-8 h-8 mx-auto mb-3 text-gray-600 opacity-20" />
+                  <p className="text-sm text-gray-500">Votre catalogue est vide</p>
+                  <p className="text-[10px] uppercase mt-2 tracking-widest opacity-50">Ajoutez des produits dans la section Vente</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 overflow-y-auto max-h-[350px] p-1 scrollbar-thin scrollbar-thumb-emerald-500/20">
+                  {products.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleProductSelect(p)}
+                      className={`group relative flex flex-col text-left rounded-2xl border transition-all duration-300 overflow-hidden hover:shadow-xl hover:shadow-emerald-500/5 ${
+                        isDark ? 'bg-space-800 border-white/5 hover:border-emerald-500/50' : 'bg-white border-gray-200 hover:border-emerald-500/50'
+                      }`}
+                    >
+                      <div className="aspect-square bg-black/40 flex items-center justify-center overflow-hidden">
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        ) : (
+                          <ShoppingBag className="w-8 h-8 text-gray-700 opacity-30" />
+                        )}
+                      </div>
+                      <div className="p-3 bg-gradient-to-t from-black/20 to-transparent">
+                        <p className="text-xs font-bold truncate pr-1 text-white">{p.name}</p>
+                        <p className="text-[10px] text-emerald-400 font-bold mt-0.5">{p.price} XOF</p>
+                      </div>
+                      <div className="absolute top-2 right-2 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                        <div className="p-1.5 bg-emerald-500 text-white rounded-lg shadow-lg">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Scheduling switch */}
           <div className="card p-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -702,7 +794,7 @@ export default function WhatsAppStatus() {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => handleDeleteScheduled(entry.id)}
+                                        onClick={() => handleDeleteStatus(entry.id)}
                                         className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
                                         title="Annuler ce statut"
                                     >
@@ -721,7 +813,7 @@ export default function WhatsAppStatus() {
                     ) : (
                         <div className="space-y-3">
                             {history.map(entry => (
-                                <div key={entry.id} className={`p-3 rounded-xl border ${isDark ? 'bg-space-800/30 border-white/5' : 'bg-white border-gray-100'}`}>
+                                <div key={entry.id} className={`p-3 rounded-xl border relative group ${isDark ? 'bg-space-800/30 border-white/5' : 'bg-white border-gray-100'}`}>
                                     <div className="flex gap-3 items-start">
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                             entry.status === 'failed' ? 'bg-red-500/20' : 'bg-emerald-500/20'
@@ -746,6 +838,13 @@ export default function WhatsAppStatus() {
                                             </div>
                                         </div>
                                     </div>
+                                    <button
+                                        onClick={() => handleDeleteStatus(entry.id, true)}
+                                        className="absolute top-2 right-2 p-1.5 bg-red-500/10 text-red-500 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                                        title="Supprimer (Révoquer) de WhatsApp"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
                                 </div>
                             ))}
                         </div>
