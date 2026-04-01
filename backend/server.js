@@ -66,6 +66,7 @@ import { setIO } from './services/socketEmitter.js';
 import { runDailyBriefingJob } from './services/dailyBriefing.js';
 import { runNextBestActionJob } from './services/nextBestAction.js';
 import { runCampaignSchedulerJob } from './services/campaigns.js';
+import { runStatusSchedulerJob } from './services/whatsapp.js';
 import { startWorkflowWorker } from './workers/workflowWorker.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

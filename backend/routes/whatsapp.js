@@ -3,8 +3,32 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { whatsappManager } from '../services/whatsapp.js';
 import { checkToolLimit } from './tools.js';
+import multer from 'multer';
+import fs from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { v4 as uuidv4 } from 'uuid';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const router = Router();
+
+// Configure multer for status uploads
+const statusUploadDir = join(__dirname, '..', '..', 'uploads', 'status');
+if (!fs.existsSync(statusUploadDir)) {
+    fs.mkdirSync(statusUploadDir, { recursive: true });
+}
+const statusUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, statusUploadDir),
+        filename: (req, file, cb) => {
+            const ext = file.originalname.split('.').pop() || 'tmp';
+            cb(null, `status_${Date.now()}_${Math.round(Math.random() * 1E9)}.${ext}`);
+        }
+    }),
+    limits: { fileSize: 20 * 1024 * 1024 } // 20 MB max
+});
 
 async function resolveToolAndAgent(userId, id, { createToolIfMissing = false } = {}) {
     let tool = await db.get('SELECT * FROM tools WHERE id = ? AND user_id = ?', id, userId);
@@ -583,12 +607,71 @@ router.get('/new-messages/:agentId', authenticateToken, async (req, res) => {
     }
 });
 
-// ==================== STATUS (STORY) ROUTE ====================
+// ==================== STATUS (STORY) ROUTES ====================
 
-// Send a WhatsApp Status (Story) - broadcasts to status@broadcast
+// Upload media for status
+router.post('/status/upload', authenticateToken, statusUpload.single('file'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Aucun fichier reçu' });
+        }
+        // Return a relative path that we can serve
+        const fileUrl = `/api/whatsapp/status/media/${req.file.filename}`;
+        res.json({ url: fileUrl });
+    } catch (error) {
+        console.error('Status upload error:', error);
+        res.status(500).json({ error: "Erreur lors de l'upload" });
+    }
+});
+
+// Serve uploaded status media
+router.get('/status/media/:filename', (req, res) => {
+    try {
+        const filepath = join(__dirname, '..', '..', 'uploads', 'status', req.params.filename);
+        if (!fs.existsSync(filepath)) {
+            return res.status(404).send('Not found');
+        }
+        res.sendFile(filepath);
+    } catch (error) {
+        res.status(500).send('Erreur serveur');
+    }
+});
+
+// Get scheduled/sent statuses history
+router.get('/statuses/:agentId', authenticateToken, async (req, res) => {
+    try {
+        const statuses = await db.all(`
+            SELECT * FROM whatsapp_statuses 
+            WHERE user_id = ? AND agent_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT 50
+        `, req.user.ownerId, req.params.agentId);
+        res.json({ statuses });
+    } catch (error) {
+        console.error('Get statuses error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Delete a scheduled status
+router.delete('/statuses/:id', authenticateToken, async (req, res) => {
+    try {
+        const status = await db.get('SELECT * FROM whatsapp_statuses WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
+        if (!status) {
+            return res.status(404).json({ error: 'Statut introuvable' });
+        }
+        await db.run('DELETE FROM whatsapp_statuses WHERE id = ?', req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete status error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Send or schedule a WhatsApp Status (Story) - broadcasts to status@broadcast
 router.post('/status/:agentId', authenticateToken, async (req, res) => {
     try {
-        const { type, text, backgroundColor, font, mediaUrl, caption, mimeType } = req.body;
+        const { type, text, backgroundColor, font, mediaUrl, caption, mimeType, scheduled_at } = req.body;
 
         const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.agentId);
         if (resolved.error) {
@@ -599,21 +682,51 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Outil WhatsApp non trouvé' });
         }
 
-        if (!whatsappManager.isConnected(toolId)) {
+        const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
+
+        // If it's an immediate send, verify whatsapp connection first
+        if (!isScheduled && !whatsappManager.isConnected(toolId)) {
             return res.status(400).json({ error: 'WhatsApp non connecté. Veuillez connecter votre agent WhatsApp.' });
         }
 
-        const result = await whatsappManager.sendStatus(toolId, {
-            type: type || 'text',
-            text,
-            backgroundColor,
-            font,
-            mediaUrl,
-            caption,
-            mimeType
-        });
+        // Always save to database for tracking/scheduling
+        const statusId = uuidv4();
+        const contentStr = type === 'text' ? text : (mediaUrl || '');
+        const finalStatus = isScheduled ? 'scheduled' : 'sent';
 
-        res.json(result);
+        await db.run(`
+            INSERT INTO whatsapp_statuses (id, user_id, agent_id, type, content, background_color, font, status, scheduled_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, statusId, req.user.ownerId, req.params.agentId, type || 'text', contentStr, backgroundColor || null, font || null, finalStatus, isScheduled ? scheduled_at : null);
+
+        // If it's scheduled for the future, we return immediately
+        if (isScheduled) {
+            return res.status(201).json({ 
+                success: true, 
+                message: 'Statut programmé', 
+                statusId, 
+                scheduled_at
+            });
+        }
+
+        // If immediate, send it right away
+        let result;
+        try {
+            result = await whatsappManager.sendStatus(toolId, {
+                type: type || 'text',
+                text: type === 'text' ? text : caption, // fallback text maps to caption for media
+                backgroundColor,
+                font,
+                mediaUrl,
+                caption,
+                mimeType
+            });
+        } catch (sendError) {
+            await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusId);
+            throw sendError;
+        }
+
+        res.json({ success: true, result, statusId });
     } catch (error) {
         console.error('Send status error:', error);
         res.status(500).json({ error: error.message || 'Erreur lors de l\'envoi du statut' });

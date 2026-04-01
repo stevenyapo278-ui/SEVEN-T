@@ -3413,4 +3413,64 @@ export const whatsappManager = new WhatsAppManager();
 // Initialize workflow executor with WhatsApp manager reference
 workflowExecutor.setWhatsAppManager(whatsappManager);
 
+/**
+ * Job that finds and runs scheduled statuses.
+ * Reads whatsapp_statuses table for 'scheduled' status where scheduled_at <= now
+ */
+export async function runStatusSchedulerJob() {
+    try {
+        const scheduledStatuses = await db.all(`
+            SELECT ws.*, a.tool_id 
+            FROM whatsapp_statuses ws
+            JOIN agents a ON ws.agent_id = a.id
+            WHERE ws.status = 'scheduled' 
+            AND ws.scheduled_at <= CURRENT_TIMESTAMP
+        `);
+
+        if (!scheduledStatuses || scheduledStatuses.length === 0) {
+            return;
+        }
+
+        console.log(`[StatusScheduler] Found ${scheduledStatuses.length} status(es) to process`);
+
+        for (const statusRow of scheduledStatuses) {
+            if (!statusRow.tool_id) {
+                await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+                continue;
+            }
+
+            try {
+                // Determine mediaUrl / text
+                let text = undefined, mediaUrl = undefined;
+                if (statusRow.type === 'text') {
+                    text = statusRow.content;
+                } else {
+                    // For image/video, if it's a relative URL, resolve it or if it's external, just pass it
+                    mediaUrl = statusRow.content;
+                    if (mediaUrl.startsWith('/api/')) {
+                        // We need the absolute path for Baileys, or local file path
+                        mediaUrl = `http://localhost:${process.env.PORT || 3001}${mediaUrl}`;
+                    }
+                }
+
+                await whatsappManager.sendStatus(statusRow.tool_id, {
+                    type: statusRow.type,
+                    text: text,
+                    backgroundColor: statusRow.background_color,
+                    font: statusRow.font,
+                    mediaUrl: mediaUrl,
+                    caption: statusRow.type !== 'text' ? statusRow.content : undefined
+                });
+
+                await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'sent', statusRow.id);
+            } catch (error) {
+                console.error(`[StatusScheduler] Failed to send status ${statusRow.id}:`, error);
+                await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+            }
+        }
+    } catch (error) {
+        console.error('[StatusScheduler] Database error:', error);
+    }
+}
+
 export default whatsappManager;

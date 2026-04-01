@@ -711,6 +711,21 @@ export async function initDatabase() {
             FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS whatsapp_statuses (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            agent_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            background_color TEXT,
+            font INTEGER,
+            status TEXT DEFAULT 'scheduled',
+            scheduled_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+        );
+
         CREATE TABLE IF NOT EXISTS campaign_recipients (
             id TEXT PRIMARY KEY,
             campaign_id TEXT NOT NULL,
