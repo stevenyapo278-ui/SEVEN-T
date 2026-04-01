@@ -3390,8 +3390,18 @@ class WhatsAppManager {
         if (type === 'text') {
             if (!text?.trim()) throw new Error('Le texte du statut est requis');
             message = { text: text.trim() };
-            // Baileys requires backgroundColor and font in the options/quoted for status
-            options.backgroundColor = backgroundColor || '#128C7E';
+            // Baileys often expects backgroundColor as a 32-bit signed integer for statuses
+            let colorInt = -15562114; // Default #128C7E as signed Int32
+            if (backgroundColor) {
+                try {
+                    const hex = backgroundColor.replace('#', '');
+                    // Convert hex to ARGB (0xAARRGGBB) then to signed Int32
+                    colorInt = parseInt('FF' + hex, 16) << 0; 
+                } catch (e) {
+                    console.error('[WhatsApp] Color parsing error:', e);
+                }
+            }
+            options.backgroundColor = colorInt;
             options.font = font !== undefined ? Number(font) : 2;
         } else {
             // Resolve media to Buffer if it's a local /api/ path
@@ -3436,24 +3446,22 @@ class WhatsAppManager {
         console.log(`[WhatsApp] Sending status (${type}) for tool ${toolId} to ${statusJidList.length} contacts`);
         const result = await sock.sendMessage('status@broadcast', message, options);
         console.log(`[WhatsApp] Status sent successfully for tool ${toolId}: ${result?.key?.id}`);
-        return { success: true, messageId: result?.key?.id };
+        return { success: true, messageId: result?.key?.id, key: result?.key };
     }
 
     /**
      * Revoke (Delete) a status from WhatsApp
+     * @param {string} toolId
+     * @param {Object} key - The full Baileys key object { remoteJid, fromMe, id, participant }
      */
-    async revokeStatus(toolId, messageId) {
+    async revokeStatus(toolId, key) {
         const sock = this.connections.get(toolId);
         if (!sock) throw new Error('WhatsApp non connecté');
 
-        // To delete a status, we send a protocol message with type 'REVOKE'
-        // Baileys provides a shorthand for this
+        // To delete a message, we pass the exact key that was received when sending
+        console.log(`[WhatsApp] Revoking status for tool ${toolId}, key:`, JSON.stringify(key));
         return await sock.sendMessage('status@broadcast', { 
-            delete: { 
-                remoteJid: 'status@broadcast', 
-                fromMe: true, 
-                id: messageId 
-            } 
+            delete: key
         });
     }
 }
@@ -3501,7 +3509,8 @@ export async function runStatusSchedulerJob() {
                     mimeType: statusRow.mime_type
                 });
 
-                await db.run('UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ? WHERE id = ?', 'sent', result.messageId, statusRow.id);
+                await db.run('UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', 
+                    'sent', result.messageId, JSON.stringify(result.key), statusRow.id);
             } catch (error) {
                 console.error(`[StatusScheduler] Failed to send status ${statusRow.id}:`, error);
                 await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
