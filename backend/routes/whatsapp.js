@@ -750,8 +750,16 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
 
         res.json({ success: true, result, statusId });
     } catch (error) {
-        console.error('Send status error:', error);
-        res.status(500).json({ error: error.message || "Erreur lors de l'envoi du statut" });
+        console.error('[WhatsApp Status API] Error detail:', {
+            message: error.message,
+            stack: error.stack,
+            agentId: req.params.agentId,
+            body: req.body
+        });
+        res.status(500).json({ 
+            error: error.message || "Erreur lors de l'envoi du statut",
+            details: error.stack // Temporarily expose for debugging
+        });
     }
 });
 
