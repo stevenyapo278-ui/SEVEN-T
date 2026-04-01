@@ -3418,13 +3418,19 @@ class WhatsAppManager {
                 const filepath = join(__dirname, '..', '..', 'uploads', 'status', filename);
                 if (existsSync(filepath)) {
                     mediaSource = readFileSync(filepath);
-                    // Infer mimetype from extension if not provided
                     if (!resolvedMimeType) {
                         const ext = filename.split('.').pop().toLowerCase();
-                        if (ext === 'jpg' || ext === 'jpeg') resolvedMimeType = 'image/jpeg';
-                        else if (ext === 'png') resolvedMimeType = 'image/png';
-                        else if (ext === 'gif') resolvedMimeType = 'image/gif';
-                        else if (ext === 'mp4') resolvedMimeType = 'video/mp4';
+                        resolvedMimeType = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp', 'mp4': 'video/mp4' }[ext] || (ext === 'mp4' ? 'video/mp4' : 'image/jpeg');
+                    }
+                }
+            } else if (mediaUrl && mediaUrl.startsWith('/api/products/image/')) {
+                const filename = mediaUrl.split('/').pop();
+                const filepath = join(__dirname, '..', '..', 'uploads', 'products', filename);
+                if (existsSync(filepath)) {
+                    mediaSource = readFileSync(filepath);
+                    if (!resolvedMimeType) {
+                        const ext = filename.split('.').pop().toLowerCase();
+                        resolvedMimeType = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp' }[ext] || 'image/jpeg';
                     }
                 }
             }
