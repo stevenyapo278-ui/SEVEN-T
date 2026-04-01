@@ -3413,25 +3413,40 @@ class WhatsAppManager {
             let mediaSource = mediaUrl;
             let resolvedMimeType = mimeType;
 
-            if (mediaUrl && mediaUrl.startsWith('/api/whatsapp/status/media/')) {
-                const filename = mediaUrl.split('/').pop();
-                const filepath = join(__dirname, '..', '..', 'uploads', 'status', filename);
-                if (existsSync(filepath)) {
-                    mediaSource = readFileSync(filepath);
-                    if (!resolvedMimeType) {
-                        const ext = filename.split('.').pop().toLowerCase();
-                        resolvedMimeType = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp', 'mp4': 'video/mp4' }[ext] || (ext === 'mp4' ? 'video/mp4' : 'image/jpeg');
-                    }
+            if (mediaUrl && (mediaUrl.startsWith('/api/') || (!mediaUrl.includes('://') && mediaUrl.includes('/api/')))) {
+                // Ensure mediaUrl is the relative part if it was already prefixed with a local domain
+                const relativeUrl = mediaUrl.includes('/api/') ? '/api/' + mediaUrl.split('/api/')[1] : mediaUrl;
+                
+                // Determine absolute URL (for Baileys to fetch it via HTTP)
+                const baseUrl = (process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`).replace(/\/$/, '');
+                mediaSource = baseUrl + relativeUrl;
+                
+                // Log resolution for debugging
+                console.log(`[WhatsApp Debug] Resolving virtual path: "${mediaUrl}" -> URL: "${mediaSource}"`);
+                
+                // Still try to find it on disk to optimize and infer mimetype if missing
+                let localFilepath = null;
+                if (relativeUrl.startsWith('/api/whatsapp/status/media/')) {
+                    const filename = relativeUrl.split('/').pop();
+                    localFilepath = join(__dirname, '..', '..', 'uploads', 'status', filename);
+                } else if (relativeUrl.startsWith('/api/products/image/')) {
+                    const filename = relativeUrl.split('/').pop();
+                    localFilepath = join(__dirname, '..', '..', 'uploads', 'products', filename);
                 }
-            } else if (mediaUrl && mediaUrl.startsWith('/api/products/image/')) {
-                const filename = mediaUrl.split('/').pop();
-                const filepath = join(__dirname, '..', '..', 'uploads', 'products', filename);
-                if (existsSync(filepath)) {
-                    mediaSource = readFileSync(filepath);
-                    if (!resolvedMimeType) {
-                        const ext = filename.split('.').pop().toLowerCase();
-                        resolvedMimeType = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp' }[ext] || 'image/jpeg';
+
+                if (localFilepath && existsSync(localFilepath)) {
+                    try {
+                        mediaSource = readFileSync(localFilepath);
+                        console.log(`[WhatsApp Debug] Successfully read from disk: "${localFilepath}" (Size: ${mediaSource.length})`);
+                        if (!resolvedMimeType) {
+                            const ext = localFilepath.split('.').pop().toLowerCase();
+                            resolvedMimeType = { 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'gif': 'image/gif', 'webp': 'image/webp', 'mp4': 'video/mp4' }[ext] || (ext === 'mp4' ? 'video/mp4' : 'image/jpeg');
+                        }
+                    } catch (readErr) {
+                        console.error(`[WhatsApp Debug] Failed to read disk file: "${localFilepath}"`, readErr.message);
                     }
+                } else {
+                    console.warn(`[WhatsApp Debug] Disk file not found at "${localFilepath}". Proceeding with URL: "${mediaSource}"`);
                 }
             }
 
