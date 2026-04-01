@@ -729,22 +729,38 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
         }
 
         // If immediate, send it right away
-        let result;
         try {
-            result = await whatsappManager.sendStatus(toolId, {
+            const sendResult = await whatsappManager.sendStatus(toolId, {
                 type: type || 'text',
-                text: type === 'text' ? text : caption, // fallback text maps to caption for media
-                backgroundColor,
-                font,
-                mediaUrl,
-                caption,
-                mimeType
+                text: type === 'text' ? (text || '') : (caption || ''), 
+                backgroundColor: backgroundColor || null,
+                font: font !== undefined ? Number(font) : 2,
+                mediaUrl: mediaUrl || null,
+                caption: caption || null,
+                mimeType: mimeType || null
             });
-            if (result.key) {
-                await db.run('UPDATE whatsapp_statuses SET whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', result.messageId, JSON.stringify(result.key), statusId);
+            
+            if (sendResult && sendResult.key) {
+                try {
+                    // Use null instead of undefined for DB parameters
+                    await db.run(
+                        'UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', 
+                        'sent',
+                        sendResult.messageId || null, 
+                        JSON.stringify(sendResult.key), 
+                        statusId
+                    );
+                } catch (dbErr) {
+                    console.error('[WhatsApp Status API] DB Update failed (sent):', dbErr.message);
+                }
             }
         } catch (sendError) {
-            await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusId);
+            console.error('[WhatsApp Status API] Sending failed:', sendError.message);
+            try {
+                await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusId);
+            } catch (dbErr) {
+                console.error('[WhatsApp Status API] DB Update failed (failed):', dbErr.message);
+            }
             throw sendError;
         }
 

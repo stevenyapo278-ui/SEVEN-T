@@ -3508,7 +3508,17 @@ export async function runStatusSchedulerJob() {
                     mimeType: statusRow.mime_type
                 });
 
-                await db.run('UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', 'sent', result.messageId, JSON.stringify(result.key), statusRow.id);
+                try {
+                    await db.run(
+                        'UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', 
+                        'sent', 
+                        result.messageId || null, 
+                        result.key ? JSON.stringify(result.key) : null, 
+                        statusRow.id
+                    );
+                } catch (dbErr) {
+                    console.error(`[StatusScheduler] DB Update failed for ${statusRow.id}:`, dbErr.message);
+                }
             } catch (error) {
                 console.error(`[StatusScheduler] Failed to send status ${statusRow.id}:`, error);
                 await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);

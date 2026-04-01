@@ -231,7 +231,13 @@ export default function WhatsAppStatus() {
       setBatchProgress('')
       loadHistoryData()
     } catch (err) {
-        toast.error("Erreur lors de l'envoi groupé")
+        console.error('Batch send error:', err)
+        if (err.response?.status === 401) {
+            toast.error("Session expirée. Veuillez vous reconnecter.")
+            break
+        }
+        toast.error(`Erreur (${count}/${selectedProductIds.length}) : ${err.response?.data?.error || 'Problème serveur'}`)
+        // Continue to next product if it's not an auth error
     } finally {
       setBatchSending(false)
     }
