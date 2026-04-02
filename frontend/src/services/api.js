@@ -65,6 +65,13 @@ api.interceptors.request.use((config) => {
       }
     }
   }
+
+  if (typeof window !== 'undefined' && window._isLoggingOut && !config.url.includes('/auth/logout')) {
+    const cancelTokenSource = axios.CancelToken.source();
+    config.cancelToken = cancelTokenSource.token;
+    cancelTokenSource.cancel('Request cancelled due to explicit logout');
+  }
+
   return config
 })
 

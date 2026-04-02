@@ -37,7 +37,15 @@ export default function Login() {
     if (user) {
       const redirect = searchParams.get('redirect')
       // Priorité au paramètre redirect (venant du logout), sinon fallback sur la valeur persistée
-      const savedFromStorage = getAndClearSessionLocation(user.id)
+      let savedFromStorage = getAndClearSessionLocation(user.id)
+
+      // Previent la boucle liée au cache : un Admin ne devrait pas restaurer /dashboard/influenceur 
+      // si ce n'est pas explicitement voulu.
+      if (user.is_admin && savedFromStorage && savedFromStorage.match(/^\/dashboard\/[^\/]+$/)) {
+        if (savedFromStorage !== '/dashboard/admin' && savedFromStorage !== '/dashboard/settings') {
+           savedFromStorage = null;
+        }
+      }
 
       const target =
         (redirect && redirect.startsWith('/dashboard') && redirect) ||

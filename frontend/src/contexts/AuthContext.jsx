@@ -98,6 +98,10 @@ export function AuthProvider({ children }) {
   const logout = async (explicit = true) => {
     const isExplicit = explicit !== false;
 
+    if (isExplicit) {
+      window._isLoggingOut = true;
+    }
+
     try {
       await api.post('/auth/logout')
     } catch (e) {
