@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 
 const AuthContext = createContext(null)
@@ -33,7 +32,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const idleTimeoutRef = useRef(null)
   const didInitAuthCheckRef = useRef(false)
-  const navigate = useNavigate()
 
   useEffect(() => {
     // React StrictMode (dev) mounts effects twice; avoid duplicate /auth/me calls.
@@ -98,18 +96,19 @@ export function AuthProvider({ children }) {
   }
 
   const logout = async (explicit = true) => {
-    // If called from an event handler, 'explicit' is an object.
     const isExplicit = explicit !== false;
-    
-    if (isExplicit) {
-      navigate('/login', { replace: true });
-    }
 
     try {
       await api.post('/auth/logout')
     } catch (e) {
       console.warn('Logout error:', e)
     }
+
+    if (isExplicit) {
+      window.location.href = '/login';
+      return;
+    }
+
     setUser(null)
     setIsAuthenticated(false)
   }
