@@ -125,7 +125,7 @@ export default function Conversations() {
   const { startTour, completedTours } = useOnboardingTour()
   const { user: authUser, refreshUser } = useAuth()
   const isDark = theme === 'dark'
-  const hasConversionScore = authUser?.plan_features?.conversion_score === true
+  const hasConversionScore = authUser?.is_admin === 1 || authUser?.plan_features?.conversion_score === true || authUser?.conversion_score_enabled === 1
   
   const [searchParams, setSearchParams] = useSearchParams()
   const [conversations, setConversations] = useState([])

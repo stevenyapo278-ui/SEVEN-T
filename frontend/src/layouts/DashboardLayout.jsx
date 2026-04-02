@@ -1104,6 +1104,9 @@ export default function DashboardLayout() {
   const analyticsModuleEnabled = isEnabled('analytics', user?.plan_features?.analytics, user?.analytics_module_enabled)
   const reportsModuleEnabled = isEnabled('reports', user?.plan_features?.reports, user?.reports_module_enabled)
   const flowsModuleEnabled = isEnabled('flows', user?.plan_features?.flows, user?.flows_module_enabled)
+  const leadsModuleEnabled = isEnabled('leads_management', user?.plan_features?.leads_management, user?.leads_management_enabled)
+  const whatsappStatusModuleEnabled = isEnabled('whatsapp_status', user?.plan_features?.whatsapp_status, user?.whatsapp_status_enabled)
+  const knowledgeBaseModuleEnabled = isEnabled('knowledge_base', user?.plan_features?.knowledge_base, user?.knowledge_base_enabled)
 
 
 
@@ -1118,11 +1121,14 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
         if (item.href === '/dashboard/reports') return reportsModuleEnabled;
         if (item.href === '/dashboard/flows') return flowsModuleEnabled;
+        if (item.href === '/dashboard/leads') return leadsModuleEnabled;
+        if (item.href === '/dashboard/whatsapp-status') return whatsappStatusModuleEnabled;
+        if (item.href === '/dashboard/knowledge') return knowledgeBaseModuleEnabled;
         return true;
 
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, flowsModuleEnabled, isInfluencerOnly])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly])
 
   const bottomNav = useMemo(() => {
     if (isInfluencerOnly) return [];

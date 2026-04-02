@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -62,7 +63,24 @@ const LEAD_SOURCES = [
 ]
 
 export default function Leads() {
+  const { user } = useAuth()
   const { t } = useTranslation()
+
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.leads_management
+    const override = user?.leads_management_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
   const [searchParams, setSearchParams] = useSearchParams()
   const { theme } = useTheme()
   const isDark = theme === 'dark'

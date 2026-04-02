@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useOnboardingTour } from '../components/Onboarding'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -77,7 +79,24 @@ const KnowledgeTypeIcon = ({ type, className = "w-5 h-5", isDark }) => {
 }
 
 export default function KnowledgeBase() {
+  const { user } = useAuth()
   const { t } = useTranslation()
+
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.knowledge_base
+    const override = user?.knowledge_base_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
   const { startTour, completedTours } = useOnboardingTour()
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()

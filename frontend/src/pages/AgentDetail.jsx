@@ -1786,7 +1786,7 @@ function SettingsTab({ agent, onUpdate }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <label className="block text-sm font-medium text-gray-300">{t('agents.detail.settings.enableAvailability', 'Enable schedules')}</label>
-                    {!(user?.plan_features?.availability_hours || user?.is_admin) && (
+                    {!(user?.plan_features?.availability_hours || user?.availability_hours_enabled === 1 || user?.is_admin === 1) && (
                       <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-[10px] font-bold text-amber-500 border border-amber-500/20 uppercase tracking-wider">Module 1</span>
                     )}
                   </div>
@@ -1795,7 +1795,7 @@ function SettingsTab({ agent, onUpdate }) {
                 <button
                   type="button"
                   onClick={() => {
-                    if (!(user?.plan_features?.availability_hours || user?.is_admin)) {
+                    if (!(user?.plan_features?.availability_hours || user?.availability_hours_enabled === 1 || user?.is_admin === 1)) {
                       toast.error("Ce module n'est pas inclus dans votre plan actuel.");
                       return;
                     }
@@ -1803,7 +1803,7 @@ function SettingsTab({ agent, onUpdate }) {
                   }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     formData.availability_enabled ? 'bg-gold-400' : 'bg-space-700'
-                  } ${!(user?.plan_features?.availability_hours || user?.is_admin) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${!(user?.plan_features?.availability_hours || user?.availability_hours_enabled === 1 || user?.is_admin === 1) ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -1813,7 +1813,7 @@ function SettingsTab({ agent, onUpdate }) {
                 </button>
               </div>
 
-              {!(user?.plan_features?.availability_hours || user?.is_admin) && (
+              {!(user?.plan_features?.availability_hours || user?.availability_hours_enabled === 1 || user?.is_admin === 1) && (
                 <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
                   <p className="text-xs text-amber-500/80 flex items-center gap-2 font-medium">
                     <Lock className="w-3 h-3" />

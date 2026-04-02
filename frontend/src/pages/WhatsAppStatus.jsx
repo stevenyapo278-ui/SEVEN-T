@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import {
@@ -120,7 +122,24 @@ function PhonePreview({ type, text, backgroundColor, font, mediaUrl, caption, is
 }
 
 export default function WhatsAppStatus() {
+  const { user } = useAuth()
   const { isDark } = useTheme()
+
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.whatsapp_status
+    const override = user?.whatsapp_status_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
   const [agents, setAgents] = useState([])
   const [loadingAgents, setLoadingAgents] = useState(true)
   const [selectedAgent, setSelectedAgent] = useState('')

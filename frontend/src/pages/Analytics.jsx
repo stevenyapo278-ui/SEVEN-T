@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { 
@@ -41,8 +43,25 @@ import toast from 'react-hot-toast'
 const COLORS = ['#F5D47A', '#8B5CF6', '#22C55E', '#3B82F6', '#EF4444']
 
 export default function Analytics() {
+  const { user } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
+
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.analytics
+    const override = user?.analytics_module_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('7d')
   const [overview, setOverview] = useState(null)

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -24,10 +25,27 @@ import {
 } from 'lucide-react'
 
 export default function Flows() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const { showConfirm } = useConfirm()
+
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.flows
+    const override = user?.flows_module_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
   const [flows, setFlows] = useState([])
   const [templates, setTemplates] = useState([])
   const [agents, setAgents] = useState([])
