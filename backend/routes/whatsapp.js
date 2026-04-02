@@ -32,7 +32,7 @@ const statusUpload = multer({
 
 async function resolveToolAndAgent(userId, id, { createToolIfMissing = false } = {}) {
     let tool = await db.get('SELECT * FROM tools WHERE id = ? AND user_id = ?', id, userId);
-    let agent = null;
+    let agent = null;                                                                                                                                                                                                                                                                                                                                                       
 
     if (tool) {
         if (tool.type !== 'whatsapp') {
