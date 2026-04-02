@@ -28,7 +28,6 @@ import {
   UserCheck,
   History,
   X,
-  X,
   RefreshCw,
   Wand2,
   Sparkles,
@@ -76,11 +75,6 @@ export default function Campaigns() {
   useLockBodyScroll(showModal || showRecipientsModal || showHistoryModal)
   const [importedPickerOpen, setImportedPickerOpen] = useState(false)
   const [historyData, setHistoryData] = useState({ campaign: null, recipients: [] })
-  const [loadingHistory, setLoadingHistory] = useState(false)
-  const [sendingCampaignId, setSendingCampaignId] = useState(null)
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
-  const [campaignToPreview, setCampaignToPreview] = useState(null)
-
   // Form state
   const [form, setForm] = useState({
     name: '',
