@@ -57,6 +57,7 @@
   },
   "nav": {
     "dashboard": "Tableau de bord",
+    "influencerStats": "Statistiques Partenaire",
     "agents": "Agents",
     "conversations": "Conversations",
     "services": "Services",

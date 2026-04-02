@@ -1112,7 +1112,17 @@ export default function DashboardLayout() {
 
 
   const navGroups = useMemo(() => {
-    if (isInfluencerOnly) return [];
+    if (isInfluencerOnly) {
+      const slug = user?.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
+      return [
+        {
+          nameKey: 'nav.main',
+          items: [
+            { nameKey: 'nav.influencerStats', href: `/dashboard/${slug}`, icon: BarChart3, tourId: 'nav-influencer-stats' }
+          ]
+        }
+      ];
+    }
     return navigationGroups.map(g => ({ 
       ...g, 
       items: g.items.filter(item => {
@@ -1125,10 +1135,9 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/whatsapp-status') return whatsappStatusModuleEnabled;
         if (item.href === '/dashboard/knowledge') return knowledgeBaseModuleEnabled;
         return true;
-
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly, user?.name])
 
   const bottomNav = useMemo(() => {
     if (isInfluencerOnly) return [];
