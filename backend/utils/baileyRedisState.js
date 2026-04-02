@@ -24,7 +24,25 @@ export async function useBaileyRedisState(redis, toolId) {
 
     const readData = async (key) => {
         try {
-            const raw = await redis.get(`${keyPrefix}:${key}`);
+            let raw;
+            if (key.startsWith('keys:')) {
+                const parts = key.split(':'); // keys:type:id
+                const type = parts[1];
+                const id = parts[2];
+                raw = await redis.hget(`${keyPrefix}:keys:${type}`, id);
+                
+                // MIGRATION FALLBACK: Try old string key if not in hash
+                if (!raw) {
+                    raw = await redis.get(`${keyPrefix}:${key}`);
+                    if (raw) {
+                        console.log(`[BaileyRedis] Migrating key to hash: ${key}`);
+                        await redis.hset(`${keyPrefix}:keys:${type}`, id, raw);
+                        await redis.del(`${keyPrefix}:${key}`);
+                    }
+                }
+            } else {
+                raw = await redis.get(`${keyPrefix}:${key}`);
+            }
             if (!raw) return null;
             return JSON.parse(raw, BufferJSON ? BufferJSON.reviver : undefined);
         } catch {
@@ -34,15 +52,30 @@ export async function useBaileyRedisState(redis, toolId) {
 
     const writeData = async (key, data) => {
         try {
-            if (data == null) {
-                await redis.del(`${keyPrefix}:${key}`);
+            if (key.startsWith('keys:')) {
+                const parts = key.split(':');
+                const type = parts[1];
+                const id = parts[2];
+                const hashKey = `${keyPrefix}:keys:${type}`;
+                
+                if (data == null) {
+                    await redis.hdel(hashKey, id);
+                } else {
+                    const val = JSON.stringify(data, BufferJSON ? BufferJSON.replacer : undefined);
+                    await redis.hset(hashKey, id, val);
+                    await redis.expire(hashKey, SESSION_TTL_SECONDS);
+                }
             } else {
-                await redis.set(
-                    `${keyPrefix}:${key}`,
-                    JSON.stringify(data, BufferJSON ? BufferJSON.replacer : undefined),
-                    'EX',
-                    SESSION_TTL_SECONDS
-                );
+                if (data == null) {
+                    await redis.del(`${keyPrefix}:${key}`);
+                } else {
+                    await redis.set(
+                        `${keyPrefix}:${key}`,
+                        JSON.stringify(data, BufferJSON ? BufferJSON.replacer : undefined),
+                        'EX',
+                        SESSION_TTL_SECONDS
+                    );
+                }
             }
         } catch (err) {
             console.error(`[BaileyRedis] Write error for key ${key}:`, err.message);
@@ -57,27 +90,47 @@ export async function useBaileyRedisState(redis, toolId) {
         keys: {
             get: async (type, ids) => {
                 const data = {};
-                await Promise.all(
-                    ids.map(async (id) => {
-                        const val = await readData(`keys:${type}:${id}`);
-                        if (val) {
-                            data[id] =
-                                type === 'app-state-sync-key'
-                                    ? proto.Message.AppStateSyncKeyData.fromObject(val)
-                                    : val;
+                const hashKey = `${keyPrefix}:keys:${type}`;
+                
+                // Optimized batch read using HMGET
+                if (ids.length > 0) {
+                    const vals = await redis.hmget(hashKey, ...ids);
+                    ids.forEach((id, index) => {
+                        const raw = vals[index];
+                        if (raw) {
+                            const val = JSON.parse(raw, BufferJSON ? BufferJSON.reviver : undefined);
+                            data[id] = type === 'app-state-sync-key'
+                                ? proto.Message.AppStateSyncKeyData.fromObject(val)
+                                : val;
                         }
-                    })
-                );
+                    });
+                }
                 return data;
             },
             set: async (data) => {
-                const writes = [];
                 for (const [type, typeData] of Object.entries(data)) {
+                    const hashKey = `${keyPrefix}:keys:${type}`;
+                    const entries = {};
+                    const deletions = [];
+
                     for (const [id, val] of Object.entries(typeData || {})) {
-                        writes.push(writeData(`keys:${type}:${id}`, val ?? null));
+                        if (val == null) {
+                            deletions.push(id);
+                        } else {
+                            entries[id] = JSON.stringify(val, BufferJSON ? BufferJSON.replacer : undefined);
+                        }
                     }
+
+                    const writes = [];
+                    if (Object.keys(entries).length > 0) {
+                        writes.push(redis.hset(hashKey, entries));
+                        writes.push(redis.expire(hashKey, SESSION_TTL_SECONDS));
+                    }
+                    if (deletions.length > 0) {
+                        writes.push(redis.hdel(hashKey, ...deletions));
+                    }
+                    await Promise.all(writes);
                 }
-                await Promise.all(writes);
             },
         },
     };

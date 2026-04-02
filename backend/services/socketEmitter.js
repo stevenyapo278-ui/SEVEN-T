@@ -36,3 +36,37 @@ export async function notifyConversationUpdate(conversationId, message = null) {
         console.error('[socketEmitter] notifyConversationUpdate error:', err?.message || err);
     }
 }
+
+/**
+ * Notify a user about WhatsApp connection status changes.
+ * @param {string} toolId
+ * @param {object} status - { status: 'qr'|'connecting'|'connected'|'disconnected', message: string, ... }
+ */
+export async function notifyWhatsAppStatus(toolId, status) {
+    if (!io || !toolId) return;
+    try {
+        const row = await db.get('SELECT user_id FROM tools WHERE id = ?', toolId);
+        if (row?.user_id) {
+            io.to(String(row.user_id)).emit('whatsapp:status', { toolId, ...status });
+        }
+    } catch (err) {
+        console.error('[socketEmitter] notifyWhatsAppStatus error:', err.message);
+    }
+}
+
+/**
+ * Notify a user about a new WhatsApp QR code.
+ * @param {string} toolId
+ * @param {string} qrDataUrl
+ */
+export async function notifyWhatsAppQR(toolId, qrDataUrl) {
+    if (!io || !toolId) return;
+    try {
+        const row = await db.get('SELECT user_id FROM tools WHERE id = ?', toolId);
+        if (row?.user_id) {
+            io.to(String(row.user_id)).emit('whatsapp:qr', { toolId, qr: qrDataUrl });
+        }
+    } catch (err) {
+        console.error('[socketEmitter] notifyWhatsAppQR error:', err.message);
+    }
+}

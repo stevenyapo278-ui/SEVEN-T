@@ -35,7 +35,7 @@ import { debugIngest } from '../utils/debugIngest.js';
 import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
 import * as ttsService from './tts.js';
 import { conversationMessageQueue } from './conversationMessageQueue.js';
-import { notifyConversationUpdate } from './socketEmitter.js';
+import { notifyConversationUpdate, notifyWhatsAppStatus, notifyWhatsAppQR } from './socketEmitter.js';
 import googleCalendarService from './googleCalendar.js';
 import { enqueueWorkflow } from '../queues/workflowQueue.js';
 
@@ -314,6 +314,7 @@ class WhatsAppManager {
 
             this.connectingInProgress.add(toolId);
             this.statuses.set(toolId, { status: 'connecting', message: 'Initialisation...' });
+            notifyWhatsAppStatus(toolId, { status: 'connecting', message: 'Initialisation...' });
 
             const { state, saveCreds } = await useBaileyRedisState(this.redis, toolId);
             
@@ -350,6 +351,24 @@ class WhatsAppManager {
                 markOnlineOnConnect: true,
                 syncFullHistory: false,
                 retryRequestDelayMs: 5000,
+                getMessage: async (key) => {
+                    const jid = key.remoteJid;
+                    if (jid && store.messages[jid]) {
+                        const msg = store.messages[jid].find(m => m.key.id === key.id);
+                        if (msg) return msg.message || undefined;
+                    }
+                    // Fallback to DB if NOT in store
+                    try {
+                        const row = await db.get('SELECT payload FROM messages WHERE whatsapp_id = ?', key.id);
+                        if (row?.payload) {
+                            const parsed = JSON.parse(row.payload);
+                            return parsed.message || undefined;
+                        }
+                    } catch (e) {
+                        console.warn('[WhatsApp] getMessage DB fallback failed:', e.message);
+                    }
+                    return undefined;
+                }
             });
 
             this.connections.set(toolId, sock);
@@ -380,6 +399,13 @@ class WhatsAppManager {
                         if (e.message.includes('Crédits insuffisants')) throw e;
                         console.error('[WhatsApp] Checking credits error:', e);
                     }
+                }
+
+                // Add random jitter (Anti-Ban behavior) for outgoing messages
+                if (isActualMessage && !options?.noDelay) {
+                    const delay = Math.floor(Math.random() * 2000) + 1000; // 1-3 seconds
+                    console.log(`[WhatsApp] Adding anti-ban jitter: ${delay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
                 // Send the actual message
@@ -449,6 +475,8 @@ class WhatsAppManager {
                         const qrDataUrl = await QRCode.toDataURL(qr);
                         this.qrCodes.set(toolId, qrDataUrl);
                         this.statuses.set(toolId, { status: 'qr', message: 'Scannez le QR code' });
+                        notifyWhatsAppQR(toolId, qrDataUrl);
+                        notifyWhatsAppStatus(toolId, { status: 'qr', message: 'Scannez le QR code' });
                         const now = Date.now();
                         if (!this.lastQrLogTime.get(toolId) || now - this.lastQrLogTime.get(toolId) >= QR_LOG_INTERVAL_MS) {
                             this.lastQrLogTime.set(toolId, now);
@@ -477,6 +505,12 @@ class WhatsAppManager {
                     }
                     
                     this.statuses.set(toolId, { 
+                        status: 'connected', 
+                        message: 'Connecté',
+                        phoneNumber,
+                        name: sock.user?.name
+                    });
+                    notifyWhatsAppStatus(toolId, { 
                         status: 'connected', 
                         message: 'Connecté',
                         phoneNumber,
@@ -541,6 +575,7 @@ class WhatsAppManager {
                         }
 
                         this.statuses.set(toolId, { status: 'reconnecting', message: 'Reconnexion...' });
+                        notifyWhatsAppStatus(toolId, { status: 'reconnecting', message: 'Reconnexion...' });
                         await db.run('UPDATE tools SET status = ? WHERE id = ?', 'reconnecting', toolId);
                         console.log(`[WhatsApp] Reconnecting tool ${toolId} in 5s...`);
 
@@ -599,6 +634,7 @@ class WhatsAppManager {
                         }
 
                         this.statuses.set(toolId, { status: 'disconnected', message: 'Déconnecté' });
+                        notifyWhatsAppStatus(toolId, { status: 'disconnected', message: 'Déconnecté' });
                         await db.run('UPDATE tools SET status = ?, meta = ? WHERE id = ?', 'disconnected', JSON.stringify({}), toolId);
                         const agent = await this.getAgentByToolId(toolId);
                         if (agent) {

@@ -52,6 +52,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import ToolAssignmentModal from '../components/ToolAssignmentModal'
+import { useWhatsAppSocket } from '../hooks/useWhatsAppSocket'
 
 
 /** Decode HTML entities so system prompt displays with normal quotes and apostrophes */
@@ -398,9 +399,34 @@ function OverviewTab({ agent, onUpdate }) {
   const [showToolModal, setShowToolModal] = useState(false)
   const intervalRef = useRef(null)
   const countdownRef = useRef(null)
-  const qrRefreshRef = useRef(null)
   const statsIntervalRef = useRef(null) // For polling stats
   const isUserConnecting = useRef(false) // Track if user initiated connection
+
+  // Subscribe to real-time WhatsApp updates
+  const { connected: socketConnected } = useWhatsAppSocket({
+    onStatus: (payload) => {
+        if (payload.toolId === agent.tool_id || payload.toolId === agent.id) {
+            console.log('[WhatsApp Socket] Status update:', payload);
+            setStatus(payload);
+            
+            if (payload.status === 'connected' && isUserConnecting.current) {
+                toast.success(t('agents.connection.success'));
+                isUserConnecting.current = false;
+                setLoading(false);
+                setConnecting(false);
+                onUpdate();
+            }
+        }
+    },
+    onQR: (payload) => {
+        if (payload.toolId === agent.tool_id || payload.toolId === agent.id) {
+            console.log('[WhatsApp Socket] New QR received');
+            setQrCode(payload.qr);
+            setLoading(false);
+            setConnecting(false);
+        }
+    }
+  });
 
   const QR_REFRESH_INTERVAL = 20 // seconds before QR code refreshes
 
@@ -679,8 +705,10 @@ function OverviewTab({ agent, onUpdate }) {
         toast.success(t('dashboard.alerts.reconnect'))
       }
       
-      // Poll for QR code (reduced frequency to avoid spam)
-      intervalRef.current = setInterval(checkStatus, 3000)
+      // Poll for QR code as fallback only (reduced frequency)
+      if (!socketConnected) {
+          intervalRef.current = setInterval(checkStatus, 5000)
+      }
     } catch (error) {
       toast.error(error.response?.data?.error || t('agents.actions.loadError'))
       isUserConnecting.current = false
