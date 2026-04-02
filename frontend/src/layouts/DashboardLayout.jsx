@@ -671,7 +671,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         {!isInfluencerOnly && <div className={`pt-2 mt-2 border-t ${isDark ? 'border-space-700/60' : 'border-gray-200'}`} />}
 
         {/* Team (Owners only) */}
-        {user?.role === 'owner' && (
+        {!isInfluencerOnly && user?.role === 'owner' && (
           <div className="space-y-0.5">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Gérer</p>
@@ -704,7 +704,8 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         )}
 
         {/* Bottom nav */}
-        <div className="space-y-0.5">
+        {!isInfluencerOnly && (
+          <div className="space-y-0.5">
           {bottomNav.map((item) => (
             <NavLink
               key={item.href}
@@ -731,11 +732,12 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
             </NavLink>
           ))}
         </div>
+        )}
 
         {isInfluencerOnly && <div className="flex-1" />}
 
-        {/* Influencer */}
-        {user?.is_admin !== 1 && user?.permissions?.includes('influencer.dashboard') && (
+        {/* Influencer (Only shown here for non-influencer-only accounts with permissions) */}
+        {!isInfluencerOnly && user?.is_admin !== 1 && user?.permissions?.includes('influencer.dashboard') && (
           <div className="space-y-0.5">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-blue-600'}`}>Partenariat</p>
