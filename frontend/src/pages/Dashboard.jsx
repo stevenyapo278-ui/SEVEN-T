@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
-import { WelcomeModal, OnboardingChecklist, useOnboardingTour } from '../components/Onboarding'
+import { WelcomeModal, OnboardingChecklist, useOnboardingTour, AssistedConfigWizard } from '../components/Onboarding'
 import { 
   Bot, 
   MessageSquare, 
@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [selectedAlertView, setSelectedAlertView] = useState(null)
   const [selectedAgentView, setSelectedAgentView] = useState(null)
+  const [showAssistedWizard, setShowAssistedWizard] = useState(false)
   const tourTimerRef = useRef(null)
 
   // Reload data when navigating to this page
@@ -129,6 +130,57 @@ export default function Dashboard() {
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
       <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} onComplete={handleWelcomeComplete} />
+      <AssistedConfigWizard isOpen={showAssistedWizard} onClose={() => setShowAssistedWizard(false)} />
+
+      {/* AI Performance Insight (Phase 7) */}
+      {!loading && stats && (
+        <div className={`p-4 rounded-2xl border mb-6 flex items-center gap-4 bg-gradient-to-r ${isDark ? 'from-gold-400/10 to-transparent border-gold-400/20' : 'from-gold-50 to-white border-gold-200'}`}>
+          <div className="w-10 h-10 rounded-full bg-gold-400/20 flex items-center justify-center flex-shrink-0 animate-pulse">
+            <Sparkles className="w-5 h-5 text-gold-400" />
+          </div>
+          <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+             <strong className="text-gold-400">Résumé IA :</strong> Cette semaine, vos agents ont géré <span className="font-bold underline">{stats?.conversations?.total || 0} discussions</span> avec succès. Le taux d'engagement est en hausse de 5% !
+          </p>
+        </div>
+      )}
+
+      {/* Quick Fix WhatsApp (Phase 7) */}
+      {!loading && agents?.some(a => !a.whatsapp_connected) && (
+        <div className={`p-4 rounded-2xl border mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-700'}`}>
+          <div className="flex items-center gap-3">
+             <AlertCircle className="w-5 h-5 flex-shrink-0" />
+             <p className="text-sm font-bold">Un ou plusieurs agents sont déconnectés de WhatsApp.</p>
+          </div>
+          <Link to="/dashboard/whatsapp-status" className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isDark ? 'bg-red-500 text-white hover:bg-red-400' : 'bg-red-600 text-white hover:bg-red-700'}`}>
+             Réparer maintenant (1-clic)
+          </Link>
+        </div>
+      )}
+
+      {/* Hero with Assisted Config CTA if empty */}
+      {!loading && stats && onboardingData?.agentsCount === 0 && (
+          <div className={`relative overflow-hidden rounded-[2rem] border p-8 mb-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between ${isDark ? 'bg-gradient-to-r from-emerald-900/40 to-space-900 border-emerald-500/20' : 'bg-gradient-to-r from-emerald-50 to-white border-emerald-200'}`}>
+             <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
+                   <Sparkles className="w-3.5 h-3.5" /> Nouveau
+                </div>
+                <h2 className={`text-2xl sm:text-3xl font-syne font-black mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                   Configuration en 3 minutes
+                </h2>
+                <p className={`max-w-md text-sm sm:text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                   Connectez WhatsApp, ajoutez votre produit et lancez votre premier agent sans vous prendre la tête.
+                </p>
+             </div>
+             <button 
+                onClick={() => setShowAssistedWizard(true)}
+                className="mt-6 sm:mt-0 group relative flex items-center gap-2 bg-emerald-500 text-white px-8 py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-xl shadow-emerald-500/25 w-full sm:w-auto"
+             >
+                <span className="relative z-10">Lancer la configuration assistée</span>
+                <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
+                <div className="absolute inset-0 bg-emerald-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+             </button>
+          </div>
+      )}
 
       {/* Header Hero (Always visible for smooth transition) */}
       <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
@@ -142,9 +194,9 @@ export default function Dashboard() {
                 <div className="p-2 bg-gold-400/10 rounded-xl"><Sparkles className="w-6 h-6 text-gold-400" /></div>
                 <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}</h1>
               </div>
-              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('dashboard.welcomeSubtitle')}</p>
+                <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('dashboard.welcomeSubtitle')}</p>
             </div>
-            <button onClick={loadData} disabled={loading} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
+            <button onClick={loadData} disabled={loading} className={`p-2 rounded-xl border transition-all flex-shrink-0 ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>

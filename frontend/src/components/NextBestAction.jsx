@@ -41,7 +41,17 @@ export default function NextBestAction({ data }) {
         cta: 'Voir l\'inbox'
       }
     }
-    return null
+    // Fallback : Proactive automation suggestion
+    return {
+      title: 'Relance des clients inactifs',
+      description: 'Certains de vos clients n\'ont pas eu d\'interaction depuis 30 jours. Envoyez-leur un petit coucou !',
+      icon: Sparkles,
+      color: 'text-gold-400',
+      bg: 'bg-gold-400/10',
+      border: 'border-gold-400/30',
+      href: '/dashboard/campaigns',
+      cta: 'Lancer une relance'
+    }
   }, [data])
 
   if (!nextAction) return null

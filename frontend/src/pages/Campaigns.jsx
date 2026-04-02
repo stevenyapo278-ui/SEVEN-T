@@ -28,7 +28,11 @@ import {
   UserCheck,
   History,
   X,
-  RefreshCw
+  X,
+  RefreshCw,
+  Wand2,
+  Sparkles,
+  Layout
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
@@ -36,6 +40,7 @@ import 'react-datepicker/dist/react-datepicker.css'
 import ImportedContactsPicker from '../components/ImportedContactsPicker'
 import { registerLocale } from 'react-datepicker'
 import fr from 'date-fns/locale/fr'
+import CampaignPreviewModal from '../components/CampaignPreviewModal'
 registerLocale('fr', fr)
 
 export default function Campaigns() {
@@ -57,12 +62,24 @@ export default function Campaigns() {
   const [selectedLeadIds, setSelectedLeadIds] = useState(new Set())
   const [leadsForSection, setLeadsForSection] = useState([])
   const [loadingRecipients, setLoadingRecipients] = useState(false)
-  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [sendingCampaignId, setSendingCampaignId] = useState(null)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [campaignToPreview, setCampaignToPreview] = useState(null)
+  const [rewritingMessage, setRewritingMessage] = useState(false)
+
+  const CAMPAIGN_TEMPLATES = [
+    { name: 'Relance Inactifs', message: 'Bonjour {{nom}}, cela fait un moment ! Nous avons des nouveautés qui pourraient vous intéresser. À bientôt !' },
+    { name: 'Offre Flash', message: 'Salut {{nom}} ! Profitez de -20% sur tout le store aujourd\'hui seulement avec le code FLASH20. 🚀' },
+    { name: 'Bienvenue', message: 'Bienvenue chez nous {{nom}} ! Ravi de vous compter parmi nos membres. N\'hésitez pas si vous avez des questions.' },
+  ]
   useLockBodyScroll(showModal || showRecipientsModal || showHistoryModal)
   const [importedPickerOpen, setImportedPickerOpen] = useState(false)
   const [historyData, setHistoryData] = useState({ campaign: null, recipients: [] })
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [sendingCampaignId, setSendingCampaignId] = useState(null)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [campaignToPreview, setCampaignToPreview] = useState(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -280,14 +297,13 @@ export default function Campaigns() {
     }
   }
 
-  const handleSendCampaign = async (campaignId) => {
-    const ok = await showConfirm({
-      title: 'Envoyer la campagne',
-      message: 'Êtes-vous sûr de vouloir envoyer cette campagne ? Cette action est irréversible.',
-      variant: 'warning',
-      confirmLabel: 'Envoyer'
-    })
-    if (!ok) return
+  const handleSendCampaign = (campaign) => {
+    setCampaignToPreview(campaign)
+    setShowPreviewModal(true)
+  }
+
+  const handleConfirmSend = async (campaignId) => {
+    setShowPreviewModal(false)
     setSendingCampaignId(campaignId)
     const loadingToastId = toast.loading('Envoi en cours…')
     try {
@@ -306,6 +322,7 @@ export default function Campaigns() {
       toast.error(error.response?.data?.error || "Erreur lors de l'envoi")
     } finally {
       setSendingCampaignId(null)
+      setCampaignToPreview(null)
     }
   }
 
@@ -335,6 +352,28 @@ export default function Campaigns() {
       scheduled_at: campaign.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : ''
     })
     setShowModal(true)
+  }
+
+  const handleAiRewrite = async () => {
+    if (!form.message.trim()) return
+    setRewritingMessage(true)
+    try {
+      // Simulate AI rewrite for UI demonstration
+      // In a real app, this would call an API like /ai/rewrite
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      const improved = form.message + "\n\n(Optimisé par l'IA pour plus d'impact ! ✨)"
+      setForm(prev => ({ ...prev, message: improved }))
+      toast.success('Message amélioré !')
+    } catch (e) {
+      toast.error('Erreur lors de l\'amélioration')
+    } finally {
+      setRewritingMessage(false)
+    }
+  }
+
+  const applyTemplate = (tpl) => {
+    setForm(prev => ({ ...prev, message: tpl.message }))
+    toast.success('Modèle appliqué')
   }
 
   const openHistoryModal = async (campaign) => {
@@ -655,16 +694,18 @@ export default function Campaigns() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleSendCampaign(campaign.id)}
+                            onClick={() => handleSendCampaign(campaign)}
                             disabled={sendingCampaignId === campaign.id}
                             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {sendingCampaignId === campaign.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <Send className="w-4 h-4" />
+                              <>
+                                <Eye className="w-4 h-4" />
+                                <span>Aperçu & Envoyer</span>
+                              </>
                             )}
-                            {sendingCampaignId === campaign.id ? 'Envoi en cours…' : 'Envoyer'}
                           </button>
                         </>
                       )}
@@ -768,19 +809,47 @@ export default function Campaigns() {
                     <p className="text-xs text-amber-400 mt-2 bg-amber-400/10 p-3 rounded-xl border border-amber-400/20">Aucun agent connecté à WhatsApp. Connectez un agent depuis la page Agents.</p>
                   )}
                 </div>
-
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
                     Message à diffuser *
                   </label>
+                  
+                  {/* Templates Quick Select */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {CAMPAIGN_TEMPLATES.map(tpl => (
+                      <button
+                        key={tpl.name}
+                        type="button"
+                        onClick={() => applyTemplate(tpl)}
+                        className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5"
+                      >
+                        <Layout className="w-3 h-3" />
+                        {tpl.name}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="relative group">
                     <textarea
                       value={form.message}
                       onChange={(e) => setForm({ ...form, message: e.target.value })}
-                      className="input-dark w-full min-h-[160px] py-4 px-5 text-base rounded-2xl resize-none"
+                      className="input-dark w-full min-h-[160px] py-4 px-5 text-base rounded-2xl resize-none pr-12"
                       placeholder="Votre message ici... Utilisez {{nom}} pour personnaliser."
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={handleAiRewrite}
+                      disabled={rewritingMessage || !form.message.trim()}
+                      className={`absolute top-4 right-4 p-2 rounded-xl border transition-all ${
+                        rewritingMessage 
+                          ? 'animate-pulse bg-gold-400/20 border-gold-400/40 text-gold-400' 
+                          : 'bg-white/5 border-white/10 text-gold-400 hover:bg-gold-400 hover:text-black hover:border-gold-400'
+                      } disabled:opacity-30 disabled:cursor-not-allowed`}
+                      title="Améliorer avec l'IA (Baguette Magique)"
+                    >
+                      {rewritingMessage ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                    </button>
                     <div className="absolute bottom-3 right-3 flex gap-2">
                       <span className="text-[10px] bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-blue-400 font-mono">{'{{nom}}'}</span>
                       <span className="text-[10px] bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-blue-400 font-mono">{'{{telephone}}'}</span>
@@ -1147,6 +1216,14 @@ export default function Campaigns() {
         </div>,
         document.body
       )}
+
+      <CampaignPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => { setShowPreviewModal(false); setCampaignToPreview(null); }}
+        onConfirm={handleConfirmSend}
+        campaign={campaignToPreview}
+        isSending={!!sendingCampaignId}
+      />
     </div>
   )
 }

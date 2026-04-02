@@ -50,61 +50,66 @@ import {
   Crown,
   Radio,
 } from 'lucide-react'
+import GlobalAIAssistant from '../components/AI/GlobalAIAssistant'
 
 
-// ─── Navigation config ───────────────────────────────────────────────────────
 const navigationGroups = [
   {
     nameKey: 'nav.main',
+    title: 'Vue globale',
     items: [
-      { nameKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
-      { nameKey: 'nav.analytics', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
-      { nameKey: 'nav.notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
+      { nameKey: 'nav.dashboard', title: 'Accueil', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+      { nameKey: 'nav.notifications', title: 'Mes notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
     ]
   },
   {
-    nameKey: 'nav.crm',
-    icon: Users,
-    items: [
-      { nameKey: 'nav.leads', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
-      { nameKey: 'nav.deals', href: '/dashboard/deals', icon: Briefcase, tourId: 'nav-deals' },
-      { nameKey: 'nav.orders', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
-    ]
-  },
-  {
-    nameKey: 'nav.agentsAndMessages',
+    nameKey: 'nav.engage',
+    title: '💬 Discuter & Interagir',
     icon: MessageSquare,
     items: [
-      { nameKey: 'nav.agents', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
-      { nameKey: 'nav.conversations', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
-      { nameKey: 'nav.knowledge', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
+      { nameKey: 'nav.conversations', title: 'Boîte de réception', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
+      { nameKey: 'nav.campaigns', title: 'Lancer une campagne', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
+      { nameKey: 'nav.templates', title: 'Modèles de messages', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
     ]
   },
   {
-    nameKey: 'nav.marketing',
-    icon: Send,
+    nameKey: 'nav.ai_agents',
+    title: '🤖 Mes Assistantes IA',
+    icon: Bot,
     items: [
-      { nameKey: 'nav.campaigns', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
-      { nameKey: 'nav.templates', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
-      { nameKey: 'nav.whatsappStatus', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
+      { nameKey: 'nav.agents', title: 'Gérer mes équipes IA', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
+      { nameKey: 'nav.knowledge', title: 'Leur apprendre des choses', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
+      { nameKey: 'nav.flowBuilder', title: 'Leur comportement', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
     ]
   },
   {
-    nameKey: 'nav.productsAndServices',
-    icon: Package,
+    nameKey: 'nav.sales',
+    title: '🛍️ Gérer mes Ventes',
+    icon: ShoppingCart,
     items: [
-      { nameKey: 'nav.products', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
-      { nameKey: 'nav.services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
-      { nameKey: 'nav.tools', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
+      { nameKey: 'nav.leads', title: 'Mes contacts', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
+      { nameKey: 'nav.products', title: 'Mon catalogue', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.orders', title: 'Mes commandes', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
     ]
   },
   {
-    nameKey: 'nav.automation',
-    icon: Zap,
+    nameKey: 'nav.metrics',
+    title: '📊 Suivre mes Chiffres',
+    icon: Activity,
     items: [
-      { nameKey: 'nav.workflows', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
-      { nameKey: 'nav.flowBuilder', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
-      { nameKey: 'nav.reports', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
+      { nameKey: 'nav.analytics', title: 'Statistiques', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
+      { nameKey: 'nav.reports', title: 'Bilan complet', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
+    ]
+  },
+  {
+    nameKey: 'nav.settings',
+    title: '⚙️ Configuration',
+    icon: Wrench,
+    items: [
+      { nameKey: 'nav.tools', title: 'Téléphones (WhatsApp)', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
+      { nameKey: 'nav.whatsappStatus', title: 'Statuts WhatsApp', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
+      { nameKey: 'nav.workflows', title: 'Règles automatiques', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
+      { nameKey: 'nav.services', title: 'Services connectés', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
     ]
   },
 ]
@@ -267,7 +272,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                 <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
                 {(!collapsed || isMobile) && (
                   <div className="flex-1 flex items-center justify-between min-w-0">
-                    <span className="truncate">{t(item.nameKey)}</span>
+                    <span className="truncate">{item.title || t(item.nameKey)}</span>
                     {item.href === '/dashboard/notifications' && unreadCount > 0 && (
                       <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -308,7 +313,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
         >
           <span className="flex items-center gap-2.5 min-w-0">
             {group.icon && <group.icon className={`w-4 h-4 flex-shrink-0 ${isGroupActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400'}`} />}
-            <span className="truncate text-sm font-medium">{t(group.nameKey)}</span>
+            <span className="truncate text-sm font-medium">{group.title || t(group.nameKey)}</span>
           </span>
           <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${shouldBeOpen ? 'rotate-90' : ''}`} />
         </button>
@@ -339,7 +344,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                   <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
                   {(!collapsed || isMobile) && (
                     <div className="flex-1 flex items-center justify-between min-w-0">
-                      <span className="truncate">{t(item.nameKey)}</span>
+                      <span className="truncate">{item.title || t(item.nameKey)}</span>
                       {item.href === '/dashboard/notifications' && unreadCount > 0 && (
                         <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
                           {unreadCount > 99 ? '99+' : unreadCount}
@@ -1240,6 +1245,7 @@ export default function DashboardLayout() {
             <Logo />
           </div>
           <div className="flex items-center gap-1.5">
+            <GlobalAIAssistant />
             <TrialBadge user={user} isDark={isDark} />
             <ThemeToggle size="sm" />
             {!isInfluencerOnly && (
@@ -1275,6 +1281,7 @@ export default function DashboardLayout() {
 
           {/* Right: actions */}
           <div className="flex items-center gap-1.5">
+            <GlobalAIAssistant />
             <TrialBadge user={user} isDark={isDark} />
             <LanguageSwitcher />
             {/* Credits pill */}
