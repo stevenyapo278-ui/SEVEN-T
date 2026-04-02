@@ -178,6 +178,11 @@ export default function UsersContent({
                                     Gérant
                                   </span>
                                 )}
+                                {user.is_influencer === 1 && (
+                                  <span className="px-1.5 py-0.5 rounded-md bg-gold-400/10 text-gold-400 text-[10px] font-bold uppercase tracking-wider border border-gold-400/20">
+                                    Influenceur
+                                  </span>
+                                )}
                                 {hasManagers && !isExpanded && (
                                   <button onClick={() => setTeamModal({ open: true, owner: user })} className="px-1.5 py-0.5 rounded-md bg-gold-400/10 text-gold-400 text-[9px] font-bold border border-gold-400/20 hover:bg-gold-400/20">
                                     {user.managers_count} ÉQUIPE

@@ -159,7 +159,8 @@ router.get('/users', authenticateAdmin, requirePermission('users.read'), async (
                     JOIN conversations c ON m.conversation_id = c.id 
                     JOIN agents a ON c.agent_id = a.id 
                     WHERE a.user_id = u.id) as messages_count,
-                   (SELECT COUNT(*) FROM users WHERE parent_user_id = u.id) as managers_count
+                   (SELECT COUNT(*) FROM users WHERE parent_user_id = u.id) as managers_count,
+                   (SELECT 1 FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE ur.user_id = u.id AND r.key = 'influencer' LIMIT 1) as is_influencer
             FROM users u
             LEFT JOIN users p ON u.parent_user_id = p.id
             WHERE 1=1
@@ -527,31 +528,6 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             });
         }
         
-        // Auto-generate influencer coupon if requested during update
-        if (req.body.generate_coupon) {
-            const existingCoupon = await db.get('SELECT id FROM subscription_coupons WHERE influencer_id = ? AND is_active = 1', req.params.id);
-            
-            if (!existingCoupon) {
-                const userName = name || existing.name;
-                const couponCode = `${userName.substring(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
-                const couponId = uuidv4();
-                
-                // On crée le coupon avec une commission de 20% par défaut pour l'influenceur
-                await db.run(`
-                    INSERT INTO subscription_coupons (
-                        id, name, code, discount_type, discount_value, max_uses, is_active, 
-                        influencer_id, bonus_credits, influencer_reward_type, influencer_reward_value
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, couponId, `Coupon ${userName}`, couponCode, 'percentage', 10, null, 1, req.params.id, 500, 'percentage', 20.0);
-            }
-
-            // On s'assure que l'utilisateur a le rôle influenceur
-            const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
-            if (influencerRole) {
-                await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING', req.params.id, influencerRole.id);
-            }
-        }
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         const { password: _p, ...userWithoutPassword } = user;
@@ -866,8 +842,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             flows_module_enabled, whatsapp_status_enabled,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             parent_user_id,
-            roles,
-            generate_coupon
+            roles
         } = req.body;
 
         if (!name || !email || !password) {
@@ -948,25 +923,6 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             }
         }
 
-        // Auto-generate influencer coupon if requested
-        if (generate_coupon) {
-            const couponCode = `${name.substring(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
-            const couponId = uuidv4();
-            // On crée le coupon avec 10% pour le client et 20% de commission pour l'influenceur
-            await db.run(`
-                INSERT INTO subscription_coupons (
-                    id, name, code, discount_type, discount_value, max_uses, is_active, 
-                    influencer_id, bonus_credits, influencer_reward_type, influencer_reward_value
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, couponId, `Coupon ${name}`, couponCode, 'percentage', 10, null, 1, userId, 500, 'percentage', 20.0);
-
-            // Ensure user has influencer role
-            const influencerRole = await db.get("SELECT id FROM roles WHERE key = 'influencer'");
-            if (influencerRole) {
-                await db.run('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING', userId, influencerRole.id);
-            }
-        }
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         const { password: pwd, ...userWithoutPassword } = user;

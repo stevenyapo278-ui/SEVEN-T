@@ -1433,18 +1433,6 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
             </div>
           </div>
           <div className="flex flex-col gap-3 py-2">
-            <label className="flex items-center gap-2 cursor-pointer bg-blue-500/5 p-3 rounded-xl border border-blue-500/10 hover:bg-blue-500/10 transition-colors">
-              <input
-                type="checkbox"
-                checked={formData.generate_coupon}
-                onChange={(e) => setFormData({ ...formData, generate_coupon: e.target.checked })}
-                className="w-5 h-5 rounded border-space-700 bg-space-800 text-gold-400 focus:ring-gold-400"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-gold-400">Créer un coupon d'influenceur</span>
-                <span className="text-[10px] text-gray-500">Génère automatiquement un code promo et assigne le rôle Influenceur</span>
-              </div>
-            </label>
 
             <label className="flex items-center gap-2 cursor-pointer py-2">
               <input
@@ -1685,7 +1673,6 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
     can_manage_ai: 0,
     can_manage_tickets: 0,
     ...Object.fromEntries(PLAN_MODULES.map(m => [m.key, false])),
-    generate_coupon: false,
     roles: []
   })
 
