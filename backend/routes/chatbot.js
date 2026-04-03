@@ -49,27 +49,10 @@ router.post('/message', async (req, res) => {
             userId
         );
 
-        // Parse structured JSON from AI response
-        let parsed = null;
-        const rawContent = aiResult?.content || '';
-
-        try {
-            // Extract JSON from response (AI sometimes wraps in markdown code blocks)
-            const jsonMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || rawContent.match(/(\{[\s\S]*\})/);
-            const jsonStr = jsonMatch ? jsonMatch[1] : rawContent;
-            parsed = JSON.parse(jsonStr);
-        } catch {
-            // Fallback: treat as plain text response
-            parsed = {
-                response: rawContent,
-                action: null
-            };
-        }
-
         res.json({
-            response: parsed.response || parsed.message || rawContent,
-            action: parsed.action || null,
-            rawText: rawContent,
+            response: aiResult.content || "Désolé, je n'ai pas pu générer de réponse.",
+            action: aiResult.action || null,
+            rawText: aiResult.content,
             model: bestModel?.model_id || 'unknown'
         });
 

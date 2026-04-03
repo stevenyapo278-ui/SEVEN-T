@@ -327,10 +327,17 @@ class AIService {
             response.credits_remaining = deduction.credits_remaining;
 
             try {
-                await db.run(`
-                    INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `, uuidv4(), modelIdForCredits, userId, agent.id, tokensUsed, deduction.cost || 0, 1, response.response_time || 0);
+                // Check if agent exists before inserting usage (internal-chatbot doesn't exist in DB)
+                const agentExists = await db.get('SELECT id FROM agents WHERE id = ?', agent.id);
+                if (agentExists) {
+                    await db.run(`
+                        INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    `, uuidv4(), modelIdForCredits, userId, agent.id, tokensUsed, deduction.cost || 0, 1, response.response_time || 0);
+                } else {
+                    // Log without agent_id or use a special marker if needed, but here we just log to console
+                    console.log(`[AI] Usage for non-DB agent (${agent.id}): ${tokensUsed} tokens`);
+                }
             } catch (e) {
                 console.error('[AI] Stats log error:', e.message);
             }
@@ -810,6 +817,7 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
         return {
             content: validated.content,
             need_human: validated.need_human,
+            action: validated.action || null,
             tokens: tokensUsed,
             provider: 'gemini',
             model: geminiModel,
@@ -882,8 +890,8 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             errors.push('Field "response" cannot be empty');
         }
         
-        if ('need_human' in obj && typeof obj.need_human !== 'boolean') {
-            errors.push('Field "need_human" must be a boolean');
+        if ('need_human' in obj && typeof obj.need_human !== 'boolean' && typeof obj.need_human !== 'string') {
+            errors.push('Field "need_human" must be a boolean or string');
         }
         
         if ('confidence' in obj) {
@@ -917,9 +925,10 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
         
         const normalizeParsed = (obj) => ({
             response: obj.response,
-            need_human: Boolean(obj.need_human ?? obj.need_confirmation),
+            need_human: obj.need_human === true || obj.need_human === 'true' || obj.need_confirmation === true || obj.need_confirmation === 'true',
             confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined,
-            booking: obj.booking || null
+            booking: obj.booking || null,
+            action: obj.action || null
         });
 
         // Try 1: Direct JSON parse
@@ -1066,7 +1075,7 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             });
         }
         
-        return { content, need_human };
+        return { content, need_human, action: parsed.action || null };
     }
 
     /**
@@ -1362,6 +1371,7 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
         return {
             content: validated.content,
             need_human: validated.need_human,
+            action: validated.action || null,
             tokens: tokensUsed,
             provider: 'openai',
             model: openaiModel
@@ -1472,6 +1482,7 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
                 return {
                     content: validated.content,
                     need_human: validated.need_human,
+                    action: validated.action || null,
                     tokens: tokensUsed,
                     provider: 'openrouter',
                     model: modelName
