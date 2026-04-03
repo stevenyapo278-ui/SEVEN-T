@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
 import { useOnboardingTour } from '../components/Onboarding'
+import { useModuleAvailability } from '../hooks/useModuleAvailability'
 import { AnimatePresence, motion } from 'framer-motion'
 import api from '../services/api'
 import { saveSessionLocation } from '../utils/sessionLocation'
@@ -931,11 +932,17 @@ export default function DashboardLayout() {
   const [isAssistedConfigOpen, setIsAssistedConfigOpen] = useState(false)
   const [assistedConfigData, setAssistedConfigData] = useState(null)
 
-  const isInfluencerOnly = useMemo(() => {
-    if (!user) return false;
-    // Use the server-computed flag for reliability
-    return user.influencer_only === true;
-  }, [user]);
+  const {
+    payment: paymentModuleEnabled,
+    analytics: analyticsModuleEnabled,
+    reports: reportsModuleEnabled,
+    flows: flowsModuleEnabled,
+    leads: leadsModuleEnabled,
+    whatsappStatus: whatsappStatusModuleEnabled,
+    knowledgeBase: knowledgeBaseModuleEnabled,
+    isAdmin,
+    isInfluencerOnly
+  } = useModuleAvailability();
 
   const fetchUnreadCounts = async () => {
     try {
@@ -1103,38 +1110,6 @@ export default function DashboardLayout() {
         transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
       })
     }
-
-  const isEnabled = (key, feat, override) => {
-    // Vérification exhaustive des overrides (noms de colonnes possibles)
-    const isOverrideTrue = (
-      override === 1 || override === '1' || override === true ||
-      user[`${key}_enabled`] === 1 || user[`${key}_enabled`] === true ||
-      user[`${key}_module_enabled`] === 1 || user[`${key}_module_enabled`] === true
-    );
-    const isOverrideFalse = (
-      override === 0 || override === '0' ||
-      user[`${key}_enabled`] === 0 ||
-      user[`${key}_module_enabled`] === 0
-    );
-
-    // Propriétaires (ceux qui n'ont pas de parent) : Forfait (feat) OU Override True
-    // (L'override True gagne même si le forfait ne l'a pas, comme Starter + Analytics débloqué)
-    if (!user?.parent_user_id || user?.role === 'owner') {
-      if (isOverrideFalse) return false; // Bloqué manuellement
-      return !!feat || isOverrideTrue;
-    }
-
-    // Gérants : Uniquement si explicitement débloqué par le propriétaire
-    return isOverrideTrue;
-  }
-
-  const paymentModuleEnabled = isEnabled('payment', user?.plan_features?.payment_module, user?.payment_module_enabled)
-  const analyticsModuleEnabled = isEnabled('analytics', user?.plan_features?.analytics, user?.analytics_module_enabled)
-  const reportsModuleEnabled = isEnabled('reports', user?.plan_features?.reports, user?.reports_module_enabled)
-  const flowsModuleEnabled = isEnabled('flows', user?.plan_features?.flows, user?.flows_module_enabled)
-  const leadsModuleEnabled = isEnabled('leads_management', user?.plan_features?.leads_management, user?.leads_management_enabled)
-  const whatsappStatusModuleEnabled = isEnabled('whatsapp_status', user?.plan_features?.whatsapp_status, user?.whatsapp_status_enabled)
-  const knowledgeBaseModuleEnabled = isEnabled('knowledge_base', user?.plan_features?.knowledge_base, user?.knowledge_base_enabled)
 
 
 
