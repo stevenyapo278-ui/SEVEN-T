@@ -3581,11 +3581,22 @@ export async function runStatusSchedulerJob() {
                 });
 
                 try {
+                    const isRecurrent = (statusRow.recurrence_interval || 0) > 0;
+                    const nextStatus = isRecurrent ? 'scheduled' : 'sent';
+                    
+                    let nextScheduledAt = null;
+                    if (isRecurrent) {
+                        const currentScheduled = new Date(statusRow.scheduled_at || Date.now());
+                        nextScheduledAt = new Date(currentScheduled);
+                        nextScheduledAt.setDate(nextScheduledAt.getDate() + statusRow.recurrence_interval);
+                    }
+
                     await db.run(
-                        'UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ? WHERE id = ?', 
-                        'sent', 
+                        'UPDATE whatsapp_statuses SET status = ?, whatsapp_message_id = ?, whatsapp_message_key = ?, last_sent_at = CURRENT_TIMESTAMP, scheduled_at = ? WHERE id = ?', 
+                        nextStatus, 
                         result.messageId || null, 
                         result.key ? JSON.stringify(result.key) : null, 
+                        nextScheduledAt ? nextScheduledAt.toISOString() : statusRow.scheduled_at,
                         statusRow.id
                     );
                 } catch (dbErr) {
@@ -3593,7 +3604,16 @@ export async function runStatusSchedulerJob() {
                 }
             } catch (error) {
                 console.error(`[StatusScheduler] Failed to send status ${statusRow.id}:`, error);
-                await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+                // If it's recurrent, we might want to try again later at the next interval instead of failing forever
+                const isRecurrent = (statusRow.recurrence_interval || 0) > 0;
+                if (isRecurrent) {
+                    const currentScheduled = new Date(statusRow.scheduled_at || Date.now());
+                    const nextScheduledAt = new Date(currentScheduled);
+                    nextScheduledAt.setDate(nextScheduledAt.getDate() + statusRow.recurrence_interval);
+                    await db.run('UPDATE whatsapp_statuses SET scheduled_at = ?, last_sent_at = CURRENT_TIMESTAMP WHERE id = ?', nextScheduledAt.toISOString(), statusRow.id);
+                } else {
+                    await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+                }
             }
         }
     } catch (error) {

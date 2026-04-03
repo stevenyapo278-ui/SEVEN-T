@@ -725,6 +725,8 @@ export async function initDatabase() {
             font INTEGER,
             status TEXT DEFAULT 'scheduled',
             scheduled_at TIMESTAMP,
+            recurrence_interval INTEGER DEFAULT 0, -- Days between updates, 0 = no recurrence
+            last_sent_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
@@ -797,6 +799,9 @@ export async function initDatabase() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
+        -- Add column if it doesn't exist
+        ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS recurrence_interval INTEGER DEFAULT 0;
+        ALTER TABLE whatsapp_statuses ADD COLUMN IF NOT EXISTS last_sent_at TIMESTAMP;
 
         CREATE TABLE IF NOT EXISTS workflow_logs (
             id TEXT PRIMARY KEY,

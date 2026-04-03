@@ -339,11 +339,13 @@ async function start() {
                 runDailyBriefingJob().catch(err => console.error('[DailyBriefing] Job error:', err?.message));
                 runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
                 runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
+                runStatusSchedulerJob().catch(err => console.error('[StatusScheduler] Job error:', err?.message));
             }, 60 * 60 * 1000);
             
             // Frequent check for scheduled campaigns (every 5 minutes)
             setInterval(() => {
                 runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
+                runStatusSchedulerJob().catch(err => console.error('[StatusScheduler] Job error:', err?.message));
             }, 5 * 60 * 1000);
 
             // Run once shortly after startup
@@ -351,6 +353,7 @@ async function start() {
                 runDailyBriefingJob().catch(err => console.error('[DailyBriefing] Job error:', err?.message));
                 runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
                 runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
+                runStatusSchedulerJob().catch(err => console.error('[StatusScheduler] Job error:', err?.message));
             }, 30 * 1000);
         });
     } catch (error) {

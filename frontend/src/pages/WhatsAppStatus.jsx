@@ -164,6 +164,7 @@ export default function WhatsAppStatus() {
   // Scheduling
   const [isScheduled, setIsScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(null)
+  const [recurrenceInterval, setRecurrenceInterval] = useState(0)
 
   // Products
   const [products, setProducts] = useState([])
@@ -226,6 +227,7 @@ export default function WhatsAppStatus() {
         const payload = {
           type: isImage ? 'image' : 'text',
           scheduled_at: isScheduled ? scheduledAt.toISOString() : null,
+          recurrence_interval: isScheduled ? recurrenceInterval : 0,
           ...(isImage ? {
             mediaUrl: product.image_url,
             caption: `${product.name} - ${product.price} XOF`
@@ -348,6 +350,7 @@ export default function WhatsAppStatus() {
       const payload = {
         type: tab,
         scheduled_at: isScheduled ? scheduledAt.toISOString() : null,
+        recurrence_interval: isScheduled ? recurrenceInterval : 0,
         ...(tab === 'text' && { text: text.trim(), backgroundColor, font }),
         ...(tab !== 'text' && { mediaUrl: finalMediaUrl, caption: caption.trim() }),
       }
@@ -367,6 +370,7 @@ export default function WhatsAppStatus() {
       setCaption('')
       setIsScheduled(false)
       setScheduledAt(null)
+      setRecurrenceInterval(0)
 
       loadHistoryData()
     } catch (error) {
@@ -793,6 +797,47 @@ export default function WhatsAppStatus() {
                         placeholderText="Sélectionner la date..."
                         popperPlacement="bottom-end"
                       />
+                  </div>
+              )}
+
+              {isScheduled && (
+                  <div className={`mt-4 pt-4 border-t border-dashed ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+                      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                          <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                              Répéter ce statut
+                          </label>
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                              <select
+                                  value={recurrenceInterval === 0 ? "0" : ( [1, 2, 7].includes(recurrenceInterval) ? recurrenceInterval.toString() : "custom" )}
+                                  onChange={(e) => {
+                                      const val = e.target.value;
+                                      if (val === "custom") setRecurrenceInterval(3);
+                                      else setRecurrenceInterval(parseInt(val));
+                                  }}
+                                  className="input-dark py-2 px-3 rounded-lg text-xs"
+                              >
+                                  <option value="0">Une seule fois</option>
+                                  <option value="1">Tous les jours</option>
+                                  <option value="2">Tous les 2 jours</option>
+                                  <option value="7">Toutes les semaines</option>
+                                  <option value="custom">Personnalisé...</option>
+                              </select>
+                              {![0, 1, 2, 7].includes(recurrenceInterval) && (
+                                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                                      <span className="text-xs">tous les</span>
+                                      <input
+                                          type="number"
+                                          min="1"
+                                          max="365"
+                                          value={recurrenceInterval}
+                                          onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
+                                          className="input-dark w-16 py-2 px-2 text-center rounded-lg text-xs"
+                                      />
+                                      <span className="text-xs">jours</span>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
                   </div>
               )}
           </div>

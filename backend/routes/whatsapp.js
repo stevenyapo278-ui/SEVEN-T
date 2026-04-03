@@ -690,7 +690,7 @@ router.delete('/statuses/:id', authenticateToken, async (req, res) => {
 // Send or schedule a WhatsApp Status (Story) - broadcasts to status@broadcast
 router.post('/status/:agentId', authenticateToken, async (req, res) => {
     try {
-        const { type, text, backgroundColor, font, mediaUrl, caption, mimeType, scheduled_at } = req.body;
+        const { type, text, backgroundColor, font, mediaUrl, caption, mimeType, scheduled_at, recurrence_interval } = req.body;
 
         const resolved = await resolveToolAndAgent(req.user.ownerId, req.params.agentId);
         if (resolved.error) {
@@ -714,9 +714,9 @@ router.post('/status/:agentId', authenticateToken, async (req, res) => {
         const finalStatus = isScheduled ? 'scheduled' : 'sent';
 
         await db.run(`
-            INSERT INTO whatsapp_statuses (id, user_id, agent_id, type, content, caption, mime_type, background_color, font, status, scheduled_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, statusId, req.user.ownerId, req.params.agentId, type || 'text', contentStr, caption || null, mimeType || null, backgroundColor || null, font || null, finalStatus, isScheduled ? scheduled_at : null);
+            INSERT INTO whatsapp_statuses (id, user_id, agent_id, type, content, caption, mime_type, background_color, font, status, scheduled_at, recurrence_interval)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, statusId, req.user.ownerId, req.params.agentId, type || 'text', contentStr, caption || null, mimeType || null, backgroundColor || null, font || null, finalStatus, isScheduled ? scheduled_at : null, recurrence_interval || 0);
 
         // If it's scheduled for the future, we return immediately
         if (isScheduled) {

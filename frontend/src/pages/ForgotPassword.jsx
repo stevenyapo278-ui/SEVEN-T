@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Mail, ArrowRight, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../services/api'
+import { useTheme } from '../contexts/ThemeContext'
 
 // Logo du SaaS (fichier public/logo.svg)
 const Logo = () => (
@@ -16,6 +17,8 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState(null)
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,7 +40,9 @@ export default function ForgotPassword() {
 
   return (
     <div
-      className="min-h-screen bg-space-950 flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden overflow-y-auto"
+      className={`min-h-screen flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 relative overflow-x-hidden overflow-y-auto transition-colors duration-300 ${
+        isDark ? 'bg-space-950' : 'bg-gray-50'
+      }`}
       style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
     >
       {/* Background effects */}
@@ -50,10 +55,10 @@ export default function ForgotPassword() {
         <Link to="/" className="flex items-center justify-center mb-6 sm:mb-8">
           <Logo />
         </Link>
-        <h2 className="text-center text-2xl sm:text-3xl font-display font-bold text-gray-100">
+        <h2 className={`text-center text-2xl sm:text-3xl font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           Mot de passe oublié
         </h2>
-        <p className="mt-2 text-center text-sm sm:text-base text-gray-400 px-1">
+        <p className={`mt-2 text-center text-sm sm:text-base px-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           Entrez votre email pour recevoir un lien de réinitialisation
         </p>
       </div>
@@ -80,11 +85,13 @@ export default function ForgotPassword() {
           </div>
         )}
 
-        <div className="card py-6 sm:py-8 px-4 sm:px-10">
+        <div className={`card py-6 sm:py-8 px-4 sm:px-10 transition-all ${
+          isDark ? '' : 'bg-white border-gray-100 shadow-xl'
+        }`}>
           {!sent ? (
             <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+                <label htmlFor="email" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                   Email
                 </label>
                 <div className="input-with-icon">
@@ -133,8 +140,8 @@ export default function ForgotPassword() {
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-bold text-gray-100">Email envoyé !</h3>
-                <p className="text-gray-400">
+                <h3 className={`text-xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Email envoyé !</h3>
+                <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                   Si un compte correspond à <strong>{email}</strong>, vous recevrez un email avec les instructions pour réinitialiser votre mot de passe d'ici quelques minutes.
                 </p>
               </div>

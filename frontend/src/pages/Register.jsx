@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Mail, Lock, User, Building, ArrowRight, Sparkles, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AnimatedBackground from '../components/AnimatedBackground'
+import { useTheme } from '../contexts/ThemeContext'
 import toast from 'react-hot-toast'
 
 const GOOGLE_LOGIN_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '') ? `${import.meta.env.VITE_API_URL}/auth/google` : '/api/auth/google'
@@ -23,6 +24,8 @@ export default function Register() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { register } = useAuth()
   const navigate = useNavigate()
 
@@ -63,7 +66,9 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-space-950/50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className={`min-h-screen flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300 ${
+      isDark ? 'bg-space-950/50' : 'bg-gray-50'
+    }`}>
       <AnimatedBackground />
 
       <motion.div 
@@ -76,17 +81,19 @@ export default function Register() {
           <Link to="/" className="inline-flex items-center justify-center mb-6 hover:scale-105 transition-transform duration-300">
             <Logo />
           </Link>
-          <h2 className="text-3xl sm:text-4xl font-display font-bold text-white tracking-tight">
+          <h2 className={`text-3xl sm:text-4xl font-display font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Prêt à commencer ?
           </h2>
-          <p className="mt-3 text-gray-400">
+          <p className={`mt-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Rejoignez SEVEN-T et propulsez votre business avec l'IA
           </p>
         </motion.div>
 
         <motion.div 
           variants={itemVariants}
-          className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-[2rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden group"
+          className={`backdrop-blur-xl border rounded-[2rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden group transition-all ${
+            isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-white border-gray-100'
+          }`}
         >
           {/* Subtle inner glow */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-400/20 to-transparent" />
@@ -103,7 +110,9 @@ export default function Register() {
                 <input
                   id="name" name="name" type="text" required value={formData.name}
                   onChange={handleChange} placeholder="Jean Dupont"
-                  className="w-full pl-12 pr-4 py-3 bg-space-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-2xl placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm ${
+                    isDark ? 'bg-space-900/50 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                 />
               </div>
             </div>
@@ -119,7 +128,9 @@ export default function Register() {
                 <input
                   id="email" name="email" type="email" required value={formData.email}
                   onChange={handleChange} placeholder="vous@entreprise.com"
-                  className="w-full pl-12 pr-4 py-3 bg-space-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-2xl placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm ${
+                    isDark ? 'bg-space-900/50 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                 />
               </div>
             </div>
@@ -135,7 +146,9 @@ export default function Register() {
                 <input
                   id="password" name="password" type={showPassword ? "text" : "password"} required minLength={6}
                   value={formData.password} onChange={handleChange} placeholder="••••••••"
-                  className="w-full pl-12 pr-12 py-3 bg-space-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm"
+                  className={`w-full pl-12 pr-12 py-3 border rounded-2xl placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm ${
+                    isDark ? 'bg-space-900/50 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                 />
                 <button
                   type="button"
@@ -158,19 +171,21 @@ export default function Register() {
                 <input
                   id="company" name="company" type="text" value={formData.company}
                   onChange={handleChange} placeholder="Ma Société"
-                  className="w-full pl-12 pr-4 py-3 bg-space-900/50 border border-white/10 rounded-2xl text-white placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-2xl placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm ${
+                    isDark ? 'bg-space-900/50 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                 />
               </div>
             </div>
 
-            <div className={`p-4 rounded-xl bg-white/5 border border-white/10 transition-all ${acceptTerms ? 'border-gold-400/30' : ''}`}>
+            <div className={`p-4 rounded-xl border transition-all ${isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'} ${acceptTerms && isDark ? 'border-gold-400/30' : acceptTerms ? 'border-gold-400/50' : ''}`}>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded border-white/20 bg-space-900 text-gold-400 focus:ring-gold-400/50 transition-colors"
+                  className={`mt-1 w-4 h-4 rounded border-white/20 text-gold-400 focus:ring-gold-400/50 transition-colors ${isDark ? 'bg-space-900' : 'bg-white'}`}
                 />
-                <span className="text-xs text-gray-400 leading-relaxed font-medium">
-                  J'accepte les <Link to="/legal?tab=terms" className="text-gold-400 hover:text-gold-300 underline font-bold transition-colors">Conditions d'Utilisation</Link> et la <Link to="/legal?tab=privacy" className="text-gold-400 hover:text-gold-300 underline font-bold transition-colors">Politique de Confidentialité</Link>.
+                <span className={`text-xs leading-relaxed font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  J'accepte les <Link to="/legal?tab=terms" className="text-gold-400 hover:text-gold-500 underline font-bold transition-colors">Conditions d'Utilisation</Link> et la <Link to="/legal?tab=privacy" className="text-gold-400 hover:text-gold-500 underline font-bold transition-colors">Politique de Confidentialité</Link>.
                 </span>
               </label>
             </div>
@@ -193,16 +208,18 @@ export default function Register() {
             </motion.button>
 
             <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5" /></div>
-              <div className="relative flex justify-center text-[10px] font-bold uppercase tracking-widest text-gray-600">
-                <span className="px-3 bg-transparent">Ou continuer avec</span>
+              <div className="absolute inset-0 flex items-center"><div className={`w-full border-t ${isDark ? 'border-white/5' : 'border-gray-100'}`} /></div>
+              <div className={`relative flex justify-center text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                <span className={`px-3 ${isDark ? 'bg-transparent' : 'bg-white'}`}>Ou s'inscrire avec</span>
               </div>
             </div>
 
             <motion.a
-              whileHover={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+              whileHover={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)' }}
               href={GOOGLE_LOGIN_URL}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl border border-white/10 bg-transparent text-gray-200 font-medium transition-all text-sm"
+              className={`w-full flex items-center justify-center gap-3 px-4 py-3 rounded-2xl border transition-all text-sm ${
+                isDark ? 'border-white/10 bg-transparent text-gray-200' : 'border-gray-200 bg-white text-gray-700'
+              }`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -215,9 +232,9 @@ export default function Register() {
           </form>
         </motion.div>
 
-        <motion.p variants={itemVariants} className="mt-8 text-center text-sm text-gray-500">
+        <motion.p variants={itemVariants} className={`mt-8 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
           Déjà un compte?{' '}
-          <Link to="/login" className="text-gold-400 hover:text-gold-300 font-bold transition-colors inline-flex items-center gap-1">
+          <Link to="/login" className="text-gold-400 hover:text-gold-500 font-bold transition-colors inline-flex items-center gap-1">
             Connectez-vous ici
           </Link>
         </motion.p>

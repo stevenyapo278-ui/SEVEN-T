@@ -24,6 +24,7 @@ import {
   Menu,
   X,
   Phone,
+  User,
 } from 'lucide-react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
@@ -51,53 +52,52 @@ const defaultPlans = [
 ]
 
 const features = [
-  {
     icon: Bot,
     darkBg: 'bg-blue-500/10 border-blue-500/15',
     lightBg: 'bg-blue-50 border-blue-200',
     iconColor: 'text-blue-500',
-    title: 'Agents IA intelligents',
-    description: 'Créez des assistants IA personnalisés qui répondent automatiquement à vos clients sur WhatsApp, 24h/24 et 7j/7.',
+    title: 'Agents IA Autonomes',
+    description: 'Vos assistantes IA ne se contentent pas de répondre, elles agissent : qualification, rendez-vous et vente directe.',
   },
   {
     icon: TrendingUp,
     darkBg: 'bg-amber-500/10 border-amber-500/15',
     lightBg: 'bg-amber-50 border-amber-200',
     iconColor: 'text-amber-500',
-    title: 'Qualification de leads',
-    description: 'Votre assistant qualifie vos prospects, prend des rendez-vous et suit chaque opportunité sans intervention humaine.',
+    title: 'Intelligence Commerciale',
+    description: 'Détection automatique des intentions d\'achat et segmentation intelligente de vos prospects WhatsApp.',
   },
   {
     icon: ShoppingCart,
     darkBg: 'bg-emerald-500/10 border-emerald-500/15',
     lightBg: 'bg-emerald-50 border-emerald-200',
     iconColor: 'text-emerald-500',
-    title: 'Commandes & catalogue',
-    description: 'Gérez un catalogue produit complet. L\'IA détecte les intentions d\'achat et crée les commandes automatiquement.',
+    title: 'Vente & Stock Temps Réel',
+    description: 'Vendez directement dans le chat. L\'IA gère les stocks, les paniers et génère les bons de commande.',
   },
   {
-    icon: BarChart3,
+    icon: Sparkles,
     darkBg: 'bg-purple-500/10 border-purple-500/15',
     lightBg: 'bg-purple-50 border-purple-200',
     iconColor: 'text-purple-500',
-    title: 'Analytics & rapports',
-    description: 'Suivez vos performances en temps réel. Conversations, leads, chiffre d\'affaires : tout dans un seul dashboard.',
+    title: 'Assistance 360°',
+    description: 'Un assistant global qui vous aide à piloter toute votre activité d\'une simple phrase naturelle.',
   },
   {
     icon: Globe,
     darkBg: 'bg-cyan-500/10 border-cyan-500/15',
     lightBg: 'bg-cyan-50 border-cyan-200',
     iconColor: 'text-cyan-500',
-    title: 'Multi-agents & canaux',
-    description: 'Gérez plusieurs agents et numéros WhatsApp depuis une seule plateforme. Idéal pour les équipes.',
+    title: 'Local & WhatsApp First',
+    description: 'Optimisé pour le marché africain : faible consommation de données et intégration WhatsApp transparente.',
   },
   {
     icon: Shield,
     darkBg: 'bg-rose-500/10 border-rose-500/15',
     lightBg: 'bg-rose-50 border-rose-200',
     iconColor: 'text-rose-500',
-    title: 'Sécurité & conformité',
-    description: 'Vos données sont chiffrées et sécurisées. Conforme RGPD et aux politiques de Meta / WhatsApp Business.',
+    title: 'Multi-numéros Sécurisé',
+    description: 'Gérez plusieurs lignes WhatsApp pour vos équipes avec une isolation totale des données clients.',
   },
 ]
 
@@ -564,24 +564,24 @@ export default function Landing() {
             </div>
 
             <h1 className={`hero-title mb-10 ${text}`}>
-              L'IA qui <span className="text-amber-500 italic">travaille</span>
+              L'IA qui n'automatise pas,
               <br />
-              quand <span className={isDark ? "opacity-60" : "opacity-80"}>vous dormez.</span>
+              elle <span className="text-amber-500 italic">ASSISTE</span> votre croissance.
             </h1>
 
             <p className={`hero-subtitle mb-14 text-lg md:text-xl font-medium px-4 ${isDark ? 'text-white/60' : 'text-gray-700'}`}>
-              Automatisez vos conversations WhatsApp, qualifiez vos leads et gérez vos ventes en toute simplicité. SEVEN T est le cerveau de votre relation client africaine.
+              Ne soyez plus seul pour gérer vos messages. SEVEN T est l'assistant intelligent qui qualifie vos leads, gère vos stocks et vend pour vous sur WhatsApp, 24h/24.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-20 w-full sm:w-auto">
               <Link to="/register"
                 className={`group flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] active:scale-95 ${
                   isDark
-                    ? 'bg-white text-black shadow-[0_20px_40px_-15px_rgba(255,255,255,0.3)]'
+                    ? 'bg-amber-500 text-black shadow-[0_20px_40px_-15px_rgba(245,158,11,0.4)]'
                     : 'bg-gray-900 text-white shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)]'
                 }`}>
                 Essayer gratuitement
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-white" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <button onClick={openDemo}
                 className={`group flex items-center justify-center gap-3 px-10 py-5 glass rounded-2xl font-bold text-lg transition-all hover:bg-white/5 active:scale-95 border ${isDark ? 'border-white/10' : 'border-gray-200'} ${text}`}>
@@ -628,6 +628,93 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── ASSISTED SAAS SHOWCASE ────────────────── */}
+      <section className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300 relative overflow-hidden`}>
+         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
+            <div className="grid md:grid-cols-2 gap-16 items-center">
+               <div>
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
+                    Concept Exclusif
+                  </div>
+                  <h2 className={`text-4xl md:text-5xl font-bold mb-8 leading-tight ${text}`}>
+                    L'expérience <span className="text-amber-500">Assisted SaaS</span>
+                  </h2>
+                  <p className={`text-lg mb-10 leading-relaxed ${textMuted}`}>
+                    Marre des logiciels compliqués ? SEVEN T est conçu pour vous assister, pas pour vous donner plus de travail.
+                  </p>
+                  
+                  <div className="space-y-8">
+                     {[
+                        { title: 'Intention, pas de clics', desc: 'Dites simplement "Crée une promo pour mes clients fidèles" et l\'IA s\'occupe du reste.' },
+                        { title: 'Assistant de Mission', desc: 'Besoin d\'un compte-rendu ou d\'un rapport ? Votre assistant global le génère en une commande.' },
+                        { title: 'Zéro Configuration', desc: 'Nos agents apprennent de vos documents et de votre site en quelques secondes.' },
+                     ].map((item, i) => (
+                        <div key={i} className="flex gap-5">
+                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
+                              <Check className="w-6 h-6 text-amber-500" />
+                           </div>
+                           <div>
+                              <h4 className={`font-bold mb-1 ${text}`}>{item.title}</h4>
+                              <p className={textMuted}>{item.desc}</p>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </div>
+               
+               <div className="relative">
+                  <div className={`relative rounded-3xl border p-2 glass overflow-hidden ${isDark ? 'border-white/10 shadow-2xl shadow-black/50' : 'border-gray-200 shadow-xl shadow-gray-200'}`}>
+                     <div className={`bg-space-950 p-6 rounded-2xl`}>
+                        <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                           <div className="w-2 h-2 rounded-full bg-red-400" />
+                           <div className="w-2 h-2 rounded-full bg-amber-400" />
+                           <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                           <div className="ml-2 px-3 py-1 rounded-lg bg-white/5 text-[10px] text-white/40 font-mono">search_assistant_v2.ai</div>
+                        </div>
+                        <div className="space-y-4">
+                           <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center">
+                                 <Bot className="w-4 h-4 text-amber-400" />
+                              </div>
+                              <div className="px-4 py-3 rounded-2xl bg-white/5 text-sm text-white/80 max-w-[80%]">
+                                 Bonjour ! Comment puis-je vous assister aujourd'hui ?
+                              </div>
+                           </div>
+                           <div className="flex items-start gap-3 flex-row-reverse">
+                              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                 <User className="w-4 h-4 text-blue-400" />
+                              </div>
+                              <div className="px-4 py-3 rounded-2xl bg-blue-500/10 text-sm text-white/90 border border-blue-500/20">
+                                 Crée un nouveau produit "Café Touba" à 1500 FCFA
+                              </div>
+                           </div>
+                           <div className="flex items-start gap-3">
+                               <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center">
+                                 <Bot className="w-4 h-4 text-amber-400" />
+                              </div>
+                              <div className="px-4 py-3 rounded-2xl bg-white/5 text-sm text-white/80 max-w-[80%] border border-emerald-500/20">
+                                 <div className="flex items-center gap-2 text-emerald-400 font-bold mb-1">
+                                    <Sparkles className="w-3 h-3" /> Action effectuée !
+                                 </div>
+                                 Le produit **Café Touba** a été ajouté à votre catalogue avec succès.
+                              </div>
+                           </div>
+                        </div>
+                        <div className="mt-8 flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                           <div className="w-5 h-5 text-gold-400"><Sparkles className="w-full h-full" /></div>
+                           <div className="text-xs text-white/30 italic">Que voulez-vous faire ?</div>
+                        </div>
+                     </div>
+                  </div>
+                  {/* Floating elements */}
+                  <div className="absolute -bottom-6 -right-6 p-4 rounded-2xl glass border border-amber-400/20 shadow-xl animate-bounce">
+                     <p className="text-[10px] font-bold text-emerald-400">+12% Conversion</p>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
       {/* ── FEATURES ──────────────────────────── */}
       <section id="features" className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
@@ -655,6 +742,94 @@ export default function Landing() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── BEFORE / AFTER ───────────────────── */}
+      <section className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+           <div className="text-center mb-16">
+              <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${text}`}>L'impact sur votre business</h2>
+              <p className={textMuted}>Comparez la gestion classique avec la puissance de SEVEN T.</p>
+           </div>
+           
+           <div className="grid md:grid-cols-2 gap-8">
+              {/* Before */}
+              <div className={`p-8 rounded-3xl border ${isDark ? 'border-red-500/20 bg-red-500/5' : 'border-red-200 bg-red-50/50'}`}>
+                 <h4 className="text-red-500 font-bold mb-6 flex items-center gap-2">
+                    <X className="w-5 h-5" /> Sans SEVEN T
+                 </h4>
+                 <ul className="space-y-4">
+                    {[
+                       'Temps de réponse de plusieurs heures',
+                       'Perte de 60% des leads le week-end',
+                       'Gestion manuelle et erreurs de stock',
+                       'Suivi client inexistant ou désordonné',
+                    ].map((item, i) => (
+                       <li key={i} className={`flex items-center gap-3 text-sm ${textMuted}`}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500/40" />
+                          {item}
+                       </li>
+                    ))}
+                 </ul>
+              </div>
+              
+              {/* After */}
+              <div className={`p-8 rounded-3xl border ${isDark ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-emerald-200 bg-emerald-50/50'} relative overflow-hidden group`}>
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Zap className="w-24 h-24 text-emerald-500" />
+                 </div>
+                 <h4 className="text-emerald-500 font-bold mb-6 flex items-center gap-2">
+                    <Check className="w-5 h-5" /> Avec SEVEN T
+                 </h4>
+                 <ul className="space-y-4">
+                    {[
+                       'Réponse instantanée 24h/24',
+                       'Taux de conversion boosté de 30%',
+                       'Automatisation totale des commandes',
+                       'CRM toujours à jour sans effort',
+                    ].map((item, i) => (
+                       <li key={i} className={`flex items-center gap-3 text-sm ${text}`}>
+                          <Check className="w-4 h-4 text-emerald-500" />
+                          {item}
+                       </li>
+                    ))}
+                 </ul>
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* ── WHY SEVEN-T ──────────────────────── */}
+      <section className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300`}>
+         <div className="max-w-7xl mx-auto px-5 sm:px-8">
+            <div className="grid md:grid-cols-3 gap-12">
+               {[
+                  {
+                     title: 'Canal #1 en Afrique',
+                     desc: 'WhatsApp est le cœur du business africain. Nous l\'avons rendu intelligent.',
+                     icon: MessageSquare
+                  },
+                  {
+                     title: 'Mobile-First Design',
+                     desc: 'Gérez tout depuis votre téléphone. Simple, léger et accessible partout.',
+                     icon: Phone
+                  },
+                  {
+                     title: 'Modèle Hybrid Client',
+                     desc: 'L\'IA s\'arrête là où l\'humain commence. Reprenez la main quand vous voulez.',
+                     icon: Users
+                  }
+               ].map((item, i) => (
+                  <div key={i} className="text-center">
+                     <div className={`w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
+                        <item.icon className="w-8 h-8 text-amber-500" />
+                     </div>
+                     <h4 className={`text-xl font-bold mb-3 ${text}`}>{item.title}</h4>
+                     <p className={`text-sm ${textMuted}`}>{item.desc}</p>
+                  </div>
+               ))}
+            </div>
+         </div>
       </section>
 
       {/* ── DEMO VIDEO ────────────────────────── */}
