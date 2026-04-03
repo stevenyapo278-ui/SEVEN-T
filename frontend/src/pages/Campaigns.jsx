@@ -55,6 +55,7 @@ export default function Campaigns() {
   const [selectedCampaign, setSelectedCampaign] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showRecipientsModal, setShowRecipientsModal] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [recipientsCampaign, setRecipientsCampaign] = useState(null)
   const [recipientsList, setRecipientsList] = useState([])
   const [leadsList, setLeadsList] = useState([])
