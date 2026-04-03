@@ -296,9 +296,10 @@ export default function AIChatbot({ isOpen, onClose }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -10 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        onClick={e => e.stopPropagation()}
         className={`
           pointer-events-auto
-          fixed top-[60px] right-4
+          fixed top-16 right-4
           w-[400px] max-w-[calc(100vw-2rem)]
           flex flex-col
           rounded-2xl shadow-2xl border overflow-hidden
@@ -307,7 +308,7 @@ export default function AIChatbot({ isOpen, onClose }) {
             : 'bg-white border-gray-200 shadow-gray-400/20'
           }
         `}
-        style={{ maxHeight: 'calc(100vh - 80px)' }}
+        style={{ maxHeight: 'min(600px, calc(100vh - 80px))', zIndex: 999 }}
       >
         {/* Header */}
         <div className={`flex items-center justify-between px-4 py-3 border-b flex-shrink-0 ${isDark ? 'border-space-700 bg-space-800/50' : 'border-gray-100 bg-gray-50'}`}>
