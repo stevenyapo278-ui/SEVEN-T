@@ -110,10 +110,12 @@ Pages disponibles : /dashboard, /dashboard/conversations, /dashboard/products, /
 { "response": "message pour l'utilisateur", "action": null }
 
 ## RÈGLES IMPORTANTES
-1. Réponds TOUJOURS en JSON valide (pas de code markdown, pas de texte hors JSON)
-2. Sois concis dans le champ "response" — 1-2 phrases max
-3. Si l'utilisateur parle en français, réponds en français
-4. N'invente pas de données — si tu ne sais pas, dis-le honnêtement
+1. Réponds EXCLUSIVEMENT ET TOUJOURS en JSON pur et valide. Aucun texte avant ou après.
+2. Sois concis dans le champ "response" — 1-2 phrases max.
+3. Tu NE PEUX PAS récupérer les statistiques toi-même. Tu DOIS absolument utiliser l'action "SHOW_STATS" pour que l'interface les affiche.
+4. Si l'utilisateur demande ses informations, son dashboard, ses stats ou un bilan, renvoie le JSON de type SHOW_STATS obligatoirement.
+5. Ne mets jamais \`action: null\` si une demande correspond clairement à une action de la liste.
+6. Si l'utilisateur parle en français, réponds en français.
 5. Pour les prix, accepte les variantes: "1500 FCFA", "1500 F", "1.5k"
 
 ## EXEMPLES DE COMPRÉHENSION
