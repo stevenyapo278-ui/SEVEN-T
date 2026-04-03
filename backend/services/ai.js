@@ -792,7 +792,9 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
         }
 
         const messageActuelLabel = '\n\n---\n📩 MESSAGE ACTUEL DU CLIENT (réponds à ce message en priorité):\n';
-        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
+        const structuredInstruction = agent.template === 'assistant' 
+            ? '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide contenant "response" (string) et "action" (optionnel, format objet dicté dans tes instructions système).'
+            : '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
         const fullPrompt = `${systemPrompt}${conversationText}${messageActuelLabel}${userMessage}\n---\n\n🤖 Assistant:${structuredInstruction}`;
 
         const result = await model.generateContent(fullPrompt);
@@ -1305,7 +1307,9 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             throw new Error('OpenAI non initialisé (clé manquante)');
         }
         const { prompt: systemPrompt } = this.buildSystemPrompt(agent, knowledgeBase, messageAnalysis);
-        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
+        const structuredInstruction = agent.template === 'assistant' 
+            ? '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide contenant "response" (string) et "action" (optionnel, format objet dicté dans tes instructions système).'
+            : '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
 
         // Construire les messages
         const messages = [
@@ -1386,7 +1390,9 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             throw new Error('OpenRouter non initialisé (clé API manquante ou non configurée dans Admin → Clés API)');
         }
         const { prompt: systemPrompt } = this.buildSystemPrompt(agent, knowledgeBase, messageAnalysis);
-        const structuredInstruction = '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
+        const structuredInstruction = agent.template === 'assistant' 
+            ? '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide contenant "response" (string) et "action" (optionnel, format objet dicté dans tes instructions système).'
+            : '\n\n⚠️ FORMAT DE RÉPONSE — Réponds UNIQUEMENT par un objet JSON valide avec:\n- "response" (string: ton message au client)\n- "need_human" (boolean: true si transfert nécessaire)\n- "booking" (optionnel, objet: {"summary": string, "startTime": ISO_STRING, "endTime": ISO_STRING} si tu dois enregistrer un rdv)\nExemple: {"response": "C\'est noté pour demain 10h !", "need_human": false, "booking": {"summary": "RDV Client", "startTime": "2026-03-14T10:00:00Z", "endTime": "2026-03-14T11:00:00Z"}}';
 
         // Construire les messages
         const messages = [

@@ -15,6 +15,9 @@ import toast from 'react-hot-toast'
 // ─── Action executor: runs the action returned by the backend LLM ─────────────
 
 async function executeAction(action, navigate, userId) {
+  if (typeof action === 'string') {
+    action = { type: action, data: {} }
+  }
   if (!action?.type) return null
 
   switch (action.type) {
