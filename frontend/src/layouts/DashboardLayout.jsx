@@ -67,7 +67,7 @@ const navigationGroups = [
   },
   {
     nameKey: 'nav.engage',
-    title: '💬 Discuter & Interagir',
+    title: '💬 Discuter',
     icon: MessageSquare,
     items: [
       { nameKey: 'nav.conversations', title: 'Boîte de réception', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
@@ -122,7 +122,7 @@ const navigationGroups = [
 const bottomNavigation = [
   { nameKey: 'nav.logs', href: '/dashboard/logs', icon: Activity, tourId: 'nav-logs' },
   { nameKey: 'nav.settings', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
-  { nameKey: 'nav.help' , href: '/dashboard/help', icon: HelpCircle, tourId: 'nav-help' },
+  { nameKey: 'nav.help', href: '/dashboard/help', icon: HelpCircle, tourId: 'nav-help' },
 ]
 
 
@@ -179,26 +179,26 @@ const LanguageSwitcher = ({ className = '' }) => {
 const prefetchRouteData = (href, isAuthenticated) => {
   if (!isAuthenticated) return
   if (href === '/dashboard' || href === '/dashboard/') {
-    api.get('/analytics/overview?period=7d').catch(() => {})
-    api.get('/analytics/messages-timeline?period=7d').catch(() => {})
+    api.get('/analytics/overview?period=7d').catch(() => { })
+    api.get('/analytics/messages-timeline?period=7d').catch(() => { })
     import('../pages/Dashboard')
   } else if (href === '/dashboard/tickets') {
-    api.get('/tickets', { params: { limit: 25, offset: 0 } }).catch(() => {})
+    api.get('/tickets', { params: { limit: 25, offset: 0 } }).catch(() => { })
     import('../pages/Tickets')
   } else if (href === '/dashboard/support') {
-    api.get('/admin/tickets', { params: { limit: 50, offset: 0 } }).catch(() => {})
+    api.get('/admin/tickets', { params: { limit: 50, offset: 0 } }).catch(() => { })
     import('../pages/SupportTickets')
   } else if (href === '/dashboard/agents') {
-    api.get('/agents').catch(() => {})
+    api.get('/agents').catch(() => { })
     import('../pages/Agents')
   } else if (href === '/dashboard/conversations') {
-    api.get('/conversations').catch(() => {})
+    api.get('/conversations').catch(() => { })
     import('../pages/Conversations')
   } else if (href === '/dashboard/products') {
-    api.get('/products').catch(() => {})
+    api.get('/products').catch(() => { })
     import('../pages/Products')
   } else if (href === '/dashboard/analytics') {
-    api.get('/analytics/overview?period=7d').catch(() => {})
+    api.get('/analytics/overview?period=7d').catch(() => { })
     import('../pages/Analytics')
   } else if (href === '/dashboard/settings') {
     import('../pages/Settings')
@@ -213,9 +213,8 @@ const ThemeToggle = ({ className = '', size = 'md' }) => {
   return (
     <button
       onClick={toggleTheme}
-      className={`relative flex items-center justify-center ${sizeClass} rounded-lg transition-all duration-300 ${
-        theme === 'dark' ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
-      } ${className}`}
+      className={`relative flex items-center justify-center ${sizeClass} rounded-lg transition-all duration-300 ${theme === 'dark' ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+        } ${className}`}
       title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
     >
       <div className={`relative ${iconSize}`}>
@@ -260,14 +259,13 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
             onClick={onItemClick}
             data-tour={item.tourId}
             className={({ isActive }) =>
-              `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                isActive
-                  ? isDark
-                    ? 'bg-blue-500/15 text-blue-400'
-                    : 'bg-blue-50 text-blue-600'
-                  : isDark
-                    ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
+                ? isDark
+                  ? 'bg-blue-500/15 text-blue-400'
+                  : 'bg-blue-50 text-blue-600'
+                : isDark
+                  ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
             }
           >
@@ -310,11 +308,10 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
       {(!collapsed || isMobile) && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 ${
-            isGroupActive
+          className={`w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 ${isGroupActive
               ? isDark ? 'text-blue-400' : 'text-blue-600'
               : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'
-          } ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
+            } ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
         >
           <span className="flex items-center gap-2.5 min-w-0">
             {group.icon && <group.icon className={`w-4 h-4 flex-shrink-0 ${isGroupActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400'}`} />}
@@ -335,10 +332,9 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
               onClick={onItemClick}
               data-tour={item.tourId}
               className={({ isActive }) =>
-                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
-                  isActive
-                    ? isDark ? 'bg-blue-500/15 text-blue-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
-                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
+                  ? isDark ? 'bg-blue-500/15 text-blue-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
+                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
@@ -459,7 +455,7 @@ const UserMenu = ({ user, onLogout }) => {
           </div>
           {/* Links */}
           <div className="p-1.5">
-            {(user?.influencer_only === true 
+            {(user?.influencer_only === true
               ? [{ to: `/dashboard/${user.name?.toLowerCase().trim().replace(/\s+/g, '-') || 'partenaire'}`, icon: Gift, label: 'Tableau de bord' }]
               : [
                 { to: '/dashboard/settings', icon: User, label: 'Mon profil' },
@@ -518,7 +514,7 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
       const response = await api.get('/notifications?limit=40')
       const allNotifs = response.data.notifications || []
       const filtered = allNotifs.slice(0, 20);
-      
+
       setNotifications(filtered)
       setUnreadCountInternal(response.data.unreadCount || 0)
     } catch (error) {
@@ -659,7 +655,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
   const location = useLocation()
   const { isAuthenticated } = useAuth()
   const influencerSlug = user?.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
-  
+
   // Use the server-computed flag for reliability
   const isInfluencerOnly = user?.influencer_only === true;
 
@@ -693,10 +689,9 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 onMouseEnter={() => prefetchRouteData(item.href, Boolean(isAuthenticated))}
                 onClick={onItemClick}
                 className={({ isActive }) =>
-                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                    isActive
-                      ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
-                      : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
+                    ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
+                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
                 }
               >
@@ -715,32 +710,31 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         {/* Bottom nav */}
         {!isInfluencerOnly && (
           <div className="space-y-0.5">
-          {bottomNav.map((item) => (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              viewTransition
-              onMouseEnter={() => prefetchRouteData(item.href, Boolean(isAuthenticated))}
-              data-tour={item.tourId}
-              onClick={onItemClick}
-              className={({ isActive }) =>
-                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
-                  isActive
+            {bottomNav.map((item) => (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                viewTransition
+                onMouseEnter={() => prefetchRouteData(item.href, Boolean(isAuthenticated))}
+                data-tour={item.tourId}
+                onClick={onItemClick}
+                className={({ isActive }) =>
+                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
                     ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
                     : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                  <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
-                  {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
-                </>
-              )}
-            </NavLink>
-          ))}
-        </div>
+                  } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
+                    <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         )}
 
         {isInfluencerOnly && <div className="flex-1" />}
@@ -756,10 +750,9 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
               viewTransition
               onClick={onItemClick}
               className={({ isActive }) =>
-                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
-                  isActive
-                    ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
-                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
+                  ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
+                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
@@ -788,10 +781,9 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 onMouseEnter={() => prefetchRouteData(item.href, Boolean(isAuthenticated))}
                 onClick={onItemClick}
                 className={({ isActive }) =>
-                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
-                    isActive
-                      ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
-                      : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
+                    ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
+                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
                 }
               >
@@ -819,10 +811,9 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
               onMouseEnter={() => prefetchRouteData('/dashboard/support', Boolean(isAuthenticated))}
               onClick={onItemClick}
               className={({ isActive }) =>
-                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${
-                  isActive
-                    ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
-                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
+                  ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
+                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
@@ -875,27 +866,27 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
 // Chaque route a une zone (groupe logique) et un index (position dans la zone).
 // La zone détermine l'AXE de transition : vertical dans une zone, horizontal entre zones.
 const ROUTE_SEMANTICS = {
-  '/dashboard':                   { zone: 'main',       idx: 0 },
-  '/dashboard/analytics':         { zone: 'main',       idx: 1 },
-  '/dashboard/notifications':     { zone: 'main',       idx: 2 },
-  '/dashboard/leads':             { zone: 'crm',        idx: 0 },
-  '/dashboard/deals':             { zone: 'crm',        idx: 1 },
-  '/dashboard/orders':            { zone: 'crm',        idx: 2 },
-  '/dashboard/agents':            { zone: 'agents',     idx: 0 },
-  '/dashboard/conversations':     { zone: 'agents',     idx: 1 },
-  '/dashboard/knowledge':         { zone: 'agents',     idx: 2 },
-  '/dashboard/campaigns':         { zone: 'marketing',  idx: 0 },
-  '/dashboard/templates':         { zone: 'marketing',  idx: 1 },
-  '/dashboard/whatsapp-status':   { zone: 'marketing',  idx: 2 },
-  '/dashboard/products':          { zone: 'products',   idx: 0 },
-  '/dashboard/services':          { zone: 'products',   idx: 1 },
-  '/dashboard/tools':             { zone: 'products',   idx: 2 },
-  '/dashboard/workflows':         { zone: 'automation', idx: 0 },
-  '/dashboard/flows':             { zone: 'automation', idx: 1 },
-  '/dashboard/reports':           { zone: 'automation', idx: 2 },
-  '/dashboard/settings':          { zone: 'config',     idx: 0 },
-  '/dashboard/help':              { zone: 'config',     idx: 1 },
-  '/dashboard/admin':             { zone: 'config',     idx: 2 },
+  '/dashboard': { zone: 'main', idx: 0 },
+  '/dashboard/analytics': { zone: 'main', idx: 1 },
+  '/dashboard/notifications': { zone: 'main', idx: 2 },
+  '/dashboard/leads': { zone: 'crm', idx: 0 },
+  '/dashboard/deals': { zone: 'crm', idx: 1 },
+  '/dashboard/orders': { zone: 'crm', idx: 2 },
+  '/dashboard/agents': { zone: 'agents', idx: 0 },
+  '/dashboard/conversations': { zone: 'agents', idx: 1 },
+  '/dashboard/knowledge': { zone: 'agents', idx: 2 },
+  '/dashboard/campaigns': { zone: 'marketing', idx: 0 },
+  '/dashboard/templates': { zone: 'marketing', idx: 1 },
+  '/dashboard/whatsapp-status': { zone: 'marketing', idx: 2 },
+  '/dashboard/products': { zone: 'products', idx: 0 },
+  '/dashboard/services': { zone: 'products', idx: 1 },
+  '/dashboard/tools': { zone: 'products', idx: 2 },
+  '/dashboard/workflows': { zone: 'automation', idx: 0 },
+  '/dashboard/flows': { zone: 'automation', idx: 1 },
+  '/dashboard/reports': { zone: 'automation', idx: 2 },
+  '/dashboard/settings': { zone: 'config', idx: 0 },
+  '/dashboard/help': { zone: 'config', idx: 1 },
+  '/dashboard/admin': { zone: 'config', idx: 2 },
 }
 
 // Résoudre les routes dynamiques (ex: /dashboard/agents/123 → zone 'agents')
@@ -971,15 +962,15 @@ export default function DashboardLayout() {
   // ── Influencer Redirection ──────────────────────────────────────────────────
   useEffect(() => {
     if (isInfluencerOnly && (location.pathname === '/dashboard' || location.pathname === '/dashboard/')) {
-        const slug = user?.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
-        navigate(`/dashboard/${slug}`, { replace: true });
+      const slug = user?.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
+      navigate(`/dashboard/${slug}`, { replace: true });
     }
   }, [isInfluencerOnly, location.pathname, navigate, user?.name]);
 
   const systemPrefersReducedMotion = useMemo(() =>
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  , [])
+    , [])
 
   const [reduceMotionOverride, setReduceMotionOverride] = useState(() => {
     try {
@@ -998,7 +989,7 @@ export default function DashboardLayout() {
   useEffect(() => {
     try {
       localStorage.setItem('seven-t-sidebar-collapsed', String(sidebarCollapsed))
-    } catch {}
+    } catch { }
   }, [sidebarCollapsed])
 
   useEffect(() => {
@@ -1015,7 +1006,7 @@ export default function DashboardLayout() {
     const onReduceMotionPref = (e) => {
       if (typeof e?.detail?.value !== 'boolean') return
       setReduceMotionOverride(e.detail.value)
-      try { localStorage.setItem('seven-t-reduce-motion', String(e.detail.value)) } catch {}
+      try { localStorage.setItem('seven-t-reduce-motion', String(e.detail.value)) } catch { }
     }
     const onRefreshUnreadCounts = () => {
       fetchUnreadCounts()
@@ -1091,27 +1082,27 @@ export default function DashboardLayout() {
   // ── Variants Framer Motion ─────────────────────────────────────────────────
   const variants = prefersReducedMotion
     ? {
-        // Accessibilité : simple fondu, zéro mouvement
-        initial: { opacity: 0 },
-        animate: { opacity: 1, transition: { duration: 0.15 } },
-        exit:    { opacity: 0, transition: { duration: 0.15 } }
-      }
+      // Accessibilité : simple fondu, zéro mouvement
+      initial: { opacity: 0 },
+      animate: { opacity: 1, transition: { duration: 0.15 } },
+      exit: { opacity: 0, transition: { duration: 0.15 } }
+    }
     : {
-        initial: ({ direction: dir, axis }) => ({
-          [axis]: dir > 0 ? '40%' : dir < 0 ? '-40%' : 0,
-          opacity: 0,
-        }),
-        animate: {
-          x: 0, y: 0,
-          opacity: 1,
-          transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } // OutQuint
-        },
-        exit: ({ direction: dir, axis }) => ({
-          [axis]: dir > 0 ? '-20%' : dir < 0 ? '20%' : 0,
-          opacity: 0,
-          transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
-        })
-      }
+      initial: ({ direction: dir, axis }) => ({
+        [axis]: dir > 0 ? '40%' : dir < 0 ? '-40%' : 0,
+        opacity: 0,
+      }),
+      animate: {
+        x: 0, y: 0,
+        opacity: 1,
+        transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } // OutQuint
+      },
+      exit: ({ direction: dir, axis }) => ({
+        [axis]: dir > 0 ? '-20%' : dir < 0 ? '20%' : 0,
+        opacity: 0,
+        transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] }
+      })
+    }
 
   const isEnabled = (key, feat, override) => {
     // Vérification exhaustive des overrides (noms de colonnes possibles)
@@ -1160,8 +1151,8 @@ export default function DashboardLayout() {
         }
       ];
     }
-    return navigationGroups.map(g => ({ 
-      ...g, 
+    return navigationGroups.map(g => ({
+      ...g,
       items: g.items.filter(item => {
         if (item.href === '/dashboard/tickets') return true;
         if (item.href === '/dashboard/payments') return paymentModuleEnabled;
@@ -1236,7 +1227,7 @@ export default function DashboardLayout() {
             </button>
           </div>
           <SidebarContent
-            navGroups={navGroups} 
+            navGroups={navGroups}
             bottomNav={bottomNav}
             onItemClick={() => setSidebarOpen(false)}
             isMobile={true} collapsed={false}
@@ -1251,9 +1242,9 @@ export default function DashboardLayout() {
       <div className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ${sidebarW}`}>
         <div className={`flex flex-col flex-grow min-h-0 border-r ${isDark ? 'bg-space-900 border-space-700/60' : 'bg-white border-gray-200'}`}>
           <SidebarContent
-            navGroups={navGroups} 
+            navGroups={navGroups}
             bottomNav={bottomNav}
-            onItemClick={() => {}}
+            onItemClick={() => { }}
             isMobile={false} collapsed={sidebarCollapsed}
             user={user} isDark={isDark} t={t} onLogout={handleLogout}
             unreadCount={unreadCount}
@@ -1361,17 +1352,17 @@ export default function DashboardLayout() {
       </div>
 
       {/* Global AI Search & Assistants */}
-      <GlobalAIAssistantModal 
-        isOpen={isGlobalAIOpen} 
-        onClose={() => setIsGlobalAIOpen(false)} 
+      <GlobalAIAssistantModal
+        isOpen={isGlobalAIOpen}
+        onClose={() => setIsGlobalAIOpen(false)}
       />
-      
-      <AssistedConfigWizard 
-        isOpen={isAssistedConfigOpen} 
+
+      <AssistedConfigWizard
+        isOpen={isAssistedConfigOpen}
         onClose={() => {
           setIsAssistedConfigOpen(false)
           setAssistedConfigData(null)
-        }} 
+        }}
         initialData={assistedConfigData}
       />
     </div>
