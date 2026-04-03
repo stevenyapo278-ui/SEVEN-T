@@ -890,7 +890,7 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             errors.push('Field "response" cannot be empty');
         }
         
-        if ('need_human' in obj && typeof obj.need_human !== 'boolean' && typeof obj.need_human !== 'string') {
+        if (obj.need_human !== undefined && obj.need_human !== null && typeof obj.need_human !== 'boolean' && typeof obj.need_human !== 'string') {
             errors.push('Field "need_human" must be a boolean or string');
         }
         
@@ -923,13 +923,17 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
         
         const trimmed = raw.trim();
         
-        const normalizeParsed = (obj) => ({
-            response: obj.response,
-            need_human: obj.need_human === true || obj.need_human === 'true' || obj.need_confirmation === true || obj.need_confirmation === 'true',
-            confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined,
-            booking: obj.booking || null,
-            action: obj.action || null
-        });
+        const normalizeParsed = (obj) => {
+            const result = {
+                response: obj.response,
+                need_human: obj.need_human === true || obj.need_human === 'true' || obj.need_confirmation === true || obj.need_confirmation === 'true',
+                confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined,
+                booking: obj.booking || null,
+                action: obj.action || null
+            };
+            if (result.action) console.log(`[AI DEBUG] Action captured in normalizeParsed: ${JSON.stringify(result.action)}`);
+            return result;
+        };
 
         // Try 1: Direct JSON parse
         try {
@@ -997,8 +1001,18 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
         if (responseMatch && responseMatch[1]?.trim()) {
             const text = responseMatch[1].replace(/\\"/g, '"').trim();
             if (text.length > 0) {
-                aiLogger.info('Salvaged response from truncated JSON');
-                return { response: text, need_human: true, confidence: undefined };
+                // Also try to salvage action if present
+                let action = null;
+                const actionMatch = trimmed.match(/"action"\s*:\s*(\{[\s\S]*?\})|("action"\s*:\s*"([^"]*)")/);
+                if (actionMatch) {
+                    try {
+                        const actionStr = actionMatch[1] || actionMatch[3];
+                        action = actionStr.startsWith('{') ? JSON.parse(actionStr) : actionStr;
+                    } catch (e) { /* ignore */ }
+                }
+                
+                aiLogger.info('Salvaged response and action from truncated JSON');
+                return { response: text, need_human: true, confidence: undefined, action };
             }
         }
 

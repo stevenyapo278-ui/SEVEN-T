@@ -3500,6 +3500,13 @@ class WhatsAppManager {
                     caption: caption?.trim() || undefined,
                     mimetype: resolvedMimeType || 'video/mp4'
                 };
+            } else if (type === 'product') {
+                if (!mediaSource) throw new Error("L'URL ou le contenu de l'image du produit est requis");
+                message = {
+                    image: Buffer.isBuffer(mediaSource) ? mediaSource : { url: mediaSource.trim() },
+                    caption: caption?.trim() || undefined,
+                    mimetype: resolvedMimeType || 'image/jpeg'
+                };
             } else {
                 throw new Error(`Type de statut non supporté: ${type}`);
             }
