@@ -451,7 +451,6 @@ function OverviewTab({ agent, onUpdate }) {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (countdownRef.current) clearInterval(countdownRef.current)
-      if (qrRefreshRef.current) clearTimeout(qrRefreshRef.current)
       if (statsIntervalRef.current) clearInterval(statsIntervalRef.current)
     }
   }, [])
