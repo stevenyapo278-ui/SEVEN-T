@@ -256,9 +256,8 @@ router.delete('/models/:id', async (req, res) => {
         const usageCount = usageCountRow?.count || 0;
 
         if (usageCount > 0) {
-            return res.status(400).json({ 
-                error: `Ce modèle est utilisé par ${usageCount} agent(s). Désactivez-le plutôt.`
-            });
+            // Update agents to null so their model defaults back to the platform default
+            await db.run('UPDATE agents SET model = NULL WHERE model = ?', model.id);
         }
 
         await db.run('DELETE FROM ai_models WHERE id = ?', req.params.id);
@@ -436,8 +435,8 @@ router.put('/api-keys/:provider', async (req, res) => {
         if (api_key) {
             changes.api_key = { old: '********', new: '********' };
         }
-        if (is_active !== undefined && Boolean(existingKey?.is_active) !== Boolean(is_active)) {
-            changes.is_active = { old: Boolean(existingKey?.is_active), new: Boolean(is_active) };
+        if (is_active !== undefined && existing?.is_active !== undefined && Boolean(existing.is_active) !== Boolean(is_active)) {
+            changes.is_active = { old: Boolean(existing.is_active), new: Boolean(is_active) };
         }
 
         await activityLogger.log({
