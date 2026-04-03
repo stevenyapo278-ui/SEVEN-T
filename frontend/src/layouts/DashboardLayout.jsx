@@ -276,7 +276,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                 <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
                 <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
                 {(!collapsed || isMobile) && (
-                  <div className="flex-1 flex items-center justify-between min-w-0">
+                  <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
                     <span className="truncate">{item.title || t(item.nameKey)}</span>
                     {item.href === '/dashboard/notifications' && unreadCount > 0 && (
                       <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
@@ -324,9 +324,8 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
         </button>
       )}
 
-      {/* Items */}
       <div className={`overflow-hidden transition-all duration-200 ease-out ${shouldBeOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} ${collapsed && !isMobile ? 'max-h-96 opacity-100' : ''}`}>
-        <div className={collapsed && !isMobile ? 'space-y-0.5' : 'ml-2 space-y-0.5'}>
+        <div className={collapsed && !isMobile ? 'space-y-0.5' : 'ml-4 pl-1.5 space-y-0.5 border-l border-gray-500/10 dark:border-white/5'}>
           {group.items.map((item) => (
             <NavLink
               key={item.href}
@@ -348,7 +347,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
                   <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
                   {(!collapsed || isMobile) && (
-                    <div className="flex-1 flex items-center justify-between min-w-0">
+                    <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
                       <span className="truncate">{item.title || t(item.nameKey)}</span>
                       {item.href === '/dashboard/notifications' && unreadCount > 0 && (
                         <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
