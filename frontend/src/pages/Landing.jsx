@@ -52,6 +52,7 @@ const defaultPlans = [
 ]
 
 const features = [
+  {
     icon: Bot,
     darkBg: 'bg-blue-500/10 border-blue-500/15',
     lightBg: 'bg-blue-50 border-blue-200',
