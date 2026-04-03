@@ -1246,7 +1246,6 @@ export default function DashboardLayout() {
             <Logo />
           </div>
           <div className="flex items-center gap-1.5">
-            <GlobalAIAssistant />
             <TrialBadge user={user} isDark={isDark} />
             <ThemeToggle size="sm" />
             {!isInfluencerOnly && (
@@ -1282,7 +1281,6 @@ export default function DashboardLayout() {
 
           {/* Right: actions */}
           <div className="flex items-center gap-1.5">
-            <GlobalAIAssistant />
             <TrialBadge user={user} isDark={isDark} />
             <LanguageSwitcher />
             {/* Credits pill */}
@@ -1341,6 +1339,7 @@ export default function DashboardLayout() {
         )}
       </AnimatePresence>
 
+      <GlobalAIAssistant />
       <GlobalAIAssistantModal
         isOpen={isGlobalAIOpen}
         onClose={() => setIsGlobalAIOpen(false)}
