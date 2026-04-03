@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,7 +21,7 @@ import toast from 'react-hot-toast'
 
 const MotionDiv = motion.div
 
-export default function AssistedConfigWizard({ isOpen, onClose, onComplete }) {
+export default function AssistedConfigWizard({ isOpen, onClose, onComplete, initialData }) {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState(0)
@@ -33,6 +33,16 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete }) {
     agentName: '',
     template: 'ecommerce'
   })
+
+  // Sync initialData when opening
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setFormData(prev => ({
+        ...prev,
+        ...initialData
+      }))
+    }
+  }, [isOpen, initialData])
 
   if (!isOpen) return null
 

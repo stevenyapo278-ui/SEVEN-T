@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
-import { WelcomeModal, OnboardingChecklist, useOnboardingTour, AssistedConfigWizard } from '../components/Onboarding'
+import { WelcomeModal, OnboardingChecklist, useOnboardingTour } from '../components/Onboarding'
 import { 
   Bot, 
   MessageSquare, 
@@ -38,7 +38,6 @@ export default function Dashboard() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [selectedAlertView, setSelectedAlertView] = useState(null)
   const [selectedAgentView, setSelectedAgentView] = useState(null)
-  const [showAssistedWizard, setShowAssistedWizard] = useState(false)
   const tourTimerRef = useRef(null)
 
   // Reload data when navigating to this page
@@ -130,7 +129,6 @@ export default function Dashboard() {
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
       <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} onComplete={handleWelcomeComplete} />
-      <AssistedConfigWizard isOpen={showAssistedWizard} onClose={() => setShowAssistedWizard(false)} />
 
       {/* AI Performance Insight (Phase 7) */}
       {!loading && stats && (
@@ -172,7 +170,7 @@ export default function Dashboard() {
                 </p>
              </div>
              <button 
-                onClick={() => setShowAssistedWizard(true)}
+                onClick={() => window.dispatchEvent(new CustomEvent('seven-t:open-assisted-config'))}
                 className="mt-6 sm:mt-0 group relative flex items-center gap-2 bg-emerald-500 text-white px-8 py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-xl shadow-emerald-500/25 w-full sm:w-auto"
              >
                 <span className="relative z-10">Lancer la configuration assistée</span>

@@ -52,6 +52,8 @@ import {
   Radio,
 } from 'lucide-react'
 import GlobalAIAssistant from '../components/AI/GlobalAIAssistant'
+import GlobalAIAssistantModal from '../components/AI/GlobalAIAssistantModal'
+import { AssistedConfigWizard } from '../components/Onboarding'
 
 
 const navigationGroups = [
@@ -934,6 +936,11 @@ export default function DashboardLayout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [unreadConversationsCount, setUnreadConversationsCount] = useState(0)
 
+  // Global UI States
+  const [isGlobalAIOpen, setIsGlobalAIOpen] = useState(false)
+  const [isAssistedConfigOpen, setIsAssistedConfigOpen] = useState(false)
+  const [assistedConfigData, setAssistedConfigData] = useState(null)
+
   const isInfluencerOnly = useMemo(() => {
     if (!user) return false;
     // Use the server-computed flag for reliability
@@ -1014,10 +1021,31 @@ export default function DashboardLayout() {
     const onRefreshUnreadCounts = () => {
       fetchUnreadCounts()
     }
+
+    const handleGlobalKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setIsGlobalAIOpen(true)
+      }
+    }
+
+    const onOpenGlobalAI = () => setIsGlobalAIOpen(true)
+    const onOpenAssistedConfig = (e) => {
+      if (e.detail?.initialData) setAssistedConfigData(e.detail.initialData)
+      setIsAssistedConfigOpen(true)
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    window.addEventListener('seven-t:open-global-ai', onOpenGlobalAI)
+    window.addEventListener('seven-t:open-assisted-config', onOpenAssistedConfig)
     window.addEventListener('seven-t:sidebar-collapsed', onSidebarPref)
     window.addEventListener('seven-t:reduce-motion', onReduceMotionPref)
     window.addEventListener('seven-t:refresh-unread-counts', onRefreshUnreadCounts)
+
     return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown)
+      window.removeEventListener('seven-t:open-global-ai', onOpenGlobalAI)
+      window.removeEventListener('seven-t:open-assisted-config', onOpenAssistedConfig)
       window.removeEventListener('seven-t:sidebar-collapsed', onSidebarPref)
       window.removeEventListener('seven-t:reduce-motion', onReduceMotionPref)
       window.removeEventListener('seven-t:refresh-unread-counts', onRefreshUnreadCounts)
@@ -1332,6 +1360,21 @@ export default function DashboardLayout() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Global AI Search & Assistants */}
+      <GlobalAIAssistantModal 
+        isOpen={isGlobalAIOpen} 
+        onClose={() => setIsGlobalAIOpen(false)} 
+      />
+      
+      <AssistedConfigWizard 
+        isOpen={isAssistedConfigOpen} 
+        onClose={() => {
+          setIsAssistedConfigOpen(false)
+          setAssistedConfigData(null)
+        }} 
+        initialData={assistedConfigData}
+      />
     </div>
   )
 }
