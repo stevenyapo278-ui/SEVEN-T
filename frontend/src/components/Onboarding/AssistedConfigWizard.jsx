@@ -39,7 +39,9 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
     if (isOpen && initialData) {
       setFormData(prev => ({
         ...prev,
-        ...initialData
+        ...initialData,
+        // Map productPrice if specifically passed (productName is already mapped via spread)
+        productPrice: initialData.productPrice || prev.productPrice
       }))
     }
   }, [isOpen, initialData])

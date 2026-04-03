@@ -102,9 +102,9 @@ export default function GlobalAIAssistantModal({ isOpen, onClose }) {
     }
 
     // Intent: Create Product
-    const productMatch = q.match(/(?:créer|ajouter|nouveau|vendre)\s+(?:le\s+|un\s+)?produit\s+([^à]+?)(?:\s+à\s+(\d+))?$/i);
+    const productMatch = q.match(/(?:créer|ajouter|nouveau|vendre)\s+(?:le\s+|un\s+)?produit\s+(.+?)(?:\s+à\s+(\d+)(?:\s*(?:fcfa|xof|f|cfa))?)?$/i);
     if (productMatch) {
-      const name = productMatch[1].trim();
+      let name = productMatch[1].trim().replace(/^["'](.+)["']$/g, '$1');
       const price = productMatch[2] || "";
       setMagicAction({
         id: 'magic-product',
@@ -119,7 +119,7 @@ export default function GlobalAIAssistantModal({ isOpen, onClose }) {
     // Intent: Create Lead (Contact)
     const leadMatch = q.match(/(?:ajouter|créer|nouveau)\s+(?:le\s+|un\s+)?contact\s+([^0-9\s]+)(?:\s+(?:au|tel|num|numéro)?\s*(\d+))?$/i);
     if (leadMatch) {
-       const name = leadMatch[1].trim();
+       let name = leadMatch[1].trim().replace(/^["'](.+)["']$/g, '$1');
        const phone = leadMatch[2] || "";
        setMagicAction({
          id: 'magic-lead',
@@ -227,8 +227,32 @@ export default function GlobalAIAssistantModal({ isOpen, onClose }) {
   }
 
   const handleAskAI = () => {
+    let initialData = { productName: query }
+
+    // If we already parsed it for Magic Action, use that better data
+    if (magicAction?.type === 'product') {
+      initialData = { 
+        productName: magicAction.data.name, 
+        productPrice: magicAction.data.price 
+      }
+    } else if (magicAction?.type === 'lead') {
+      initialData = {
+        leadName: magicAction.data.name,
+        leadPhone: magicAction.data.phone
+      }
+    } else {
+      // One-off try to extract just the name if it looks like a command
+      const cleanName = query.replace(/^(crée|ajouter|nouveau|vendre)\s+(le\s+|un\s+)?produit\s+/i, '')
+                           .replace(/\s+à\s+\d+.*$/i, '')
+                           .replace(/^["'](.+)["']$/g, '$1')
+                           .trim();
+      if (cleanName && cleanName.length < query.length) {
+        initialData.productName = cleanName;
+      }
+    }
+
     window.dispatchEvent(new CustomEvent('seven-t:open-assisted-config', { 
-      detail: { initialData: { productName: query } } 
+      detail: { initialData } 
     }));
     onClose();
   }
