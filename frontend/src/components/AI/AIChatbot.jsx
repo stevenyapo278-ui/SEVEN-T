@@ -292,14 +292,14 @@ export default function AIChatbot({ isOpen, onClose }) {
 
       {/* Chat Panel */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         onClick={e => e.stopPropagation()}
         className={`
           pointer-events-auto
-          fixed top-16 right-4
+          fixed bottom-24 right-6
           w-[400px] max-w-[calc(100vw-2rem)]
           flex flex-col
           rounded-2xl shadow-2xl border overflow-hidden

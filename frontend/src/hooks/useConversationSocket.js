@@ -19,7 +19,9 @@ export function useConversationSocket(onUpdate) {
   const socketRef = useRef(null)
   const [connected, setConnected] = useState(false)
   const onUpdateRef = useRef(onUpdate)
-  onUpdateRef.current = onUpdate
+  useEffect(() => {
+    onUpdateRef.current = onUpdate
+  }, [onUpdate])
 
   const stableOnUpdate = useCallback((payload) => {
     if (payload?.conversationId) onUpdateRef.current?.(payload.conversationId, payload.message)

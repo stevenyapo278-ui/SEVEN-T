@@ -137,9 +137,7 @@ export default function WhatsAppStatus() {
     return isOverrideTrue
   })()
 
-  if (!isModuleEnabled) {
-    return <Navigate to="/dashboard" replace />
-  }
+  // Protection removed from here to prevent conditional hooks
   const [agents, setAgents] = useState([])
   const [loadingAgents, setLoadingAgents] = useState(true)
   const [selectedAgent, setSelectedAgent] = useState('')
@@ -176,8 +174,8 @@ export default function WhatsAppStatus() {
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
   useEffect(() => {
-    loadAgents()
-  }, [])
+    if (isModuleEnabled) loadAgents()
+  }, [isModuleEnabled])
 
   useEffect(() => {
     if (selectedAgent) {
@@ -405,6 +403,10 @@ export default function WhatsAppStatus() {
     { id: 'video', label: 'Vidéo', icon: Video },
     { id: 'product', label: 'Produits', icon: ShoppingBag },
   ]
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
     <div className="max-w-full mx-auto w-full pb-12 px-4 sm:px-6 lg:px-8 space-y-6">

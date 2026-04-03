@@ -20,8 +20,11 @@ export function useWhatsAppSocket({ onStatus, onQR }) {
   
   const onStatusRef = useRef(onStatus)
   const onQRRef = useRef(onQR)
-  onStatusRef.current = onStatus
-  onQRRef.current = onQR
+  
+  useEffect(() => {
+    onStatusRef.current = onStatus
+    onQRRef.current = onQR
+  }, [onStatus, onQR])
 
   useEffect(() => {
     if (!user) return
