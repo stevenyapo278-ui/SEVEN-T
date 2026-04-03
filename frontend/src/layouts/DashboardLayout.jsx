@@ -36,6 +36,7 @@ import {
   Megaphone,
   FileText,
   Workflow,
+  Target,
   FileBarChart,
   Store,
   Send,
