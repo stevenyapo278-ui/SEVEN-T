@@ -52,6 +52,7 @@ import influencerRoutes from './routes/influencer.js';
 import userRoutes from './routes/users.js';
 import subscriptionRoutes, { handleGeniusPaySubscriptionWebhook } from './routes/subscription.js';
 import landingChatRoutes from './routes/landingChat.js';
+import chatbotRoutes from './routes/chatbot.js';
 import settingsRoutes from './routes/settings.js';
 import serviceRoutes from './routes/services.js';
 import ticketsRoutes from './routes/tickets.js';
@@ -190,6 +191,7 @@ app.use('/api/tickets', ticketsRoutes);
 app.use('/api/admin', adminTicketsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/landing-chat', landingChatRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

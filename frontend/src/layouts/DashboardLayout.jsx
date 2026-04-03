@@ -54,6 +54,7 @@ import {
 } from 'lucide-react'
 import GlobalAIAssistant from '../components/AI/GlobalAIAssistant'
 import GlobalAIAssistantModal from '../components/AI/GlobalAIAssistantModal'
+import AIChatbot from '../components/AI/AIChatbot'
 import { AssistedConfigWizard } from '../components/Onboarding'
 
 
@@ -929,6 +930,7 @@ export default function DashboardLayout() {
 
   // Global UI States
   const [isGlobalAIOpen, setIsGlobalAIOpen] = useState(false)
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false)
   const [isAssistedConfigOpen, setIsAssistedConfigOpen] = useState(false)
   const [assistedConfigData, setAssistedConfigData] = useState(null)
 
@@ -1022,11 +1024,12 @@ export default function DashboardLayout() {
     const handleGlobalKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setIsGlobalAIOpen(true)
+        setIsChatbotOpen(prev => !prev)
       }
     }
 
     const onOpenGlobalAI = () => setIsGlobalAIOpen(true)
+    const onOpenChatbot = () => setIsChatbotOpen(prev => !prev)
     const onOpenAssistedConfig = (e) => {
       if (e.detail?.initialData) setAssistedConfigData(e.detail.initialData)
       setIsAssistedConfigOpen(true)
@@ -1034,6 +1037,7 @@ export default function DashboardLayout() {
 
     window.addEventListener('keydown', handleGlobalKeyDown)
     window.addEventListener('seven-t:open-global-ai', onOpenGlobalAI)
+    window.addEventListener('seven-t:open-chatbot', onOpenChatbot)
     window.addEventListener('seven-t:open-assisted-config', onOpenAssistedConfig)
     window.addEventListener('seven-t:sidebar-collapsed', onSidebarPref)
     window.addEventListener('seven-t:reduce-motion', onReduceMotionPref)
@@ -1042,6 +1046,7 @@ export default function DashboardLayout() {
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown)
       window.removeEventListener('seven-t:open-global-ai', onOpenGlobalAI)
+      window.removeEventListener('seven-t:open-chatbot', onOpenChatbot)
       window.removeEventListener('seven-t:open-assisted-config', onOpenAssistedConfig)
       window.removeEventListener('seven-t:sidebar-collapsed', onSidebarPref)
       window.removeEventListener('seven-t:reduce-motion', onReduceMotionPref)
@@ -1327,6 +1332,15 @@ export default function DashboardLayout() {
       </div>
 
       {/* Global AI Search & Assistants */}
+      <AnimatePresence>
+        {isChatbotOpen && (
+          <AIChatbot
+            isOpen={isChatbotOpen}
+            onClose={() => setIsChatbotOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <GlobalAIAssistantModal
         isOpen={isGlobalAIOpen}
         onClose={() => setIsGlobalAIOpen(false)}
