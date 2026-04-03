@@ -80,6 +80,7 @@ const navigationGroups = [
       { nameKey: 'nav.agents', title: 'Gérer mes équipes IA', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
       { nameKey: 'nav.knowledge', title: 'Leur apprendre des choses', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
       { nameKey: 'nav.flowBuilder', title: 'Leur comportement', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
+      { nameKey: 'nav.workflows', title: 'Règles automatiques', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
     ]
   },
   {
@@ -88,7 +89,9 @@ const navigationGroups = [
     icon: ShoppingCart,
     items: [
       { nameKey: 'nav.leads', title: 'Mes contacts', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
-      { nameKey: 'nav.products', title: 'Mon catalogue', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.services', title: 'Catalogue des services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
+      { nameKey: 'nav.products', title: 'Mon catalogue (Produits)', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.deals', title: 'Suivi des Deals', href: '/dashboard/deals', icon: Target, tourId: 'nav-deals' },
       { nameKey: 'nav.orders', title: 'Mes commandes', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
     ]
   },
@@ -98,6 +101,7 @@ const navigationGroups = [
     icon: Activity,
     items: [
       { nameKey: 'nav.analytics', title: 'Statistiques', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
+      { nameKey: 'nav.expenses', title: 'Mes dépenses', href: '/dashboard/expenses', icon: Wallet, tourId: 'nav-expenses' },
       { nameKey: 'nav.reports', title: 'Bilan complet', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
     ]
   },
@@ -108,8 +112,6 @@ const navigationGroups = [
     items: [
       { nameKey: 'nav.tools', title: 'Téléphones (WhatsApp)', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
       { nameKey: 'nav.whatsappStatus', title: 'Statuts WhatsApp', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
-      { nameKey: 'nav.workflows', title: 'Règles automatiques', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
-      { nameKey: 'nav.services', title: 'Services connectés', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
     ]
   },
 ]
