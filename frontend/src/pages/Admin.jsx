@@ -64,7 +64,8 @@ const PLAN_MODULES = [
   { key: 'human_handoff_alerts_enabled', label: 'Module 9 : Alertes Transfert Humain' },
   { key: 'analytics_module_enabled', label: 'Module 10 : Analytics & Statistiques' },
   { key: 'flows_module_enabled', label: 'Module 11 : Flows (Flux de travail)' },
-  { key: 'whatsapp_status_enabled', label: 'Module 12 : Statut WhatsApp' }
+  { key: 'whatsapp_status_enabled', label: 'Module 12 : Statut WhatsApp' },
+  { key: 'leads_management_enabled', label: 'Module 13 : Gestion des Leads' }
 ]
 
 export default function Admin() {
@@ -2849,7 +2850,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'human_handoff_alerts', label: 'Module 9 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' },
     { key: 'analytics', label: 'Module 10 : Analytics & Statistiques', desc: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' },
     { key: 'flows', label: 'Module 11 : Flows (Flux de travail)', desc: 'Créez des scénarios d\'automatisation visuels.' },
-    { key: 'whatsapp_status', label: 'Module 12 : Statut WhatsApp', desc: 'Publication de statuts WhatsApp via l\'IA ou l\'interface.' }
+    { key: 'whatsapp_status', label: 'Module 12 : Statut WhatsApp', desc: 'Publication de statuts WhatsApp via l\'IA ou l\'interface.' },
+    { key: 'leads_management', label: 'Module 13 : Gestion des Leads', desc: 'Gestion des prospects, analyse d\'intention et conversion par l\'IA.' }
   ]
 
 

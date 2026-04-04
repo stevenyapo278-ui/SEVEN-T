@@ -1139,7 +1139,7 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
         if (item.href === '/dashboard/reports') return reportsModuleEnabled;
         if (item.href === '/dashboard/flows') return flowsModuleEnabled;
-        if (item.href === '/dashboard/leads') return leadsModuleEnabled;
+        if (item.href === '/dashboard/leads') return true; // Forced visibility
         if (item.href === '/dashboard/whatsapp-status') return whatsappStatusModuleEnabled;
         if (item.href === '/dashboard/knowledge') return knowledgeBaseModuleEnabled;
         return true;
