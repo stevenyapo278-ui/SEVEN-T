@@ -70,28 +70,27 @@ function getSteps(t) {
       description: 'Choisissez un modèle pour démarrer instantanément. Vous pourrez tout personnaliser plus tard.',
       icon: Bot,
       content: (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {[
-            { id: 'marketing', icon: Megaphone, color: 'indigo', title: 'Marketing & Statuts', desc: 'Boostez votre visibilité via les statuts et campagnes' },
-            { id: 'ecommerce', icon: Package, color: 'gold', title: 'Vente & Stock', desc: 'Vente de produits, gestion du stock, commandes' },
-            { id: 'crm', icon: Users, color: 'blue', title: 'CRM / Qualification', desc: 'Qualification de prospects, prise de rdv' },
-            { id: 'support', icon: MessageSquare, color: 'emerald', title: 'Support Client', desc: 'Aide, FAQ, résolution de problèmes' }
+            { id: 'commercial', icon: Users, label: 'CRM & Prospection', sub: 'Qualifiez vos leads et relancez automatiquement vos prospects.', color: 'blue' },
+            { id: 'ecommerce', icon: Package, label: 'Vente & Stock', sub: 'Gérez votre catalogue, vos stocks et vos commandes en direct.', color: 'gold' },
+            { id: 'support', icon: MessageSquare, label: 'Support Client', sub: 'Aidez vos clients 24h/24 et gérez votre SAV avec l\'IA.', color: 'emerald' }
           ].map((item) => (
             <MotionDiv
               key={item.id}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.01 }}
               onClick={() => localStorage.setItem('seven-t-onboarding-template', item.id)}
-              className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] group cursor-pointer hover:border-gold-400/50 transition-all flex items-start gap-4"
+              className="p-5 bg-white/[0.03] border border-white/10 rounded-2xl group cursor-pointer hover:border-gold-400/50 transition-all flex items-center gap-4"
             >
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${item.color === 'gold' ? 'bg-gold-400/20 text-gold-400' : `bg-${item.color}-500/20 text-${item.color}-400`} group-hover:scale-110 transition-transform`}>
-                <item.icon className="w-7 h-7" />
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-${item.color}-500/20 text-${item.color}-400`}>
+                <item.icon className="w-6 h-6" />
               </div>
               <div className="text-left">
                 <h4 className="font-syne font-black text-white italic text-lg leading-none mb-2">
-                  {item.title}
+                  {item.label}
                 </h4>
                 <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                  {item.desc}
+                  {item.sub}
                 </p>
               </div>
             </MotionDiv>

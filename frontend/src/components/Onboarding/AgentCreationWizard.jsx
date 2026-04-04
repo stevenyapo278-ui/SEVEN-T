@@ -30,36 +30,28 @@ const MotionDiv = motion.div
 
 const TEMPLATES = [
   {
-    id: 'marketing',
-    name: 'Marketing & Statuts',
-    description: 'Boostez votre visibilité via les statuts et campagnes',
-    icon: Megaphone,
-    color: 'indigo',
-    features: ['Programmation Statuts', 'Campagnes groupées', 'Engagement Story', 'Relance automatiques']
+    id: 'commercial',
+    name: 'CRM & Prospection',
+    description: 'Qualifiez vos leads et relancez automatiquement vos prospects.',
+    icon: Users,
+    color: 'blue',
+    features: ['Qualification Leads', 'Relances Auto', 'Prise de RDV', 'Notes Clients']
   },
   {
     id: 'ecommerce',
     name: 'Vente & Stock',
-    description: 'Vente de produits, gestion du stock, commandes',
+    description: 'Gérez votre catalogue, vos stocks et vos commandes en direct.',
     icon: Package,
     color: 'gold',
-    features: ['Catalogue produits', 'Gestion du stock', 'Paiements mobiles', 'Prix et disponibilité']
-  },
-  {
-    id: 'crm',
-    name: 'CRM / Qualification',
-    description: 'Qualification de prospects, prise de rendez-vous',
-    icon: Users,
-    color: 'blue',
-    features: ['Récupération de Leads', 'Relances automatiques', 'Prise de RDV', 'Notes clients']
+    features: ['Catalogue IA', 'Gestion Stock', 'Suivi Commandes', 'Paiements Mobiles']
   },
   {
     id: 'support',
     name: 'Support Client',
-    description: 'Aide, FAQ, résolution de problèmes',
+    description: 'Aidez vos clients 24h/24 et gérez votre SAV avec l\'IA.',
     icon: MessageSquare,
     color: 'emerald',
-    features: ['Réponses FAQ', 'Instructions par étapes', 'Transfert humain', 'Base de connaissances']
+    features: ['Réponses FAQ 24/7', 'Base Connaissances', 'SAV Assisté', 'Transfert Humain']
   }
 ]
 
@@ -743,7 +735,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                        <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
                           <span className="text-[10px] font-black uppercase text-white/20 block mb-2">Configuration</span>
                           <div className="flex items-center gap-3">
-                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedTemplate?.color === 'indigo' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${selectedTemplate?.color}-500/20 text-${selectedTemplate?.color}-400`}>
                                 {selectedTemplate && <selectedTemplate.icon className="w-5 h-5" />}
                              </div>
                              <div>
