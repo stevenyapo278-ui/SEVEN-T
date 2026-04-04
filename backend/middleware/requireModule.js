@@ -19,7 +19,11 @@ export function requireModule(moduleKey) {
             if (user.is_admin === 1) return next();
 
             const planName = user?.plan || 'free';
-            const userOverride = userCol && (user?.[userCol] === 1 || user?.[userCol] === true);
+            
+            let userOverride = undefined;
+            if (userCol && user[userCol] !== null && user[userCol] !== undefined) {
+                userOverride = user[userCol] === 1 || user[userCol] === true;
+            }
 
             let allowed = false;
 
@@ -27,17 +31,23 @@ export function requireModule(moduleKey) {
                 // If manager, MUST have owner's permission (owner's plan or owner's override)
                 // AND must have their own override (delegated permission)
                 const owner = await db.get(`SELECT ${selectCols} FROM users WHERE id = ?`, user.parent_user_id);
-                const ownerPlanHas = owner ? await hasModule(owner.plan || 'free', moduleKey) : false;
-                const ownerOverride = userCol && (owner?.[userCol] === 1 || owner?.[userCol] === true);
                 
-                const ownerAllowed = ownerPlanHas || ownerOverride;
+                let ownerAllowed = false;
+                if (userCol && owner?.[userCol] !== null && owner?.[userCol] !== undefined) {
+                    ownerAllowed = owner[userCol] === 1 || owner[userCol] === true;
+                } else {
+                    ownerAllowed = owner ? await hasModule(owner.plan || 'free', moduleKey) : false;
+                }
                 
                 // Manager is allowed ONLY if owner is allowed AND manager has explicit override
-                allowed = ownerAllowed && userOverride;
+                allowed = ownerAllowed && (userOverride === true);
             } else {
                 // For regular owners/admins
-                const planHas = await hasModule(planName, moduleKey);
-                allowed = planHas || userOverride;
+                if (userOverride !== undefined) {
+                    allowed = userOverride; // Explicit 0/false or 1/true overwrites plan
+                } else {
+                    allowed = await hasModule(planName, moduleKey);
+                }
             }
 
             if (!allowed) {
