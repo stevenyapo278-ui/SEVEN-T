@@ -21,7 +21,9 @@ import {
   ShieldCheck,
   Target,
   Clock,
-  Info
+  Info,
+  Megaphone,
+  Users
 } from 'lucide-react'
 
 const MotionDiv = motion.div
@@ -30,14 +32,14 @@ function getSteps(t) {
   return [
     {
       id: 'welcome',
-      title: t('onboarding.welcomeTitle'),
-      description: t('onboarding.welcomeDesc'),
+      title: 'Bienvenue sur SEVEN-T',
+      description: 'Préparez-vous à automatiser votre croissance sur WhatsApp.',
       image: '/images/onboarding/welcome_bot.png',
       icon: Sparkles,
       content: (
         <div className="space-y-6">
           <p className="text-gray-300 text-center text-base sm:text-lg leading-relaxed">
-            {t('onboarding.welcomeIntro')}
+            Dites adieu aux réponses manuelles. SEVEN-T propulse votre business avec une IA qui gère vos **Ventes**, vos **Statuts** et votre **SAV** 24h/24.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
@@ -45,17 +47,17 @@ function getSteps(t) {
                 <ShieldCheck className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-100">Sécurisé</h4>
-                <p className="text-xs text-gray-500">Protection de vos données</p>
+                <h4 className="text-sm font-bold text-gray-100">100% Autonome</h4>
+                <p className="text-xs text-gray-500">Qualification & Ventes</p>
               </div>
             </div>
             <div className="flex items-center gap-3 p-4 bg-white/5 rounded-2xl border border-white/10">
               <div className="w-10 h-10 rounded-xl bg-gold-400/20 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-gold-400" />
+                <Megaphone className="w-5 h-5 text-gold-400" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-gray-100">Instantané</h4>
-                <p className="text-xs text-gray-500">Réponses en temps réel</p>
+                <h4 className="text-sm font-bold text-gray-100">Statuts ROI</h4>
+                <p className="text-xs text-gray-500">Visibilité automatisée</p>
               </div>
             </div>
           </div>
@@ -64,31 +66,34 @@ function getSteps(t) {
     },
     {
       id: 'agent',
-      title: t('onboarding.stepAgentTitle'),
-      description: t('onboarding.stepAgentDesc'),
+      title: 'Quelle sera sa mission ?',
+      description: 'Choisissez un modèle pour démarrer instantanément. Vous pourrez tout personnaliser plus tard.',
       icon: Bot,
       content: (
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
           {[
-            { id: 'commercial', icon: Briefcase, color: 'blue' },
-            { id: 'support', icon: Headset, color: 'emerald' },
-            { id: 'ecommerce', icon: ShoppingCart, color: 'gold' },
-            { id: 'faq', icon: Info, color: 'purple' }
+            { id: 'marketing', icon: Megaphone, color: 'indigo', title: 'Marketing & Statuts', desc: 'Boostez votre visibilité via les statuts et campagnes' },
+            { id: 'ecommerce', icon: Package, color: 'gold', title: 'Vente & Stock', desc: 'Vente de produits, gestion du stock, commandes' },
+            { id: 'crm', icon: Users, color: 'blue', title: 'CRM / Qualification', desc: 'Qualification de prospects, prise de rdv' },
+            { id: 'support', icon: MessageSquare, color: 'emerald', title: 'Support Client', desc: 'Aide, FAQ, résolution de problèmes' }
           ].map((item) => (
             <MotionDiv
               key={item.id}
-              whileHover={{ scale: 1.02, backgroundColor: 'rgba(255,255,255,0.05)' }}
-              className="p-5 bg-white/5 rounded-2xl border border-white/10 group cursor-pointer"
+              whileHover={{ scale: 1.02 }}
+              onClick={() => localStorage.setItem('seven-t-onboarding-template', item.id)}
+              className="p-6 bg-white/[0.03] border border-white/10 rounded-[2rem] group cursor-pointer hover:border-gold-400/50 transition-all flex items-start gap-4"
             >
-              <div className={`w-12 h-12 rounded-2xl mb-4 flex items-center justify-center bg-${item.color}-500/20 text-${item.color}-400 group-hover:scale-110 transition-transform`}>
-                <item.icon className="w-6 h-6" />
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${item.color === 'gold' ? 'bg-gold-400/20 text-gold-400' : `bg-${item.color}-500/20 text-${item.color}-400`} group-hover:scale-110 transition-transform`}>
+                <item.icon className="w-7 h-7" />
               </div>
-              <h4 className="font-bold text-gray-100 mb-1">
-                {t(`onboarding.stepAgent${item.id.charAt(0).toUpperCase() + item.id.slice(1)}`)}
-              </h4>
-              <p className="text-xs text-gray-500 leading-tight">
-                {t(`onboarding.stepAgent${item.id.charAt(0).toUpperCase() + item.id.slice(1)}Sub`)}
-              </p>
+              <div className="text-left">
+                <h4 className="font-syne font-black text-white italic text-lg leading-none mb-2">
+                  {item.title}
+                </h4>
+                <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                  {item.desc}
+                </p>
+              </div>
             </MotionDiv>
           ))}
         </div>
@@ -132,17 +137,17 @@ function getSteps(t) {
     },
     {
       id: 'ready',
-      title: t('onboarding.stepReadyTitle'),
-      description: t('onboarding.stepReadyDesc'),
+      title: 'Prêt pour le décollage ?',
+      description: 'Votre configuration de base est terminée. Il est temps de laisser l\'IA travailler.',
       image: '/images/onboarding/success_launch.png',
       icon: CheckCircle,
       content: (
         <div className="space-y-8">
           <div className="flex flex-col gap-4">
             {[
-              { text: t('onboarding.stepReady24'), icon: Clock, color: 'emerald' },
-              { text: t('onboarding.stepReadyAI'), icon: Sparkles, color: 'blue' },
-              { text: t('onboarding.stepReadySimple'), icon: Zap, color: 'gold' }
+              { text: 'Réponses 24h/24 et 7j/7', icon: Clock, color: 'emerald' },
+              { text: 'Qualification intelligente des prospects', icon: Sparkles, color: 'blue' },
+              { text: 'Mise à jour auto des statuts WhatsApp', icon: Megaphone, color: 'gold' }
             ].map((item, i) => (
               <MotionDiv
                 key={i}
@@ -160,7 +165,7 @@ function getSteps(t) {
             ))}
           </div>
           <p className="text-gray-400 text-center font-medium italic">
-            {t('onboarding.stepReadyFollow')}
+            Cliquez sur Continuer pour créer votre premier agent.
           </p>
         </div>
       )

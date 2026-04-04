@@ -92,7 +92,8 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
         return parsed.formData || { template: null, name: '', description: '', model: null }
       } catch (e) { console.error(e) }
     }
-    return { template: null, name: '', description: '', model: null }
+    const onboardingTemplate = localStorage.getItem('seven-t-onboarding-template')
+    return { template: onboardingTemplate || null, name: '', description: '', model: null }
   })
 
   // Restore step on mount
