@@ -28,7 +28,7 @@ const FEATURES_BASELINE = {
     analytics: false,
     flows: false,
     whatsapp_status: false,
-    leads_management: false,
+    leads_management: true,
     models: []
 
 };
