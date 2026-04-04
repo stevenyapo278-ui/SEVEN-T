@@ -21,7 +21,8 @@ import {
   Target,
   Rocket,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Megaphone
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -29,20 +30,28 @@ const MotionDiv = motion.div
 
 const TEMPLATES = [
   {
+    id: 'marketing',
+    name: 'Marketing & Statuts',
+    description: 'Boostez votre visibilité via les statuts et campagnes',
+    icon: Megaphone,
+    color: 'indigo',
+    features: ['Programmation Statuts', 'Campagnes groupées', 'Engagement Story', 'Relance automatiques']
+  },
+  {
     id: 'ecommerce',
-    name: 'E-commerce',
+    name: 'Vente & Stock',
     description: 'Vente de produits, gestion du stock, commandes',
     icon: Package,
     color: 'gold',
-    features: ['Catalogue produits', 'Gestion du stock', 'Détection de commandes', 'Prix et disponibilité']
+    features: ['Catalogue produits', 'Gestion du stock', 'Paiements mobiles', 'Prix et disponibilité']
   },
   {
-    id: 'commercial',
-    name: 'Commercial',
-    description: 'Vente de services, prestations, prise de rendez-vous',
-    icon: Target,
+    id: 'crm',
+    name: 'CRM / Qualification',
+    description: 'Qualification de prospects, prise de rendez-vous',
+    icon: Users,
     color: 'blue',
-    features: ['Qualification de prospects', 'Catalogue services', 'Tarifs et durées', 'Prise de RDV']
+    features: ['Récupération de Leads', 'Relances automatiques', 'Prise de RDV', 'Notes clients']
   },
   {
     id: 'support',
@@ -50,13 +59,14 @@ const TEMPLATES = [
     description: 'Aide, FAQ, résolution de problèmes',
     icon: MessageSquare,
     color: 'emerald',
-    features: ['Réponses aux questions (FAQ)', 'Instructions étape par étape', 'Transfert humain', 'Base de connaissances']
+    features: ['Réponses FAQ', 'Instructions par étapes', 'Transfert humain', 'Base de connaissances']
   }
 ]
 
 // AI_MODELS will be loaded from DB for admins to respect sort_order
 
 const STEPS_CONFIG = [
+  { id: 'intro', title: 'Bienvenue', icon: Sparkles },
   { id: 'template', title: 'Mission', icon: Target },
   { id: 'name', title: 'Identité', icon: Bot },
   { id: 'model', title: 'Cerveau', adminOnly: true, icon: Sparkles },
@@ -74,12 +84,36 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
   // Filter steps based on user permissions
   const STEPS = STEPS_CONFIG.filter(step => !step.adminOnly || user?.is_admin)
 
-  const [formData, setFormData] = useState({
-    template: null,
-    name: '',
-    description: '',
-    model: null
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem(`seven-t-wizard-draft-${user?.id}`)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        return parsed.formData || { template: null, name: '', description: '', model: null }
+      } catch (e) { console.error(e) }
+    }
+    return { template: null, name: '', description: '', model: null }
   })
+
+  // Restore step on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(`seven-t-wizard-draft-${user?.id}`)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (typeof parsed.currentStep === 'number' && parsed.currentStep < STEPS.length) {
+          setCurrentStep(parsed.currentStep)
+        }
+      } catch (e) { console.error(e) }
+    }
+  }, [user, STEPS.length])
+
+  // Save to localStorage on change
+  useEffect(() => {
+    if (user?.id) {
+      localStorage.setItem(`seven-t-wizard-draft-${user.id}`, JSON.stringify({ formData, currentStep }))
+    }
+  }, [formData, currentStep, user?.id])
 
   useEffect(() => {
     if (user?.is_admin) {
@@ -110,6 +144,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
 
   const canProceed = () => {
     switch (currentStepId) {
+      case 'intro': return true
       case 'template': return formData.template !== null
       case 'name': return formData.name.trim().length >= 2
       case 'model': return formData.model !== null
@@ -130,6 +165,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
         })
         
         toast.success('Agent créé avec succès ! 🎉')
+        localStorage.removeItem(`seven-t-wizard-draft-${user?.id}`)
         onSuccess?.(response.data.agent)
         onClose()
         navigate(`/dashboard/agents/${response.data.agent.id}`)
@@ -224,6 +260,36 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
               transition={{ duration: 0.25 }}
               className="space-y-6 pb-4"
             >
+              {/* Step 0: Intro */}
+              {currentStepId === 'intro' && (
+                <div className="space-y-8 text-center pt-4">
+                  <div className="relative w-24 h-24 mx-auto">
+                    <div className="absolute inset-0 bg-gold-400/20 blur-xl rounded-full" />
+                    <div className="relative w-24 h-24 bg-gradient-to-br from-gold-400 to-amber-600 rounded-[2rem] flex items-center justify-center shadow-lg">
+                      <Sparkles className="w-12 h-12 text-black" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <h2 className="text-3xl font-syne font-black text-white italic">Faisons décoller votre WhatsApp</h2>
+                    <p className="text-gray-400 leading-relaxed text-sm">
+                      Dites adieu au chaos. SEVEN-T automatise vos **Statuts**, vos **Ventes** et votre **SAV** pendant que vous vous concentrez sur l'essentiel.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 pt-4">
+                    {[
+                      { icon: Megaphone, text: 'Visibilité boostée via les Statuts' },
+                      { icon: Bot, text: 'Qualification de Leads 24/7' },
+                      { icon: Zap, text: 'Gestion Assistée du Stock' }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3 bg-white/[0.02] border border-white/5 rounded-2xl">
+                         <item.icon className="w-5 h-5 text-gold-400" />
+                         <span className="text-xs font-bold text-white/80">{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Step 1: Template */}
               {currentStepId === 'template' && (
                 <div className="space-y-6">
@@ -481,6 +547,42 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                 transition={{ duration: 0.3 }}
                 className="space-y-8"
               >
+                {/* Step 0: Intro (Desktop) */}
+                {currentStepId === 'intro' && (
+                  <div className="space-y-10 py-4">
+                    <div className="flex items-start gap-8">
+                       <div className="relative w-32 h-32 flex-shrink-0">
+                          <div className="absolute inset-0 bg-gold-400/20 blur-2xl rounded-full animate-pulse" />
+                          <div className="relative w-32 h-32 bg-gradient-to-br from-gold-400 to-amber-600 rounded-[2.5rem] flex items-center justify-center shadow-2xl">
+                            <Sparkles className="w-16 h-16 text-black" />
+                          </div>
+                       </div>
+                       <div className="space-y-4">
+                          <h2 className="text-4xl sm:text-5xl font-syne font-black text-white italic leading-tight">
+                            Votre business <br /> en <span className="text-gold-400">pilote automatique</span>.
+                          </h2>
+                          <p className="text-xl text-gray-400 leading-relaxed max-w-lg">
+                            Bienvenue sur SEVEN-T. L'IA qui ne se contente pas de répondre, elle **propulse** votre croissance sur WhatsApp.
+                          </p>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-6 pt-6">
+                      {[
+                        { icon: Megaphone, title: 'Statuts ROI', desc: 'Attirez des clients sans effort' },
+                        { icon: Bot, title: 'IA Vendeuse', desc: 'Relancez et concluez 24/7' },
+                        { icon: Zap, title: 'CRM Assisté', desc: 'Videz votre stock, remplissez votre CRM' }
+                      ].map((item, i) => (
+                        <div key={i} className="p-6 bg-white/[0.02] border border-white/10 rounded-3xl group hover:border-gold-400/30 transition-all">
+                           <item.icon className="w-8 h-8 text-gold-400 mb-4 group-hover:scale-110 transition-transform" />
+                           <h4 className="text-white font-bold text-lg mb-1 italic">{item.title}</h4>
+                           <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Step 1: Template Selection */}
                 {currentStepId === 'template' && (
                   <div className="space-y-8">
@@ -640,8 +742,8 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                        <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
                           <span className="text-[10px] font-black uppercase text-white/20 block mb-2">Configuration</span>
                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
-                                <Target className="w-5 h-5" />
+                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${selectedTemplate?.color === 'indigo' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                {selectedTemplate && <selectedTemplate.icon className="w-5 h-5" />}
                              </div>
                              <div>
                                 <p className="text-xs text-blue-400 font-bold uppercase">Mission</p>
@@ -663,23 +765,19 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                        </div>
                     </div>
 
-                    <div className="p-8 bg-gold-400/5 rounded-[2rem] border border-gold-400/10">
+                    <div className="p-8 bg-gradient-to-br from-gold-400/5 to-amber-600/5 rounded-[2rem] border border-gold-400/10">
                        <h4 className="font-syne font-bold text-gold-400 uppercase text-xs mb-4 flex items-center gap-2">
                           <Zap className="w-4 h-4" />
-                          Prochaines étapes
+                          Capacités de votre expert
                        </h4>
-                       <ul className="space-y-3">
-                          {[
-                            'Connexion de votre numéro WhatsApp Business',
-                            'Enrichissement de la base de connaissances',
-                            'Mise en ligne de l\'expert'
-                          ].map((step, i) => (
-                            <li key={i} className="flex items-center gap-3 text-gray-400">
-                               <div className="w-5 h-5 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-[10px] font-black">{i+1}</div>
-                               <span className="text-sm font-medium">{step}</span>
-                            </li>
+                       <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                          {(selectedTemplate?.features || []).map((feature, i) => (
+                             <div key={i} className="flex items-center gap-2 text-gray-400">
+                                <div className="w-1.5 h-1.5 rounded-full bg-gold-400" />
+                                <span className="text-xs font-medium">{feature}</span>
+                             </div>
                           ))}
-                       </ul>
+                       </div>
                     </div>
                   </div>
                 )}

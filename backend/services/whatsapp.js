@@ -18,6 +18,7 @@ import { hasEnoughCredits, deductCredits } from './credits.js';
 import { leadAnalyzer } from './leadAnalyzer.js';
 import { orderDetector } from './orderDetector.js';
 import { humanInterventionService } from './humanIntervention.js';
+import notificationService from './notifications.js';
 import { adminAnomaliesService } from './adminAnomalies.js';
 import { messageAnalyzer } from './messageAnalyzer.js';
 import supportAnalyzer from './supportAnalyzer.js';
@@ -27,7 +28,6 @@ import { workflowExecutor } from './workflowExecutor.js';
 import { decisionEngine } from './decisionEngine.js';
 import { messageAiLogService } from './messageAiLog.js';
 import { autoQaService } from './autoQa.js';
-import { notificationService } from './notifications.js';
 import { staticResponses, shortMessagePatterns, pickResponse } from '../config/staticResponses.js';
 import { hasFeature, hasModule } from '../config/plans.js';
 import { updateConversionScore } from './conversionScore.js';
@@ -3578,7 +3578,7 @@ workflowExecutor.setWhatsAppManager(whatsappManager);
 export async function runStatusSchedulerJob() {
     try {
         const scheduledStatuses = await db.all(`
-            SELECT ws.*, a.tool_id 
+            SELECT ws.*, a.tool_id, a.user_id 
             FROM whatsapp_statuses ws
             JOIN agents a ON ws.agent_id = a.id
             WHERE ws.status = 'scheduled' 
@@ -3608,21 +3608,37 @@ export async function runStatusSchedulerJob() {
                     }
                 }
 
-                // The sendStatus method handles media resolution (Buffer, etc.) and broadcast options
-                const result = await whatsappManager.sendStatus(statusRow.tool_id, {
-                    type: statusRow.type,
-                    text: statusRow.type === 'text' ? statusRow.content : undefined,
-                    backgroundColor: statusRow.background_color,
-                    font: statusRow.font,
-                    mediaUrl: mediaUrl,
-                    caption: statusRow.caption,
-                    mimeType: statusRow.mime_type || (statusRow.type === 'product' ? 'image/jpeg' : undefined),
-                    statusId: statusRow.id
-                });
+                try {
+                    // Small jitter to avoid anti-ban (1-3 seconds)
+                    await new Promise(r => setTimeout(r, 1000 + Math.random() * 2000));
 
-                if (!result) {
-                    // If sendStatus returns nothing (e.g. skipped product without media)
+                    // The sendStatus method handles media resolution (Buffer, etc.) and broadcast options
+                    const result = await whatsappManager.sendStatus(statusRow.tool_id, {
+                        type: statusRow.type,
+                        text: statusRow.type === 'text' ? statusRow.content : undefined,
+                        backgroundColor: statusRow.background_color,
+                        font: statusRow.font,
+                        mediaUrl: mediaUrl,
+                        caption: statusRow.caption,
+                        mimeType: statusRow.mime_type || (statusRow.type === 'product' ? 'image/jpeg' : undefined),
+                        statusId: statusRow.id
+                    });
+
+                    if (!result) {
+                        await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+                        if (statusRow.user_id) {
+                            await notificationService.notifyStatusFailure(statusRow.user_id, statusRow.type, 'Média manquant ou inaccessible');
+                        }
+                        continue;
+                    }
+
+                    // Success logic below...
+                } catch (sendErr) {
+                    console.error(`[StatusScheduler] Send failed for ${statusRow.id}:`, sendErr.message);
                     await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+                    if (statusRow.user_id) {
+                        await notificationService.notifyStatusFailure(statusRow.user_id, statusRow.type, sendErr.message);
+                    }
                     continue;
                 }
 

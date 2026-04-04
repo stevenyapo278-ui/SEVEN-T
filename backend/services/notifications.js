@@ -269,15 +269,14 @@ class NotificationService {
     }
 
     /**
-     * Notify about a critical action (for admins)
+     * Notify about a failed status publication
      */
-    notifyCriticalAction(userId, title, message, details = {}) {
+    notifyStatusFailure(userId, statusType, error) {
         return this.create(userId, {
             type: 'error',
-            title: `[SÉCURITÉ] ${title}`,
-            message,
-            link: '/admin?tab=activity',
-            metadata: { critical: true, ...details }
+            title: 'Échec de publication du statut',
+            message: `Le statut de type ${statusType} n'a pas pu être publié. ${error || ''}`,
+            link: '/dashboard/whatsapp-status'
         });
     }
 }
