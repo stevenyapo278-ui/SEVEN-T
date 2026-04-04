@@ -364,6 +364,8 @@ export async function initDatabase() {
             tokens_used INTEGER DEFAULT 0,
             sender_type TEXT DEFAULT 'ai',
             media_url TEXT,
+            is_status_reply INTEGER DEFAULT 0,
+            quoted_content TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
         );
@@ -1644,6 +1646,15 @@ export async function initDatabase() {
         await db.run("UPDATE users SET role = 'owner' WHERE role IS NULL");
     } catch (e) {
         console.warn('User role default migration:', e?.message);
+    }
+
+    try {
+        await db.run('ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_status_reply INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE messages ADD COLUMN IF NOT EXISTS quoted_content TEXT');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('messages migration error:', e?.message);
+        }
     }
 
     try {

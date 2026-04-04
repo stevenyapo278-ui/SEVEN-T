@@ -357,16 +357,8 @@ class WhatsAppManager {
                         const msg = store.messages[jid].find(m => m.key.id === key.id);
                         if (msg) return msg.message || undefined;
                     }
-                    // Fallback to DB if NOT in store
-                    try {
-                        const row = await db.get('SELECT payload FROM messages WHERE whatsapp_id = ?', key.id);
-                        if (row?.payload) {
-                            const parsed = JSON.parse(row.payload);
-                            return parsed.message || undefined;
-                        }
-                    } catch (e) {
-                        console.warn('[WhatsApp] getMessage DB fallback failed:', e.message);
-                    }
+                    // Database fallback: we only store text content, not the full proto.Message payload
+                    // so we can't fully satisfy getMessage if it's not in memory.
                     return undefined;
                 }
             });
@@ -750,6 +742,19 @@ class WhatsAppManager {
                 ? new Date(Number(message.messageTimestamp) * 1000).toISOString()
                 : new Date().toISOString();
 
+            // Detect Status Reply and Quoted Message
+            const contextInfo = message.message?.extendedTextMessage?.contextInfo 
+                || message.message?.imageMessage?.contextInfo
+                || message.message?.videoMessage?.contextInfo
+                || message.message?.audioMessage?.contextInfo
+                || message.message?.documentMessage?.contextInfo;
+
+            const isStatusReply = contextInfo?.remoteJid === 'status@broadcast' ? 1 : 0;
+            let quotedContent = null;
+            if (contextInfo?.quotedMessage) {
+                quotedContent = this.extractMessageText({ message: contextInfo.quotedMessage });
+            }
+
             // ==================== CHECK BLACKLIST ====================
             const isBlacklisted = await db.get('SELECT id FROM blacklist WHERE agent_id = ? AND contact_jid = ?', agentId, sender);
             if (isBlacklisted) {
@@ -910,7 +915,17 @@ class WhatsAppManager {
             }
 
             return {
-                payload: { content: messageText, messageType, whatsapp_id: incomingWhatsappId, createdAt, mediaUrl, replyToJidForSend, inMsgId },
+                payload: { 
+                    content: messageText, 
+                    messageType, 
+                    whatsapp_id: incomingWhatsappId, 
+                    createdAt, 
+                    mediaUrl, 
+                    replyToJidForSend, 
+                    inMsgId,
+                    is_status_reply: isStatusReply,
+                    quoted_content: quotedContent
+                },
                 context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend },
                 audioTranscriptionFailed
             };
@@ -940,9 +955,9 @@ class WhatsAppManager {
             if (result.audioTranscriptionFailed) {
                 const { payload, context } = result;
                 await db.run(`
-                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
-                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
-                `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
+                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, is_status_reply, quoted_content, created_at)
+                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)
+                `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.is_status_reply, payload.quoted_content, payload.createdAt);
                 await db.run(
                     `UPDATE conversations
                      SET last_message_at = ?,
@@ -960,9 +975,9 @@ class WhatsAppManager {
             if (payload.messageType !== 'text') {
                 await conversationMessageQueue.flush(toolId, context.conversation.id);
                 await db.run(`
-                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
-                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
-                `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.createdAt);
+                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, is_status_reply, quoted_content, created_at)
+                    VALUES (?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)
+                `, payload.inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl, payload.is_status_reply, payload.quoted_content, payload.createdAt);
                 await db.run(
                     `UPDATE conversations
                      SET last_message_at = ?,
@@ -980,6 +995,8 @@ class WhatsAppManager {
                     whatsapp_id: payload.whatsapp_id,
                     message_type: payload.messageType,
                     media_url: payload.mediaUrl,
+                    is_status_reply: payload.is_status_reply,
+                    quoted_content: payload.quoted_content,
                     created_at: payload.createdAt
                 });
                 void enqueueWorkflow('new_message', {
@@ -1001,9 +1018,9 @@ class WhatsAppManager {
             // [SAVE INSTANTLY] Save all incoming text messages immediately so they appear instantly on the dashboard
             const inMsgId = payload.inMsgId || uuidv4();
             await db.run(`
-                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, created_at)
-                VALUES (?, ?, 'user', ?, ?, ?, ?, ?)
-            `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.createdAt);
+                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, is_status_reply, quoted_content, created_at)
+                VALUES (?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)
+            `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.is_status_reply, payload.quoted_content, payload.createdAt);
             await db.run(
                 `UPDATE conversations
                  SET last_message_at = ?,
@@ -1022,6 +1039,8 @@ class WhatsAppManager {
                 whatsapp_id: payload.whatsapp_id,
                 message_type: 'text',
                 media_url: payload.mediaUrl || null,
+                is_status_reply: payload.is_status_reply,
+                quoted_content: payload.quoted_content,
                 created_at: payload.createdAt
             });
             this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
@@ -2483,7 +2502,7 @@ class WhatsAppManager {
             console.warn('[WhatsApp] ensureConversationDisplay failed:', e?.message);
         }
     }
-
+    
     async sendMessage(toolId, to, text) {
         const sock = this.connections.get(toolId);
         if (!sock) {
@@ -3409,7 +3428,7 @@ class WhatsAppManager {
             throw new Error('WhatsApp non connecté');
         }
 
-        const { type = 'text', text, backgroundColor, font, mediaUrl, caption, mimeType } = payload;
+        const { type = 'text', text, backgroundColor, font, mediaUrl, caption, mimeType, statusId } = payload;
 
         // Options prerequisites for visibility
         const store = this.stores.get(toolId);
@@ -3502,7 +3521,7 @@ class WhatsAppManager {
                 };
             } else if (type === 'product') {
                 if (!mediaSource) {
-                    console.warn(`[WhatsApp] Status type 'product' used without mediaSource for ID: ${id}. Skipping image.`);
+                    console.warn(`[WhatsApp] Status type 'product' used without mediaSource for ID: ${statusId || 'unknown'}. Skipping image.`);
                     return; // Avoid crashing the job
                 }
                 message = {
@@ -3587,7 +3606,8 @@ export async function runStatusSchedulerJob() {
                     font: statusRow.font,
                     mediaUrl: statusRow.content,
                     caption: statusRow.caption,
-                    mimeType: statusRow.mime_type
+                    mimeType: statusRow.mime_type,
+                    statusId: statusRow.id
                 });
 
                 try {

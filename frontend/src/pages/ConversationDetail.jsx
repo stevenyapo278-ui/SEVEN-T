@@ -940,6 +940,23 @@ export default function ConversationDetail() {
                           </div>
                         ) : null}
 
+                        {message.is_status_reply === 1 && (
+                          <div className={`flex items-center gap-1.5 mb-2 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                            isDark ? 'bg-blue-500/10 border border-blue-500/20 text-blue-400' : 'bg-blue-50 border border-blue-100 text-blue-600'
+                          }`}>
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                            Réponse au statut
+                          </div>
+                        )}
+
+                        {message.quoted_content && (
+                          <div className={`mb-2 p-2 rounded-lg border-l-4 text-xs italic ${
+                            isDark ? 'bg-space-700/50 border-gold-600/50 text-gray-400' : 'bg-gray-100 border-gold-400 text-gray-600'
+                          }`}>
+                            {message.quoted_content}
+                          </div>
+                        )}
+
                         {(message.content && message.content !== '[Image]' && message.content !== '[Audio]') || (!message.media_url && message.content) ? (
                           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
                         ) : null}
