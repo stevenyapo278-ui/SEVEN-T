@@ -28,6 +28,7 @@ const FEATURES_BASELINE = {
     analytics: false,
     flows: false,
     whatsapp_status: false,
+    leads_management: false,
     models: []
 
 };
@@ -218,7 +219,8 @@ export const PLANS = {
             daily_briefing: false,
             sentiment_routing: false,
             catalog_import: false,
-            human_handoff_alerts: false
+            human_handoff_alerts: false,
+            leads_management: true
         }
     },
     pro: {
@@ -249,7 +251,8 @@ export const PLANS = {
             sentiment_routing: true,
             catalog_import: true,
             human_handoff_alerts: true, analytics: true, flows: true,
-            whatsapp_status: true
+            whatsapp_status: true,
+            leads_management: true
         }
     },
     business: {
@@ -280,7 +283,8 @@ export const PLANS = {
             sentiment_routing: true,
             catalog_import: true,
             human_handoff_alerts: true, analytics: true, flows: true,
-            whatsapp_status: true
+            whatsapp_status: true,
+            leads_management: true
         }
     },
     enterprise: {
@@ -311,12 +315,13 @@ export const PLANS = {
             sentiment_routing: true,
             catalog_import: true,
             human_handoff_alerts: true, analytics: true, flows: true,
-            whatsapp_status: true
+            whatsapp_status: true,
+            leads_management: true
         }
     }
 };
 
-export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows', 'whatsapp_status'];
+export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows', 'whatsapp_status', 'leads_management'];
 
 
 /** Map plan feature key to users table override column */
@@ -333,7 +338,8 @@ export const MODULE_TO_USER_COLUMN = {
     catalog_import: 'catalog_import_enabled',
     human_handoff_alerts: 'human_handoff_alerts_enabled',
     flows: 'flows_module_enabled',
-    whatsapp_status: 'whatsapp_status_enabled'
+    whatsapp_status: 'whatsapp_status_enabled',
+    leads_management: 'leads_management_enabled'
 };
 
 /**

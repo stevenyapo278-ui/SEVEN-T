@@ -212,6 +212,7 @@ export async function initDatabase() {
             human_handoff_alerts_enabled INTEGER,
             flows_module_enabled INTEGER,
             whatsapp_status_enabled INTEGER,
+            leads_management_enabled INTEGER,
             -- Multi-user / Manager support
             parent_user_id TEXT,
             role TEXT DEFAULT 'owner', -- 'owner', 'manager'
@@ -255,6 +256,7 @@ export async function initDatabase() {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS human_handoff_alerts_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS flows_module_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_status_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS leads_management_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'owner';
         ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT;
@@ -1555,6 +1557,26 @@ export async function initDatabase() {
                         SET price_yearly = ? 
                         WHERE name = ? AND (price_yearly IS NULL OR price_yearly = 0)
                     `, plan.price_yearly, plan.name);
+                }
+                
+                // Migration: add leads_management to features if missing
+                try {
+                    const dbPlan = await db.get('SELECT features FROM subscription_plans WHERE name = ?', plan.name);
+                    if (dbPlan) {
+                        const features = JSON.parse(dbPlan.features || '{}');
+                        if (features.leads_management === undefined) {
+                            const defaultFeats = JSON.parse(plan.features || '{}');
+                            features.leads_management = defaultFeats.leads_management;
+                            await db.run(
+                                'UPDATE subscription_plans SET features = ?, updated_at = CURRENT_TIMESTAMP WHERE name = ?',
+                                JSON.stringify(features),
+                                plan.name
+                            );
+                            console.log(`[Migration] Added leads_management to plan ${plan.name}`);
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`[Migration] Failed to update features for ${plan.name}:`, err.message);
                 }
             }
         }

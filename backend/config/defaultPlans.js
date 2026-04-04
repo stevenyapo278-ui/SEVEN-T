@@ -38,7 +38,8 @@ export const defaultPlans = [
             sentiment_routing: false,
             catalog_import: false,
             human_handoff_alerts: false,
-            analytics: false
+            analytics: false,
+            leads_management: false
         })
     },
     {
@@ -54,7 +55,6 @@ export const defaultPlans = [
         limits: JSON.stringify({
             agents: 1,
             whatsapp_accounts: 1,
-
             outlook_accounts: 1,
             google_calendar_accounts: 1,
             conversations_per_month: 300,
@@ -75,7 +75,8 @@ export const defaultPlans = [
             sentiment_routing: false,
             catalog_import: false,
             human_handoff_alerts: false,
-            analytics: false
+            analytics: false,
+            leads_management: true
         })
     },
     {
@@ -112,7 +113,8 @@ export const defaultPlans = [
             sentiment_routing: true,
             catalog_import: true,
             human_handoff_alerts: true,
-            analytics: true
+            analytics: true,
+            leads_management: true
         })
     },
     {
@@ -149,7 +151,8 @@ export const defaultPlans = [
             sentiment_routing: true,
             catalog_import: true,
             human_handoff_alerts: true,
-            analytics: true
+            analytics: true,
+            leads_management: true
         })
     },
     {
