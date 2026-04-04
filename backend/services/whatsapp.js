@@ -3501,7 +3501,10 @@ class WhatsAppManager {
                     mimetype: resolvedMimeType || 'video/mp4'
                 };
             } else if (type === 'product') {
-                if (!mediaSource) throw new Error("L'URL ou le contenu de l'image du produit est requis");
+                if (!mediaSource) {
+                    console.warn(`[WhatsApp] Status type 'product' used without mediaSource for ID: ${id}. Skipping image.`);
+                    return; // Avoid crashing the job
+                }
                 message = {
                     image: Buffer.isBuffer(mediaSource) ? mediaSource : { url: mediaSource.trim() },
                     caption: caption?.trim() || undefined,

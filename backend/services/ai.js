@@ -930,10 +930,9 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
                 confidence: typeof obj.confidence === 'number' ? obj.confidence : undefined,
                 booking: obj.booking || null,
                 action: obj.action || null
-            };
-            if (result.action) console.log(`[AI DEBUG] Action captured in normalizeParsed: ${JSON.stringify(result.action)}`);
-            return result;
         };
+        return result;
+    };
 
         // Try 1: Direct JSON parse
         try {

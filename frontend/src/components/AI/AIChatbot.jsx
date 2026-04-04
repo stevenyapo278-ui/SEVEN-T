@@ -66,7 +66,8 @@ async function executeAction(action, navigate, userId) {
         ok: true,
         stats: s,
         icon: BarChart3,
-        color: 'gold'
+        color: 'gold',
+        label: 'Tableau de bord'
       }
     }
 
