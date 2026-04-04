@@ -3598,17 +3598,33 @@ export async function runStatusSchedulerJob() {
             }
 
             try {
+                let mediaUrl = statusRow.type === 'text' ? undefined : statusRow.content;
+                
+                // If it's a product type, we need to resolve the image URL from the products table
+                if (statusRow.type === 'product' && statusRow.content) {
+                    const product = await db.get('SELECT image_url FROM products WHERE id = ?', statusRow.content);
+                    if (product && product.image_url) {
+                        mediaUrl = product.image_url;
+                    }
+                }
+
                 // The sendStatus method handles media resolution (Buffer, etc.) and broadcast options
                 const result = await whatsappManager.sendStatus(statusRow.tool_id, {
                     type: statusRow.type,
                     text: statusRow.type === 'text' ? statusRow.content : undefined,
                     backgroundColor: statusRow.background_color,
                     font: statusRow.font,
-                    mediaUrl: statusRow.content,
+                    mediaUrl: mediaUrl,
                     caption: statusRow.caption,
-                    mimeType: statusRow.mime_type,
+                    mimeType: statusRow.mime_type || (statusRow.type === 'product' ? 'image/jpeg' : undefined),
                     statusId: statusRow.id
                 });
+
+                if (!result) {
+                    // If sendStatus returns nothing (e.g. skipped product without media)
+                    await db.run('UPDATE whatsapp_statuses SET status = ? WHERE id = ?', 'failed', statusRow.id);
+                    continue;
+                }
 
                 try {
                     const isRecurrent = (statusRow.recurrence_interval || 0) > 0;

@@ -845,15 +845,16 @@ export default function WhatsAppStatus() {
           </div>
 
           {/* Send button */}
-          <button
-            onClick={handleSend}
-            disabled={sending || agents.length === 0 || !selectedAgent}
-            className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-semibold text-base transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none ${
-                isScheduled
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/25'
-                    : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/25'
-            }`}
-          >
+          {tab !== 'product' && (
+            <button
+              onClick={handleSend}
+              disabled={sending || agents.length === 0 || !selectedAgent}
+              className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl font-semibold text-base transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none ${
+                  isScheduled
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-blue-500/25'
+                      : 'bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white shadow-emerald-500/25'
+              }`}
+            >
             {sending ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -866,6 +867,7 @@ export default function WhatsAppStatus() {
               </>
             )}
           </button>
+          )}
         </div>
 
         {/* Right panel: Preview + History */}
