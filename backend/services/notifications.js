@@ -279,6 +279,18 @@ class NotificationService {
             link: '/dashboard/whatsapp-status'
         });
     }
+
+    /**
+     * Notify about a critical action (for admins)
+     */
+    notifyCriticalAction(userId, title, message, metadata) {
+        return this.create(userId, {
+            type: 'error',
+            title,
+            message,
+            metadata
+        });
+    }
 }
 
 export const notificationService = new NotificationService();
