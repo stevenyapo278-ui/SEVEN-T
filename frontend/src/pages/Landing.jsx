@@ -25,6 +25,7 @@ import {
   X,
   Phone,
   User,
+  Megaphone,
 } from 'lucide-react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
@@ -99,6 +100,14 @@ const features = [
     iconColor: 'text-rose-500',
     title: 'Multi-numéros Sécurisé',
     description: 'Gérez plusieurs lignes WhatsApp pour vos équipes avec une isolation totale des données clients.',
+  },
+  {
+    icon: Megaphone,
+    darkBg: 'bg-indigo-500/10 border-indigo-500/15',
+    lightBg: 'bg-indigo-50 border-indigo-200',
+    iconColor: 'text-indigo-500',
+    title: 'Statuts WhatsApp ROI',
+    description: 'Automatisez votre visibilité. Programmez et répétez vos offres en Story WhatsApp pour toucher vos clients là où ils regardent.',
   },
 ]
 
@@ -565,13 +574,13 @@ export default function Landing() {
             </div>
 
             <h1 className={`hero-title mb-10 ${text}`}>
-              L'IA qui n'automatise pas,
+              Vendez plus sur <span className="text-emerald-500">WhatsApp</span>,
               <br />
-              elle <span className="text-amber-500 italic">ASSISTE</span> votre croissance.
+              même quand vous <span className="text-amber-500 italic">dormez</span>.
             </h1>
 
             <p className={`hero-subtitle mb-14 text-lg md:text-xl font-medium px-4 ${isDark ? 'text-white/60' : 'text-gray-700'}`}>
-              Ne soyez plus seul pour gérer vos messages. SEVEN T est l'assistant intelligent qui qualifie vos leads, gère vos stocks et vend pour vous sur WhatsApp, 24h/24.
+              Ne soyez plus seul pour gérer vos messages. SEVEN T est l'assistant intelligent qui qualifie vos leads, gère vos stocks et publie vos statuts automatiquement. **Commencez votre essai gratuit aujourd'hui.**
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-5 mb-20 w-full sm:w-auto">
@@ -1011,10 +1020,11 @@ export default function Landing() {
         )}
         <div className="relative max-w-3xl mx-auto text-center">
           <h2 className={`text-4xl md:text-6xl font-bold mb-6 leading-tight ${text}`}>
-            Prêt à automatiser votre WhatsApp ?
+            Prêt à transformer votre <span className="text-amber-500">WhatsApp</span> ?
           </h2>
           <p className={`text-xl mb-12 leading-relaxed ${textMuted}`}>
-            Rejoignez des centaines d'entrepreneurs qui font grandir leur activité avec SEVEN T.
+            Rejoignez des centaines d'entrepreneurs qui automatisent leur croissance avec SEVEN T. 
+            <br className="hidden md:block" /> **Essai gratuit — Sans carte bancaire.**
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/register"
