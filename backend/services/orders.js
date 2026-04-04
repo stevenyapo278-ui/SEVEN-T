@@ -22,6 +22,50 @@ export const ORDER_STATUSES = {
 };
 
 class OrderService {
+    async handleAbandonedCart(orderId) {
+        try {
+            const orderRaw = await db.get(`SELECT * FROM orders WHERE id = ?`, orderId);
+            if (!orderRaw || orderRaw.status !== 'pending') return { success: false, reason: 'not_pending_or_not_found' };
+
+            const order = await this.getOrderById(orderId, orderRaw.user_id);
+            if (!order?.conversation_id) return { success: false, reason: 'no_conversation' };
+
+            const conv = await db.get(`SELECT contact_jid, contact_number, contact_name, agent_id FROM conversations WHERE id = ?`, order.conversation_id);
+            if (!conv) return { success: false, reason: 'conversation_not_found' };
+
+            const triggerData = {
+                orderId: order.id,
+                orderIdShort: order.id.substring(0, 8),
+                conversationId: order.conversation_id,
+                agentId: conv.agent_id,
+                userId: order.user_id,
+                contactJid: normalizeJid(conv.contact_jid || conv.contact_number),
+                contactName: conv.contact_name || order.customer_name || 'Client',
+                totalAmount: order.total_amount,
+                currency: order.currency
+            };
+
+            // First, see if user has a custom "abandoned_cart" workflow
+            const result = await workflowExecutor.executeMatchingWorkflowsSafe('abandoned_cart', triggerData, conv.agent_id, order.user_id);
+            
+            if (!result?.executed) {
+                // Default Built-in Recovery Message
+                const agent = await db.get('SELECT tool_id FROM agents WHERE id = ?', conv.agent_id);
+                if (agent?.tool_id) {
+                    const { whatsappManager } = await import('./whatsapp.js');
+                    const message = `Bonjour ${triggerData.contactName} 👋,\n\nSauf erreur de notre part, vous n'avez pas finalisé votre panier d'un montant de ${order.total_amount.toLocaleString()} ${order.currency}.\n\nAvez-vous rencontré un problème lors de l'enregistrement de vos informations de livraison ou de paiement ?\n\nNous restons à votre entière disposition ! 😊`;
+                    await whatsappManager.sendAutomatedMessageToConversationAndSave(agent.tool_id, order.conversation_id, message, { messageType: 'workflow' });
+                    console.log(`[Orders] Fallback abandoned cart recovery sent for order ${orderId}`);
+                }
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('[Orders] Abandoned cart handle error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     async createOrder(userId, { conversationId, customerName, customerPhone, items, notes, currency = 'XOF', paymentMethod = 'on_delivery' }) {
         try {
             const orderId = uuidv4();

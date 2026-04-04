@@ -3,11 +3,16 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { leadAnalyzer } from '../services/leadAnalyzer.js';
+import { requireModule } from '../middleware/requireModule.js';
 
 const router = express.Router();
 
+// Apply module gating to all leads routes
+router.use(authenticateToken);
+router.use(requireModule('leads_management'));
+
 // Get all leads for user (excluding suggested and rejected)
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const leads = await db.all(`
             SELECT l.*, a.name as agent_name 
@@ -25,7 +30,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get suggested leads (AI-detected, pending validation)
-router.get('/suggested', authenticateToken, async (req, res) => {
+router.get('/suggested', async (req, res) => {
     try {
         const leads = await leadAnalyzer.getSuggestedLeads(req.user.ownerId);
         res.json({ leads });
@@ -36,7 +41,7 @@ router.get('/suggested', authenticateToken, async (req, res) => {
 });
 
 // Validate a suggested lead
-router.post('/:id/validate', authenticateToken, async (req, res) => {
+router.post('/:id/validate', async (req, res) => {
     try {
         const result = await leadAnalyzer.validateLead(req.params.id, req.user.ownerId);
         if (result.error) {
@@ -50,7 +55,7 @@ router.post('/:id/validate', authenticateToken, async (req, res) => {
 });
 
 // Reject a suggested lead
-router.post('/:id/reject', authenticateToken, async (req, res) => {
+router.post('/:id/reject', async (req, res) => {
     try {
         const result = await leadAnalyzer.rejectLead(req.params.id, req.user.ownerId);
         if (result.error) {
@@ -64,7 +69,7 @@ router.post('/:id/reject', authenticateToken, async (req, res) => {
 });
 
 // Get leads by status
-router.get('/status/:status', authenticateToken, async (req, res) => {
+router.get('/status/:status', async (req, res) => {
     try {
         const leads = await db.all(`
             SELECT * FROM leads 
@@ -80,7 +85,7 @@ router.get('/status/:status', authenticateToken, async (req, res) => {
 });
 
 // Get single lead
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const lead = await db.get(`
             SELECT * FROM leads 

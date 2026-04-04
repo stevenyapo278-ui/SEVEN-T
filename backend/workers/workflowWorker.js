@@ -13,6 +13,12 @@ export const startWorkflowWorker = () => {
             console.log(`[WorkflowWorker] Processing job ${job.id}: ${triggerType}`);
             
             try {
+                if (triggerType === 'check_abandoned_cart') {
+                    const { orderService } = await import('../services/orders.js');
+                    await orderService.handleAbandonedCart(triggerData.orderId);
+                    return { success: true, processed: 'abandoned_cart' };
+                }
+
                 // Lazy import to avoid circular dependencies
                 const { workflowExecutor } = await import('../services/workflowExecutor.js');
                 

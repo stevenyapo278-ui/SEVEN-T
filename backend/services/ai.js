@@ -468,22 +468,25 @@ class AIService {
    - Client régulier: familier et personnalisé`;
 
         // 📅 Amélioration #4 : Contexte temporel pour l'agent
+        const timezone = agent.availability_timezone || 'Europe/Paris';
         const now = new Date();
-        const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        const dayName = dayNames[now.getDay()];
-        const day = now.getDate();
-        const month = monthNames[now.getMonth()];
-        const year = now.getFullYear();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const formatter = new Intl.DateTimeFormat('fr-FR', {
+            timeZone: timezone,
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
         const isWeekend = now.getDay() === 0 || now.getDay() === 6;
-        const timeContext = `\n\n📅 CONTEXTE TEMPOREL (Ne partage pas cette info sauf si le client pose une question temporelle):\n- Date: ${dayName} ${day} ${month} ${year}\n- Heure: ${hours}h${minutes}\n- Période: ${isWeekend ? 'Week-end' : 'Jour de semaine'}`;
+        const timeContext = `\n\n📅 CONTEXTE TEMPOREL (Ne partage pas cette info sauf si le client pose une question temporelle):\n- Date et Heure: ${formatter.format(now).replace(',', ' à')}\n- Période: ${isWeekend ? 'Week-end' : 'Jour de semaine'}\n- Fuseau horaire: ${timezone}`;
         systemGlobal += timeContext;
 
         // [BUSINESS TENANT] — agent/catalogue et contexte temps réel
         let businessTenant = '';
-        if (messageAnalysis) businessTenant += '\n\n' + this.buildAnalysisContext(messageAnalysis);
+        if (messageAnalysis) businessTenant += '\n\n' + this.buildAnalysisContext(messageAnalysis, agent);
         if (knowledgeBase && knowledgeBase.length > 0) {
             businessTenant += '\n\n📚 BASE DE CONNAISSANCES:\n';
             for (const item of knowledgeBase) {
@@ -573,7 +576,7 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
     /**
      * Build analysis context string for AI
      */
-    buildAnalysisContext(analysis) {
+    buildAnalysisContext(analysis, agent) {
         if (!analysis) return '';
         
         const parts = ['🔍 CONTEXTE TEMPS RÉEL:'];
@@ -638,10 +641,11 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
 
         // Current time for scheduling/rdv
         const now = new Date();
-        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Abidjan' };
+        const timezone = agent?.availability_timezone || 'Europe/Paris';
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: timezone };
         parts.push(`\n🕒 DATE ET HEURE ACTUELLE: ${now.toLocaleString('fr-FR', dateOptions)}`);
         parts.push(`- ISO Timestamp: ${now.toISOString()}`);
-        parts.push(`- Fuseau horaire: Africa/Abidjan (UTC+0)`);
+        parts.push(`- Fuseau horaire: ${timezone}`);
         
         // Delivery info collected
         if (analysis.deliveryInfo?.hasDeliveryInfo) {

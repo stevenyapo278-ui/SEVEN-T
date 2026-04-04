@@ -19,9 +19,11 @@ import { debugIngest } from '../utils/debugIngest.js';
 import { whatsappManager } from '../services/whatsapp.js';
 import { activityLogger } from '../services/activityLogger.js';
 import { getUserPermissions } from '../services/rbac.js';
+import { createRedisClient } from '../utils/redisClient.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sessionsDir = join(__dirname, '..', '..', 'sessions');
+const redis = createRedisClient();
 
 const router = Router();
 
@@ -30,24 +32,9 @@ const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
-const oauthStateStore = new Map();
-
-// Ephemeral codes for OAuth token exchange (30s TTL, single-use)
-// Prevents JWT from being exposed in redirect URLs
-const ephemeralCodes = new Map(); // code -> { userId, expiresAt }
-
-setInterval(() => {
-    const now = Date.now();
-    for (const [s, createdAt] of oauthStateStore.entries()) {
-        if (now - createdAt > OAUTH_STATE_TTL_MS) oauthStateStore.delete(s);
-    }
-    for (const [code, record] of ephemeralCodes.entries()) {
-        if (now > record.expiresAt) ephemeralCodes.delete(code);
-    }
-}, 60000);
 
 // GET /api/auth/google — redirect to Google OAuth consent screen
-router.get('/google', (req, res) => {
+router.get('/google', async (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const baseUrl = (process.env.BASE_URL || process.env.FRONTEND_URL || '').replace(/\/$/, '');
     if (!clientId || !baseUrl) {
@@ -55,7 +42,7 @@ router.get('/google', (req, res) => {
     }
     const redirectUri = `${baseUrl}/api/auth/google/callback`;
     const state = crypto.randomBytes(24).toString('hex');
-    oauthStateStore.set(state, Date.now());
+    await redis.setex(`oauth_state:${state}`, 600, Date.now().toString());
     const params = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
@@ -77,8 +64,9 @@ router.get('/google/callback', async (req, res) => {
     };
 
     const { code, state } = req.query;
-    const storedAt = state ? oauthStateStore.get(state) : null;
-    if (state) oauthStateStore.delete(state);
+    const storedAtStr = state ? await redis.get(`oauth_state:${state}`) : null;
+    if (state) await redis.del(`oauth_state:${state}`);
+    const storedAt = storedAtStr ? parseInt(storedAtStr, 10) : null;
     if (!state || !storedAt) {
         return redirectError('oauth_invalid_state');
     }
@@ -211,7 +199,7 @@ router.get('/google/callback', async (req, res) => {
 
         // SECURITY: Do not put JWT in URL — use ephemeral code instead
         const ephCode = crypto.randomBytes(16).toString('hex');
-        ephemeralCodes.set(ephCode, { userId: user.id, expiresAt: Date.now() + 30_000 });
+        await redis.setex(`eph_code:${ephCode}`, 30, user.id); // 30s TTL
         res.redirect(302, `${callbackUrl}?code=${ephCode}`);
     } catch (err) {
         // #region agent log
@@ -718,16 +706,15 @@ router.post('/exchange-code', async (req, res) => {
         const { code } = req.body;
         if (!code) return res.status(400).json({ error: 'Code manquant' });
 
-        const record = ephemeralCodes.get(code);
-        ephemeralCodes.delete(code); // Single-use
-
-        if (!record || Date.now() > record.expiresAt) {
+        const userId = await redis.get(`eph_code:${code}`);
+        if (!userId) {
             return res.status(400).json({ error: 'Code invalide ou expiré' });
         }
+        await redis.del(`eph_code:${code}`); // Single-use
 
         const user = await db.get(
             'SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, subscription_status, subscription_end_date FROM users WHERE id = ? AND is_active = 1',
-            record.userId
+            userId
         );
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
 

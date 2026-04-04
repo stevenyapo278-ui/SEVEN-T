@@ -10,6 +10,7 @@ import { debugIngest } from '../utils/debugIngest.js';
 import { orderService } from './orders.js';
 import { workflowExecutor } from './workflowExecutor.js';
 import { messageAnalyzer } from './messageAnalyzer.js';
+import { enqueueDelayedWorkflow } from '../queues/workflowQueue.js';
 
 // Keywords that indicate purchase intent (ORDER or DELIVERY confirmation)
 const PURCHASE_KEYWORDS = [
@@ -497,6 +498,11 @@ class OrderDetector {
 
         // Trigger workflow: order_created
         if (order) {
+            // Schedule Abandoned Cart check (2 hours delay)
+            enqueueDelayedWorkflow('check_abandoned_cart', { orderId: order.id }, conversation.agent_id, userId, 2 * 60 * 60 * 1000).catch(err => {
+                console.error('[OrderDetector] Failed to schedule abandoned cart check', err);
+            });
+
             workflowExecutor.executeMatchingWorkflowsSafe('order_created', {
                 orderId: order.id,
                 conversationId: conversation.id,

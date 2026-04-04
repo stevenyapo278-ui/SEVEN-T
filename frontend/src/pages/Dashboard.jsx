@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import NextBestAction from '../components/NextBestAction'
+import useSWR from 'swr'
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
@@ -22,21 +23,44 @@ export default function Dashboard() {
   const isDark = theme === 'dark'
   const { startTour, completedTours } = useOnboardingTour()
 
-  const [stats, setStats] = useState(null)
-  const [agents, setAgents] = useState([])
-  const [quotas, setQuotas] = useState(null)
-  const [weeklyActivity, setWeeklyActivity] = useState([])
-  const [loading, setLoading] = useState(true)
   const [showWelcome, setShowWelcome] = useState(false)
   const [selectedAlertView, setSelectedAlertView] = useState(null)
   const [selectedAgentView, setSelectedAgentView] = useState(null)
   const tourTimerRef = useRef(null)
 
-  // ── Load data ───────────────────────────────────────────────────────────────
+  const fetchDashboardData = async () => {
+    if (!isAuthenticated) return null;
+    const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
+      api.get('/stats/dashboard'),
+      api.get('/agents'),
+      api.get('/agents/quotas').catch(() => ({ data: null })),
+      api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } })),
+    ])
+    return {
+      stats: statsRes.data.stats,
+      agents: agentsRes.data.agents,
+      quotas: quotasRes.data,
+      weeklyActivity: weeklyRes.data?.data || []
+    }
+  }
+
+  const { data, isLoading: loading, mutate } = useSWR(
+    isAuthenticated ? 'dashboardData' : null, 
+    fetchDashboardData, 
+    { 
+      revalidateOnFocus: true, 
+      dedupingInterval: 60000 
+    }
+  )
+
+  const stats = data?.stats || null
+  const agents = data?.agents || []
+  const quotas = data?.quotas || null
+  const weeklyActivity = data?.weeklyActivity || []
+
   useEffect(() => {
-    loadData()
     return () => { if (tourTimerRef.current) clearTimeout(tourTimerRef.current) }
-  }, [location.key])
+  }, [])
 
   // ── Welcome modal (first visit only) ────────────────────────────────────────
   useEffect(() => {
@@ -47,10 +71,6 @@ export default function Dashboard() {
         localStorage.setItem(key, 'true')
       }
     }
-
-    const onVisibility = () => { if (document.visibilityState === 'visible') loadData() }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [user?.id])
 
   const handleWelcomeComplete = (shouldTour = false) => {
@@ -64,26 +84,7 @@ export default function Dashboard() {
     }
   }
 
-  const loadData = async () => {
-    try {
-      if (!isAuthenticated) { setLoading(false); return }
-      const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
-        api.get('/stats/dashboard'),
-        api.get('/agents'),
-        api.get('/agents/quotas').catch(() => ({ data: null })),
-        api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } })),
-      ])
-      setStats(statsRes.data.stats)
-      setAgents(agentsRes.data.agents)
-      setQuotas(quotasRes.data)
-      setWeeklyActivity(weeklyRes.data?.data || [])
-    } catch (error) {
-      if (error?.response?.status === 401) return
-      console.error('Error loading dashboard:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+
 
   // ── Alerts ──────────────────────────────────────────────────────────────────
   const alerts = []
@@ -151,7 +152,7 @@ export default function Dashboard() {
               </div>
               <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('dashboard.welcomeSubtitle')}</p>
             </div>
-            <button onClick={loadData} disabled={loading} className={`p-2 rounded-xl border transition-all flex-shrink-0 ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
+            <button onClick={() => mutate()} disabled={loading} className={`p-2 rounded-xl border transition-all flex-shrink-0 ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
