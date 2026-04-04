@@ -41,5 +41,12 @@ export function useModuleAvailability() {
     isAdmin: user?.is_admin === 1
   }), [user, isEnabled]);
 
+  console.log('[Debug] Module Availability:', {
+    userPlan: user?.plan,
+    planFeatures: user?.plan_features,
+    leadsEnabled: user?.leads_management_enabled,
+    modules
+  });
+
   return modules;
 }

@@ -42,7 +42,7 @@ const existing = await db.get('SELECT id, is_admin FROM users WHERE LOWER(email)
                 can_manage_ai = 1, can_manage_tickets = 1,
                 analytics_module_enabled = 1, flows_module_enabled = 1, 
                 payment_module_enabled = 1, reports_module_enabled = 1, 
-                voice_responses_enabled = 1,
+                voice_responses_enabled = 1, leads_management_enabled = 1,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `, existing.id);
@@ -67,9 +67,9 @@ await db.run(`
     subscription_status, subscription_end_date, credits, is_admin,
     can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
     analytics_module_enabled, flows_module_enabled, payment_module_enabled, reports_module_enabled, 
-    voice_responses_enabled
+    voice_responses_enabled, leads_management_enabled
   )
-  VALUES (?, ?, ?, ?, '', 'free', 'trialing', ?, 5000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+  VALUES (?, ?, ?, ?, '', 'free', 'trialing', ?, 5000, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 `, id, email, hashedPassword, name, trialEndDate.toISOString());
 
 console.log('Admin créé avec succès.');

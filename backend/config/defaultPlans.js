@@ -189,7 +189,8 @@ export const defaultPlans = [
             sentiment_routing: true,
             catalog_import: true,
             human_handoff_alerts: true,
-            analytics: true
+            analytics: true,
+            leads_management: true
         })
     }
 ];
