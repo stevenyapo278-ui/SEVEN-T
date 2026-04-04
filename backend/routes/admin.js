@@ -294,7 +294,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
-            flows_module_enabled, whatsapp_status_enabled,
+            flows_module_enabled, whatsapp_status_enabled, leads_management_enabled,
             subscription_end_date,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             roles
@@ -438,6 +438,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('whatsapp_status_enabled = ?');
             params.push(whatsapp_status_enabled ? 1 : 0);
         }
+        if (leads_management_enabled !== undefined) {
+            setClauses.push('leads_management_enabled = ?');
+            params.push(leads_management_enabled ? 1 : 0);
+        }
         if (can_manage_users !== undefined) {
             setClauses.push('can_manage_users = ?');
             params.push(can_manage_users ? 1 : 0);
@@ -540,7 +544,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled', 'reports_module_enabled',
             'availability_hours_enabled', 'next_best_action_enabled', 'conversion_score_enabled', 'daily_briefing_enabled',
             'sentiment_routing_enabled', 'catalog_import_enabled', 'human_handoff_alerts_enabled',
-            'flows_module_enabled', 'whatsapp_status_enabled'
+            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled'
         ];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
