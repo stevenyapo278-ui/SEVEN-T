@@ -740,8 +740,8 @@ export default function WhatsAppStatus() {
                     className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold flex flex-col items-center justify-center gap-1 transition-all shadow-lg shadow-emerald-500/25"
                   >
                     <div className="flex items-center gap-2">
-                        {batchSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                        <span>{batchSending ? 'Envoi en cours...' : `Publier la sélection (${selectedProductIds.length})`}</span>
+                        {batchSending ? <Loader2 className="w-4 h-4 animate-spin" /> : (isScheduled ? <Calendar className="w-4 h-4" /> : <Send className="w-4 h-4" />)}
+                        <span>{batchSending ? 'Envoi en cours...' : (isScheduled ? `Programmer la sélection (${selectedProductIds.length})` : `Publier la sélection (${selectedProductIds.length})`)}</span>
                     </div>
                     {batchSending && batchProgress && (
                         <span className="text-[9px] font-medium opacity-80 animate-pulse">{batchProgress}</span>
