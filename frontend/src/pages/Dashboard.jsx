@@ -5,23 +5,14 @@ import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { WelcomeModal, OnboardingChecklist, useOnboardingTour } from '../components/Onboarding'
-import { 
-  Bot, 
-  MessageSquare, 
-  Sparkles, 
-  TrendingUp,
-  Plus,
-  ArrowRight,
-  AlertTriangle,
-  Zap,
-  Crown,
-  Rocket,
-  RefreshCw,
-  AlertCircle,
-  XCircle
+import {
+  Bot, MessageSquare, Sparkles, TrendingUp,
+  Plus, ArrowRight, AlertCircle, Zap, Crown, RefreshCw, XCircle
 } from 'lucide-react'
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import NextBestAction from '../components/NextBestAction'
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -29,7 +20,8 @@ export default function Dashboard() {
   const location = useLocation()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const { startTour, completedTours, activeTour } = useOnboardingTour()
+  const { startTour, completedTours } = useOnboardingTour()
+
   const [stats, setStats] = useState(null)
   const [agents, setAgents] = useState([])
   const [quotas, setQuotas] = useState(null)
@@ -40,36 +32,33 @@ export default function Dashboard() {
   const [selectedAgentView, setSelectedAgentView] = useState(null)
   const tourTimerRef = useRef(null)
 
-  // Reload data when navigating to this page
+  // ── Load data ───────────────────────────────────────────────────────────────
   useEffect(() => {
     loadData()
-    return () => {
-      if (tourTimerRef.current) clearTimeout(tourTimerRef.current)
-    }
+    return () => { if (tourTimerRef.current) clearTimeout(tourTimerRef.current) }
   }, [location.key])
 
+  // ── Welcome modal (first visit only) ────────────────────────────────────────
   useEffect(() => {
     if (user?.id) {
-      const welcomeKey = `has_seen_welcome_${user.id}`
-      const hasSeenWelcome = localStorage.getItem(welcomeKey)
-      if (!hasSeenWelcome) {
+      const key = `has_seen_welcome_v2_${user.id}`
+      if (!localStorage.getItem(key)) {
         setShowWelcome(true)
-        localStorage.setItem(welcomeKey, 'true')
+        localStorage.setItem(key, 'true')
       }
     }
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') loadData()
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+    const onVisibility = () => { if (document.visibilityState === 'visible') loadData() }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [user?.id])
 
-  const handleWelcomeComplete = (skipTour = false) => {
+  const handleWelcomeComplete = (shouldTour = false) => {
     setShowWelcome(false)
-    if (skipTour) return
+    if (shouldTour) return
+    // Start sidebar tour after welcome modal closes
     if (!completedTours.includes('sidebar')) {
-      tourTimerRef.current = setTimeout(() => startTour('sidebar'), 500)
+      tourTimerRef.current = setTimeout(() => startTour('sidebar'), 600)
     } else if (!completedTours.includes('dashboard')) {
       tourTimerRef.current = setTimeout(() => startTour('dashboard'), 800)
     }
@@ -77,15 +66,12 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      if (!isAuthenticated) {
-        setLoading(false)
-        return
-      }
+      if (!isAuthenticated) { setLoading(false); return }
       const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
         api.get('/stats/dashboard'),
         api.get('/agents'),
         api.get('/agents/quotas').catch(() => ({ data: null })),
-        api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } }))
+        api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } })),
       ])
       setStats(statsRes.data.stats)
       setAgents(agentsRes.data.agents)
@@ -99,13 +85,13 @@ export default function Dashboard() {
     }
   }
 
+  // ── Alerts ──────────────────────────────────────────────────────────────────
   const alerts = []
   if (quotas?.credit_warning?.level === 'critical') {
     alerts.push({ type: 'error', message: quotas.credit_warning.warning, action: t('dashboard.alerts.upgrade'), link: '/dashboard/settings' })
   } else if (quotas?.credit_warning?.level === 'warning') {
     alerts.push({ type: 'warning', message: quotas.credit_warning.warning, action: t('dashboard.alerts.view'), link: '/dashboard/settings' })
   }
-
   if (user?.plan === 'free_expired') {
     alerts.unshift({ type: 'error', message: t('dashboard.alerts.trialExpired'), action: 'Mettre à niveau', link: '/dashboard/settings' })
   } else if (user?.plan === 'free' && user?.subscription_end_date) {
@@ -114,85 +100,56 @@ export default function Dashboard() {
       const diffMs = end - new Date()
       const days = Math.floor(diffMs / 86400000)
       const hours = Math.floor((diffMs % 86400000) / 3600000)
-      alerts.unshift({ type: 'warning', message: days > 0 ? `Il vous reste ${days}j et ${hours}h d'essai.` : `Moins de ${hours}h d'essai restants !`, action: 'Voir les plans', link: '/dashboard/settings' })
+      alerts.unshift({
+        type: 'warning',
+        message: days > 0 ? `Il vous reste ${days}j et ${hours}h d'essai.` : `Moins de ${hours}h d'essai restants !`,
+        action: 'Voir les plans',
+        link: '/dashboard/settings',
+      })
     }
   }
 
+  // ── Onboarding data ─────────────────────────────────────────────────────────
   const onboardingData = {
     agentsCount: agents?.length || 0,
     whatsappConnected: agents?.filter(a => a.whatsapp_connected)?.length || 0,
     productsCount: stats?.products || 0,
     knowledgeCount: (stats?.knowledge_items || 0) + (stats?.global_knowledge || 0),
-    messagesCount: stats?.messages?.total || 0
+    messagesCount: stats?.messages?.total || 0,
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
-      <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} onComplete={handleWelcomeComplete} />
+      <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} onComplete={handleWelcomeComplete} data={onboardingData} />
 
-      {/* AI Performance Insight (Phase 7) */}
-      {!loading && stats && (
-        <div className={`p-4 rounded-2xl border mb-6 flex items-center gap-4 bg-gradient-to-r ${isDark ? 'from-gold-400/10 to-transparent border-gold-400/20' : 'from-gold-50 to-white border-gold-200'}`}>
-          <div className="w-10 h-10 rounded-full bg-gold-400/20 flex items-center justify-center flex-shrink-0 animate-pulse">
-            <Sparkles className="w-5 h-5 text-gold-400" />
-          </div>
-          <p className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-             <strong className="text-gold-400">Résumé IA :</strong> Cette semaine, vos agents ont géré <span className="font-bold underline">{stats?.conversations?.total || 0} discussions</span> avec succès. Le taux d'engagement est en hausse de 5% !
-          </p>
-        </div>
-      )}
-
-      {/* Quick Fix WhatsApp (Phase 7) */}
+      {/* Disconnected agents warning */}
       {!loading && agents?.some(a => !a.whatsapp_connected) && (
-        <div className={`p-4 rounded-2xl border mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-700'}`}>
+        <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-700'}`}>
           <div className="flex items-center gap-3">
-             <AlertCircle className="w-5 h-5 flex-shrink-0" />
-             <p className="text-sm font-bold">Un ou plusieurs agents sont déconnectés de WhatsApp.</p>
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm font-bold">Un ou plusieurs agents sont déconnectés de WhatsApp.</p>
           </div>
           <Link to="/dashboard/whatsapp-status" className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${isDark ? 'bg-red-500 text-white hover:bg-red-400' : 'bg-red-600 text-white hover:bg-red-700'}`}>
-             Réparer maintenant (1-clic)
+            Réparer maintenant
           </Link>
         </div>
       )}
 
-      {/* Hero with Assisted Config CTA if empty */}
-      {!loading && stats && onboardingData?.agentsCount === 0 && (
-          <div className={`relative overflow-hidden rounded-[2rem] border p-8 mb-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between ${isDark ? 'bg-gradient-to-r from-emerald-900/40 to-space-900 border-emerald-500/20' : 'bg-gradient-to-r from-emerald-50 to-white border-emerald-200'}`}>
-             <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
-                   <Sparkles className="w-3.5 h-3.5" /> Nouveau
-                </div>
-                <h2 className={`text-2xl sm:text-3xl font-syne font-black mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                   Configuration en 3 minutes
-                </h2>
-                <p className={`max-w-md text-sm sm:text-base ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                   Connectez WhatsApp, ajoutez votre produit et lancez votre premier agent sans vous prendre la tête.
-                </p>
-             </div>
-             <button 
-                onClick={() => window.dispatchEvent(new CustomEvent('seven-t:open-assisted-config'))}
-                className="mt-6 sm:mt-0 group relative flex items-center gap-2 bg-emerald-500 text-white px-8 py-4 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-xl shadow-emerald-500/25 w-full sm:w-auto"
-             >
-                <span className="relative z-10">Lancer la configuration assistée</span>
-                <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
-                <div className="absolute inset-0 bg-emerald-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-             </button>
-          </div>
-      )}
-
-      {/* Header Hero (Always visible for smooth transition) */}
-      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+      {/* Hero section */}
+      <div data-tour="stats" className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 ${
         isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
-        <div className="absolute inset-0 opacity-50" style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }} />
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
               <div className="flex items-center gap-3 mb-2">
                 <div className="p-2 bg-gold-400/10 rounded-xl"><Sparkles className="w-6 h-6 text-gold-400" /></div>
-                <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}</h1>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
+                </h1>
               </div>
-                <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('dashboard.welcomeSubtitle')}</p>
+              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('dashboard.welcomeSubtitle')}</p>
             </div>
             <button onClick={loadData} disabled={loading} className={`p-2 rounded-xl border transition-all flex-shrink-0 ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
@@ -220,18 +177,25 @@ export default function Dashboard() {
         <>
           <NextBestAction data={onboardingData} />
           <OnboardingChecklist data={onboardingData} />
+
+          {/* Alerts */}
           {alerts.length > 0 && (
             <div className="space-y-3">
               {alerts.map((alert, i) => (
-                <div key={i} onClick={() => setSelectedAlertView(alert)} className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] ${alert.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-400' : alert.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-blue-500/10 border-blue-500/30 text-blue-400'}`}>
-                  <div className="flex items-center gap-3 truncate"><AlertCircle className="w-5 h-5 flex-shrink-0" /><span className="truncate text-sm sm:text-base">{alert.message}</span></div>
+                <div key={i} onClick={() => setSelectedAlertView(alert)} className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] ${
+                  alert.type === 'error' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
+                  alert.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
+                  'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                }`}>
+                  <div className="flex items-center gap-3 truncate"><AlertCircle className="w-5 h-5 flex-shrink-0" /><span className="truncate text-sm">{alert.message}</span></div>
                   <div className="px-2 py-1 bg-white/10 rounded text-xs font-medium">{t('common.details')}</div>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main content grid */}
+          <div data-tour="agents-list" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card overflow-hidden">
               <div className="p-6 border-b border-space-700/60 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-100">{t('dashboard.agents.title')}</h2>
@@ -274,11 +238,14 @@ export default function Dashboard() {
         </>
       )}
 
+      {/* Detail overlays */}
       {selectedAlertView && <DetailOverlay onClose={() => setSelectedAlertView(null)}><AlertContent alert={selectedAlertView} onClose={() => setSelectedAlertView(null)} t={t} /></DetailOverlay>}
       {selectedAgentView && <DetailOverlay onClose={() => setSelectedAgentView(null)}><AgentContent agent={selectedAgentView} onClose={() => setSelectedAgentView(null)} t={t} /></DetailOverlay>}
     </div>
   )
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatCard({ icon: Icon, color, value, label, isDark }) {
   const colorMap = { blue: 'text-blue-400 bg-blue-400/10', emerald: 'text-emerald-400 bg-emerald-400/10', gold: 'text-gold-400 bg-gold-400/10' }
@@ -299,10 +266,10 @@ function SkeletonStatCard({ isDark }) {
   return (
     <div className={`rounded-xl p-4 border ${isDark ? 'bg-space-800/50 border-space-700/50' : 'bg-white border-gray-100'}`}>
       <div className="animate-pulse flex items-center space-x-3">
-        <div className="rounded-lg bg-gray-700/50 h-9 w-9"></div>
+        <div className="rounded-lg bg-gray-700/50 h-9 w-9" />
         <div className="flex-1 space-y-2 py-1">
-          <div className="h-4 bg-gray-700/50 rounded w-1/2"></div>
-          <div className="h-2 bg-gray-700/50 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-700/50 rounded w-1/2" />
+          <div className="h-2 bg-gray-700/50 rounded w-3/4" />
         </div>
       </div>
     </div>

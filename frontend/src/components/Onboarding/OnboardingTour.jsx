@@ -1,223 +1,210 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronRight, ChevronLeft } from 'lucide-react'
+import { X, ChevronRight } from 'lucide-react'
 
 const MotionDiv = motion.div
 
-// Define tour steps for different pages
+// ─── Tour steps definitions ──────────────────────────────────────────────────
+// Each tour is an array of steps. Every step targets a `data-tour="xxx"` element.
+
 export const TOUR_STEPS = {
+  // ── Sidebar tour (desktop only) ────────────────────────────────────────────
+  sidebar: [
+    {
+      id: 'nav-dashboard',
+      target: '[data-tour="nav-dashboard"]',
+      title: '🏠 Accueil',
+      description: 'Votre tableau de bord avec un résumé de toute votre activité.',
+      position: 'right',
+      desktopOnly: true,
+    },
+    {
+      id: 'nav-agents',
+      target: '[data-tour="nav-agents"]',
+      title: '🤖 Vos agents IA',
+      description: 'Créez et gérez vos assistants IA pour automatiser vos réponses WhatsApp.',
+      position: 'right',
+      desktopOnly: true,
+    },
+    {
+      id: 'nav-conversations',
+      target: '[data-tour="nav-conversations"]',
+      title: '💬 Conversations',
+      description: 'Consultez tous les échanges WhatsApp gérés par vos agents.',
+      position: 'right',
+      desktopOnly: true,
+    },
+    {
+      id: 'nav-tools',
+      target: '[data-tour="nav-tools"]',
+      title: '📱 Téléphones',
+      description: 'Connectez vos comptes WhatsApp ici en scannant un QR code.',
+      position: 'right',
+      desktopOnly: true,
+    },
+  ],
+
+  // ── Dashboard tour ─────────────────────────────────────────────────────────
   dashboard: [
     {
       id: 'dashboard-stats',
       target: '[data-tour="stats"]',
       title: '📊 Vos statistiques',
-      description: 'Suivez vos conversations, messages et crédits en temps réel.',
-      position: 'bottom'
+      description: 'Suivez vos conversations, messages et crédits IA en temps réel.',
+      position: 'bottom',
     },
     {
       id: 'dashboard-agents',
       target: '[data-tour="agents-list"]',
       title: '🤖 Vos agents',
-      description: 'Gérez vos assistants IA ici. Chaque agent peut avoir sa propre personnalité.',
-      position: 'bottom'
+      description: 'Gérez vos assistants IA ici. Chaque agent a sa propre personnalité et ses propres compétences.',
+      position: 'bottom',
     },
-    {
-      id: 'dashboard-checklist',
-      target: '[data-tour="checklist"]',
-      title: '✅ Guide de démarrage',
-      description: 'Suivez ces étapes pour configurer votre premier agent WhatsApp.',
-      position: 'bottom'
-    }
   ],
+
+  // ── Agents page tour ────────────────────────────────────────────────────────
   agents: [
     {
       id: 'agents-create',
       target: '[data-tour="create-agent"]',
       title: '➕ Créer un agent',
       description: 'Cliquez ici pour créer votre premier assistant IA.',
-      position: 'bottom-left'
+      position: 'bottom-left',
     },
-    {
-      id: 'agents-filters',
-      target: '[data-tour="agents-filters"]',
-      title: '🔍 Filtrer et trier',
-      description: 'Filtrez vos agents par statut ou recherchez par nom.',
-      position: 'bottom'
-    }
   ],
+
+  // ── Agent detail tour ──────────────────────────────────────────────────────
   agentDetail: [
     {
       id: 'agent-overview',
       target: '[data-tour="tab-overview"]',
       title: '📋 Vue d\'ensemble',
-      description: 'Retrouvez ici le statut de connexion et les statistiques de votre agent.',
-      position: 'bottom'
+      description: 'Statut de connexion et statistiques de votre agent.',
+      position: 'bottom',
     },
     {
       id: 'agent-settings',
       target: '[data-tour="tab-settings"]',
       title: '⚙️ Paramètres',
       description: 'Personnalisez le comportement, le modèle IA et les réponses automatiques.',
-      position: 'bottom'
+      position: 'bottom',
     },
     {
       id: 'agent-knowledge',
       target: '[data-tour="tab-knowledge"]',
       title: '📚 Base de connaissances',
       description: 'Ajoutez des informations pour que l\'IA réponde plus précisément.',
-      position: 'bottom'
-    }
+      position: 'bottom',
+    },
   ],
-  sidebar: [
-    {
-      id: 'nav-dashboard',
-      target: '[data-tour="nav-dashboard"]',
-      title: '🏠 Tableau de bord',
-      description: 'Votre vue d\'ensemble avec statistiques et activité récente.',
-      position: 'right',
-      desktopOnly: true  // La sidebar est cachée sur mobile
-    },
-    {
-      id: 'nav-agents',
-      target: '[data-tour="nav-agents"]',
-      title: '🤖 Agents',
-      description: 'Créez et gérez vos assistants IA.',
-      position: 'right',
-      desktopOnly: true
-    },
-    {
-      id: 'nav-conversations',
-      target: '[data-tour="nav-conversations"]',
-      title: '💬 Conversations',
-      description: 'Consultez tous les échanges avec vos clients.',
-      position: 'right',
-      desktopOnly: true
-    },
-    {
-      id: 'nav-products',
-      target: '[data-tour="nav-products"]',
-      title: '📦 Produits',
-      description: 'Gérez votre catalogue produits (agents type vente / e-commerce).',
-      position: 'right',
-      desktopOnly: true
-    }
-  ],
+
+  // ── WhatsApp connect tour ──────────────────────────────────────────────────
   whatsapp_connect: [
     {
       id: 'wc-select-agent',
       target: '[data-tour="create-tool-whatsapp"]',
       title: '📱 Connecter un compte',
-      description: 'Cliquez ici pour commencer la connexion de votre compte WhatsApp.',
-      position: 'bottom'
+      description: 'Cliquez ici pour lier votre compte WhatsApp.',
+      position: 'bottom',
     },
-    {
-      id: 'wc-qr-section',
-      target: '[data-tour="whatsapp-connect-section"]',
-      title: '🔗 Scanner le QR Code',
-      description: 'Scannez ce code avec votre téléphone (WhatsApp > Appareils connectés) pour activer l\'agent.',
-      position: 'right'
-    }
   ],
+
+  // ── Knowledge tour ─────────────────────────────────────────────────────────
   add_knowledge: [
-    {
-      id: 'ak-tab',
-      target: '[data-tour="tab-knowledge"]',
-      title: '📚 Base de connaissances',
-      description: 'C\'est ici que vous donnez de la "mémoire" à votre IA.',
-      position: 'bottom'
-    },
     {
       id: 'ak-add-button',
       target: '[data-tour="add-knowledge-button"]',
       title: '➕ Ajouter du contenu',
-      description: 'Vous pouvez importer des PDF, du texte ou des liens web.',
-      position: 'left'
-    }
+      description: 'Importez des PDF, du texte ou des liens web pour enrichir la mémoire de votre IA.',
+      position: 'left',
+    },
   ],
+
+  // ── Conversations tour ─────────────────────────────────────────────────────
   conversations: [
     {
       id: 'conv-test',
       target: '[data-tour="conv-list"]',
-      title: '💬 Tester l\'agent',
-      description: 'Envoyez un message pour tester la réponse automatique de votre agent.',
-      position: 'bottom'
-    }
-  ],
-  products: [
-    {
-      id: 'prod-list',
-      target: '[data-tour="products-list"]',
-      title: '📦 Catalogue Produits',
-      description: 'Gérez ici vos produits pour que votre agent puisse les proposer à vos clients.',
-      position: 'top'
+      title: '💬 Vos conversations',
+      description: 'Ici apparaîtront toutes les conversations gérées par vos agents.',
+      position: 'bottom',
     },
+  ],
+
+  // ── Products tour ──────────────────────────────────────────────────────────
+  products: [
     {
       id: 'prod-create',
       target: '[data-tour="create-product"]',
       title: '➕ Ajouter un produit',
-      description: 'Cliquez ici pour ajouter manuellement un nouveau produit à votre catalogue.',
-      position: 'bottom'
-    }
-  ]
+      description: 'Ajoutez vos produits pour que votre agent puisse les proposer à vos clients.',
+      position: 'bottom',
+    },
+  ],
 }
 
-// Context for managing tour state
+// ─── Context ──────────────────────────────────────────────────────────────────
+
 const OnboardingTourContext = createContext(null)
 
 export function OnboardingTourProvider({ children, userId }) {
   const [activeTour, setActiveTour] = useState(null)
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [guidedTask, setGuidedTask] = useState(null)
-  
-  const storageKey = userId ? `seven-t-completed-tours-${userId}` : null
-  const taskKey = userId ? `seven-t-guided-task-${userId}` : null
+
+  const storageKey = userId ? `seven-t-tours-v2-${userId}` : null
+  const taskKey = userId ? `seven-t-task-v2-${userId}` : null
   const [completedTours, setCompletedTours] = useState([])
 
+  // Load persisted state
   useEffect(() => {
     if (storageKey) {
-      const saved = localStorage.getItem(storageKey)
-      setCompletedTours(saved ? JSON.parse(saved) : [])
+      try {
+        const saved = localStorage.getItem(storageKey)
+        if (saved) setCompletedTours(JSON.parse(saved))
+      } catch { /* noop */ }
     }
     if (taskKey) {
-      const savedTask = localStorage.getItem(taskKey)
-      if (savedTask) {
-        const parsed = JSON.parse(savedTask)
-        setGuidedTask(parsed)
-        if (!activeTour && parsed.tour) {
-          setActiveTour(parsed.tour)
-          setCurrentStepIndex(0)
+      try {
+        const saved = localStorage.getItem(taskKey)
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          setGuidedTask(parsed)
+          if (!activeTour && parsed.tour) {
+            setActiveTour(parsed.tour)
+            setCurrentStepIndex(0)
+          }
         }
-      }
+      } catch { /* noop */ }
     }
   }, [storageKey, taskKey])
 
+  // Persist completedTours
   useEffect(() => {
     if (storageKey && completedTours.length > 0) {
       localStorage.setItem(storageKey, JSON.stringify(completedTours))
     }
   }, [completedTours, storageKey])
 
+  // Persist guidedTask
   useEffect(() => {
     if (taskKey) {
-      if (guidedTask) {
-        localStorage.setItem(taskKey, JSON.stringify(guidedTask))
-      } else {
-        localStorage.removeItem(taskKey)
-      }
+      if (guidedTask) localStorage.setItem(taskKey, JSON.stringify(guidedTask))
+      else localStorage.removeItem(taskKey)
     }
   }, [guidedTask, taskKey])
 
   const startTour = useCallback((tourId) => {
-    if (!userId) return
-    if ((!completedTours.includes(tourId) || tourId === 'force') && TOUR_STEPS[tourId]) {
+    if (!userId || !TOUR_STEPS[tourId]) return
+    if (!completedTours.includes(tourId)) {
       setActiveTour(tourId)
       setCurrentStepIndex(0)
     }
   }, [completedTours, userId])
 
   const endTour = useCallback(() => {
-    if (activeTour && activeTour !== 'force') {
+    if (activeTour) {
       setCompletedTours(prev => prev.includes(activeTour) ? prev : [...prev, activeTour])
     }
     setActiveTour(null)
@@ -225,8 +212,7 @@ export function OnboardingTourProvider({ children, userId }) {
   }, [activeTour])
 
   const skipAllTours = useCallback(() => {
-    const allTourIds = Object.keys(TOUR_STEPS)
-    setCompletedTours(allTourIds)
+    setCompletedTours(Object.keys(TOUR_STEPS))
     setActiveTour(null)
     setCurrentStepIndex(0)
   }, [])
@@ -242,66 +228,38 @@ export function OnboardingTourProvider({ children, userId }) {
   }, [activeTour, currentStepIndex, endTour])
 
   const prevStep = useCallback(() => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1)
-    }
+    if (currentStepIndex > 0) setCurrentStepIndex(prev => prev - 1)
   }, [currentStepIndex])
 
   const resetTours = useCallback(() => {
     setCompletedTours([])
-    if (storageKey) {
-      localStorage.removeItem(storageKey)
-    }
+    if (storageKey) localStorage.removeItem(storageKey)
   }, [storageKey])
-
-  const currentStep = activeTour ? TOUR_STEPS[activeTour]?.[currentStepIndex] : null
-  const totalSteps = activeTour ? TOUR_STEPS[activeTour]?.length : 0
-  const isTourActive = activeTour !== null
 
   const startGuidedTask = useCallback((taskId, targetTour = null) => {
     setGuidedTask({ id: taskId, tour: targetTour || taskId })
-    if (targetTour || taskId) {
-      startTour(targetTour || taskId)
-    }
+    if (targetTour || taskId) startTour(targetTour || taskId)
   }, [startTour])
 
   const completeGuidedTask = useCallback(() => {
     setGuidedTask(null)
   }, [])
 
+  const currentStep = activeTour ? TOUR_STEPS[activeTour]?.[currentStepIndex] : null
+  const totalSteps = activeTour ? TOUR_STEPS[activeTour]?.length : 0
+  const isTourActive = activeTour !== null
+
   const value = useMemo(() => ({
-    activeTour,
-    currentStep,
-    currentStepIndex,
-    totalSteps,
-    isTourActive,
-    completedTours,
-    guidedTask,
-    startTour,
-    endTour,
-    skipAllTours,
-    nextStep,
-    prevStep,
-    resetTours,
-    startGuidedTask,
-    completeGuidedTask,
-    isStepActive: (stepId) => currentStep?.id === stepId
+    activeTour, currentStep, currentStepIndex, totalSteps, isTourActive,
+    completedTours, guidedTask,
+    startTour, endTour, skipAllTours, nextStep, prevStep, resetTours,
+    startGuidedTask, completeGuidedTask,
+    isStepActive: (stepId) => currentStep?.id === stepId,
   }), [
-    activeTour,
-    currentStep,
-    currentStepIndex,
-    totalSteps,
-    isTourActive,
-    completedTours,
-    guidedTask,
-    startTour,
-    endTour,
-    skipAllTours,
-    nextStep,
-    prevStep,
-    resetTours,
-    startGuidedTask,
-    completeGuidedTask
+    activeTour, currentStep, currentStepIndex, totalSteps, isTourActive,
+    completedTours, guidedTask,
+    startTour, endTour, skipAllTours, nextStep, prevStep, resetTours,
+    startGuidedTask, completeGuidedTask,
   ])
 
   return (
@@ -309,7 +267,7 @@ export function OnboardingTourProvider({ children, userId }) {
       {children}
       <AnimatePresence>
         {isTourActive && currentStep && (
-          <FloatingTourTooltip
+          <TourOverlay
             key={currentStep.id}
             step={currentStep}
             stepNumber={currentStepIndex + 1}
@@ -325,14 +283,13 @@ export function OnboardingTourProvider({ children, userId }) {
 }
 
 export function useOnboardingTour() {
-  const context = useContext(OnboardingTourContext)
-  if (!context) {
-    throw new Error('useOnboardingTour must be used within OnboardingTourProvider')
-  }
-  return context
+  const ctx = useContext(OnboardingTourContext)
+  if (!ctx) throw new Error('useOnboardingTour must be used within OnboardingTourProvider')
+  return ctx
 }
 
-// ─── Hook: détecte si on est sur mobile ──────────────────────────────────────
+// ─── Mobile detection ─────────────────────────────────────────────────────────
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth < 640 : false
@@ -346,11 +303,72 @@ function useIsMobile() {
   return isMobile
 }
 
-// ─── Tooltip Desktop (comportement original) ─────────────────────────────────
-function DesktopTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, position, targetRect }) {
+// ─── Tour Overlay (unified desktop / mobile) ──────────────────────────────────
+
+function TourOverlay({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
+  const [targetRect, setTargetRect] = useState(null)
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+  const isMobile = useIsMobile()
+
+  useEffect(() => {
+    // Skip desktop-only steps on mobile
+    if (step.desktopOnly && isMobile) { onNext(); return }
+
+    const findTarget = () => {
+      const candidates = document.querySelectorAll(step.target)
+      return Array.from(candidates).find((el) => {
+        const rect = el.getBoundingClientRect()
+        const style = window.getComputedStyle(el)
+        return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
+      }) || candidates[0]
+    }
+
+    const update = () => {
+      const el = findTarget()
+      if (!el) { setTargetRect(null); return }
+
+      const rect = el.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) { setTargetRect(null); return }
+
+      setTargetRect(rect)
+
+      if (!isMobile) {
+        const tw = 320, th = 180, off = 16
+        let top = 0, left = 0
+        switch (step.position) {
+          case 'right':       top = rect.top + rect.height / 2 - th / 2; left = rect.right + off; break
+          case 'left':        top = rect.top + rect.height / 2 - th / 2; left = rect.left - tw - off; break
+          case 'top':         top = rect.top - th - off; left = rect.left + rect.width / 2 - tw / 2; break
+          case 'bottom-left': top = rect.bottom + off; left = rect.left; break
+          default:            top = rect.bottom + off; left = rect.left + rect.width / 2 - tw / 2; break
+        }
+        top = Math.max(8, Math.min(top, window.innerHeight - th - 8))
+        left = Math.max(8, Math.min(left, window.innerWidth - tw - 8))
+        setPosition({ top, left })
+      }
+    }
+
+    update()
+    // Retry after short delay in case elements need to render
+    const retryTimeout = setTimeout(update, 300)
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+    return () => {
+      clearTimeout(retryTimeout)
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [step, isMobile, onNext])
+
+  // Don't render if blocking modal is open
+  const isBlocked = !!(document.querySelector('[role="dialog"]') || document.querySelector('.wizard-modal'))
+  if (isBlocked || !targetRect) return null
+
+  const pad = 8
+
   return createPortal(
     <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* Backdrop Spotlight */}
+      {/* Spotlight backdrop */}
       <MotionDiv
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -359,319 +377,118 @@ function DesktopTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismis
         onClick={onDismiss}
         style={{
           clipPath: `polygon(
-            0% 0%, 
-            0% 100%, 
-            ${targetRect.left - 8}px 100%, 
-            ${targetRect.left - 8}px ${targetRect.top - 8}px, 
-            ${targetRect.left + targetRect.width + 8}px ${targetRect.top - 8}px, 
-            ${targetRect.left + targetRect.width + 8}px ${targetRect.top + targetRect.height + 8}px, 
-            ${targetRect.left - 8}px ${targetRect.top + targetRect.height + 8}px, 
-            ${targetRect.left - 8}px 100%, 
-            100% 100%, 
-            100% 0%
-          )`
+            0% 0%, 0% 100%,
+            ${targetRect.left - pad}px 100%,
+            ${targetRect.left - pad}px ${targetRect.top - pad}px,
+            ${targetRect.left + targetRect.width + pad}px ${targetRect.top - pad}px,
+            ${targetRect.left + targetRect.width + pad}px ${targetRect.top + targetRect.height + pad}px,
+            ${targetRect.left - pad}px ${targetRect.top + targetRect.height + pad}px,
+            ${targetRect.left - pad}px 100%,
+            100% 100%, 100% 0%
+          )`,
         }}
       />
 
-      {/* Highlight Ring */}
+      {/* Highlight ring */}
       <MotionDiv
-        layoutId="tour-highlight"
-        className="absolute z-[9999] rounded-2xl border-2 border-gold-400 shadow-[0_0_30px_rgba(245,212,122,0.3)] pointer-events-none"
+        layoutId="tour-ring"
+        className="absolute z-[9999] rounded-xl border-2 border-gold-400 shadow-[0_0_20px_rgba(245,212,122,0.25)] pointer-events-none"
         initial={false}
         animate={{
-          top: targetRect.top - 8,
-          left: targetRect.left - 8,
-          width: targetRect.width + 16,
-          height: targetRect.height + 16,
+          top: targetRect.top - pad,
+          left: targetRect.left - pad,
+          width: targetRect.width + pad * 2,
+          height: targetRect.height + pad * 2,
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       />
 
-      {/* Tooltip Card */}
-      <MotionDiv
-        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1, top: position.top, left: position.left }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed z-[10000] w-80 pointer-events-auto"
-      >
-        <TooltipCard
-          step={step}
-          stepNumber={stepNumber}
-          totalSteps={totalSteps}
-          onNext={onNext}
-          onPrev={onPrev}
-          onDismiss={onDismiss}
-        />
-      </MotionDiv>
-    </div>,
-    document.body
-  )
-}
-
-// ─── Bottom Sheet Mobile ──────────────────────────────────────────────────────
-function MobileBottomSheet({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, targetRect }) {
-  return createPortal(
-    <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* Spotlight sur l'élément cible */}
-      <MotionDiv
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-space-950/70 backdrop-blur-[2px] pointer-events-auto"
-        onClick={onDismiss}
-        style={targetRect ? {
-          clipPath: `polygon(
-            0% 0%, 
-            0% 100%, 
-            ${targetRect.left - 8}px 100%, 
-            ${targetRect.left - 8}px ${targetRect.top - 8}px, 
-            ${targetRect.left + targetRect.width + 8}px ${targetRect.top - 8}px, 
-            ${targetRect.left + targetRect.width + 8}px ${targetRect.top + targetRect.height + 8}px, 
-            ${targetRect.left - 8}px ${targetRect.top + targetRect.height + 8}px, 
-            ${targetRect.left - 8}px 100%, 
-            100% 100%, 
-            100% 0%
-          )`
-        } : {}}
-      />
-
-      {/* Highlight Ring */}
-      {targetRect && (
+      {/* Tooltip */}
+      {isMobile ? (
+        <MobileSheet step={step} stepNumber={stepNumber} totalSteps={totalSteps} onNext={onNext} onPrev={onPrev} onDismiss={onDismiss} />
+      ) : (
         <MotionDiv
-          layoutId="tour-highlight"
-          className="absolute z-[9999] rounded-2xl border-2 border-gold-400 shadow-[0_0_30px_rgba(245,212,122,0.3)] pointer-events-none"
-          initial={false}
-          animate={{
-            top: targetRect.top - 8,
-            left: targetRect.left - 8,
-            width: targetRect.width + 16,
-            height: targetRect.height + 16,
-          }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        />
+          initial={{ opacity: 0, y: 8, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1, top: position.top, left: position.left }}
+          exit={{ opacity: 0, scale: 0.96 }}
+          className="fixed z-[10000] w-80 pointer-events-auto"
+        >
+          <TooltipCard step={step} stepNumber={stepNumber} totalSteps={totalSteps} onNext={onNext} onPrev={onPrev} onDismiss={onDismiss} />
+        </MotionDiv>
       )}
-
-      {/* Bottom Sheet */}
-      <MotionDiv
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', stiffness: 400, damping: 40 }}
-        drag="y"
-        dragConstraints={{ top: 0 }}
-        dragElastic={{ top: 0, bottom: 0.4 }}
-        onDragEnd={(_, info) => {
-          if (info.offset.y > 80) onDismiss()
-        }}
-        className="fixed bottom-0 left-0 right-0 z-[10000] pointer-events-auto rounded-t-[2rem] overflow-hidden"
-        style={{
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)'
-        }}
-      >
-        {/* Drag Handle */}
-        <div className="bg-[#0B0F1A] pt-3 pb-0 flex justify-center">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
-
-        <TooltipCard
-          step={step}
-          stepNumber={stepNumber}
-          totalSteps={totalSteps}
-          onNext={onNext}
-          onPrev={onPrev}
-          onDismiss={onDismiss}
-          isMobile
-        />
-      </MotionDiv>
     </div>,
     document.body
   )
 }
 
-// ─── Contenu partagé du Tooltip ───────────────────────────────────────────────
+// ─── Mobile bottom sheet ──────────────────────────────────────────────────────
+
+function MobileSheet({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
+  return (
+    <MotionDiv
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+      drag="y"
+      dragConstraints={{ top: 0 }}
+      dragElastic={{ top: 0, bottom: 0.4 }}
+      onDragEnd={(_, info) => { if (info.offset.y > 80) onDismiss() }}
+      className="fixed bottom-0 left-0 right-0 z-[10000] pointer-events-auto rounded-t-2xl overflow-hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
+      <div className="bg-[#0B0F1A] pt-3 pb-0 flex justify-center">
+        <div className="w-10 h-1 rounded-full bg-white/20" />
+      </div>
+      <TooltipCard step={step} stepNumber={stepNumber} totalSteps={totalSteps} onNext={onNext} onPrev={onPrev} onDismiss={onDismiss} isMobile />
+    </MotionDiv>
+  )
+}
+
+// ─── Shared tooltip card ──────────────────────────────────────────────────────
+
 function TooltipCard({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, isMobile = false }) {
   return (
-    <div className="bg-[#0B0F1A] border border-white/10 shadow-2xl shadow-black overflow-hidden"
-      style={{ borderRadius: isMobile ? '0' : '1.5rem' }}
+    <div
+      className="bg-[#0B0F1A] border border-white/10 shadow-2xl shadow-black overflow-hidden"
+      style={{ borderRadius: isMobile ? 0 : '1.25rem' }}
     >
       {/* Header */}
-      <div className="px-5 py-4 bg-white/5 border-b border-white/5">
-        <div className="flex items-center justify-between">
-          <h4 className="font-syne font-black text-white italic tracking-tight text-base">{step.title}</h4>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDismiss() }}
-            className="text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+      <div className="px-5 py-3.5 bg-white/[0.03] border-b border-white/5 flex items-center justify-between">
+        <h4 className="font-syne font-bold text-white text-sm">{step.title}</h4>
+        <button onClick={(e) => { e.stopPropagation(); onDismiss() }} className="text-gray-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Body */}
-      <div className="px-5 py-5">
+      <div className="px-5 py-4">
         <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
-        {isMobile && (
-          <p className="text-[10px] text-gray-600 mt-3 text-center">
-            Glissez vers le bas pour fermer
-          </p>
-        )}
+        {isMobile && <p className="text-[10px] text-gray-600 mt-3 text-center">Glissez vers le bas pour fermer</p>}
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-4 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
-        {/* Progress dots */}
-        <div className="flex items-center gap-1.5">
+      <div className="px-5 py-3.5 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+        <div className="flex gap-1">
           {Array.from({ length: totalSteps }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 rounded-full transition-all duration-500 ${
-                i === stepNumber - 1 ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'
-              }`}
-            />
+            <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === stepNumber - 1 ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'}`} />
           ))}
         </div>
-
-        {/* Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {stepNumber > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onPrev() }}
-              className="text-xs font-bold text-gray-500 hover:text-white transition-colors"
-            >
+            <button onClick={(e) => { e.stopPropagation(); onPrev() }} className="text-xs font-bold text-gray-500 hover:text-white transition-colors px-2 py-1">
               Précédent
             </button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); stepNumber === totalSteps ? onDismiss() : onNext() }}
-            className="px-5 py-2 text-xs font-black bg-white text-black rounded-xl hover:bg-gold-400 transition-all hover:scale-105 active:scale-95"
+            className="px-4 py-2 text-xs font-black bg-white text-black rounded-lg hover:bg-gold-400 transition-all hover:scale-105 active:scale-95"
           >
             {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant'}
           </button>
         </div>
       </div>
     </div>
-  )
-}
-
-// ─── Composant principal : route vers Desktop ou Mobile ───────────────────────
-function FloatingTourTooltip({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
-  const [position, setPosition] = useState({ top: 0, left: 0 })
-  const [targetRect, setTargetRect] = useState(null)
-  const [targetVisible, setTargetVisible] = useState(false)
-  const isMobile = useIsMobile()
-
-  useEffect(() => {
-    // Si l'étape est desktopOnly et qu'on est sur mobile, passer automatiquement
-    if (step.desktopOnly && isMobile) {
-      onNext()
-      return
-    }
-
-    const candidates = document.querySelectorAll(step.target)
-    const targetElement = Array.from(candidates).find((el) => {
-      const rect = el.getBoundingClientRect()
-      const style = window.getComputedStyle(el)
-      return rect.width > 0 && rect.height > 0 && style.visibility !== 'hidden' && style.display !== 'none'
-    }) || candidates[0]
-
-    if (!targetElement) {
-      setTargetRect(null)
-      setTargetVisible(false)
-      return
-    }
-
-    const updatePosition = () => {
-      const rect = targetElement.getBoundingClientRect()
-      const isInViewport = rect.width > 0 && rect.height > 0 &&
-        rect.top >= 0 && rect.left >= 0 &&
-        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-
-      setTargetRect(rect)
-      setTargetVisible(isInViewport)
-
-      if (isMobile) return
-
-      const tooltipWidth = 320
-      const tooltipHeight = 180
-      const offset = 20
-      let top = 0
-      let left = 0
-
-      switch (step.position) {
-        case 'right':
-          top = rect.top + rect.height / 2 - tooltipHeight / 2
-          left = rect.right + offset
-          break
-        case 'left':
-          top = rect.top + rect.height / 2 - tooltipHeight / 2
-          left = rect.left - tooltipWidth - offset
-          break
-        case 'top':
-          top = rect.top - tooltipHeight - offset
-          left = rect.left + rect.width / 2 - tooltipWidth / 2
-          break
-        case 'bottom':
-        case 'bottom-left':
-        default:
-          top = rect.bottom + offset
-          left = step.position === 'bottom-left' ? rect.left : rect.left + rect.width / 2 - tooltipWidth / 2
-          break
-      }
-
-      top = Math.max(10, Math.min(top, window.innerHeight - tooltipHeight - 10))
-      left = Math.max(10, Math.min(left, window.innerWidth - tooltipWidth - 10))
-      setPosition({ top, left })
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [step, isMobile, onNext])
-
-  const isBlockingModalOpen = !!(
-    document.querySelector('[role="dialog"]') ||
-    document.querySelector('.wizard-modal') ||
-    document.querySelector('.welcome-modal')
-  )
-  if (isBlockingModalOpen) return null
-
-  // Mobile : ne rien afficher si la cible est introuvable
-  if (isMobile) {
-    if (!targetRect || !targetVisible) return null
-
-    return (
-      <MobileBottomSheet
-        step={step}
-        stepNumber={stepNumber}
-        totalSteps={totalSteps}
-        onNext={onNext}
-        onPrev={onPrev}
-        onDismiss={onDismiss}
-        targetRect={targetVisible ? targetRect : null}
-      />
-    )
-  }
-
-  // Sur desktop : ne rien afficher si la cible est introuvable
-  if (!targetRect || !targetVisible) return null
-
-  return (
-    <DesktopTooltip
-      step={step}
-      stepNumber={stepNumber}
-      totalSteps={totalSteps}
-      onNext={onNext}
-      onPrev={onPrev}
-      onDismiss={onDismiss}
-      position={position}
-      targetRect={targetRect}
-    />
   )
 }
 

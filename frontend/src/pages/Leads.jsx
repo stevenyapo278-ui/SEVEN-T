@@ -67,7 +67,6 @@ export default function Leads() {
   const { t } = useTranslation()
 
   const isModuleEnabled = (() => {
-    // FORCE TRUE pour restaurer la vue immédiatement pendant que le backend se synchronise
     const feat = user?.plan_features?.leads_management
     if (feat === true) return true;
     
@@ -76,9 +75,9 @@ export default function Leads() {
     const isOverrideFalse = override === 0 || override === '0'
     if (!user?.parent_user_id || user?.role === 'owner') {
       if (isOverrideFalse) return false
-      return true // Fallback true pour s'assurer que la vue est visible
+      return !!feat || isOverrideTrue
     }
-    return isOverrideTrue || true // Fallback true
+    return isOverrideTrue
   })()
 
   if (!isModuleEnabled) {
