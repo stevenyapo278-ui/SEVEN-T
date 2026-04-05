@@ -540,7 +540,7 @@ class WorkflowExecutor {
             'Commandes:',
             data.orderItems || '—',
             '',
-            Total: ${Number(data.totalAmount || 0).toLocaleString()} ${data.currency || 'XOF'}`,
+            `Total: ${Number(data.totalAmount || 0).toLocaleString()} ${data.currency || 'XOF'}`,
             data.orderIdShort ? `Réf: #${data.orderIdShort}` : null,
             data.paymentUrl ? `\n💳 PAIEMENT:\n${data.paymentUrl}` : null,
             data.paymentQr ? `\n🖼️ QR CODE:\n${data.paymentQr}` : null
