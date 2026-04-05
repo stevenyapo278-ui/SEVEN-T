@@ -23,7 +23,9 @@ import {
   XCircle,
   Share2,
   Send,
-  Download
+  Download,
+  QrCode,
+  Printer
 } from 'lucide-react'
 
 const STATUS_COLORS = {
@@ -64,6 +66,8 @@ export default function Payments() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [geniuspayConfigured, setGeniuspayConfigured] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [previewQrLink, setPreviewQrLink] = useState(null)
 
   useEffect(() => {
     if (!paymentModuleEnabled) {
@@ -173,6 +177,30 @@ export default function Payments() {
     return matchesSearch && matchesStatus
   })
 
+  const toggleSelect = (id) => {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredLinks.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredLinks.map(l => l.id)))
+    }
+  }
+
+  const handlePrintSelected = () => {
+    window.print()
+  }
+
+  const getQrUrl = (link) => {
+    const url = link.payment_url || link.payment_url_external || `${window.location.origin}/pay/${link.id.split('-')[0].toUpperCase()}`
+    return `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`
+  }
+
   const handleExportCsv = async () => {
     try {
       const statusParam = statusFilter !== 'all' ? `?status=${statusFilter}` : ''
@@ -246,6 +274,16 @@ export default function Payments() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={handlePrintSelected}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white shadow-lg shadow-orange-500/20 transition-all duration-200 min-h-[44px]"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Imprimer ({selectedIds.size})</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => handleExportCsv()}
@@ -295,14 +333,27 @@ export default function Payments() {
         <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
           isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
         }`}>
-          <Search className="w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
-          />
+          <div className="flex items-center gap-3 w-full">
+            <button 
+              onClick={toggleSelectAll}
+              className={`p-1.5 rounded-lg border transition-all ${
+                selectedIds.size === filteredLinks.length && filteredLinks.length > 0
+                  ? 'bg-blue-500 border-blue-500 text-white'
+                  : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
+              }`}
+              title="Tout sélectionner"
+            >
+              <Check className={`w-4 h-4 ${selectedIds.size === filteredLinks.length && filteredLinks.length > 0 ? 'opacity-100' : 'opacity-0'}`} />
+            </button>
+            <Search className="w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -342,13 +393,25 @@ export default function Payments() {
           filteredLinks.map((link, index) => (
             <div
               key={link.id}
-              className={`p-6 rounded-2xl border transition-all duration-300 animate-fadeIn ${
-                isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+              className={`p-6 rounded-2xl border transition-all duration-300 animate-fadeIn print:hidden ${
+                selectedIds.has(link.id)
+                  ? isDark ? 'bg-blue-500/10 border-blue-500/50 shadow-blue-500/5' : 'bg-blue-50 border-blue-200 shadow-sm'
+                  : isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
+                  <button 
+                    onClick={() => toggleSelect(link.id)}
+                    className={`mt-3 w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center ${
+                      selectedIds.has(link.id)
+                        ? 'bg-blue-500 border-blue-500 text-white'
+                        : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    {selectedIds.has(link.id) && <Check className="w-4 h-4" />}
+                  </button>
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     link.status === 'paid'
                       ? 'bg-emerald-500/20 text-emerald-400'
@@ -392,6 +455,16 @@ export default function Payments() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* QR Code Preview */}
+                  <button
+                    onClick={() => setPreviewQrLink(link)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDark ? 'hover:bg-space-700 text-icon' : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                    title="Voir le QR Code"
+                  >
+                    <QrCode className="w-4 h-4" />
+                  </button>
                   {/* Copier le lien — toujours disponible */}
                   <button
                     onClick={() => handleCopyLink(link)}
@@ -463,6 +536,82 @@ export default function Payments() {
           onClose={() => setCreatedLink(null)}
         />
       )}
+
+      {/* Preview QR Modal */}
+      {previewQrLink && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPreviewQrLink(null)} />
+          <div className={`relative z-10 w-full max-w-sm p-8 rounded-3xl shadow-2xl animate-fadeIn text-center ${
+            isDark ? 'bg-space-900 border border-space-700' : 'bg-white border border-gray-100'
+          }`}>
+            <h3 className={`text-xl font-display font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              QR Code de Paiement
+            </h3>
+            <div className="bg-white p-4 rounded-2xl shadow-inner mb-6 inline-block">
+              <img 
+                src={getQrUrl(previewQrLink)} 
+                alt="QR Code" 
+                className="w-64 h-64 mx-auto"
+              />
+            </div>
+            <p className={`text-sm mb-8 px-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {previewQrLink.description || 'Lien de paiement'} · <span className="font-bold">{previewQrLink.amount.toLocaleString()} {previewQrLink.currency}</span>
+            </p>
+            <button 
+              onClick={() => setPreviewQrLink(null)}
+              className="w-full btn-primary py-3 rounded-xl"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Print Layout (Hidden on Screen) */}
+      <div className="hidden print:block print:p-0">
+        <div className="grid grid-cols-2 gap-4">
+          {links.filter(l => selectedIds.has(l.id)).map((link, idx) => (
+            <div key={link.id} className={`p-8 border border-gray-200 flex flex-col items-center justify-center text-center ${idx % 4 === 0 && idx !== 0 ? 'page-break-before' : ''}`} style={{ height: '140mm' }}>
+              <h2 className="text-xl font-bold mb-2">SEVEN-T PAY</h2>
+              <div className="bg-white p-4 border-2 border-black mb-4">
+                <img src={getQrUrl(link)} alt="QR Code" className="w-64 h-64" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-lg font-bold">{link.amount.toLocaleString()} {link.currency}</p>
+                <p className="text-sm text-gray-700">{link.description || 'Lien de paiement'}</p>
+                <p className="text-[10px] text-gray-400 mt-2">Scannez pour payer</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 0;
+          }
+          body > * {
+            display: none !important;
+          }
+          #root > div > main > div[class*="pb-12"] {
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+          }
+          #root > div > main > div > *:not(.print\\:block) {
+            display: none !important;
+          }
+          .print\\:block {
+            display: block !important;
+          }
+          .page-break-before {
+            page-break-before: always;
+          }
+        }
+      `}</style>
     </div>
   )
 }
@@ -482,10 +631,18 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await api.post('/payments', {
+      const data = {
         ...form,
         amount: parseFloat(form.amount)
-      })
+      }
+      
+      if (form.expires_in_hours) {
+        data.expires_in_hours = parseInt(form.expires_in_hours, 10)
+      } else {
+        delete data.expires_in_hours
+      }
+
+      const res = await api.post('/payments', data)
       toast.success('Lien de paiement créé')
       const payment = res.data?.payment
       onSave(payment || null)
