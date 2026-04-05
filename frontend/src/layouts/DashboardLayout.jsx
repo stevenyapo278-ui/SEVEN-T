@@ -98,6 +98,7 @@ const navigationGroups = [
       { nameKey: 'nav.products', title: 'Mon catalogue (Produits)', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
       { nameKey: 'nav.deals', title: 'Suivi des Deals', href: '/dashboard/deals', icon: Target, tourId: 'nav-deals' },
       { nameKey: 'nav.orders', title: 'Mes commandes', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
+      { nameKey: 'nav.payments', title: 'Paiements', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
     ]
   },
   {
@@ -1137,6 +1138,8 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/tickets') return true;
         
         // Modules mapping
+        if (item.href === '/dashboard/payments') return paymentModuleEnabled;
+
         if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
         if (item.href === '/dashboard/reports') return analyticsModuleEnabled;
         
@@ -1154,7 +1157,7 @@ export default function DashboardLayout() {
         return true;
       })
     })).filter(g => g.items.length > 0);
-  }, [analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly, user?.name])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly, user?.name])
 
 
   const bottomNav = useMemo(() => {
