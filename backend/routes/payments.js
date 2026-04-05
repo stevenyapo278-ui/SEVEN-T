@@ -166,23 +166,30 @@ router.delete('/providers/:provider', async (req, res) => {
 // Get payment links for user
 router.get('/', async (req, res) => {
     try {
+        const userId = req.user?.id;
+        if (!userId) return res.status(401).json({ error: 'Non authentifié' });
+
         const payments = await db.all(`
             SELECT * FROM payment_links 
             WHERE user_id = ? 
             ORDER BY created_at DESC
-        `, req.user.id);
+        `, userId) || [];
         
-        // Add short_id and payment_url to each result
-        const enhanced = payments.map(p => ({
-            ...p,
-            short_id: p.id.split('-')[0].toUpperCase(),
-            payment_url: p.payment_url_external || `${baseUrl()}/pay/${p.id.split('-')[0].toUpperCase()}`
-        }));
+        // Add short_id and payment_url to each result with robust checks
+        const enhanced = payments.map(p => {
+            const rawId = p.id ? String(p.id) : '';
+            const shortId = rawId.split('-')[0].toUpperCase();
+            return {
+                ...p,
+                short_id: shortId,
+                payment_url: p.payment_url_external || `${baseUrl()}/pay/${shortId}`
+            };
+        });
 
         res.json({ payments: enhanced });
     } catch (error) {
         console.error('Get payments error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
