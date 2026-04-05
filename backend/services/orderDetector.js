@@ -2,7 +2,8 @@
  * Order Detector Service
  * Analyzes conversations to detect purchase intent and create pending orders
  * 
- * IMPROVED: Better quantity detection that doesn't confuse model numbers with quantities
+ * IMPROVED: Better quantity detection, order replacement, inline corrections,
+ * deduplication, cancellation handling, and product option extraction.
  */
 
 import db from '../database/init.js';
@@ -50,6 +51,42 @@ const REFUSAL_KEYWORDS = [
     'no', 'not', 'wait', 'later', 'not now', 'cancel'
 ];
 
+// P1.2 — Inline correction patterns: "non attends, remplace par X" should NOT be treated as a refusal
+// If the message contains a refusal word BUT is followed by a correction verb, it's a correction not a refusal.
+const INLINE_CORRECTION_PATTERNS = [
+    /\b(non|attends?|attendez)\b.{0,50}\b(remplace|mets|plutôt|finalement|change|laisse|veux plutôt)/i,
+    /\b(non|wait)\b.{0,50}\b(replace|put|instead|actually|change|make it)/i
+];
+
+// P1.1 — Signals that client wants to REPLACE (not add to) an existing order
+const REPLACE_SIGNALS = [
+    'laisse', 'laisse tomber', 'plutôt', 'remplace', 'remplacement', 'finalement',
+    'en fait', 'change pour', 'mets plutôt', 'au lieu de', 'non laisse',
+    'oublie', 'oublie ça', 'ignore', 'annule et mets', 'annule et remplace',
+    // English
+    'instead', 'instead of that', 'actually', 'forget that', 'replace with', 'change to'
+];
+
+// P1.4 — Cancellation signals (distinct from just "non")
+const CANCELLATION_SIGNALS = [
+    'annule ma commande', 'annuler ma commande', 'annule la commande',
+    'je ne veux plus rien', 'plus besoin', 'laisse tomber la commande',
+    'annule tout', 'stop la commande', 'cancel my order', 'cancel the order'
+];
+
+// P2.1 — Product option extraction patterns
+const PRODUCT_OPTION_PATTERNS = [
+    { regex: /sans\s+([a-zÀ-ÿ]+(?:\s+[a-zÀ-ÿ]+)?)/gi, prefix: 'sans' },    // "sans piment"
+    { regex: /\+\s*([a-zÀ-ÿ]+(?:\s+[a-zÀ-ÿ]+)?)/gi, prefix: '+' },         // "+ fromage"
+    { regex: /avec\s+(?:du\s+|de\s+la\s+|de\s+l'|des\s+)?([a-zÀ-ÿ]+(?:\s+[a-zÀ-ÿ]+)?)/gi, prefix: 'avec' }, // "avec fromage"
+    { regex: /extra\s+([a-zÀ-ÿ]+(?:\s+[a-zÀ-ÿ]+)?)/gi, prefix: 'extra' },  // "extra sauce"
+    { regex: /bien\s+(cuit|chaud|froid|coupé|grillé)/gi, prefix: 'bien' },   // "bien cuit"
+    { regex: /légère?\s+(?:en\s+)?([a-zÀ-ÿ]+)/gi, prefix: 'léger' }        // "léger en sel"
+];
+
+// Words that are NOT valid options (product names, stop words, etc.)
+const OPTION_STOP_WORDS = new Set(['poulet', 'pizza', 'burger', 'jus', 'attiéké', 'chawarma', 'frites', 'riz', 'poisson', 'livraison', 'commande', 'moi', 'nous', 'vous', 'mets', 'que', 'de', 'la', 'le', 'les']);
+
 // Keywords that indicate QUESTION/INQUIRY (should block order detection)
 const QUESTION_KEYWORDS = [
     'quel', 'quelle', 'quels', 'quelles', 'combien', 'comment',
@@ -89,6 +126,50 @@ const FRENCH_QUANTITY_PATTERNS = [
 ];
 
 class OrderDetector {
+    /**
+     * P2.1 — Extract product options/modifiers from a message
+     * Detects patterns like "sans piment", "+ fromage", "extra sauce", "bien cuit"
+     * @param {string} message - The message to analyze
+     * @returns {string[]} - Array of option strings (e.g. ["sans piment", "+ fromage"])
+     */
+    extractProductOptions(message) {
+        const options = [];
+        const seen = new Set();
+        for (const { regex, prefix } of PRODUCT_OPTION_PATTERNS) {
+            regex.lastIndex = 0; // reset global regex state
+            let match;
+            while ((match = regex.exec(message)) !== null) {
+                const rawValue = (match[1] || '').trim().toLowerCase();
+                if (!rawValue || rawValue.length < 2) continue;
+                if (OPTION_STOP_WORDS.has(rawValue.split(' ')[0])) continue;
+                const option = prefix === '+' ? `+ ${rawValue}` : `${prefix} ${rawValue}`;
+                if (!seen.has(option)) {
+                    seen.add(option);
+                    options.push(option);
+                }
+            }
+        }
+        return options;
+    }
+
+    /**
+     * P1.4 — Check if message is a cancellation of an existing order
+     * @param {string} lowerMessage
+     * @returns {boolean}
+     */
+    isCancellationMessage(lowerMessage) {
+        return CANCELLATION_SIGNALS.some(signal => lowerMessage.includes(signal.toLowerCase()));
+    }
+
+    /**
+     * P1.1 — Check if message signals a REPLACEMENT of the entire existing order
+     * @param {string} lowerMessage
+     * @returns {boolean}
+     */
+    isReplacementMessage(lowerMessage) {
+        return REPLACE_SIGNALS.some(signal => lowerMessage.includes(signal.toLowerCase()));
+    }
+
     /**
      * Extract quantity from message, being careful not to match model numbers
      * Handles both numeric (2, 3) and French words (deux, trois)
@@ -232,19 +313,43 @@ class OrderDetector {
         });
         // #endregion
 
-        // FIRST: Check for REFUSAL - if customer says "no", don't detect order
-        const isRefusal = REFUSAL_KEYWORDS.some(keyword => {
-            const keywordLower = keyword.toLowerCase();
-            // Check if refusal is at start of message (strongest signal)
-            if (trimmedMessage.startsWith(keywordLower)) return true;
-            // Or check if it's a standalone word
-            const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
-            return regex.test(lowerMessage);
-        });
+        // P1.2 — FIRST: Special case: inline correction ("non attends, remplace par...")
+        // Must be checked BEFORE the generic refusal check
+        const isInlineCorrection = INLINE_CORRECTION_PATTERNS.some(p => p.test(lowerMessage));
 
-        if (isRefusal) {
-            console.log(`[OrderDetector] Refusal detected in message: "${message.substring(0, 50)}..."`);
-            return null; // Customer is refusing, don't create order
+        // P1.4 — Check for explicit order cancellation BEFORE intent detection
+        const isCancellation = this.isCancellationMessage(lowerMessage);
+        if (isCancellation) {
+            console.log(`[OrderDetector] Cancellation detected: "${message.substring(0, 60)}"`);
+            const pendingOrder = await db.get(
+                `SELECT id FROM orders WHERE conversation_id = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
+                conversation.id
+            );
+            if (pendingOrder) {
+                await db.run(
+                    `UPDATE orders SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    pendingOrder.id
+                );
+                console.log(`[OrderDetector] Cancelled pending order ${pendingOrder.id}`);
+                return { orderCancelled: true, orderId: pendingOrder.id };
+            }
+            return null;
+        }
+
+        // P1.2 — SECOND: Check for REFUSAL - but skip if it's an inline correction
+        if (!isInlineCorrection) {
+            const isRefusal = REFUSAL_KEYWORDS.some(keyword => {
+                const keywordLower = keyword.toLowerCase();
+                if (trimmedMessage.startsWith(keywordLower)) return true;
+                const regex = new RegExp(`\\b${keywordLower}\\b`, 'i');
+                return regex.test(lowerMessage);
+            });
+            if (isRefusal) {
+                console.log(`[OrderDetector] Refusal detected in message: "${message.substring(0, 50)}..."`);
+                return null;
+            }
+        } else {
+            console.log(`[OrderDetector] Inline correction detected, bypassing refusal check`);
         }
 
         // SECOND: Check for QUESTION - if customer is asking, not buying
@@ -419,13 +524,21 @@ class OrderDetector {
 
 
         const existingOrder = await db.get(`
-            SELECT id, notes FROM orders 
+            SELECT id, notes, created_at FROM orders 
             WHERE conversation_id = ? AND status = 'pending'
             ORDER BY created_at DESC LIMIT 1
         `, conversation.id);
 
         if (existingOrder) {
-            // If this message contains delivery info, update the pending order notes so validation includes lieu/phone
+            // P1.1 — If the message signals a REPLACEMENT, clear all existing items first
+            const isReplacement = this.isReplacementMessage(lowerMessage);
+            if (isReplacement) {
+                console.log(`[OrderDetector] Replacement signal detected — clearing items for order ${existingOrder.id}`);
+                await db.run('DELETE FROM order_items WHERE order_id = ?', existingOrder.id);
+                await db.run('UPDATE orders SET total_amount = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?', existingOrder.id);
+            }
+
+            // If this message contains delivery info, update the pending order notes
             const deliveryInfo = messageAnalyzer.extractDeliveryInfo(message);
             if (deliveryInfo?.hasDeliveryInfo) {
                 const parts = [];
@@ -443,11 +556,13 @@ class OrderDetector {
                     console.log(`[OrderDetector] Updated pending order ${existingOrder.id} with delivery info: ${livraisonBlock}`);
                 }
             }
-            // Add new items to existing pending order (commande combinée) instead of creating a duplicate
+
+            // Add / replace items in existing pending order
             const existingItemCount = (await db.all('SELECT id FROM order_items WHERE order_id = ?', existingOrder.id)).length;
             const updated = await orderService.addItemsToOrder(existingOrder.id, userId, detectedItems);
             if (updated && updated.items && updated.items.length > existingItemCount) {
-                console.log(`[OrderDetector] Added items to pending order ${existingOrder.id} (combined order)`);
+                const action = isReplacement ? 'Replaced' : 'Added';
+                console.log(`[OrderDetector] ${action} items in pending order ${existingOrder.id}`);
             } else {
                 console.log(`[OrderDetector] Pending order already exists for conversation ${conversation.id}`);
             }
@@ -464,9 +579,27 @@ class OrderDetector {
 
         const customerPhone = conversation.contact_number || null;
 
+        // P1.3 — Deduplication: if an order was created for this conversation in the last 30s, skip
+        const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+        const recentOrder = await db.get(`
+            SELECT id FROM orders
+            WHERE conversation_id = ? AND status = 'pending' AND created_at >= ?
+            ORDER BY created_at DESC LIMIT 1
+        `, conversation.id, thirtySecondsAgo);
+        if (recentOrder) {
+            console.log(`[OrderDetector] Dedup: order ${recentOrder.id} created within last 30s, skipping duplicate creation`);
+            return await db.get('SELECT * FROM orders WHERE id = ?', recentOrder.id);
+        }
+
+        // P2.1 — Extract product options from message ("sans piment", "+ fromage", etc.)
+        const productOptions = this.extractProductOptions(message);
+
         // Extract delivery info from message for livreur notification
         const deliveryInfo = messageAnalyzer.extractDeliveryInfo(message);
         let notes = `Commande détectée automatiquement depuis WhatsApp\nMessage: "${message.substring(0, 200)}..."`;
+        if (productOptions.length > 0) {
+            notes += `\n[OPTIONS] ${productOptions.join(', ')}`;
+        }
         if (deliveryInfo?.hasDeliveryInfo) {
             const parts = [];
             if (deliveryInfo.city) parts.push(`ville:${deliveryInfo.city}`);
@@ -476,7 +609,7 @@ class OrderDetector {
         }
 
         // Create the order
-        console.log(`[OrderDetector] Detected purchase intent: ${detectedItems.length} items from ${customerName}`);
+        console.log(`[OrderDetector] Detected purchase intent: ${detectedItems.length} items from ${customerName}${productOptions.length > 0 ? ` | Options: ${productOptions.join(', ')}` : ''}`);
 
         const order = await orderService.createOrder(userId, {
             conversationId: conversation.id,

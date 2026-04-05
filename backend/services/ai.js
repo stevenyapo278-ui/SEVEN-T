@@ -537,7 +537,19 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
 - Si un produit est disponible, sois enthousiaste : "C'est disponible ! ✅"
 - Ne demande JAMAIS "souhaitez-vous commander cette quantité" si le stock est élevé. Dis plutôt : "On en a en stock. Je vous en prépare un pour votre commande ?"
 - Envoi d'images : Si le client demande à voir ou veut des photos, envoie-les IMMÉDIATEMENT (en utilisant la balise [ENVOYER_IMAGES:...]).
-- Finalisation : Dès que l'intention d'achat est là, passe à la livraison (ville, quartier, tél).`;
+- Finalisation : Dès que l'intention d'achat est là, passe à la livraison (ville, quartier, tél).
+
+## 🎁 UPSELL (vente additionnelle) — OBLIGATOIRE
+Propose UN seul upsell naturel UNIQUEMENT si le client ne l'a pas encore mentionné :
+- Burger / sandwich seul → "Souhaitez-vous ajouter des frites et une boisson pour un menu complet ?"
+- Plat principal seul (sans boisson) → "Je vous conseille une boisson pour accompagner, on a [exemples du catalogue] 😊"
+- Pizza → "Souhaitez-vous ajouter une saveur ou une boisson ?"
+- Repas complet déjà mentionné → NE PROPOSE PAS d'upsell, confirme directement.
+
+## 📦 COMMANDES MULTI-DESTINATAIRES
+Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon ami à Cocody", "à Yopougon et Adjamé"):
+- Détecte-le immédiatement et dis : "Pour plusieurs adresses différentes, nous allons traiter ça en deux commandes séparées. D'abord pour quelle adresse commencer ?"
+- Ne tente PAS de fusionner les infos de livraison de destinataires différents.`;
         } else if (isCommercial) {
             prompt += `
 - Tu es un CONSEILLER RELATIONNEL. Ta mission est de présenter nos services et de fixer des rendez-vous.
@@ -674,6 +686,37 @@ Ton objectif est d'être ultra-efficace, chaleureux et direct. Le temps des clie
             parts.push('→ INSTRUCTION: Si des créneaux sont mentionnés, ne les redemande pas. Valide-les ou demande les infos manquantes (nom, motif si absent).');
         }
         
+        // P.22 — Order status request: inject the real order status into context
+        if (analysis.intent?.primary === 'order_status') {
+            parts.push('\n📦 DEMANDE DE STATUT DE COMMANDE DÉTECTÉE:');
+            if (analysis.lastOrderStatus) {
+                const statusLabels = {
+                    pending: 'En attente de validation',
+                    validated: 'Validée — en cours de préparation',
+                    delivered: 'Livrée / Payée',
+                    cancelled: 'Annulée',
+                    rejected: 'Rejetée'
+                };
+                parts.push(`- Statut: ${statusLabels[analysis.lastOrderStatus] || analysis.lastOrderStatus}`);
+                if (analysis.lastOrderTotal) parts.push(`- Total: ${Number(analysis.lastOrderTotal).toLocaleString()} ${analysis.lastOrderCurrency || 'XOF'}`);
+            } else {
+                parts.push('- Aucune commande en cours trouvée pour ce client.');
+            }
+            parts.push('INSTRUCTION: Réponds avec le statut réel ci-dessus. Ne dis pas "je vérifie" — l\'info est déjà disponible.');
+        }
+
+        // P1.4 — Cancelled order context
+        if (analysis.orderCancelled) {
+            parts.push('\n❌ COMMANDE ANNULÉE: La commande en cours vient d\'être annulée avec succès.');
+            parts.push('INSTRUCTION: Confirme l\'annulation chaleureusement et propose de passer une nouvelle commande si le client le souhaite.');
+        }
+
+        // P2.1 — Product options detected
+        if (analysis.productOptions && analysis.productOptions.length > 0) {
+            parts.push(`\n📋 OPTIONS PRODUIT DÉTECTÉES: ${analysis.productOptions.join(', ')}`);
+            parts.push('INSTRUCTION: Confirme bien ces options dans ta réponse (ex: "noté pour ${options}").');
+        }
+
         // Order guidance — INTELLIGENT FLOW
         if (analysis.orderCreated) {
             parts.push('\n✅ COMMANDE ENREGISTRÉE: La commande a bien été créée dans le système.');

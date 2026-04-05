@@ -75,6 +75,17 @@ const INTENT_PATTERNS = {
         ],
         weight: 8
     },
+    order_status: {
+        keywords: [
+            'où en est', 'ma commande', 'statut', 'suivi', 'avancement',
+            'commande en cours', 'livraison en cours', 'expédié', 'livré',
+            'quand livraison', 'c\'est pour quand', 'est-ce que ma commande',
+            'ma commande est', 'ma livraison', 'votre livraison',
+            // English
+            'order status', 'where is my order', 'track my order', 'shipment', 'delivery status'
+        ],
+        weight: 8
+    },
     appreciation: {
         keywords: [
             'merci', 'merci beaucoup', 'thanks', 'thank you', 'c\'est gentil', 'parfait merci',

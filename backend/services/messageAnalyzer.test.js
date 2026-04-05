@@ -51,6 +51,21 @@ describe('MessageAnalyzer - detectIntent', () => {
         expect(['human_request', 'order']).toContain(result.primary);
     });
 
+    it('should detect order_status intent', () => {
+        const result = analyzer.detectIntent('où en est ma commande ?');
+        expect(result.primary).toBe('order_status');
+    });
+
+    it('should detect cancellation intent', () => {
+        const result = analyzer.detectIntent('annule ma commande');
+        expect(result.primary).toBe('cancellation');
+    });
+
+    it('should detect modification intent', () => {
+        const result = analyzer.detectIntent('je veux modifier ma commande');
+        expect(result.primary).toBe('modification');
+    });
+
     it('should return general for unknown intent', () => {
         const result = analyzer.detectIntent('xyz abc 123');
         expect(result.primary).toBe('general');

@@ -1369,6 +1369,24 @@ class WhatsAppManager {
             if (sentimentRoutingEnabled && sentiment === 'hesitant') {
                 messageAnalysis.sentiment_hint = 'suggest_offer_or_faq';
             }
+
+            // P2.2 — Order status: inject real order status into context when intent is order_status
+            if (isEcommerce && messageAnalysis.intent?.primary === 'order_status') {
+                const lastOrder = await db.get(
+                    `SELECT status, total_amount, currency FROM orders WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 1`,
+                    conversation.id
+                );
+                if (lastOrder) {
+                    messageAnalysis.lastOrderStatus = lastOrder.status;
+                    messageAnalysis.lastOrderTotal = lastOrder.total_amount;
+                    messageAnalysis.lastOrderCurrency = lastOrder.currency;
+                }
+            }
+
+            // P2.1 — Extract product options and attach to messageAnalysis
+            if (isEcommerce) {
+                messageAnalysis.productOptions = orderDetector.extractProductOptions(messageText);
+            }
             console.log(`[WhatsApp] Pre-analysis: Intent=${messageAnalysis.intent_hint ?? messageAnalysis.intent?.primary}, risk=${messageAnalysis.risk_level ?? 'n/a'}, ignore=${messageAnalysis.ignore}, escalate=${messageAnalysis.escalate}`);
             if (isEcommerce && messageAnalysis.products?.stockIssues?.length > 0) {
                 console.log(`[WhatsApp] ⚠️ Stock issues detected: ${messageAnalysis.products.stockIssues.map(i => i.issue).join(', ')}`);
@@ -1408,7 +1426,8 @@ class WhatsAppManager {
             const shouldDetectOrder = isEcommerce && (
                 messageAnalysis.isLikelyOrder ||
                 messageAnalysis.intent?.primary === 'order' ||
-                messageAnalysis.intent?.primary === 'delivery_info'
+                messageAnalysis.intent?.primary === 'delivery_info' ||
+                messageAnalysis.intent?.primary === 'cancellation'
             );
 
             if (shouldDetectOrder) {
@@ -1416,21 +1435,24 @@ class WhatsAppManager {
                     const knowledgeBase = await retrieveRelevantChunks(messageText, agent.id, 10);
                     detectedOrder = await orderDetector.analyzeMessage(messageText, userId, conversation, knowledgeBase);
 
-                    if (detectedOrder) {
-                         // Enrich messageAnalysis for the AI
-                         messageAnalysis.orderCreated = true;
-                         messageAnalysis.orderId = detectedOrder.id;
-                         console.log(`[WhatsApp] Order ${detectedOrder.id} detected before AI call`);
+                    if (detectedOrder?.orderCancelled) {
+                        // P1.4 — Order cancelled by client
+                        messageAnalysis.orderCancelled = true;
+                        console.log(`[WhatsApp] Order ${detectedOrder.orderId} cancelled from conversation`);
+                    } else if (detectedOrder) {
+                        // Enrich messageAnalysis for the AI
+                        messageAnalysis.orderCreated = true;
+                        messageAnalysis.orderId = detectedOrder.id;
+                        console.log(`[WhatsApp] Order ${detectedOrder.id} detected before AI call`);
                     } else if (messageAnalysis.intent?.primary === 'order' && isEcommerce) {
                         // AI thinks it's an order but detector didn't create it
-                        // Could be missing product or low confidence
-                         adminAnomaliesService.log(
-                             'automation_discrepancy',
-                             'medium',
-                             'Discordance d\'automatisation (Commande)',
-                             `L'IA a détecté une intention d'achat, mais aucune commande n'a été créée automatiquement.`,
-                             { userId, agentId: agent.id, metadata: { messageText, intent: messageAnalysis.intent } }
-                         );
+                        adminAnomaliesService.log(
+                            'automation_discrepancy',
+                            'medium',
+                            'Discordance d\'automatisation (Commande)',
+                            `L'IA a détecté une intention d'achat, mais aucune commande n'a été créée automatiquement.`,
+                            { userId, agentId: agent.id, metadata: { messageText, intent: messageAnalysis.intent } }
+                        );
                     }
                 } catch (err) {
                     console.error('[WhatsApp] Order detection error (early):', err.message);
