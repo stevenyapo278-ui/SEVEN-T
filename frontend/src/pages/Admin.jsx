@@ -53,19 +53,19 @@ registerLocale('fr', fr)
 import { DashboardContent, UsersContent, AnomaliesTab, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
 
 const PLAN_MODULES = [
-  { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité', description: 'Permet de définir les horaires où l\\'agent répond automatiquement.' },
-  { key: 'payment_module_enabled', label: 'Module 2 : Paiement & Encaissement', description: 'Intégration des passerelles de paiement pour vendre via l\\'IA.' },
-  { key: 'next_best_action_enabled', label: 'Module 3 : Next Best Action', description: 'Relances automatiques intelligentes des prospects inactifs.' },
-  { key: 'conversion_score_enabled', label: 'Module 4 : Score de conversion', description: 'Analyse la probabilité d\\'achat de chaque prospect.' },
-  { key: 'daily_briefing_enabled', label: 'Module 5 : Daily Briefing', description: 'Résumé quotidien des activités envoyé sur WhatsApp.' },
-  { key: 'sentiment_routing_enabled', label: 'Module 6 : Sentiment routing', description: 'Transfère à un humain si le client semble frustré.' },
-  { key: 'catalog_import_enabled', label: 'Module 7 : Import catalogue', description: 'L\\'IA connaît vos produits via URL ou fichiers.' },
-  { key: 'human_handoff_alerts_enabled', label: 'Module 8 : Alertes Transfert Humain', description: 'Notifications immédiates quand un agent demande de l\\'aide.' },
-  { key: 'analytics_module_enabled', label: 'Module 9 : Analytics & Statistiques', description: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' },
-  { key: 'flows_module_enabled', label: 'Module 10 : Flows (Flux de travail)', description: 'Créez des scénarios d\\'automatisation visuels.' },
-  { key: 'whatsapp_status_enabled', label: 'Module 11 : Statut WhatsApp', description: 'Publication de statuts WhatsApp via l\\'IA ou l\\'interface.' },
-  { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads', description: 'Gestion des prospects, analyse d\\'intention et conversion par l\\'IA.' },
-  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: 'L\\'IA peut répondre par message vocal au lieu de texte.' }
+  { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité', description: "Permet de définir les horaires où l'agent répond automatiquement." },
+  { key: 'payment_module_enabled', label: 'Module 2 : Paiement & Encaissement', description: "Intégration des passerelles de paiement pour vendre via l'IA." },
+  { key: 'next_best_action_enabled', label: 'Module 3 : Next Best Action', description: "Relances automatiques intelligentes des prospects inactifs." },
+  { key: 'conversion_score_enabled', label: 'Module 4 : Score de conversion', description: "Analyse la probabilité d'achat de chaque prospect." },
+  { key: 'daily_briefing_enabled', label: 'Module 5 : Daily Briefing', description: "Résumé quotidien des activités envoyé sur WhatsApp." },
+  { key: 'sentiment_routing_enabled', label: 'Module 6 : Sentiment routing', description: "Transfère à un humain si le client semble frustré." },
+  { key: 'catalog_import_enabled', label: 'Module 7 : Import catalogue', description: "L'IA connaît vos produits via URL ou fichiers." },
+  { key: 'human_handoff_alerts_enabled', label: 'Module 8 : Alertes Transfert Humain', description: "Notifications immédiates quand un agent demande de l'aide." },
+  { key: 'analytics_module_enabled', label: 'Module 9 : Analytics & Statistiques', description: "Accès aux tableaux de bord et rapports détaillés sur les performances." },
+  { key: 'flows_module_enabled', label: 'Module 10 : Flows (Flux de travail)', description: "Créez des scénarios d'automatisation visuels." },
+  { key: 'whatsapp_status_enabled', label: 'Module 11 : Statut WhatsApp', description: "Publication de statuts WhatsApp via l'IA ou l'interface." },
+  { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads', description: "Gestion des prospects, analyse d'intention et conversion par l'IA." },
+  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: "L'IA peut répondre par message vocal au lieu de texte." }
 ]
 
 export default function Admin() {
