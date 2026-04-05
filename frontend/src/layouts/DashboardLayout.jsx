@@ -937,10 +937,10 @@ export default function DashboardLayout() {
   const {
     payment: paymentModuleEnabled,
     analytics: analyticsModuleEnabled,
-    reports: reportsModuleEnabled,
     flows: flowsModuleEnabled,
     leads: leadsModuleEnabled,
     whatsappStatus: whatsappStatusModuleEnabled,
+    catalogImport: catalogImportModuleEnabled,
     knowledgeBase: knowledgeBaseModuleEnabled,
     isAdmin,
     isInfluencerOnly
@@ -1135,17 +1135,27 @@ export default function DashboardLayout() {
       ...g,
       items: g.items.filter(item => {
         if (item.href === '/dashboard/tickets') return true;
-        if (item.href === '/dashboard/payments') return paymentModuleEnabled;
+        
+        // Modules mapping
         if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
-        if (item.href === '/dashboard/reports') return reportsModuleEnabled;
+        if (item.href === '/dashboard/reports') return analyticsModuleEnabled;
+        
         if (item.href === '/dashboard/flows') return flowsModuleEnabled;
+        if (item.href === '/dashboard/workflows') return flowsModuleEnabled;
+        
         if (item.href === '/dashboard/leads') return leadsModuleEnabled;
+        
         if (item.href === '/dashboard/whatsapp-status') return whatsappStatusModuleEnabled;
-        if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled;
+        
+        if (item.href === '/dashboard/products') return catalogImportModuleEnabled;
+        if (item.href === '/dashboard/services') return catalogImportModuleEnabled;
+
+        if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled
         return true;
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, reportsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly, user?.name])
+  }, [analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly, user?.name])
+
 
   const bottomNav = useMemo(() => {
     if (isInfluencerOnly) return [];

@@ -30,12 +30,12 @@ export function useModuleAvailability() {
   }, [user]);
 
   const modules = useMemo(() => ({
-    payment: isEnabled('payment', user?.plan_features?.payment_module, user?.payment_module_enabled),
-    analytics: isEnabled('analytics', user?.plan_features?.analytics, user?.analytics_module_enabled),
-    reports: isEnabled('reports', user?.plan_features?.reports, user?.reports_module_enabled),
-    flows: isEnabled('flows', user?.plan_features?.flows, user?.flows_module_enabled),
+    payment: isEnabled('payment_module', user?.plan_features?.payment_module, user?.payment_module_enabled),
+    analytics: isEnabled('analytics_module', user?.plan_features?.analytics, user?.analytics_module_enabled),
+    flows: isEnabled('flows_module', user?.plan_features?.flows, user?.flows_module_enabled),
     leads: isEnabled('leads_management', user?.plan_features?.leads_management, user?.leads_management_enabled),
     whatsappStatus: isEnabled('whatsapp_status', user?.plan_features?.whatsapp_status, user?.whatsapp_status_enabled),
+    catalogImport: isEnabled('catalog_import', user?.plan_features?.catalog_import, user?.catalog_import_enabled),
     knowledgeBase: isEnabled('knowledge_base', user?.plan_features?.knowledge_base, user?.knowledge_base_enabled),
     isInfluencerOnly: user?.influencer_only === true,
     isAdmin: user?.is_admin === 1
