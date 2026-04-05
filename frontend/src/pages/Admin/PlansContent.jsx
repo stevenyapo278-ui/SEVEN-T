@@ -88,18 +88,18 @@ export default function PlansContent({
               <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Fonctionnalités</h4>
               <div className="flex flex-wrap gap-1">
                 {plan.features?.availability_hours && <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Module 1 : Heures dispo.</span>}
-                {plan.features?.voice_responses && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Module 2 : Voix</span>}
-                {plan.features?.payment_module && <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">Module 3 : Paiement</span>}
-                {plan.features?.next_best_action && <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded">Module 4 : Next Best Action</span>}
-                {plan.features?.conversion_score && <span className="px-2 py-0.5 text-xs bg-pink-500/20 text-pink-300 rounded">Module 5 : Conversion</span>}
-                {plan.features?.daily_briefing && <span className="px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-300 rounded">Module 6 : Briefing</span>}
-                {plan.features?.sentiment_routing && <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-300 rounded">Module 7 : Sentiment</span>}
-                {plan.features?.catalog_import && <span className="px-2 py-0.5 text-xs bg-teal-500/20 text-teal-300 rounded">Module 8 : Catalogue</span>}
-                {plan.features?.human_handoff_alerts && <span className="px-2 py-0.5 text-xs bg-rose-500/20 text-rose-300 rounded">Module 9 : Alertes Transfert</span>}
-                {plan.features?.analytics && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-300 rounded">Module 10 : Analytics</span>}
-                {plan.features?.flows && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 11 : Flows</span>}
-                {plan.features?.whatsapp_status && <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-300 rounded">Module 12 : Statut WhatsApp</span>}
-                {plan.features?.leads_management && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 13 : Gestion des Leads</span>}
+                {plan.features?.payment_module && <span className="px-2 py-0.5 text-xs bg-amber-500/20 text-amber-400 rounded">Module 2 : Paiement</span>}
+                {plan.features?.next_best_action && <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-300 rounded">Module 3 : Next Best Action</span>}
+                {plan.features?.conversion_score && <span className="px-2 py-0.5 text-xs bg-pink-500/20 text-pink-300 rounded">Module 4 : Conversion</span>}
+                {plan.features?.daily_briefing && <span className="px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-300 rounded">Module 5 : Briefing</span>}
+                {plan.features?.sentiment_routing && <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-300 rounded">Module 6 : Sentiment</span>}
+                {plan.features?.catalog_import && <span className="px-2 py-0.5 text-xs bg-teal-500/20 text-teal-300 rounded">Module 7 : Catalogue</span>}
+                {plan.features?.human_handoff_alerts && <span className="px-2 py-0.5 text-xs bg-rose-500/20 text-rose-300 rounded">Module 8 : Alertes Transfert</span>}
+                {plan.features?.analytics && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-300 rounded">Module 9 : Analytics</span>}
+                {plan.features?.flows && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 10 : Flows</span>}
+                {plan.features?.whatsapp_status && <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-300 rounded">Module 11 : Statut WhatsApp</span>}
+                {plan.features?.leads_management && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 12 : Gestion des Leads</span>}
+                {plan.features?.voice_responses && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Module 14 : Voix (TTS)</span>}
                 {plan.features?.models?.length > 0 && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">{plan.features.models.length} modèle(s) IA</span>}
 
               </div>
