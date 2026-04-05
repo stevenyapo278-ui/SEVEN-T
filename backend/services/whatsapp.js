@@ -1664,11 +1664,10 @@ class WhatsAppManager {
                     const m = /\/api\/products\/image\/[^/?\s)]+/.exec(url);
                     return m ? (m[0].startsWith('/') ? m[0] : '/' + m[0]) : url;
                 };
-                const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
                 const userVoiceRow = await db.get('SELECT plan, voice_responses_enabled FROM users WHERE id = ?', userId);
                 const planHasVoice = await hasFeature(userVoiceRow?.plan || 'free', 'voice_responses');
                 const userFlag = !!(userVoiceRow?.voice_responses_enabled === 1 || userVoiceRow?.voice_responses_enabled === true);
-                const userVoice = platformVoice && planHasVoice && userFlag;
+                const userVoice = planHasVoice || userFlag;
                 if (messageType === 'audio' && userVoice && ttsService.isAvailable()) {
                     const audioBuffer = await ttsService.generate(aiResponse.content, { lang: messageAnalysis?.language || 'fr' });
                     if (audioBuffer && audioBuffer.length > 0) {

@@ -54,18 +54,18 @@ import { DashboardContent, UsersContent, AnomaliesTab, PlansContent, CouponsCont
 
 const PLAN_MODULES = [
   { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité' },
-  { key: 'voice_responses_enabled', label: 'Module 2 : Réponses vocales' },
-  { key: 'payment_module_enabled', label: 'Module 3 : Paiement & Encaissement' },
-  { key: 'next_best_action_enabled', label: 'Module 4 : Next Best Action' },
-  { key: 'conversion_score_enabled', label: 'Module 5 : Score de conversion' },
-  { key: 'daily_briefing_enabled', label: 'Module 6 : Daily Briefing' },
-  { key: 'sentiment_routing_enabled', label: 'Module 7 : Sentiment routing' },
-  { key: 'catalog_import_enabled', label: 'Module 8 : Import catalogue' },
-  { key: 'human_handoff_alerts_enabled', label: 'Module 9 : Alertes Transfert Humain' },
-  { key: 'analytics_module_enabled', label: 'Module 10 : Analytics & Statistiques' },
-  { key: 'flows_module_enabled', label: 'Module 11 : Flows (Flux de travail)' },
-  { key: 'whatsapp_status_enabled', label: 'Module 12 : Statut WhatsApp' },
-  { key: 'leads_management_enabled', label: 'Module 13 : Gestion des Leads' }
+  { key: 'payment_module_enabled', label: 'Module 2 : Paiement & Encaissement' },
+  { key: 'next_best_action_enabled', label: 'Module 3 : Next Best Action' },
+  { key: 'conversion_score_enabled', label: 'Module 4 : Score de conversion' },
+  { key: 'daily_briefing_enabled', label: 'Module 5 : Daily Briefing' },
+  { key: 'sentiment_routing_enabled', label: 'Module 6 : Sentiment routing' },
+  { key: 'catalog_import_enabled', label: 'Module 7 : Import catalogue' },
+  { key: 'human_handoff_alerts_enabled', label: 'Module 8 : Alertes Transfert Humain' },
+  { key: 'analytics_module_enabled', label: 'Module 9 : Analytics & Statistiques' },
+  { key: 'flows_module_enabled', label: 'Module 10 : Flows (Flux de travail)' },
+  { key: 'whatsapp_status_enabled', label: 'Module 11 : Statut WhatsApp' },
+  { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads' },
+  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)' }
 ]
 
 export default function Admin() {
@@ -2078,7 +2078,6 @@ function AIModelsContent({
   platformSettings = {}, savingMediaModel, onSaveMediaModel, 
   savingEmbeddingModel, onSaveEmbeddingModel,
   reindexingAll, onReindexAll,
-  onSaveVoiceResponsesEnabled,
   onSaveTrialDays, savingTrialDays,
   onToggleModel, onDeleteModel, onEditModel, onCreateModel,
   onEditKey, onTestKey, onTestModel, onRefresh 
@@ -2087,7 +2086,6 @@ function AIModelsContent({
   const [trialDaysInput, setTrialDaysInput] = useState(platformSettings.default_trial_days || '7')
   const mediaModelValue = platformSettings.default_media_model || 'gemini-1.5-flash'
   const embeddingModelValue = platformSettings.embedding_model || 'gemini-embedding-001'
-  const voiceResponsesEnabled = platformSettings.voice_responses_enabled === '1'
 
   // Sync input if platformSettings changes externally
   useEffect(() => {
@@ -2229,22 +2227,6 @@ function AIModelsContent({
         </div>
       </div>
 
-      {/* Voice responses (TTS) - platform-wide */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-gray-100 mb-2">Réponses vocales (TTS)</h3>
-        <p className="text-gray-400 text-sm mb-4">
-          Si activé, les utilisateurs autorisés peuvent recevoir une réponse en message vocal lorsque le client envoie une note vocale. Désactivé par défaut.
-        </p>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={voiceResponsesEnabled}
-            onChange={(e) => onSaveVoiceResponsesEnabled?.(e.target.checked)}
-            className="w-4 h-4 rounded border-space-700 bg-space-800 text-blue-400 focus:ring-blue-400"
-          />
-          <span className="text-sm text-gray-300">Réponses vocales activées pour la plateforme</span>
-        </label>
-      </div>
 
       {/* Trial Duration Setting */}
       <div className="card p-6">

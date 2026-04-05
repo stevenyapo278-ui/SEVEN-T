@@ -474,8 +474,8 @@ router.get('/me', async (req, res) => {
 
 router.put('/me', authenticateToken, async (req, res) => {
     try {
-        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled FROM users WHERE id = ?', req.user.id);
-        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled } = req.body;
+        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled FROM users WHERE id = ?', req.user.id);
+        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled } = req.body;
 
 
         // Build dynamic update query
@@ -535,6 +535,15 @@ router.put('/me', authenticateToken, async (req, res) => {
                 valueToSet = 0;
             }
             updates.push('reports_module_enabled = ?');
+            values.push(valueToSet);
+        }
+        if (voice_responses_enabled !== undefined) {
+            let valueToSet = voice_responses_enabled ? 1 : 0;
+            if (valueToSet === 1 && !userPlanFeatures.voice_responses) {
+                // Ignore request to enable if not in plan
+                valueToSet = 0;
+            }
+            updates.push('voice_responses_enabled = ?');
             values.push(valueToSet);
         }
 

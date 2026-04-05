@@ -292,9 +292,7 @@ router.get('/settings', async (req, res) => {
         if (settings.default_media_model == null) {
             settings.default_media_model = 'gemini-1.5-flash';
         }
-        if (settings.voice_responses_enabled == null) {
-            settings.voice_responses_enabled = '0';
-        }
+
         if (settings.default_trial_days == null) {
             settings.default_trial_days = '7';
         }
@@ -311,20 +309,14 @@ router.get('/settings', async (req, res) => {
 // Update platform settings
 router.put('/settings', async (req, res) => {
     try {
-        const { default_media_model, voice_responses_enabled, default_trial_days, embedding_model } = req.body;
+        const { default_media_model, default_trial_days, embedding_model } = req.body;
         if (default_media_model !== undefined) {
             await db.run(`
                 INSERT INTO platform_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
             `, 'default_media_model', default_media_model === '' ? null : default_media_model);
         }
-        if (voice_responses_enabled !== undefined) {
-            const val = voice_responses_enabled ? '1' : '0';
-            await db.run(`
-                INSERT INTO platform_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
-            `, 'voice_responses_enabled', val);
-        }
+
         if (default_trial_days !== undefined) {
             const val = String(default_trial_days);
             await db.run(`

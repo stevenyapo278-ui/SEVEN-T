@@ -18,9 +18,6 @@ export default function Settings() {
   const { currency, setCurrency } = useCurrency()
   const { fontPreset, setFontPreset, titleFontPreset, setTitleFontPreset, titlesMatchBody, setTitlesMatchBody, fontSize, setFontSize } = useFont()
 
-  const [voicePrefs, setVoicePrefs] = useState({ platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false })
-  const [savingVoice, setSavingVoice] = useState(false)
-
   const [uiSidebarCollapsed, setUiSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('seven-t-sidebar-collapsed') === 'true'
@@ -48,29 +45,6 @@ export default function Settings() {
     try { localStorage.setItem('seven-t-reduce-motion', String(uiReduceMotion)) } catch {}
     window.dispatchEvent(new CustomEvent('seven-t:reduce-motion', { detail: { value: uiReduceMotion } }))
   }, [uiReduceMotion])
-
-  useEffect(() => {
-    if (!user) return
-    let isMounted = true
-    api.get('/settings/voice-responses')
-      .then((r) => { if (isMounted) setVoicePrefs(r.data || { platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }) })
-      .catch(() => { if (isMounted) setVoicePrefs({ platformEnabled: false, planEnabled: false, userEnabled: false, effectiveEnabled: false }) })
-    return () => { isMounted = false }
-  }, [user?.id])
-
-  const toggleVoice = async (enabled) => {
-    if (savingVoice) return
-    setSavingVoice(true)
-    try {
-      const res = await api.put('/settings/voice-responses', { enabled })
-      setVoicePrefs(res.data)
-      toast.success(enabled ? 'Réponses vocales activées' : 'Réponses vocales désactivées')
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur')
-    } finally {
-      setSavingVoice(false)
-    }
-  }
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -670,32 +644,24 @@ export default function Settings() {
               </label>
 
 
-              <div className={`rounded-2xl border px-4 py-3 ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Réponses vocales (TTS)</div>
-                    <div className="text-xs text-gray-500">
-                      Quand un client envoie une note vocale WhatsApp, l’IA peut répondre en vocal (si activé et disponible).
-                    </div>
-                    {!voicePrefs.platformEnabled && (
-                      <div className="text-xs text-amber-400 mt-1">Désactivé au niveau plateforme (Admin).</div>
-                    )}
-                    {!voicePrefs.planEnabled && (
-                      <div className="text-xs text-amber-400 mt-1">Non inclus dans votre plan.</div>
-                    )}
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={voicePrefs.userEnabled}
-                    disabled={!voicePrefs.planEnabled || savingVoice}
-                    onChange={(e) => toggleVoice(e.target.checked)}
-                    className="accent-blue-500 mt-1"
-                  />
+              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-all ${
+                isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'
+              } ${!user?.plan_features?.voice_responses ? 'opacity-60 cursor-not-allowed grayscale-[0.5]' : ''}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Réponses vocales (TTS)</div>
+                  <div className="text-xs text-gray-500 truncate">Permet à l'IA de répondre par note vocale.</div>
+                  {!user?.plan_features?.voice_responses && (
+                    <div className="text-[10px] text-amber-500 font-medium mt-1 uppercase tracking-wider">Non inclus dans votre plan</div>
+                  )}
                 </div>
-                <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-600' : 'text-gray-500'}`}>
-                  Statut effectif: <span className={`font-semibold ${voicePrefs.effectiveEnabled ? 'text-emerald-400' : 'text-gray-400'}`}>{voicePrefs.effectiveEnabled ? 'Actif' : 'Inactif'}</span>
-                </div>
-              </div>
+                <input
+                  type="checkbox"
+                  disabled={!user?.plan_features?.voice_responses}
+                  checked={formData.voice_responses_enabled && !!user?.plan_features?.voice_responses}
+                  onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
+                  className="accent-blue-500"
+                />
+              </label>
 
               <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/30' : 'border-gray-200 bg-white'}`}>
                 <p className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.currency')}</p>

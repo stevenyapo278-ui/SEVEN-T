@@ -99,57 +99,6 @@ router.put('/daily-briefing', authenticateToken, requireModule('daily_briefing')
     }
 });
 
-/**
- * GET /api/settings/voice-responses
- * Returns platform/user/plan status for TTS.
- */
-router.get('/voice-responses', authenticateToken, async (req, res) => {
-    try {
-        const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
-        const userRow = await db.get('SELECT plan, subscription_end_date, voice_responses_enabled FROM users WHERE id = ?', req.user.id);
-        const effectivePlan = await getEffectivePlanName(userRow?.plan || 'free', userRow);
-        const planHasVoice = await hasFeature(effectivePlan || 'free', 'voice_responses');
-        const userEnabled = Boolean(userRow?.voice_responses_enabled === 1 || userRow?.voice_responses_enabled === true);
-        const effectiveEnabled = Boolean(platformVoice && planHasVoice && userEnabled);
-        res.json({
-            platformEnabled: platformVoice,
-            planEnabled: planHasVoice,
-            userEnabled,
-            effectiveEnabled,
-            effectivePlan
-        });
-    } catch (error) {
-        console.error('GET voice-responses settings error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
 
-/**
- * PUT /api/settings/voice-responses
- * Body: { enabled: boolean }
- */
-router.put('/voice-responses', authenticateToken, async (req, res) => {
-    try {
-        const enabled = req.body?.enabled === true || req.body?.enabled === 1;
-        const platformVoice = (await db.get('SELECT value FROM platform_settings WHERE key = ?', 'voice_responses_enabled'))?.value === '1';
-        const userRow = await db.get('SELECT plan, subscription_end_date FROM users WHERE id = ?', req.user.id);
-        const effectivePlan = await getEffectivePlanName(userRow?.plan || 'free', userRow);
-        const planHasVoice = await hasFeature(effectivePlan || 'free', 'voice_responses');
-        if (!planHasVoice) {
-            return res.status(403).json({ error: 'Votre plan ne permet pas les réponses vocales' });
-        }
-        await db.run('UPDATE users SET voice_responses_enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', enabled ? 1 : 0, req.user.id);
-        res.json({
-            platformEnabled: platformVoice,
-            planEnabled: planHasVoice,
-            userEnabled: enabled,
-            effectiveEnabled: Boolean(platformVoice && planHasVoice && enabled),
-            effectivePlan
-        });
-    } catch (error) {
-        console.error('PUT voice-responses settings error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
 
 export default router;
