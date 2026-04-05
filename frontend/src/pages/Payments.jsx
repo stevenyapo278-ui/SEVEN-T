@@ -43,6 +43,25 @@ const STATUS_KEYS = {
   expired: 'payments.statusExpired'
 }
 
+const copyToClipboard = async (text) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  } else {
+    let textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    return new Promise((res, rej) => {
+      document.execCommand('copy') ? res() : rej(new Error('Copy failed'));
+      textArea.remove();
+    });
+  }
+}
+
 const PROVIDER_LABELS = {
   manual: 'Manuel',
   geniuspay: 'GeniusPay',
@@ -151,7 +170,7 @@ export default function Payments() {
     try {
       const res = await api.get(`/payments/${id}/message`)
       const text = [res.data.message, res.data.url].filter(Boolean).join('\n\n')
-      navigator.clipboard.writeText(text)
+      await copyToClipboard(text)
       toast.success('Message copié dans le presse-papiers')
     } catch (error) {
       toast.error('Erreur')
@@ -161,7 +180,7 @@ export default function Payments() {
   const handleCopyLink = async (link) => {
     const url = link.payment_url || link.payment_url_external || `${window.location.origin}/pay/${link.id.split('-')[0].toUpperCase()}`
     try {
-      await navigator.clipboard.writeText(url)
+      await copyToClipboard(url)
       setCopiedId(link.id)
       toast.success('Lien copié !')
       setTimeout(() => setCopiedId(null), 2000)
@@ -772,7 +791,7 @@ function LinkCreatedModal({ link, isDark, onClose }) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(url)
+      await copyToClipboard(url)
       setCopied(true)
       toast.success('Lien copié !')
       setTimeout(() => setCopied(false), 2000)
