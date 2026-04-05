@@ -771,12 +771,17 @@ export async function initDatabase() {
             description TEXT,
             provider TEXT DEFAULT 'manual',
             external_id TEXT,
+            payment_url_external TEXT,
             status TEXT DEFAULT 'pending',
             paid_at TIMESTAMP,
             expires_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
+        -- Migration for existing databases
+        ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS payment_url_external TEXT;
+        ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS external_id TEXT;
+
 
         CREATE TABLE IF NOT EXISTS user_payment_providers (
             user_id TEXT NOT NULL,

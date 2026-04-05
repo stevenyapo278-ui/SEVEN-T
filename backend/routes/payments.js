@@ -6,11 +6,11 @@ import { requireModule } from '../middleware/requireModule.js';
 import { validate, createPaymentLinkSchema } from '../middleware/security.js';
 import * as paymentProviders from '../services/paymentProviders.js';
 import { hasFeature } from '../config/plans.js';
+import { createPaymentLink } from '../services/paymentLinks.js';
 
 const router = Router();
 
 const baseUrl = () => (process.env.FRONTEND_URL || process.env.BASE_URL || 'http://localhost:5173').replace(/\/$/, '');
-import { createPaymentLink } from '../services/paymentLinks.js';
 
 // Display list for UI (manual + supported providers)
 const PAYMENT_PROVIDERS_DISPLAY = {
