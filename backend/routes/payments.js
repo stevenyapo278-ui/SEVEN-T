@@ -92,7 +92,7 @@ router.get('/providers', async (req, res) => {
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
-        const paymentModuleEnabled = planHasPayment && userFlag;
+        const paymentModuleEnabled = planHasPayment || userFlag;
         const providerIds = paymentProviders.getSupportedProviderIds();
         const providers = { ...PAYMENT_PROVIDERS_DISPLAY };
         const configured = {};
@@ -114,7 +114,7 @@ router.put('/providers/:provider', async (req, res) => {
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
-        const paymentModuleEnabled = planHasPayment && userFlag;
+        const paymentModuleEnabled = planHasPayment || userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Le module Moyens de paiement n\'est pas activé pour votre compte. Contactez l\'administrateur.' });
         }
@@ -147,7 +147,7 @@ router.delete('/providers/:provider', async (req, res) => {
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.id);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
-        const paymentModuleEnabled = planHasPayment && userFlag;
+        const paymentModuleEnabled = planHasPayment || userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Le module Moyens de paiement n\'est pas activé pour votre compte.' });
         }
@@ -190,7 +190,7 @@ export async function createPaymentLink(userId, opts = {}) {
     const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', userId);
     const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
     const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
-    const paymentModuleEnabled = planHasPayment && userFlag;
+    const paymentModuleEnabled = planHasPayment || userFlag;
 
     if (provider !== 'manual' && paymentModuleEnabled) {
         const returnUrl = `${baseUrl()}/pay/${shortId}/return`;

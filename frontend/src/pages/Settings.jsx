@@ -178,8 +178,9 @@ export default function Settings() {
     }
   }
   useEffect(() => { 
-    if (user?.id && user?.plan_features?.payment_module) loadPaymentProviders() 
-  }, [user?.id, user?.plan_features?.payment_module])
+    if (user?.id && (user?.plan_features?.payment_module || user?.payment_module_enabled)) loadPaymentProviders() 
+    else if (user?.id) setPaymentProvidersLoading(false)
+  }, [user?.id, user?.plan_features?.payment_module, user?.payment_module_enabled])
 
   const handleSavePaymentProvider = async (e) => {
     e.preventDefault()
@@ -796,7 +797,7 @@ export default function Settings() {
         ) : (
           <div className="space-y-3">
             {Object.keys(paymentProvidersData.providers)
-              .filter((k) => k !== 'manual' && Object.prototype.hasOwnProperty.call(paymentProvidersData.configured, k))
+              .filter((k) => k !== 'manual')
               .map((providerId) => {
                 const p = paymentProvidersData.providers[providerId]
                 const configured = !!paymentProvidersData.configured[providerId]
