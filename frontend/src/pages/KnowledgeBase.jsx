@@ -94,9 +94,9 @@ export default function KnowledgeBase() {
     return isOverrideTrue
   })()
 
-  if (!isModuleEnabled) {
-    return <Navigate to="/dashboard" replace />
-  }
+  // if (!isModuleEnabled) {
+  //   return <Navigate to="/dashboard" replace />
+  // }
   const { startTour, completedTours } = useOnboardingTour()
   const { showConfirm } = useConfirm()
   const { theme } = useTheme()

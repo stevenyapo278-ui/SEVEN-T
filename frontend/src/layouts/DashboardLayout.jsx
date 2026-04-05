@@ -1141,7 +1141,7 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/flows') return flowsModuleEnabled;
         if (item.href === '/dashboard/leads') return leadsModuleEnabled;
         if (item.href === '/dashboard/whatsapp-status') return whatsappStatusModuleEnabled;
-        if (item.href === '/dashboard/knowledge') return knowledgeBaseModuleEnabled;
+        if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled;
         return true;
       })
     })).filter(g => g.items.length > 0);
