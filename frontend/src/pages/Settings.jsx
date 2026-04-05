@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
@@ -848,10 +849,9 @@ export default function Settings() {
       </div>
       )}
 
-      {/* Modal config PaymeTrust / GeniusPay */}
-      {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && paymentProviderModal?.provider && (
+      {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && paymentProviderModal?.provider && createPortal(
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
           <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-space-700 bg-space-900 shadow-2xl animate-fadeIn overflow-hidden">
             <div className="flex-shrink-0 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -859,52 +859,47 @@ export default function Settings() {
                 Configurer GeniusPay
               </h3>
               <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="flex-shrink-0 touch-target text-gray-400 hover:text-gray-200">
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
-            <p className="text-sm text-gray-500">
-              Saisissez les identifiants de votre compte. Ils ne sont jamais affichés en clair après enregistrement.
-            </p>
             </div>
             <form onSubmit={handleSavePaymentProvider} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto min-h-0 p-4 sm:p-6 space-y-4">
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">API Key</label>
-                    <input
-                      type="text"
-                      value={paymentProviderForm.api_key || ''}
-                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                      placeholder="pk_live_..."
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">API Secret</label>
-                    <input
-                      type="password"
-                      value={paymentProviderForm.api_secret || ''}
-                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_secret: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Webhook Secret (Optionnel)</label>
-                    <input
-                      type="password"
-                      value={paymentProviderForm.webhook_secret || ''}
-                      onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, webhook_secret: e.target.value }))}
-                      className="w-full px-4 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
-                      placeholder="whsec_..."
-                    />
-                    <p className="text-[10px] text-gray-500 mt-1">Nécessaire pour vérifier la validité des notifications de paiement.</p>
-                  </div>
-                </>
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-0 space-y-4 custom-scrollbar">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">API Key (pk_...)</label>
+                  <input
+                    type="text"
+                    required
+                    value={paymentProviderForm.api_key || ''}
+                    onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
+                    className="input-dark w-full"
+                    placeholder="pk_live_..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">API Secret</label>
+                  <input
+                    type="password"
+                    required
+                    value={paymentProviderForm.api_secret || ''}
+                    onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_secret: e.target.value }))}
+                    className="input-dark w-full"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Webhook Secret (Optionnel)</label>
+                  <input
+                    type="text"
+                    value={paymentProviderForm.webhook_secret || ''}
+                    onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, webhook_secret: e.target.value }))}
+                    className="input-dark w-full"
+                    placeholder="whsec_..."
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">Nécessaire pour vérifier la validité des notifications de paiement.</p>
+                </div>
               </div>
-              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end bg-inherit">
                 <button type="button" onClick={() => setPaymentProviderModal(null)} className="min-h-[44px] touch-target px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800 flex-1 sm:flex-none">
                   Annuler
                 </button>
@@ -915,7 +910,8 @@ export default function Settings() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Résumé quotidien */}
@@ -1072,7 +1068,7 @@ export default function Settings() {
       </div>
 
       {/* Modal confirmation suppression compte */}
-      {showDeleteAccountModal && (
+      {showDeleteAccountModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative z-10 bg-space-900 border border-space-600 rounded-t-2xl sm:rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-display font-semibold text-gray-100 mb-2">Supprimer définitivement mon compte ?</h3>
@@ -1110,7 +1106,8 @@ export default function Settings() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       {/* Changer de plan */}
       <div className="mb-6">
