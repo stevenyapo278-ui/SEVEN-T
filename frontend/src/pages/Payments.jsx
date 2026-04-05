@@ -611,19 +611,17 @@ export default function Payments() {
             size: A4;
             margin: 0;
           }
-          body > * {
-            display: none !important;
+          body * {
+            visibility: hidden;
           }
-          #root > div > main > div[class*="pb-12"] {
-            display: block !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: none !important;
-          }
-          #root > div > main > div > *:not(.print\\:block) {
-            display: none !important;
+          .print\\:block, .print\\:block * {
+            visibility: visible;
           }
           .print\\:block {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
             display: block !important;
           }
           .page-break-before {
