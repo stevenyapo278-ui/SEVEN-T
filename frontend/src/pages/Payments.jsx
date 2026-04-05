@@ -570,10 +570,7 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
               className="input w-full px-4 py-2 text-sm"
             >
               <option value="manual">Manuel (lien interne)</option>
-              {geniuspayConfigured && <option value="geniuspay">GeniusPay (carte / paiement en ligne)</option>}
-              <option value="wave">Wave</option>
-              <option value="orange_money">Orange Money</option>
-              <option value="mtn_momo">MTN MoMo</option>
+              {geniuspayConfigured && <option value="geniuspay">GeniusPay (Wave, Orange, MTN, Carte...)</option>}
             </select>
           </div>
 

@@ -14,10 +14,7 @@ const baseUrl = () => (process.env.FRONTEND_URL || process.env.BASE_URL || 'http
 // Display list for UI (manual + supported providers)
 const PAYMENT_PROVIDERS_DISPLAY = {
     manual: { name: 'Manuel', icon: '💵' },
-    geniuspay: { name: 'GeniusPay', icon: '💎' },
-    wave: { name: 'Wave', icon: '🌊' },
-    orange_money: { name: 'Orange Money', icon: '🟠' },
-    mtn_momo: { name: 'MTN MoMo', icon: '🟡' }
+    geniuspay: { name: 'GeniusPay', icon: '💎' }
 };
 
 // 1. PUBLIC ROUTES (No auth)
