@@ -53,19 +53,19 @@ registerLocale('fr', fr)
 import { DashboardContent, UsersContent, AnomaliesTab, PlansContent, CouponsContent, AuditLogsContent, getCreditsForPlan } from './Admin/index.js'
 
 const PLAN_MODULES = [
-  { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité' },
-  { key: 'payment_module_enabled', label: 'Module 2 : Paiement & Encaissement' },
-  { key: 'next_best_action_enabled', label: 'Module 3 : Next Best Action' },
-  { key: 'conversion_score_enabled', label: 'Module 4 : Score de conversion' },
-  { key: 'daily_briefing_enabled', label: 'Module 5 : Daily Briefing' },
-  { key: 'sentiment_routing_enabled', label: 'Module 6 : Sentiment routing' },
-  { key: 'catalog_import_enabled', label: 'Module 7 : Import catalogue' },
-  { key: 'human_handoff_alerts_enabled', label: 'Module 8 : Alertes Transfert Humain' },
-  { key: 'analytics_module_enabled', label: 'Module 9 : Analytics & Statistiques' },
-  { key: 'flows_module_enabled', label: 'Module 10 : Flows (Flux de travail)' },
-  { key: 'whatsapp_status_enabled', label: 'Module 11 : Statut WhatsApp' },
-  { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads' },
-  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)' }
+  { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité', description: 'Permet de définir les horaires où l\\'agent répond automatiquement.' },
+  { key: 'payment_module_enabled', label: 'Module 2 : Paiement & Encaissement', description: 'Intégration des passerelles de paiement pour vendre via l\\'IA.' },
+  { key: 'next_best_action_enabled', label: 'Module 3 : Next Best Action', description: 'Relances automatiques intelligentes des prospects inactifs.' },
+  { key: 'conversion_score_enabled', label: 'Module 4 : Score de conversion', description: 'Analyse la probabilité d\\'achat de chaque prospect.' },
+  { key: 'daily_briefing_enabled', label: 'Module 5 : Daily Briefing', description: 'Résumé quotidien des activités envoyé sur WhatsApp.' },
+  { key: 'sentiment_routing_enabled', label: 'Module 6 : Sentiment routing', description: 'Transfère à un humain si le client semble frustré.' },
+  { key: 'catalog_import_enabled', label: 'Module 7 : Import catalogue', description: 'L\\'IA connaît vos produits via URL ou fichiers.' },
+  { key: 'human_handoff_alerts_enabled', label: 'Module 8 : Alertes Transfert Humain', description: 'Notifications immédiates quand un agent demande de l\\'aide.' },
+  { key: 'analytics_module_enabled', label: 'Module 9 : Analytics & Statistiques', description: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' },
+  { key: 'flows_module_enabled', label: 'Module 10 : Flows (Flux de travail)', description: 'Créez des scénarios d\\'automatisation visuels.' },
+  { key: 'whatsapp_status_enabled', label: 'Module 11 : Statut WhatsApp', description: 'Publication de statuts WhatsApp via l\\'IA ou l\\'interface.' },
+  { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads', description: 'Gestion des prospects, analyse d\\'intention et conversion par l\\'IA.' },
+  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: 'L\\'IA peut répondre par message vocal au lieu de texte.' }
 ]
 
 export default function Admin() {
@@ -1542,7 +1542,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Modules activables</h4>
               <p className="text-xs text-gray-500 mb-3">Activez ces modules pour cet utilisateur (en plus de ceux inclus dans son plan) :</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {PLAN_MODULES.map(({ key, label }) => { const isManager = !!user.parent_user_id; let ownerAllowed = true; if (isManager) { const parentPlanName = user.parent_plan || "free"; const parentPlan = (plans || []).find(p => (p.name || p.id) === parentPlanName); const moduleBaseKey = key.replace("_enabled", ""); const planHas = parentPlan?.features?.[moduleBaseKey] === true || parentPlan?.features?.[moduleBaseKey] === 1; const overrideHas = user[`p_${key}`] === 1 || user[`p_${key}`] === true; ownerAllowed = planHas || overrideHas; } return (
+                {PLAN_MODULES.map(({ key, label, description }) => { const isManager = !!user.parent_user_id; let ownerAllowed = true; if (isManager) { const parentPlanName = user.parent_plan || "free"; const parentPlan = (plans || []).find(p => (p.name || p.id) === parentPlanName); const moduleBaseKey = key.replace("_enabled", ""); const planHas = parentPlan?.features?.[moduleBaseKey] === true || parentPlan?.features?.[moduleBaseKey] === 1; const overrideHas = user[`p_${key}`] === 1 || user[`p_${key}`] === true; ownerAllowed = planHas || overrideHas; } return (
                     <label 
                       key={key} 
                       className={`flex items-center gap-2 p-2 rounded-lg border transition-all ${
@@ -1550,7 +1550,7 @@ function EditUserModal({ user, onClose, onSave, plans = [], rolesList = [] }) {
                           ? 'opacity-50 border-red-500/20 bg-red-500/5 cursor-not-allowed' 
                           : 'cursor-pointer border-space-700 hover:border-space-600'
                       }`}
-                      title={!ownerAllowed ? "Le client (owner) n'a pas accès à ce module." : ""}
+                      title={!ownerAllowed ? "Le client (owner) n'a pas accès à ce module." : description}
                     >
                       <input
                         type="checkbox"
@@ -1910,8 +1910,8 @@ function CreateUserModal({ onClose, onSave, plans = [], rolesList = [] }) {
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Modules activables</h4>
               <p className="text-xs text-gray-500 mb-3">Activez ces modules pour cet utilisateur (en plus de ceux inclus dans son plan) :</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {PLAN_MODULES.map(({ key, label }) => (
-                  <label key={key} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-space-700 hover:border-space-600 transition-colors">
+                {PLAN_MODULES.map(({ key, label, description }) => (
+                  <label key={key} title={description} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-space-700 hover:border-space-600 transition-colors">
                     <input
                       type="checkbox"
                       checked={!!formData[key]}
@@ -2958,7 +2958,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
             {activeSection === 'features' && (
               <div className="grid grid-cols-1 gap-2">
                 {featureFields.map((field) => (
-                  <label key={field.key} className="flex items-center gap-3 p-3 bg-space-800 rounded-xl cursor-pointer hover:bg-space-700 transition-colors">
+                  <label key={field.key} title={field.desc} className="flex items-center gap-3 p-3 bg-space-800 rounded-xl cursor-pointer hover:bg-space-700 transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.features[field.key] || false}
