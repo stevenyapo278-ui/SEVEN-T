@@ -60,7 +60,7 @@ export const AI_CONFIG = {
         maxRetries: 3,
         initialBackoff: 1000,  // ms
         maxBackoff: 10000,     // ms
-        timeout: 30000         // ms - global timeout per request
+        timeout: 60000         // ms - increased to 60s for slower free models
     },
 
     // Circuit breaker settings

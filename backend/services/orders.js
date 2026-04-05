@@ -135,7 +135,15 @@ class OrderService {
                 }
             })();
 
-            return await this.getOrderById(orderId, userId);
+            // Create lead immediately for CRM visibility
+            const createdOrder = await this.getOrderById(orderId, userId);
+            try {
+                await leadAnalyzer.createLeadFromOrder(createdOrder);
+            } catch (err) {
+                console.error('[Orders] Failed to create lead from order automatically:', err);
+            }
+
+            return createdOrder;
         } catch (error) {
             console.error('[Orders] Create error:', error);
             return null;
