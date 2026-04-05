@@ -251,7 +251,7 @@ router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.ownerId);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
-        const paymentModuleEnabled = planHasPayment && userFlag;
+        const paymentModuleEnabled = planHasPayment || userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Module paiement non inclus dans votre plan ou désactivé par l\'administrateur' });
         }
@@ -351,7 +351,7 @@ router.post('/:id/payment-link', authenticateToken, validate(orderPaymentLinkSch
         const userRow = await db.get('SELECT plan, payment_module_enabled FROM users WHERE id = ?', req.user.ownerId);
         const planHasPayment = await hasFeature(userRow?.plan || 'free', 'payment_module');
         const userFlag = !!(userRow?.payment_module_enabled === 1 || userRow?.payment_module_enabled === true);
-        const paymentModuleEnabled = planHasPayment && userFlag;
+        const paymentModuleEnabled = planHasPayment || userFlag;
         if (!paymentModuleEnabled) {
             return res.status(403).json({ error: 'Module paiement non inclus dans votre plan ou désactivé par l\'administrateur' });
         }
