@@ -277,8 +277,8 @@ router.post('/:id/send-payment-link-in-conversation', authenticateToken, async (
             .map(i => `${i.product_name || 'Article'} x${i.quantity || 1}`)
             .join(', ');
         const description = itemsList ? `Commande: ${itemsList}` : `Commande #${(order.id || '').slice(0, 8)}`;
-        const usePaymetrust = paymentModuleEnabled && await paymentProviders.isProviderConfiguredForUser(req.user.ownerId, 'paymetrust');
-        const provider = usePaymetrust ? 'paymetrust' : 'manual';
+        const useGeniusPay = paymentModuleEnabled && await paymentProviders.isProviderConfiguredForUser(req.user.ownerId, 'geniuspay');
+        const provider = useGeniusPay ? 'geniuspay' : 'manual';
         const payment = await createPaymentLink(req.user.ownerId, {
             amount: order.total_amount,
             currency: order.currency || 'XOF',

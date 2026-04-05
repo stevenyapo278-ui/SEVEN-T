@@ -1724,11 +1724,28 @@ export default function Orders() {
                   </div>
 
                   {paymentLinkModal.url && (
-                    <div className="flex items-center gap-3 p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
-                      <ExternalLink className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                      <a href={paymentLinkModal.url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline truncate text-sm font-mono flex-1">
-                        {paymentLinkModal.url}
-                      </a>
+                    <div className="space-y-2">
+                      {paymentLinkModal.url.includes('pay.genius.ci') && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs font-bold text-blue-300 w-fit">
+                          💎 Lien GeniusPay — checkout multi-méthodes
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                        <ExternalLink className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                        <a href={paymentLinkModal.url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline truncate text-sm font-mono flex-1">
+                          {paymentLinkModal.url}
+                        </a>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(paymentLinkModal.url)
+                            toast.success('Lien copié !')
+                          }}
+                          className="flex-shrink-0 p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
+                          title="Copier le lien seul"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   )}
 

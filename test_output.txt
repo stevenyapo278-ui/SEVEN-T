@@ -1,0 +1,5 @@
+Testing GeniusPay with Key: Present
+Success! {
+  invoiceId: '2445',
+  paymentUrl: 'https://pay.genius.ci/checkout/SANDBOX_TFI6CBYV8VO4ZPZB'
+}

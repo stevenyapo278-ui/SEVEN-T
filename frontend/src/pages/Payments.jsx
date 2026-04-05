@@ -59,9 +59,11 @@ export default function Payments() {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [createdLink, setCreatedLink] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [geniuspayConfigured, setGeniuspayConfigured] = useState(false)
+  const [copiedId, setCopiedId] = useState(null)
 
   useEffect(() => {
     if (!paymentModuleEnabled) {
@@ -149,6 +151,18 @@ export default function Payments() {
       toast.success('Message copié dans le presse-papiers')
     } catch (error) {
       toast.error('Erreur')
+    }
+  }
+
+  const handleCopyLink = async (link) => {
+    const url = link.payment_url || link.payment_url_external || `${window.location.origin}/pay/${link.id.split('-')[0].toUpperCase()}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopiedId(link.id)
+      toast.success('Lien copié !')
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch {
+      toast.error('Erreur lors de la copie')
     }
   }
 
@@ -378,6 +392,18 @@ export default function Payments() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Copier le lien — toujours disponible */}
+                  <button
+                    onClick={() => handleCopyLink(link)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      copiedId === link.id
+                        ? 'bg-emerald-500/20 text-emerald-400'
+                        : isDark ? 'hover:bg-space-700 text-icon' : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                    title="Copier le lien de paiement"
+                  >
+                    {copiedId === link.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
                   {link.status === 'pending' && (
                     <>
                       <button
@@ -392,7 +418,7 @@ export default function Payments() {
                         className={`p-2 rounded-lg transition-colors ${
                           isDark ? 'hover:bg-space-700 text-icon' : 'hover:bg-gray-100 text-gray-600'
                         }`}
-                        title="Partager"
+                        title="Partager message WhatsApp"
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
@@ -419,13 +445,22 @@ export default function Payments() {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal create */}
       {showModal && (
         <PaymentModal
           onClose={() => setShowModal(false)}
-          onSave={loadData}
+          onSave={(link) => { loadData(); if (link) setCreatedLink(link) }}
           isDark={isDark}
           geniuspayConfigured={geniuspayConfigured}
+        />
+      )}
+
+      {/* Modal lien créé */}
+      {createdLink && (
+        <LinkCreatedModal
+          link={createdLink}
+          isDark={isDark}
+          onClose={() => setCreatedLink(null)}
         />
       )}
     </div>
@@ -447,12 +482,13 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
     e.preventDefault()
     setSaving(true)
     try {
-      await api.post('/payments', {
+      const res = await api.post('/payments', {
         ...form,
         amount: parseFloat(form.amount)
       })
       toast.success('Lien de paiement créé')
-      onSave()
+      const payment = res.data?.payment
+      onSave(payment || null)
       onClose()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erreur')
@@ -569,6 +605,96 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function LinkCreatedModal({ link, isDark, onClose }) {
+  useLockBodyScroll(true)
+  const [copied, setCopied] = useState(false)
+  const url = link.payment_url || link.payment_url_external || ''
+  const isGeniusPay = link.provider === 'geniuspay' && url.includes('pay.genius.ci')
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      toast.success('Lien copié !')
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      toast.error('Erreur lors de la copie')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl animate-fadeIn ${
+        isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
+      }`}>
+        <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+              <CheckCircle className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className={`text-base font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                Lien créé avec succès !
+              </h2>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                {Number(link.amount).toLocaleString()} {link.currency} · {link.provider === 'geniuspay' ? 'GeniusPay' : 'Manuel'}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className={`p-2 text-icon ${isDark ? 'hover:text-gray-200' : 'hover:text-gray-800'}`}>
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4 space-y-4">
+          {isGeniusPay && (
+            <div className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
+              isDark ? 'bg-blue-500/10 text-blue-300 border border-blue-500/20' : 'bg-blue-50 text-blue-700 border border-blue-100'
+            }`}>
+              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+              Page GeniusPay — Wave, Orange Money, MTN MoMo et plus
+            </div>
+          )}
+          <div>
+            <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Lien de paiement
+            </label>
+            <div className={`p-3 rounded-xl border text-sm font-mono break-all ${
+              isDark ? 'bg-space-800 border-space-700 text-gray-200' : 'bg-gray-50 border-gray-200 text-gray-700'
+            }`}>
+              {url}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleCopy}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                copied ? 'bg-emerald-500/20 text-emerald-400' : 'btn-primary'
+              }`}
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? 'Copié !' : 'Copier le lien'}
+            </button>
+            {url && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                  isDark ? 'bg-space-700 text-gray-200 hover:bg-space-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <ExternalLink className="w-4 h-4" />
+                Ouvrir
+              </a>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
