@@ -64,6 +64,25 @@ import { registerLocale } from 'react-datepicker'
 import fr from 'date-fns/locale/fr'
 registerLocale('fr', fr)
 
+const copyToClipboard = async (text) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  } else {
+    let textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    return new Promise((res, rej) => {
+      document.execCommand('copy') ? res() : rej(new Error('Copy failed'));
+      textArea.remove();
+    });
+  }
+}
+
 const ORDER_STATUSES = {
   pending: { nameKey: 'orders.statusPending', color: 'amber', icon: Clock },
   validated: { nameKey: 'orders.statusValidated', color: 'green', icon: CheckCircle },
@@ -250,13 +269,22 @@ export default function Orders() {
     }
   }
 
-  const copyPaymentMessage = () => {
+  const copyPaymentMessage = async () => {
     const text = paymentLinkModal.message + '\n\n' + paymentLinkModal.url
-    navigator.clipboard.writeText(text).then(() => toast.success('Message copié'))
+    try {
+      await copyToClipboard(text)
+      toast.success('Message copié')
+    } catch (e) {
+      toast.error('Erreur lors de la copie')
+    }
   }
 
   const openWhatsAppWithPayment = () => {
     const order = paymentLinkModal.order
+    if (order?.conversation_id) {
+      handleSendPaymentLinkInConversation(order)
+      return
+    }
     const phone = order?.customer_phone?.replace(/\D/g, '') || ''
     const text = encodeURIComponent(paymentLinkModal.message + '\n\n' + paymentLinkModal.url)
     const url = phone ? `https://wa.me/${phone}?text=${text}` : 'https://wa.me/'
@@ -1736,9 +1764,13 @@ export default function Orders() {
                           {paymentLinkModal.url}
                         </a>
                         <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(paymentLinkModal.url)
-                            toast.success('Lien copié !')
+                          onClick={async () => {
+                            try {
+                              await copyToClipboard(paymentLinkModal.url)
+                              toast.success('Lien copié !')
+                            } catch (e) {
+                              toast.error('Erreur lors de la copie')
+                            }
                           }}
                           className="flex-shrink-0 p-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 transition-colors"
                           title="Copier le lien seul"
