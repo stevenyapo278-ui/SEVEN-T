@@ -1272,22 +1272,22 @@ export default function Orders() {
       {/* Filters */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col md:flex-row gap-3">
-          <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
+          <div className={`flex-1 min-w-0 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
             isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
           }`}>
-            <Search className="w-5 h-5 text-gray-400" />
+            <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <input
               type="text"
               placeholder="Nom, téléphone ou n° commande..."
               value={searchQuery}
               onChange={(e) => { const v = e.target.value; setSearchQuery(v); syncFiltersToUrl({ q: v || undefined }); }}
-              className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
+              className="bg-transparent border-none p-0 focus:ring-0 w-full min-w-0 text-base sm:text-lg placeholder:text-gray-500"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => { const v = e.target.value; setStatusFilter(v); syncFiltersToUrl({ status: v === 'all' ? undefined : v }); }}
-            className="input min-w-[200px] rounded-2xl px-4 py-3 sm:py-3.5 text-sm"
+            className="input min-w-[200px] md:w-auto md:flex-none rounded-2xl px-4 py-3 sm:py-3.5 text-sm"
           >
             <option value="all">Tous les statuts</option>
             {Object.entries(ORDER_STATUSES).map(([key, value]) => (
