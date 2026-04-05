@@ -1084,7 +1084,7 @@ export default function Workflows() {
                                   <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
                                     <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-3 leading-none">Variables automatiques</p>
                                     <div className="flex flex-wrap gap-2">
-                                      {['{customer_name}', '{order_total}', '{order_id}'].map(variable => (
+                                      {['{customer_name}', '{order_total}', '{order_id}', '{payment_url}', '{payment_qr}'].map(variable => (
                                         <code key={variable} className="text-[9px] font-black bg-black/40 border border-white/10 px-2 py-1 rounded-lg text-blue-300">
                                           {variable}
                                         </code>
@@ -1162,7 +1162,7 @@ export default function Workflows() {
             <div className="min-w-0">
               <h3 className="text-2xl font-display font-bold text-gray-100 truncate">Éditeur de message</h3>
               <p className="text-[10px] font-black text-gray-500 mt-1 uppercase tracking-widest leading-none">
-                Variables: {'{customer_name}'} • {'{order_id}'} • {'{order_total}'}
+                Variables: {'{customer_name}'} • {'{order_id}'} • {'{order_total}'} • {'{payment_url}'} • {'{payment_qr}'}
               </p>
             </div>
             <button

@@ -10,6 +10,8 @@ import { leadAnalyzer } from './leadAnalyzer.js';
 import { workflowExecutor } from './workflowExecutor.js';
 import { normalizeJid } from '../utils/whatsappUtils.js';
 import { hasModule } from '../config/plans.js';
+import * as paymentProviders from './paymentProviders.js';
+import { createPaymentLink } from './paymentLinks.js';
 
 // Order statuses
 export const ORDER_STATUSES = {
@@ -369,6 +371,28 @@ class OrderService {
                         orderItems: orderItemsFormatted,
                         orderItemsRaw: updatedOrder.items || []
                     };
+
+                    // Auto-generate payment link if provider configured
+                    try {
+                        const isGPConfigured = await paymentProviders.isProviderConfiguredForUser(userId, 'geniuspay');
+                        if (isGPConfigured) {
+                            const payment = await createPaymentLink(userId, {
+                                amount: updatedOrder.total_amount,
+                                currency: updatedOrder.currency || 'XOF',
+                                description: `Commande #${updatedOrder.id.substring(0, 8)}`,
+                                provider: 'geniuspay',
+                                order_id: updatedOrder.id
+                            });
+                            if (payment) {
+                                triggerData.paymentUrl = payment.payment_url;
+                                triggerData.paymentQr = payment.payment_qr;
+                                console.log(`[Orders] Linked payment to workflow: ${payment.payment_url}`);
+                            }
+                        }
+                    } catch (paymentErr) {
+                        console.error('[Orders] Could not auto-generate link for workflow:', paymentErr);
+                    }
+
                     let result = await workflowExecutor.executeMatchingWorkflowsSafe('order_validated', triggerData, conv.agent_id, userId);
                     if (!result?.executed) {
                         result = await workflowExecutor.executeMatchingWorkflowsSafe('order_created', triggerData, conv.agent_id, userId);

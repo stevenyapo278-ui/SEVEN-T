@@ -3,7 +3,7 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate, orderPaymentLinkSchema } from '../middleware/security.js';
 import { orderService, ORDER_STATUSES } from '../services/orders.js';
-import { createPaymentLink } from './payments.js';
+import { createPaymentLink } from '../services/paymentLinks.js';
 import * as paymentProviders from '../services/paymentProviders.js';
 import { whatsappManager } from '../services/whatsapp.js';
 import { hasFeature } from '../config/plans.js';
@@ -160,24 +160,8 @@ router.post('/:id/validate', authenticateToken, async (req, res) => {
             });
         }
 
-        // Auto-generate GeniusPay link if configured
-        try {
-            const order = result.order;
-            const isGPConfigured = await paymentProviders.isProviderConfiguredForUser(req.user.ownerId, 'geniuspay');
-            if (isGPConfigured) {
-                await createPaymentLink(req.user.id, {
-                    amount: order.total_amount,
-                    currency: order.currency || 'XOF',
-                    description: `Commande #${order.id.substring(0, 8)}`,
-                    provider: 'geniuspay',
-                    order_id: order.id,
-                    expires_in_hours: 24
-                });
-                console.log(`[Orders] Auto-generated GeniusPay link for order ${order.id}`);
-            }
-        } catch (linkError) {
-            console.error('[Orders] Error during auto link generation:', linkError);
-        }
+        // Auto-generation is now handled inside orderService.validateOrder
+        // to ensure paymentUrl/paymentQr are available for workflows triggerData.
 
         res.json({ success: true, order: result.order });
     } catch (error) {

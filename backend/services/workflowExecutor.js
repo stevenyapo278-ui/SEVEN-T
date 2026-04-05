@@ -540,8 +540,10 @@ class WorkflowExecutor {
             'Commandes:',
             data.orderItems || '—',
             '',
-            `Total: ${Number(data.totalAmount || 0).toLocaleString()} ${data.currency || 'XOF'}`,
-            data.orderIdShort ? `Réf: #${data.orderIdShort}` : null
+            Total: ${Number(data.totalAmount || 0).toLocaleString()} ${data.currency || 'XOF'}`,
+            data.orderIdShort ? `Réf: #${data.orderIdShort}` : null,
+            data.paymentUrl ? `\n💳 PAIEMENT:\n${data.paymentUrl}` : null,
+            data.paymentQr ? `\n🖼️ QR CODE:\n${data.paymentQr}` : null
         ].filter(Boolean);
         return lines.join('\n');
     }
@@ -572,7 +574,9 @@ class WorkflowExecutor {
             '{order_id}': data.orderIdShort || data.orderId || '',
             '{currency}': data.currency || 'XOF',
             '{order_notes}': data.notes || '',
-            '{agent_name}': data.agentName || ''
+            '{agent_name}': data.agentName || '',
+            '{payment_url}': data.paymentUrl || '',
+            '{payment_qr}': data.paymentQr || ''
         };
 
         for (const [variable, value] of Object.entries(variables)) {
