@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import db from '../database/init.js';
+import { db } from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireModule } from '../middleware/requireModule.js';
 import { validate, createPaymentLinkSchema } from '../middleware/security.js';
@@ -102,7 +102,7 @@ router.get('/providers', async (req, res) => {
         res.json({ providers, configured, paymentModuleEnabled });
     } catch (error) {
         console.error('Get payment providers error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -135,7 +135,7 @@ router.put('/providers/:provider', async (req, res) => {
         res.json({ message: 'Configuration enregistrée', provider });
     } catch (error) {
         console.error('Put payment provider error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -157,7 +157,7 @@ router.delete('/providers/:provider', async (req, res) => {
         res.json({ message: 'Configuration supprimée', provider });
     } catch (error) {
         console.error('Delete payment provider error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -204,7 +204,7 @@ router.post('/', validate(createPaymentLinkSchema), async (req, res) => {
         res.status(201).json({ payment });
     } catch (error) {
         console.error('Create payment error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -235,7 +235,7 @@ router.get('/public/:shortId', async (req, res) => {
         res.json({ payment });
     } catch (error) {
         console.error('Get public payment error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -253,7 +253,7 @@ router.post('/:id/confirm', async (req, res) => {
         res.json({ message: 'Paiement confirmé' });
     } catch (error) {
         console.error('Confirm payment error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -271,7 +271,7 @@ router.post('/:id/cancel', async (req, res) => {
         res.json({ message: 'Paiement annulé' });
     } catch (error) {
         console.error('Cancel payment error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -286,7 +286,7 @@ router.delete('/:id', async (req, res) => {
         res.json({ message: 'Lien supprimé' });
     } catch (error) {
         console.error('Delete payment error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -310,7 +310,7 @@ router.get('/stats', async (req, res) => {
         res.json({ stats });
     } catch (error) {
         console.error('Get payment stats error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -345,7 +345,7 @@ router.get('/stats/overview', async (req, res) => {
         res.json({ stats, recentActivity: recentPaid || [] });
     } catch (error) {
         console.error('Get payment stats overview error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 
@@ -372,7 +372,7 @@ ${paymentUrl}
         res.json({ message, url: paymentUrl });
     } catch (error) {
         console.error('Get payment message error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        res.status(500).json({ error: 'Erreur serveur', details: error.message });
     }
 });
 

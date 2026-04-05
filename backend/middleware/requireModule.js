@@ -1,4 +1,4 @@
-import db from '../database/init.js';
+import { db } from '../database/init.js';
 import { hasModule, MODULE_TO_USER_COLUMN } from '../config/plans.js';
 
 /**
@@ -60,8 +60,12 @@ export function requireModule(moduleKey) {
             req.userPlan = planName;
             next();
         } catch (e) {
-            console.error('requireModule error:', e?.message);
-            res.status(500).json({ error: 'Erreur serveur' });
+            console.error('requireModule error:', e?.message, e?.stack);
+            res.status(500).json({ 
+                error: 'Erreur serveur (Module Check)', 
+                details: e?.message,
+                module: moduleKey
+            });
         }
     };
 }

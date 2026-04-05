@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import db from '../database/init.js';
+import { db } from '../database/init.js';
 import * as paymentProviders from './paymentProviders.js';
 import { hasFeature } from '../config/plans.js';
 

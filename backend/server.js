@@ -178,6 +178,19 @@ app.get('/api/health-db', async (req, res) => {
         res.status(500).json({ status: 'error', error: err.message });
     }
 });
+
+app.get('/api/debug-schema', async (req, res) => {
+    try {
+        const cols = await db.all("SELECT column_name FROM information_schema.columns WHERE table_name = 'payment_links'");
+        const usersCols = await db.all("SELECT column_name FROM information_schema.columns WHERE table_name = 'users'");
+        res.json({ 
+            payment_links: cols.map(c => c.column_name),
+            users: usersCols.map(c => c.column_name)
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 app.use('/api/tags', tagRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/campaigns', campaignRoutes);
