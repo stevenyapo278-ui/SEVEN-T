@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useCurrency, CURRENCIES } from '../contexts/CurrencyContext'
-import { useFont, FONT_PRESETS } from '../contexts/FontContext'
+import { useFont } from '../contexts/FontContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
@@ -17,7 +17,7 @@ export default function Settings() {
   const { user, updateUser, refreshUser, logout } = useAuth()
   const navigate = useNavigate()
   const { currency, setCurrency } = useCurrency()
-  const { fontPreset, setFontPreset, titleFontPreset, setTitleFontPreset, titlesMatchBody, setTitlesMatchBody, fontSize, setFontSize } = useFont()
+  const { fontSize, setFontSize } = useFont()
 
   const [uiSidebarCollapsed, setUiSidebarCollapsed] = useState(() => {
     try {
@@ -691,90 +691,7 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Typographie */}
-          <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/20' : 'border-gray-200 bg-gray-50'}`}>
-            <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Typographie</p>
-            <p className="text-xs text-gray-500 mb-4">Police globale + titres.</p>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2">
-                  Police UI / Texte
-                </label>
-                <select
-                  value={fontPreset}
-                  onChange={(e) => setFontPreset(e.target.value)}
-                  className="input-dark w-full rounded-2xl px-4 py-3 text-sm font-semibold"
-                >
-                  {Object.entries(FONT_PRESETS).map(([key, preset]) => (
-                    <option key={key} value={key}>
-                      {preset.label} — {preset.description}
-                    </option>
-                  ))}
-                </select>
-                <div
-                  className="mt-3 p-4 rounded-2xl border border-space-700/60 bg-space-900/30 text-gray-200"
-                  style={{ fontFamily: FONT_PRESETS[fontPreset]?.fontUi }}
-                >
-                  <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Aperçu</div>
-                  <div className="text-base font-semibold leading-snug">
-                    SEVEN-T · Une interface plus lisible, plus premium.
-                  </div>
-                  <div className="text-sm text-gray-400 mt-1">
-                    Le renard brun rapide saute par-dessus le chien paresseux.
-                  </div>
-                </div>
-              </div>
-
-              <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/30' : 'border-gray-200 bg-white'}`}>
-                <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">
-                  Titres
-                </div>
-                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  <label className="flex items-center gap-2 select-none">
-                    <input
-                      type="checkbox"
-                      checked={titlesMatchBody}
-                      onChange={(e) => setTitlesMatchBody(e.target.checked)}
-                      className="accent-blue-500"
-                    />
-                    Titres = même police que le layout (recommandé)
-                  </label>
-                </div>
-
-                {!titlesMatchBody && (
-                  <div className="mt-3">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2">
-                      Police des grands titres
-                    </label>
-                    <select
-                      value={titleFontPreset}
-                      onChange={(e) => setTitleFontPreset(e.target.value)}
-                      className="input-dark w-full rounded-2xl px-4 py-3 text-sm font-semibold"
-                    >
-                      {Object.entries(FONT_PRESETS).map(([key, preset]) => (
-                        <option key={key} value={key}>
-                          {preset.label} — {preset.description}
-                        </option>
-                      ))}
-                    </select>
-                    <div
-                      className="mt-3 p-4 rounded-2xl border border-space-700/60 bg-space-900/30 text-gray-200"
-                      style={{ fontFamily: FONT_PRESETS[titleFontPreset]?.fontUi }}
-                    >
-                      <div className="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Aperçu</div>
-                      <div className="text-2xl font-black tracking-tight leading-tight">
-                        Support & Tickets
-                      </div>
-                      <div className="text-sm text-gray-400 mt-1">
-                        Des titres plus “brand”, sans perdre en lisibilité.
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Typographie a été désactivée par demande */}
         </div>
       </div>
 
