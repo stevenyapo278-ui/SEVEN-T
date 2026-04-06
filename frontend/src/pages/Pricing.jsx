@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CheckCircle, Zap, Star, Building2, ArrowRight, Tag, Loader2, AlertTriangle, Crown } from 'lucide-react'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+import api from '../services/api'
 
 const PLAN_ICONS = { free: Zap, starter: Star, pro: Crown, business: Building2 }
 const PLAN_GRADIENTS = {
@@ -77,15 +76,18 @@ export default function Pricing() {
 
   // Load plans
   useEffect(() => {
-    fetch(`${API_BASE}/api/plans`)
-      .then(r => r.json())
-      .then(data => {
-        const arr = Array.isArray(data) ? data : []
+    api.get('/plans')
+      .then(response => {
+        const arr = response.data?.plans || []
         // Exclude free/free_expired for the pricing page
-        setPlans(arr.filter(p => p.name !== 'free_expired'))
+        setPlans(arr.filter(p => p.id !== 'free_expired'))
         setLoading(false)
       })
-      .catch(() => { setError('Impossible de charger les plans.'); setLoading(false) })
+      .catch((err) => { 
+        console.error('Erreur chargement plans:', err)
+        setError('Impossible de charger les plans.')
+        setLoading(false) 
+      })
   }, [])
 
   const validateCoupon = useCallback(async () => {
@@ -93,44 +95,33 @@ export default function Pricing() {
     if (!couponCode.trim()) return
     setCouponLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/api/subscription/validate-coupon`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ planId: 'starter', billingPeriod: billing, couponCode })
-      })
-      const data = await res.json()
-      if (!res.ok) setCouponResult({ error: data.error || 'Coupon invalide' })
-      else setCouponResult({ valid: true, ...data })
-    } catch {
-      setCouponResult({ error: 'Erreur réseau' })
+      const res = await api.post('/subscription/validate-coupon', { planId: 'starter', billingPeriod: billing, couponCode })
+      setCouponResult({ valid: true, ...res.data })
+    } catch (err) {
+      setCouponResult({ error: err.response?.data?.error || 'Coupon invalide ou erreur réseau' })
     } finally {
       setCouponLoading(false)
     }
-  }, [couponCode, billing, token])
+  }, [couponCode, billing])
 
-  const startCheckout = useCallback(async (planName) => {
-    if (planName === 'free') return
-    if (planName === 'enterprise') {
+  const startCheckout = useCallback(async (planId) => {
+    if (planId === 'free') return
+    if (planId === 'enterprise') {
       window.location.href = 'mailto:contact@seven-t.ci?subject=Demande Enterprise'
       return
     }
-    setCheckoutLoading(planName)
+    setCheckoutLoading(planId)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/api/subscription/create-geniuspay-checkout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ planId: planName, billingPeriod: billing, couponCode: couponResult?.valid ? couponCode : undefined })
-      })
-      const data = await res.json()
-      if (!res.ok || !data.url) throw new Error(data.error || 'Erreur lors de la création du paiement')
-      window.location.href = data.url
+      const res = await api.post('/subscription/create-geniuspay-checkout', { planId, billingPeriod: billing, couponCode: couponResult?.valid ? couponCode : undefined })
+      if (!res.data?.url) throw new Error('Erreur lors de la création du paiement')
+      window.location.href = res.data.url
     } catch (err) {
-      setError(err.message)
+      setError(err.response?.data?.error || err.message)
     } finally {
       setCheckoutLoading(null)
     }
-  }, [billing, couponCode, couponResult, token])
+  }, [billing, couponCode, couponResult])
 
   const currentPlan = user?.plan
 
@@ -175,17 +166,17 @@ export default function Pricing() {
       ) : (
         <div className={`max-w-6xl mx-auto grid gap-6 ${plans.length <= 3 ? 'md:grid-cols-3' : 'md:grid-cols-4'} grid-cols-1`}>
           {plans.map(plan => {
-            const isCurrent = plan.name === currentPlan
-            const price = billing === 'yearly' && plan.price_yearly ? plan.price_yearly : plan.price
-            const Icon = PLAN_ICONS[plan.name] || Star
-            const gradient = PLAN_GRADIENTS[plan.name] || PLAN_GRADIENTS.starter
-            const accent = PLAN_ACCENT[plan.name] || 'border-space-600'
-            const btnStyle = PLAN_BTN[plan.name] || PLAN_BTN.starter
-            const isPro = plan.name === 'pro'
+            const isCurrent = plan.id === currentPlan
+            const price = billing === 'yearly' && plan.priceYearly ? plan.priceYearly : plan.price
+            const Icon = PLAN_ICONS[plan.id] || Star
+            const gradient = PLAN_GRADIENTS[plan.id] || PLAN_GRADIENTS.starter
+            const accent = PLAN_ACCENT[plan.id] || 'border-space-600'
+            const btnStyle = PLAN_BTN[plan.id] || PLAN_BTN.starter
+            const isPro = plan.id === 'pro'
 
             return (
               <div
-                key={plan.name}
+                key={plan.id}
                 className={`relative rounded-3xl border-2 bg-gradient-to-b ${gradient} p-6 flex flex-col transition-all duration-300 ${isCurrent ? 'border-gold-400 ring-2 ring-gold-400/30 scale-[1.02]' : accent} ${isPro ? 'shadow-xl shadow-amber-500/10' : ''}`}
               >
                 {isPro && !isCurrent && (
@@ -213,11 +204,11 @@ export default function Pricing() {
                 <div className="mb-2">
                   {price <= 0 ? (
                     <span className="text-2xl font-black text-white">Gratuit</span>
-                  ) : plan.name === 'enterprise' ? (
+                  ) : plan.id === 'enterprise' ? (
                     <span className="text-xl font-black text-white">Sur devis</span>
                   ) : (
                     <>
-                      <span className="text-3xl font-black text-white">{formatPrice(price, plan.price_currency)}</span>
+                      <span className="text-3xl font-black text-white">{formatPrice(price, plan.priceCurrency)}</span>
                       <span className="text-gray-500 text-sm ml-1">/ {billing === 'yearly' ? 'an' : 'mois'}</span>
                     </>
                   )}
@@ -242,22 +233,22 @@ export default function Pricing() {
                     <button disabled className="w-full py-3 rounded-2xl text-sm font-semibold bg-gold-500/20 text-gold-400 border border-gold-500/30 cursor-default">
                       ✓ Plan actuel
                     </button>
-                  ) : plan.name === 'free' ? (
+                  ) : plan.id === 'free' ? (
                     <button disabled className="w-full py-3 rounded-2xl text-sm font-semibold bg-space-700 text-gray-500 cursor-default">
                       Plan d'essai
                     </button>
                   ) : (
                     <button
-                      onClick={() => startCheckout(plan.name)}
+                      onClick={() => startCheckout(plan.id)}
                       disabled={!!checkoutLoading}
                       className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${btnStyle} disabled:opacity-50`}
                     >
-                      {checkoutLoading === plan.name ? (
+                      {checkoutLoading === plan.id ? (
                         <><Loader2 size={16} className="animate-spin" /> Redirection...</>
-                      ) : plan.name === 'enterprise' ? (
+                      ) : plan.id === 'enterprise' ? (
                         <>Nous contacter <ArrowRight size={14} /></>
                       ) : (
-                        <>Choisir {plan.display_name} <ArrowRight size={14} /></>
+                        <>Choisir {plan.name} <ArrowRight size={14} /></>
                       )}
                     </button>
                   )}
