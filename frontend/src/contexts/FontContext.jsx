@@ -75,15 +75,30 @@ export function useFont() {
 
 export function FontProvider({ children }) {
   const [fontPreset, setFontPresetState] = useState(() => {
-    if (typeof window === 'undefined') return 'jakarta'
+    if (typeof window === 'undefined') return 'outfit'
     const saved = localStorage.getItem(STORAGE_KEY)
-    return saved && FONT_PRESETS[saved] ? saved : 'jakarta'
+    
+    // Migration: If no font is saved OR if the saved font is 'jakarta' (old default),
+    // force it to 'outfit' once to align with the new SaaS branding.
+    if (!saved || saved === 'jakarta') {
+      localStorage.setItem(STORAGE_KEY, 'outfit')
+      return 'outfit'
+    }
+    
+    return saved && FONT_PRESETS[saved] ? saved : 'outfit'
   })
 
   const [titleFontPreset, setTitleFontPresetState] = useState(() => {
-    if (typeof window === 'undefined') return 'syne'
+    if (typeof window === 'undefined') return 'outfit'
     const saved = localStorage.getItem(STORAGE_KEY + '-title')
-    return saved && FONT_PRESETS[saved] ? saved : 'syne'
+    
+    // Migration for titles: align with outfit if was syne or none
+    if (!saved || saved === 'syne') {
+      localStorage.setItem(STORAGE_KEY + '-title', 'outfit')
+      return 'outfit'
+    }
+    
+    return saved && FONT_PRESETS[saved] ? saved : 'outfit'
   })
 
   const [titlesMatchBody, setTitlesMatchBodyState] = useState(() => {
@@ -101,8 +116,8 @@ export function FontProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement
-    const bodyPreset = FONT_PRESETS[fontPreset] || FONT_PRESETS.jakarta
-    const titlePreset = FONT_PRESETS[titleFontPreset] || FONT_PRESETS.syne
+    const bodyPreset = FONT_PRESETS[fontPreset] || FONT_PRESETS.outfit
+    const titlePreset = FONT_PRESETS[titleFontPreset] || FONT_PRESETS.outfit
 
     root.style.setProperty('--font-ui', bodyPreset.fontUi)
     root.style.setProperty('--font-body', bodyPreset.fontBody)
