@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CheckCircle, Zap, Star, Building2, ArrowRight, Tag, Loader2, AlertTriangle, Crown } from 'lucide-react'
 import api from '../services/api'
+import PricingDetailsModal from '../components/PricingDetailsModal'
 
 const PLAN_ICONS = { free: Zap, starter: Star, pro: Crown, business: Building2 }
 const PLAN_GRADIENTS = {
@@ -65,7 +66,10 @@ function PlanFeatureList({ features }) {
 export default function Pricing() {
   const { user, token } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const checkoutParam = searchParams.get('checkout')
   const [billing, setBilling] = useState('monthly')
+  const [selectedPlanForDetails, setSelectedPlanForDetails] = useState(null)
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
@@ -122,6 +126,17 @@ export default function Pricing() {
       setCheckoutLoading(null)
     }
   }, [billing, couponCode, couponResult])
+
+  useEffect(() => {
+    if (plans.length > 0 && checkoutParam && checkoutLoading !== checkoutParam) {
+      const planToCheckout = plans.find(p => p.id === checkoutParam)
+      if (planToCheckout && planToCheckout.price > 0 && planToCheckout.id !== user?.plan) {
+        startCheckout(checkoutParam)
+        searchParams.delete('checkout')
+        setSearchParams(searchParams, { replace: true })
+      }
+    }
+  }, [plans, checkoutParam, startCheckout, searchParams, setSearchParams, checkoutLoading, user?.plan])
 
   const currentPlan = user?.plan
 
@@ -228,7 +243,14 @@ export default function Pricing() {
 
                 <PlanFeatureList features={plan.features} />
 
-                <div className="mt-auto pt-5">
+                <button 
+                  onClick={() => setSelectedPlanForDetails(plan)}
+                  className="w-full mt-2 mb-2 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-white border border-transparent hover:border-white/10 hover:bg-white/5 rounded-xl transition-all"
+                >
+                  Voir les détails
+                </button>
+
+                <div className="mt-auto pt-5 border-t border-space-700/50">
                   {isCurrent ? (
                     <button disabled className="w-full py-3 rounded-2xl text-sm font-semibold bg-gold-500/20 text-gold-400 border border-gold-500/30 cursor-default">
                       ✓ Plan actuel
@@ -302,6 +324,12 @@ export default function Pricing() {
           Retour aux paramètres
         </button>
       </div>
+
+      <PricingDetailsModal 
+        plan={selectedPlanForDetails} 
+        isOpen={!!selectedPlanForDetails} 
+        onClose={() => setSelectedPlanForDetails(null)} 
+      />
     </div>
   )
 }

@@ -31,6 +31,7 @@ import {
   CheckCircle,
 } from 'lucide-react'
 import api from '../services/api'
+import PricingDetailsModal from '../components/PricingDetailsModal'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import LandingChatbot from '../components/LandingChatbot'
@@ -226,7 +227,7 @@ function PlanFeatureList({ features }) {
   )
 }
 
-function PlanCard({ plan, isPopular, delayIndex }) {
+function PlanCard({ plan, isPopular, delayIndex, onShowDetails }) {
   const price = plan.price
   const billing = plan.billing_period || 'monthly'
   const Icon = PLAN_ICONS[plan.id] || Star
@@ -287,12 +288,19 @@ function PlanCard({ plan, isPopular, delayIndex }) {
 
       <PlanFeatureList features={plan.features} />
 
-      <div className="mt-auto pt-5">
+      <button 
+        onClick={() => onShowDetails(plan)}
+        className="w-full mt-2 mb-2 py-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-white border border-transparent hover:border-white/10 hover:bg-white/5 rounded-xl transition-all"
+      >
+        Voir les détails
+      </button>
+
+      <div className="mt-auto pt-5 border-t border-space-700/50">
         <Link
-          to="/register"
+          to={`/register?plan=${plan.id}`}
           className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${btnStyle}`}
         >
-          {plan.price === 0 ? 'Commencer gratuitement' : plan.id === 'enterprise' ? 'Nous contacter' : `Choisir ${plan.name || plan.display_name}`} <ArrowRight size={14} />
+          {plan.price === 0 ? 'Commencer gratuitement' : plan.id === 'enterprise' ? 'Nous contacter' : `Choisir ${plan.display_name || plan.name}`} <ArrowRight size={14} />
         </Link>
       </div>
     </div>
@@ -441,6 +449,7 @@ export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
+  const [selectedPlanForDetails, setSelectedPlanForDetails] = useState(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -1055,7 +1064,7 @@ export default function Landing() {
               'md:grid-cols-2 lg:grid-cols-4'
             }`}>
               {plans.map((plan, i) => (
-                <PlanCard key={plan.id} plan={plan} isPopular={plan.id === getPopularPlanId()} delayIndex={i} />
+                <PlanCard key={plan.id} plan={plan} isPopular={plan.id === getPopularPlanId()} delayIndex={i} onShowDetails={setSelectedPlanForDetails} />
               ))}
             </div>
           )}
@@ -1170,6 +1179,12 @@ export default function Landing() {
 
       {!user && <LandingChatbot />}
       <ContactModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} isDark={isDark} />
+      
+      <PricingDetailsModal 
+        plan={selectedPlanForDetails} 
+        isOpen={!!selectedPlanForDetails} 
+        onClose={() => setSelectedPlanForDetails(null)} 
+      />
     </div>
   )
 }

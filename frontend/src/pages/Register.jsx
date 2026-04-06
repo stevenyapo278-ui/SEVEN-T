@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Mail, Lock, User, Building, ArrowRight, Sparkles, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -28,6 +28,8 @@ export default function Register() {
   const isDark = theme === 'dark'
   const { register } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const planParam = searchParams.get('plan')
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -57,7 +59,11 @@ export default function Register() {
     try {
       await register(formData)
       toast.success('Compte créé avec succès!')
-      navigate('/dashboard')
+      if (planParam && planParam !== 'free') {
+        navigate(`/pricing?checkout=${planParam}`)
+      } else {
+        navigate('/dashboard')
+      }
     } catch (error) {
       toast.error(error.response?.data?.error || 'Erreur lors de l\'inscription')
     } finally {
