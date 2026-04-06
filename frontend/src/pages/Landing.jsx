@@ -238,7 +238,7 @@ function PlanCard({ plan, isPopular }) {
   const isCurrent = false
 
   return (
-    <div className={`relative rounded-3xl border-2 bg-gradient-to-b ${gradient} p-6 flex flex-col transition-all duration-300 bg-space-950 ${accent} ${isPro ? 'shadow-xl shadow-amber-500/10 scale-[1.02]' : ''}`}>
+    <div className={`relative h-full rounded-3xl border-2 bg-gradient-to-b ${gradient} p-6 flex flex-col transition-all duration-300 bg-space-950 ${accent} ${isPro ? 'shadow-xl shadow-amber-500/10 scale-[1.02]' : ''}`}>
       {isPro && !isCurrent && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest">
           Populaire
@@ -1052,7 +1052,7 @@ export default function Landing() {
               'md:grid-cols-2 lg:grid-cols-4'
             }`}>
               {plans.map((plan, i) => (
-                <div key={plan.id} className="animate-slide-up" style={{ animationDelay: `${i * 0.08}s` }}>
+                <div key={plan.id} className="animate-slide-up h-full" style={{ animationDelay: `${i * 0.08}s` }}>
                   <PlanCard plan={plan} isPopular={plan.id === getPopularPlanId()} isDark={isDark} />
                 </div>
               ))}
