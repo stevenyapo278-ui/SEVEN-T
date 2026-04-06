@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -38,6 +39,11 @@ import LandingChatbot from '../components/LandingChatbot'
 import HeroScene3D from '../components/HeroScene3D'
 import toast from 'react-hot-toast'
 import AnimatedBackground from '../components/AnimatedBackground'
+import { Swiper, SwiperSlide } from 'swiper/react'
+import { EffectCoverflow, Pagination, Autoplay } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/effect-coverflow'
+import 'swiper/css/pagination'
 
 const PLAN_ICONS = { free: Zap, starter: Star, pro: Crown, business: Building2 }
 const PLAN_GRADIENTS = {
@@ -512,6 +518,30 @@ export default function Landing() {
 
   return (
     <div className={`min-h-screen ${bg} antialiased overflow-x-hidden transition-colors duration-300 font-body relative`}>
+      <Helmet>
+        <title>SEVEN T - Automatisation WhatsApp Intelligente</title>
+        <meta name="description" content="Automatisez vos conversations WhatsApp avec l'intelligence artificielle. Assistante IA pour booster vos ventes et gérer vos clients 24/7." />
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "SEVEN T",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web",
+              "offers": {
+                "@type": "AggregateOffer",
+                "priceCurrency": "XOF",
+                "lowPrice": "0",
+                "highPrice": "99000",
+                "offerCount": "4"
+              },
+              "description": "Automatisez vos conversations WhatsApp avec l'intelligence artificielle.",
+              "url": "https://sevente.com/"
+            }
+          `}
+        </script>
+      </Helmet>
       {/* Texture Overlay */}
       <div className="noise-overlay" />
 
@@ -808,19 +838,37 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <Swiper
+            effect={'coverflow'}
+            grabCursor={true}
+            centeredSlides={true}
+            slidesPerView={'auto'}
+            initialSlide={1}
+            coverflowEffect={{
+              rotate: 15,
+              stretch: 0,
+              depth: 250,
+              modifier: 1,
+              slideShadows: false,
+            }}
+            pagination={{ clickable: true, dynamicBullets: true }}
+            autoplay={{ delay: 3500, disableOnInteraction: false }}
+            modules={[EffectCoverflow, Pagination, Autoplay]}
+            className="w-full !px-4 !pb-16"
+          >
             {features.map((f, i) => (
-              <div key={i}
-                className={`group p-8 rounded-3xl border transition-all duration-500 glass hover:scale-[1.03] cursor-default relative overflow-hidden`}>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full -mr-16 -mt-16 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center mb-8 glass ${isDark ? f.darkBg : f.lightBg}`}>
-                  <f.icon className={`w-7 h-7 ${f.iconColor}`} />
+              <SwiperSlide key={i} className="max-w-[320px] sm:max-w-[400px]">
+                <div className="group h-full p-8 rounded-3xl border transition-all duration-500 glass cursor-grab active:cursor-grabbing relative overflow-hidden bg-white hover:bg-gray-50/50 dark:bg-white/3 dark:hover:bg-white/5 border-gray-200 hover:border-gray-300 dark:border-white/8 dark:hover:border-white/15">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-black/5 dark:from-white/5 to-transparent rounded-full -mr-16 -mt-16 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center mb-8 glass ${isDark ? f.darkBg : f.lightBg}`}>
+                    <f.icon className={`w-7 h-7 ${f.iconColor}`} />
+                  </div>
+                  <h3 className={`font-bold text-xl mb-4 ${text} tracking-tight`}>{f.title}</h3>
+                  <p className={`text-sm leading-relaxed ${textMuted}`}>{f.description}</p>
                 </div>
-                <h3 className={`font-bold text-xl mb-4 ${text} tracking-tight`}>{f.title}</h3>
-                <p className={`text-sm leading-relaxed ${textMuted} opacity-70 group-hover:opacity-100 transition-opacity`}>{f.description}</p>
-              </div>
+              </SwiperSlide>
             ))}
-          </div>
+          </Swiper>
         </div>
       </section>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CheckCircle, Zap, Star, Building2, ArrowRight, Tag, Loader2, AlertTriangle, Crown } from 'lucide-react'
@@ -142,6 +143,11 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-space-950 text-gray-100 px-4 py-10">
+      <Helmet>
+        <title>Tarifs & Abonnements | SEVEN T</title>
+        <meta name="description" content="Découvrez nos forfaits flexibles pour automatiser votre service client WhatsApp avec l'IA. Essai gratuit, sans engagement." />
+      </Helmet>
+
       {/* Header */}
       <div className="text-center mb-10">
         <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">

@@ -9,11 +9,13 @@ import { FontProvider } from './contexts/FontContext.jsx'
 import { ConfirmProvider } from './contexts/ConfirmContext.jsx'
 import { CurrencyProvider } from './contexts/CurrencyContext.jsx'
 import './i18n/i18n.js'
+import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
       <ThemeProvider>
         <FontProvider>
           <AuthProvider>
@@ -38,7 +40,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           </AuthProvider>
         </FontProvider>
       </ThemeProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </HelmetProvider>
   </React.StrictMode>,
 )
 

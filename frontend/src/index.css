@@ -49,6 +49,16 @@ body:has(.fixed.inset-0:not(.pointer-events-none):not(.-z-10)) {
   overflow: hidden;
 }
 
+/* Swiper Custom Pagination */
+.swiper-pagination-bullet {
+  background: #94a3b8 !important;
+  opacity: 0.3 !important;
+}
+.swiper-pagination-bullet-active {
+  background: var(--gold-500, #f59e0b) !important;
+  opacity: 1 !important;
+}
+
 /* CSS Variables - Premium Modern Aesthetic */
 :root,
 .dark {
