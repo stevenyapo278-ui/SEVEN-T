@@ -1561,9 +1561,9 @@ export default function Orders() {
 
               {/* Notes */}
               {selectedOrderView.notes && (
-                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 border-dashed">
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/5 border-dashed overflow-hidden">
                   <p className="text-[10px] text-gray-500 uppercase font-black mb-2 tracking-widest">Notes</p>
-                  <p className="text-sm text-gray-300 leading-relaxed italic">{selectedOrderView.notes}</p>
+                  <p className="text-sm text-gray-300 leading-relaxed italic break-words whitespace-pre-wrap">{selectedOrderView.notes}</p>
                 </div>
               )}
 
