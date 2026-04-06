@@ -430,13 +430,16 @@ class AIService {
             systemGlobal = this.getDefaultPrompt(agent);
         }
         if (!hasCustomPrompt) systemGlobal += this.getDefaultInstructions();
-        systemGlobal += '\n\n⚠️ RÈGLE FINALE — PRÉSENTATION: Ne dis JAMAIS "Je suis [nom]", "Je m\'appelle...", "votre assistant [type]..." ou toute phrase qui te présente. Réponds directement au message du client.';
-        systemGlobal += '\n\n⚠️ RÈGLE — CONTEXTE: Utilise la CONVERSATION RÉCENTE fournie. Si le client a déjà été salué (échange précédent avec "Bonjour" ou salut), NE REDIS PAS "Bonjour" ni "Bonjour !" au début de ta réponse. Réponds directement à sa question ou demande (ex: produit, commande). Tu ne salues qu\'une seule fois au tout premier message du client.';
-        systemGlobal += '\n\n⚠️ RÈGLE — FORMULATION: Quand tu transmets des informations du catalogue ou de la base de connaissances, utilise des formulations professionnelles comme "Voici les informations disponibles", "D\'après notre catalogue, ...", "Voici ce qui est indiqué : ...". Ne dis JAMAIS "C\'est tout ce que j\'ai comme information", "Je n\'ai que ça", ou des formulations qui sous-entendent un manque. Reste factuel et rassurant.';
-        systemGlobal += '\n\n⚠️ RÈGLE — CANAL WHATSAPP: Tu discutes **ACTUELLEMENT ET DIRECTEMENT** avec le client sur WhatsApp. NE DEMANDE JAMAIS par quel canal/moyen (email, SMS, WhatsApp) il souhaite recevoir une information ou une photo. Envoie TOUJOURS les photos, informations ou liens DIRECTEMENT ici dans ta réponse.';
+        
+        // 🚨 Ne pas appliquer les règles conversationnelles WhatsApp B2C à l'assistant interne du dashboard (SaaS)
+        if (agent.id !== 'internal-chatbot') {
+            systemGlobal += '\n\n⚠️ RÈGLE FINALE — PRÉSENTATION: Ne dis JAMAIS "Je suis [nom]", "Je m\'appelle...", "votre assistant [type]..." ou toute phrase qui te présente. Réponds directement au message du client.';
+            systemGlobal += '\n\n⚠️ RÈGLE — CONTEXTE: Utilise la CONVERSATION RÉCENTE fournie. Si le client a déjà été salué (échange précédent avec "Bonjour" ou salut), NE REDIS PAS "Bonjour" ni "Bonjour !" au début de ta réponse. Réponds directement à sa question ou demande (ex: produit, commande). Tu ne salues qu\'une seule fois au tout premier message du client.';
+            systemGlobal += '\n\n⚠️ RÈGLE — FORMULATION: Quand tu transmets des informations du catalogue ou de la base de connaissances, utilise des formulations professionnelles comme "Voici les informations disponibles", "D\'après notre catalogue, ...", "Voici ce qui est indiqué : ...". Ne dis JAMAIS "C\'est tout ce que j\'ai comme information", "Je n\'ai que ça", ou des formulations qui sous-entendent un manque. Reste factuel et rassurant.';
+            systemGlobal += '\n\n⚠️ RÈGLE — CANAL WHATSAPP: Tu discutes **ACTUELLEMENT ET DIRECTEMENT** avec le client sur WhatsApp. NE DEMANDE JAMAIS par quel canal/moyen (email, SMS, WhatsApp) il souhaite recevoir une information ou une photo. Envoie TOUJOURS les photos, informations ou liens DIRECTEMENT ici dans ta réponse.';
 
-        // 🎭 Règles de tonalité humaine — appliquées à TOUS les agents
-        systemGlobal += `\n\n🎭 RÈGLES DE TONALITÉ NATURELLE (applique toujours ces règles):
+            // 🎭 Règles de tonalité humaine — appliquées à TOUS les agents sauf assistant interne
+            systemGlobal += `\n\n🎭 RÈGLES DE TONALITÉ NATURELLE (applique toujours ces règles):
 
 1. VARIE TES ACCUSÉS DE RÉCEPTION — Ne dis JAMAIS deux fois de suite le même mot.
    Au lieu de toujours "Parfait ! 🎉", utilise une sélection naturelle:
@@ -466,6 +469,7 @@ class AIService {
    - Premier message du client: légèrement plus formel et accueillant
    - Conversation déjà entamée: plus naturel et direct
    - Client régulier: familier et personnalisé`;
+        }
 
         // 📅 Amélioration #4 : Contexte temporel pour l'agent
         const timezone = agent.availability_timezone || 'Europe/Paris';
