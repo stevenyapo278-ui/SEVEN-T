@@ -26,6 +26,9 @@ import {
   Phone,
   User,
   Megaphone,
+  Crown,
+  Building2,
+  CheckCircle,
 } from 'lucide-react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
@@ -34,6 +37,29 @@ import LandingChatbot from '../components/LandingChatbot'
 import HeroScene3D from '../components/HeroScene3D'
 import toast from 'react-hot-toast'
 import AnimatedBackground from '../components/AnimatedBackground'
+
+const PLAN_ICONS = { free: Zap, starter: Star, pro: Crown, business: Building2 }
+const PLAN_GRADIENTS = {
+  free: 'from-gray-500/20 to-gray-600/10',
+  starter: 'from-blue-500/20 to-blue-600/10',
+  pro: 'from-amber-500/20 to-amber-600/10',
+  business: 'from-purple-500/20 to-purple-600/10',
+  enterprise: 'from-rose-500/20 to-rose-600/10',
+}
+const PLAN_ACCENT = {
+  free: 'border-gray-500',
+  starter: 'border-blue-500',
+  pro: 'border-amber-400',
+  business: 'border-purple-500',
+  enterprise: 'border-rose-500',
+}
+const PLAN_BTN = {
+  free: 'bg-gray-700 hover:bg-gray-600 text-white',
+  starter: 'bg-blue-600 hover:bg-blue-500 text-white',
+  pro: 'bg-amber-500 hover:bg-amber-400 text-black',
+  business: 'bg-purple-600 hover:bg-purple-500 text-white',
+  enterprise: 'bg-rose-600 hover:bg-rose-500 text-white',
+}
 
 /* ─── Data ────────────────────────────────────────────────── */
 
@@ -163,60 +189,73 @@ function PlanCard({ plan, isPopular, isDark }) {
   const limits = typeof plan.limits === 'string' ? JSON.parse(plan.limits) : (plan.limits || {})
   const feats = typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || {})
 
+  const Icon = PLAN_ICONS[plan.id] || Star
+  const gradient = PLAN_GRADIENTS[plan.id] || PLAN_GRADIENTS.starter
+  const accent = PLAN_ACCENT[plan.id] || 'border-blue-500'
+  const btnStyle = PLAN_BTN[plan.id] || PLAN_BTN.starter
+
   const getFeaturesList = () => {
-    const list = []
-    if (limits?.agents) list.push(`${limits.agents === -1 ? 'Illimité' : limits.agents} agent${limits.agents > 1 ? 's' : ''} IA`)
-    if (limits?.whatsappAccounts) list.push(`${limits.whatsappAccounts === -1 ? 'Illimités' : limits.whatsappAccounts} numéro${limits.whatsappAccounts > 1 ? 's' : ''} WhatsApp`)
-    if (limits?.monthlyCredits) list.push(`${limits.monthlyCredits === -1 ? 'Crédits illimités' : `${limits.monthlyCredits.toLocaleString()} crédits/mois`}`)
-    if (feats?.knowledgeBase) list.push('Base de connaissances IA')
-    if (feats?.analytics) list.push('Analytics avancés')
-    if (feats?.prioritySupport) list.push('Support prioritaire')
-    if (feats?.customIntegrations) list.push('Intégrations personnalisées')
-    if (feats?.whiteLabel) list.push('White label')
-    return list
+    const items = []
+    if (limits?.agents) items.push(`${limits.agents === -1 ? 'Agents illimités' : `${limits.agents} agent${limits.agents > 1 ? 's' : ''}`}`)
+    if (limits?.messages_per_month) {
+        items.push(`${limits.messages_per_month === -1 ? 'Messages illimités' : `${limits.messages_per_month.toLocaleString('fr-FR')} messages/mois`}`)
+    } else if (limits?.monthlyCredits) {
+        items.push(`${limits.monthlyCredits === -1 ? 'Messages illimités' : `${limits.monthlyCredits.toLocaleString()} messages/mois`}`)
+    }
+    
+    if (feats?.models?.length) items.push(`${feats.models.length} modèle(s) IA`)
+    if (feats?.analytics) items.push('Statistiques avancées')
+    if (feats?.payment_module) items.push('Module paiement')
+    if (feats?.voice_responses) items.push('Réponses vocales (TTS)')
+    if (feats?.flows) items.push('Flows & automatisations')
+    if (feats?.next_best_action) items.push('Next Best Action')
+    if (feats?.catalog_import) items.push('Import catalogue')
+    if (feats?.human_handoff_alerts) items.push('Alertes intervention humaine')
+    if (feats?.whatsapp_status) items.push('WhatsApp Status')
+    if (feats?.daily_briefing) items.push('Briefing quotidien')
+    if (feats?.leads_management) items.push('Gestion leads')
+    
+    if (items.length <= 2) {
+       if (feats?.knowledgeBase) items.push('Base de connaissances IA')
+       if (feats?.prioritySupport) items.push('Support prioritaire')
+    }
+    return items
   }
 
   const formatPrice = (p) => p === 0 ? 'Gratuit' : new Intl.NumberFormat('fr-FR').format(p)
 
   return (
-    <div className={`relative flex flex-col rounded-3xl border p-8 transition-all duration-500 glass hover:scale-[1.02] ${
-      isPopular
-        ? isDark
-          ? 'border-amber-400/40 bg-gradient-to-b from-amber-400/10 to-transparent shadow-2xl shadow-amber-400/5'
-          : 'border-amber-400 bg-gradient-to-b from-amber-50/50 to-white shadow-2xl shadow-amber-200/40'
-        : isDark
-          ? 'border-white/10'
-          : 'border-gray-200 shadow-sm hover:shadow-xl hover:shadow-gray-200/40'
-    }`}>
+    <div className={`relative rounded-3xl border-2 bg-gradient-to-b ${gradient} p-8 flex flex-col transition-all duration-300 glass hover:scale-[1.02] ${isPopular ? `ring-2 ring-amber-400/30 ${accent} shadow-xl shadow-amber-500/10 z-10` : `${accent} ${isDark ? 'border-opacity-30' : 'border-opacity-100'}`}`}>
+      
       {isPopular && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-black text-xs font-bold shadow-lg">
-            <Sparkles className="w-3 h-3" />
-            Le plus populaire
-          </span>
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-lg">
+          Populaire
         </div>
       )}
 
-      <div className="mb-6">
-        <h3 className={`text-lg font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{plan.display_name || plan.name}</h3>
-        {plan.description && <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{plan.description}</p>}
+      <div className="flex items-center gap-3 mb-6">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} border ${accent}`}>
+          <Icon className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+        </div>
+        <div>
+          <h3 className={`font-bold text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>{plan.display_name || plan.name}</h3>
+          {plan.description && <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{plan.description}</p>}
+        </div>
       </div>
 
-      <div className="mb-8">
-        <span className={`text-5xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatPrice(plan.price)}</span>
+      <div className="mb-6">
+        <span className={`text-4xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatPrice(plan.price)}</span>
         {plan.price > 0 && (
-          <span className="text-gray-500 text-sm ml-2">
-            {plan.price_currency || 'FCFA'} / {plan.billing_period === 'yearly' ? 'an' : 'mois'}
+          <span className={`text-sm font-medium ml-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            / {plan.billing_period === 'yearly' ? 'an' : 'mois'}
           </span>
         )}
       </div>
 
       <ul className="space-y-3 mb-8 flex-1">
         {getFeaturesList().map((f, i) => (
-          <li key={i} className={`flex items-center gap-3 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isPopular ? 'bg-amber-400/20' : isDark ? 'bg-white/8' : 'bg-gray-100'}`}>
-              <Check className={`w-3 h-3 ${isPopular ? 'text-amber-500' : isDark ? 'text-gray-400' : 'text-gray-500'}`} />
-            </div>
+          <li key={i} className={`flex items-center gap-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
             {f}
           </li>
         ))}
@@ -224,15 +263,10 @@ function PlanCard({ plan, isPopular, isDark }) {
 
       <Link
         to="/register"
-        className={`w-full block text-center py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-200 ${
-          isPopular
-            ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-black hover:opacity-90 shadow-lg shadow-amber-400/20'
-            : isDark
-              ? 'bg-white/8 text-white hover:bg-white/12 border border-white/10'
-              : 'bg-gray-900 text-white hover:bg-gray-800 border border-gray-900'
-        }`}
+        className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${btnStyle}`}
       >
-        {plan.price === 0 ? 'Commencer gratuitement' : 'S\'abonner'}
+        {plan.price === 0 ? 'Commencer gratuitement' : "S'abonner"}
+        <ArrowRight size={18} />
       </Link>
     </div>
   )
