@@ -185,89 +185,113 @@ function ThemeToggle() {
   )
 }
 
-function PlanCard({ plan, isPopular, isDark }) {
-  const limits = typeof plan.limits === 'string' ? JSON.parse(plan.limits) : (plan.limits || {})
-  const feats = typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || {})
+function formatPrice(amount, currency = 'XOF') {
+  if (!amount || amount <= 0) return 'Gratuit'
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+}
 
-  const Icon = PLAN_ICONS[plan.id] || Star
-  const gradient = PLAN_GRADIENTS[plan.id] || PLAN_GRADIENTS.starter
-  const accent = PLAN_ACCENT[plan.id] || 'border-blue-500'
-  const btnStyle = PLAN_BTN[plan.id] || PLAN_BTN.starter
-
-  const getFeaturesList = () => {
-    const items = []
-    if (limits?.agents) items.push(`${limits.agents === -1 ? 'Agents illimités' : `${limits.agents} agent${limits.agents > 1 ? 's' : ''}`}`)
-    if (limits?.messages_per_month) {
-        items.push(`${limits.messages_per_month === -1 ? 'Messages illimités' : `${limits.messages_per_month.toLocaleString('fr-FR')} messages/mois`}`)
-    } else if (limits?.monthlyCredits) {
-        items.push(`${limits.monthlyCredits === -1 ? 'Messages illimités' : `${limits.monthlyCredits.toLocaleString()} messages/mois`}`)
-    }
-    
-    if (feats?.models?.length) items.push(`${feats.models.length} modèle(s) IA`)
-    if (feats?.analytics) items.push('Statistiques avancées')
-    if (feats?.payment_module) items.push('Module paiement')
-    if (feats?.voice_responses) items.push('Réponses vocales (TTS)')
-    if (feats?.flows) items.push('Flows & automatisations')
-    if (feats?.next_best_action) items.push('Next Best Action')
-    if (feats?.catalog_import) items.push('Import catalogue')
-    if (feats?.human_handoff_alerts) items.push('Alertes intervention humaine')
-    if (feats?.whatsapp_status) items.push('WhatsApp Status')
-    if (feats?.daily_briefing) items.push('Briefing quotidien')
-    if (feats?.leads_management) items.push('Gestion leads')
-    
-    if (items.length <= 2) {
-       if (feats?.knowledgeBase) items.push('Base de connaissances IA')
-       if (feats?.prioritySupport) items.push('Support prioritaire')
-    }
-    return items
+function PlanFeatureList({ features }) {
+  if (!features) return null
+  let parsed = features
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed) } catch { return null }
+  }
+  const items = []
+  if (parsed.models?.length) items.push(`${parsed.models.length} modèle(s) IA`)
+  if (parsed.analytics) items.push('Statistiques avancées')
+  if (parsed.payment_module) items.push('Module paiement')
+  if (parsed.voice_responses) items.push('Réponses vocales (TTS)')
+  if (parsed.flows) items.push('Flows & automatisations')
+  if (parsed.next_best_action) items.push('Next Best Action')
+  if (parsed.catalog_import) items.push('Import catalogue')
+  if (parsed.human_handoff_alerts) items.push('Alertes intervention humaine')
+  if (parsed.whatsapp_status) items.push('WhatsApp Status')
+  if (parsed.daily_briefing) items.push('Briefing quotidien')
+  if (parsed.leads_management) items.push('Gestion leads')
+  
+  if (items.length === 0) {
+    if (parsed.knowledgeBase) items.push('Base de connaissances IA')
+    if (parsed.prioritySupport) items.push('Support prioritaire')
   }
 
-  const formatPrice = (p) => p === 0 ? 'Gratuit' : new Intl.NumberFormat('fr-FR').format(p)
+  return (
+    <ul className="space-y-2 mt-4">
+      {items.map(item => (
+        <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
+          <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
+          {item}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function PlanCard({ plan, isPopular }) {
+  const price = plan.price
+  const billing = plan.billing_period || 'monthly'
+  const Icon = PLAN_ICONS[plan.id] || Star
+  const gradient = PLAN_GRADIENTS[plan.id] || PLAN_GRADIENTS.starter
+  const accent = PLAN_ACCENT[plan.id] || 'border-space-600'
+  const btnStyle = PLAN_BTN[plan.id] || PLAN_BTN.starter
+
+  const isPro = plan.id === 'pro' || isPopular
+  const isCurrent = false
 
   return (
-    <div className={`relative rounded-3xl border-2 bg-gradient-to-b ${gradient} p-8 flex flex-col transition-all duration-300 glass hover:scale-[1.02] ${isPopular ? `ring-2 ring-amber-400/30 ${accent} shadow-xl shadow-amber-500/10 z-10` : `${accent} ${isDark ? 'border-opacity-30' : 'border-opacity-100'}`}`}>
-      
-      {isPopular && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-lg">
+    <div className={`relative rounded-3xl border-2 bg-gradient-to-b ${gradient} p-6 flex flex-col transition-all duration-300 bg-space-950 ${accent} ${isPro ? 'shadow-xl shadow-amber-500/10 scale-[1.02]' : ''}`}>
+      {isPro && !isCurrent && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest">
           Populaire
         </div>
       )}
 
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} border ${accent}`}>
-          <Icon className={`w-6 h-6 ${isDark ? 'text-white' : 'text-gray-900'}`} />
+      <div className="flex items-center gap-3 mb-4">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradient} border ${accent}`}>
+          <Icon size={18} className="text-white" />
         </div>
         <div>
-          <h3 className={`font-bold text-xl ${isDark ? 'text-white' : 'text-gray-900'}`}>{plan.display_name || plan.name}</h3>
-          {plan.description && <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{plan.description}</p>}
+          <h2 className="font-bold text-white text-base">{plan.display_name || plan.name}</h2>
+          {plan.description && <p className="text-xs text-gray-500">{plan.description}</p>}
         </div>
       </div>
 
-      <div className="mb-6">
-        <span className={`text-4xl font-black tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatPrice(plan.price)}</span>
-        {plan.price > 0 && (
-          <span className={`text-sm font-medium ml-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            / {plan.billing_period === 'yearly' ? 'an' : 'mois'}
-          </span>
+      {/* Price */}
+      <div className="mb-2">
+        {price <= 0 ? (
+          <span className="text-2xl font-black text-white">Gratuit</span>
+        ) : plan.id === 'enterprise' ? (
+          <span className="text-xl font-black text-white">Sur devis</span>
+        ) : (
+          <>
+            <span className="text-3xl font-black text-white">{formatPrice(price, plan.price_currency)}</span>
+            <span className="text-gray-500 text-sm ml-1">/ {billing === 'yearly' ? 'an' : 'mois'}</span>
+          </>
         )}
       </div>
 
-      <ul className="space-y-3 mb-8 flex-1">
-        {getFeaturesList().map((f, i) => (
-          <li key={i} className={`flex items-center gap-3 text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-            {f}
-          </li>
-        ))}
-      </ul>
+      {/* Limits */}
+      {plan.limits && (() => {
+        let limits = plan.limits
+        if (typeof limits === 'string') { try { limits = JSON.parse(limits) } catch { return null } }
+        const messages = limits.messages_per_month !== undefined ? limits.messages_per_month : limits.monthlyCredits
+        return (
+          <div className="text-xs text-gray-500 space-y-1 mb-2 border-t border-space-700/50 pt-3">
+            {limits.agents > 0 && <div>{limits.agents === -1 ? 'Agents illimités' : `${limits.agents} agent(s)`}</div>}
+            {messages !== undefined && <div>{messages === -1 ? 'Messages illimités' : `${messages.toLocaleString('fr-FR')} messages/mois`}</div>}
+          </div>
+        )
+      })()}
 
-      <Link
-        to="/register"
-        className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${btnStyle}`}
-      >
-        {plan.price === 0 ? 'Commencer gratuitement' : "S'abonner"}
-        <ArrowRight size={18} />
-      </Link>
+      <PlanFeatureList features={plan.features} />
+
+      <div className="mt-auto pt-5">
+        <Link
+          to="/register"
+          className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${btnStyle}`}
+        >
+          {plan.price === 0 ? 'Commencer gratuitement' : plan.id === 'enterprise' ? 'Nous contacter' : `Choisir ${plan.name || plan.display_name}`} <ArrowRight size={14} />
+        </Link>
+      </div>
     </div>
   )
 }
