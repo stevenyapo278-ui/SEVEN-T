@@ -54,8 +54,9 @@ const REFUSAL_KEYWORDS = [
 // P1.2 — Inline correction patterns: "non attends, remplace par X" should NOT be treated as a refusal
 // If the message contains a refusal word BUT is followed by a correction verb, it's a correction not a refusal.
 const INLINE_CORRECTION_PATTERNS = [
-    /\b(non|attends?|attendez)\b.{0,50}\b(remplace|mets|plutôt|finalement|change|laisse|veux plutôt)/i,
-    /\b(non|wait)\b.{0,50}\b(replace|put|instead|actually|change|make it)/i
+    /\b(non|attends?|attendez)\b.{0,60}\b(remplace|mets|plutôt|finalement|change|laisse|veux plutôt)\b/i,
+    /\b(non|attends?|attendez)\b.{0,60}\b(?:je veux|j'en veux|je prends|j'aimerais|il me faut|donne?[- ]moi|donnez[- ]moi)\b/i,
+    /\b(non|wait)\b.{0,60}\b(replace|put|instead|actually|change|make it|i want|i'll take|give me)\b/i
 ];
 
 // P1.1 — Signals that client wants to REPLACE (not add to) an existing order
@@ -184,9 +185,9 @@ class OrderDetector {
         const productWords = lowerProductName.split(/\s+/).filter(w => w.length > 2);
         const searchWord = productWords.length > 0 ? productWords[0] : lowerProductName;
         
-        let productIndex = lowerMessage.lastIndexOf(searchWord);
+        let productIndex = lowerMessage.indexOf(searchWord);
         if (productIndex === -1) {
-            // Check for numeric quantity patterns as fallback
+            // Fallback for numeric intent
             const match = lowerMessage.match(/(?:je\s+(?:veux|prends|voudrais|commande|souhaite))\s+(\d+)/i);
             if (match && match[1]) return Math.min(Math.max(parseInt(match[1]), 1), 100);
             return 1;
@@ -196,8 +197,9 @@ class OrderDetector {
         const textAfter = lowerMessage.substring(productIndex + searchWord.length, Math.min(lowerMessage.length, productIndex + searchWord.length + 20));
         const afterMatch = textAfter.match(/^[\sx:\-()]*(\d+)\b/i);
         if (afterMatch && afterMatch[1]) {
-            const qty = parseInt(afterMatch[1]);
-            if (qty >= 1 && qty <= 100 && !lowerProductName.includes(afterMatch[1])) {
+            const qty = parseInt(afterMatch[1], 10);
+            const tokenRegex = new RegExp(`\\b${afterMatch[1]}\\b`);
+            if (qty >= 1 && qty <= 100 && !tokenRegex.test(lowerProductName)) {
                 return qty;
             }
         }
@@ -210,8 +212,9 @@ class OrderDetector {
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
             if (/^\d+$/.test(token)) {
-                if (!lowerProductName.includes(token)) {
-                    lastQty = parseInt(token);
+                const tokenRegex = new RegExp(`\\b${token}\\b`);
+                if (!tokenRegex.test(lowerProductName)) {
+                    lastQty = parseInt(token, 10);
                 }
             } else if (FRENCH_NUMBERS[token]) {
                 lastQty = FRENCH_NUMBERS[token];

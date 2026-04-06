@@ -159,21 +159,21 @@ export const geminiCircuitBreaker = new CircuitBreaker({
     failureThreshold: 5,
     resetTimeout: 60000,
     halfOpenRequests: 1,
-    timeout: 30000
+    timeout: 120000
 });
 
 export const openaiCircuitBreaker = new CircuitBreaker({
     failureThreshold: 5,
     resetTimeout: 60000,
     halfOpenRequests: 1,
-    timeout: 30000
+    timeout: 120000
 });
 
 export const openrouterCircuitBreaker = new CircuitBreaker({
     failureThreshold: 5,
     resetTimeout: 60000,
     halfOpenRequests: 1,
-    timeout: 30000
+    timeout: 120000
 });
 
 export default CircuitBreaker;
