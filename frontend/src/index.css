@@ -45,7 +45,8 @@ html {
 }
 
 /* Bloquer le scroll global de la page lorsqu'une modale est ouverte */
-body:has(.fixed.inset-0:not(.pointer-events-none):not(.-z-10)) {
+/* On ignore les éléments avec pointer-events-none, ceux en arrière-plan z-index, et ceux qui sont invisibles via opacity-0 */
+body:has(.fixed.inset-0:not(.pointer-events-none):not(.-z-10):not(.opacity-0)) {
   overflow: hidden;
 }
 

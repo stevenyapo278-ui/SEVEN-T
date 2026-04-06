@@ -826,7 +826,7 @@ export default function Landing() {
       </section>
 
       {/* ── FEATURES ──────────────────────────── */}
-      <section id="features" className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
+      <section id="features" className={`pt-24 pb-10 md:pt-32 md:pb-12 scroll-mt-20 ${bg} transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
           <div className="text-center max-w-2xl mx-auto mb-20">
             <p className="text-amber-500 text-sm font-semibold uppercase tracking-widest mb-4">Fonctionnalités</p>
@@ -873,7 +873,7 @@ export default function Landing() {
       </section>
 
       {/* ── BEFORE / AFTER ───────────────────── */}
-      <section className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
+      <section className={`pt-12 pb-24 md:pt-16 md:pb-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
            <div className="text-center mb-16">
               <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${text}`}>L'impact sur votre business</h2>

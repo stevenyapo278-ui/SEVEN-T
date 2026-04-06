@@ -1211,7 +1211,7 @@ export default function DashboardLayout() {
       {/* ── Mobile overlay sidebar ── */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? '' : 'pointer-events-none'}`}>
         <div
-          className={`fixed inset-0 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'} ${isDark ? 'bg-space-950/80' : 'bg-slate-900/40'}`}
+          className={`fixed inset-0 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${isDark ? 'bg-space-950/80' : 'bg-slate-900/40'}`}
           onClick={() => setSidebarOpen(false)}
         />
         <div className={`fixed inset-y-0 left-0 w-60 shadow-2xl border-r transition-transform duration-300 flex flex-col min-h-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
