@@ -180,7 +180,7 @@ router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) =>
         const userRow = await db.get('SELECT name, email FROM users WHERE id = ?', userId);
         const id = uuidv4();
         
-        const returnUrl = `${baseUrl}/dashboard/settings?subscription=success&gp_id=${id}`;
+        const returnUrl = `${baseUrl}/`;
         const callbackUrl = process.env.BASE_URL 
             ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/subscription/webhook/geniuspay` 
             : `${baseUrl}/api/subscription/webhook/geniuspay`;
