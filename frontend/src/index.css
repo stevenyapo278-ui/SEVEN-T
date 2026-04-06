@@ -44,6 +44,11 @@ html {
   font-size: var(--base-font-size, 16px);
 }
 
+/* Bloquer le scroll global de la page lorsqu'une modale est ouverte */
+body:has(.fixed.inset-0:not(.pointer-events-none):not(.-z-10)) {
+  overflow: hidden;
+}
+
 /* CSS Variables - Premium Modern Aesthetic */
 :root,
 .dark {
