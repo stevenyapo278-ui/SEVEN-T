@@ -118,6 +118,7 @@ const navigationGroups = [
     items: [
       { nameKey: 'nav.tools', title: 'Téléphones (WhatsApp)', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
       { nameKey: 'nav.whatsappStatus', title: 'Statuts WhatsApp', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
+      { nameKey: 'nav.pricing', title: 'Mon Abonnement', href: '/dashboard/pricing', icon: CreditCard, tourId: 'nav-pricing' },
     ]
   },
 ]
@@ -462,7 +463,7 @@ const UserMenu = ({ user, onLogout }) => {
               ? [{ to: `/dashboard/${user.name?.toLowerCase().trim().replace(/\s+/g, '-') || 'partenaire'}`, icon: Gift, label: 'Tableau de bord' }]
               : [
                 { to: '/dashboard/settings', icon: User, label: 'Mon profil' },
-                { to: '/dashboard/settings', icon: CreditCard, label: 'Abonnement' },
+                { to: '/dashboard/pricing', icon: CreditCard, label: 'Abonnement' },
                 { to: '/dashboard/settings', icon: Settings, label: 'Paramètres' },
                 { to: '/dashboard/help', icon: HelpCircle, label: 'Aide' },
               ]

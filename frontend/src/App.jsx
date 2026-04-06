@@ -45,6 +45,7 @@ const Logs = lazy(() => import('./pages/Logs'))
 const Team = lazy(() => import('./pages/Team'))
 const WhatsAppStatus = lazy(() => import('./pages/WhatsAppStatus'))
 const Deals = lazy(() => import('./pages/Deals'))
+const Pricing = lazy(() => import('./pages/Pricing'))
 
 
 // Partner Pages
@@ -223,6 +224,7 @@ function App() {
           <Route path="team" element={<StandardRoute><Suspense fallback={<PageFallback />}><Team /></Suspense></StandardRoute>} />
           <Route path="whatsapp-status" element={<StandardRoute><Suspense fallback={<PageFallback />}><WhatsAppStatus /></Suspense></StandardRoute>} />
           <Route path="deals" element={<StandardRoute><Suspense fallback={<PageFallback />}><Deals /></Suspense></StandardRoute>} />
+          <Route path="pricing" element={<StandardRoute><Suspense fallback={<PageFallback />}><Pricing /></Suspense></StandardRoute>} />
           <Route path="logs" element={<StandardRoute><Suspense fallback={<PageFallback />}><Logs /></Suspense></StandardRoute>} />
           <Route path="help" element={<StandardRoute><Suspense fallback={<PageFallback />}><Help /></Suspense></StandardRoute>} />
 

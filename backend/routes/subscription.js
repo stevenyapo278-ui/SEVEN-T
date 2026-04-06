@@ -49,6 +49,74 @@ async function validateAndApplyCoupon(couponCode, amount) {
 }
 
 /**
+ * GET /api/subscription/status
+ * Returns the current subscription state for the authenticated user
+ */
+router.get('/status', authenticateToken, async (req, res) => {
+    try {
+        const user = await db.get(
+            `SELECT plan, subscription_status, subscription_end_date, credits, trial_end_date FROM users WHERE id = ?`,
+            req.user.id
+        );
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+
+        const planRow = await db.get(
+            `SELECT display_name, price, price_yearly, price_currency FROM subscription_plans WHERE name = ? AND is_active = 1`,
+            user.plan
+        );
+
+        const isExpired = user.subscription_end_date && new Date(user.subscription_end_date) < new Date();
+
+        res.json({
+            plan: user.plan,
+            planDisplayName: planRow?.display_name || user.plan,
+            planPrice: planRow?.price ?? null,
+            planPriceCurrency: planRow?.price_currency || 'XOF',
+            status: isExpired ? 'expired' : (user.subscription_status || 'inactive'),
+            subscriptionEndDate: user.subscription_end_date || null,
+            credits: user.credits ?? 0
+        });
+    } catch (err) {
+        console.error('Subscription status error:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * GET /api/subscription/history
+ * Returns paginated payment history for the authenticated user
+ */
+router.get('/history', authenticateToken, async (req, res) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, parseInt(req.query.limit) || 10);
+        const offset = (page - 1) * limit;
+
+        const [payments, countRow] = await Promise.all([
+            db.all(
+                `SELECT id, plan_id, billing_period, amount, original_amount, discount_amount, currency, status, coupon_code, created_at, paid_at
+                 FROM saas_subscription_payments
+                 WHERE user_id = ?
+                 ORDER BY created_at DESC
+                 LIMIT ? OFFSET ?`,
+                req.user.id, limit, offset
+            ),
+            db.get(`SELECT COUNT(*) as total FROM saas_subscription_payments WHERE user_id = ?`, req.user.id)
+        ]);
+
+        res.json({
+            payments: payments || [],
+            total: countRow?.total || 0,
+            page,
+            limit
+        });
+    } catch (err) {
+        console.error('Subscription history error:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
  * POST /api/subscription/validate-coupon
  */
 router.post('/validate-coupon', authenticateToken, async (req, res) => {

@@ -400,6 +400,64 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* ===== Subscription Status Card ===== */}
+      {(() => {
+        const isExpired = user?.plan === 'free_expired' || (user?.subscription_end_date && new Date(user.subscription_end_date) < new Date())
+        const isFree = !user?.plan || user?.plan === 'free' || user?.plan === 'free_expired'
+        const endDate = user?.subscription_end_date ? new Date(user.subscription_end_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : null
+        const statusLabel = user?.subscription_status === 'active' && !isExpired ? 'Actif' : isExpired ? 'Expiré' : 'Inactif'
+        const statusColor = user?.subscription_status === 'active' && !isExpired ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'
+
+        return (
+          <div className={`rounded-2xl border mb-6 overflow-hidden ${
+            isDark ? 'bg-space-800/20 border-space-700/50' : 'bg-white border-gray-200 shadow-sm'
+          } ${isExpired ? 'border-red-500/50' : ''}`}>
+            {isExpired && (
+              <div className="bg-red-500/10 border-b border-red-500/30 px-5 py-3 flex items-center gap-3">
+                <span className="text-red-400 text-sm font-semibold">⚠️ Votre abonnement est expiré — les fonctionnalités IA sont désactivées.</span>
+                <button onClick={() => navigate('/dashboard/pricing')} className="ml-auto text-xs bg-red-500 hover:bg-red-400 text-white px-3 py-1 rounded-lg font-bold transition-all">
+                  Renouveler
+                </button>
+              </div>
+            )}
+            <div className="p-5 flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center flex-shrink-0">
+                  <Crown className="w-5 h-5 text-gold-400" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Plan {user?.plan_display_name || user?.plan || 'Gratuit'}
+                    </span>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor}`}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-wrap mt-0.5">
+                    {endDate && (
+                      <span className="text-xs text-gray-500">
+                        {isExpired ? `Expiré le ${endDate}` : `Valide jusqu'au ${endDate}`}
+                      </span>
+                    )}
+                    {user?.credits !== undefined && (
+                      <span className="text-xs text-gray-500">· {(user.credits || 0).toLocaleString('fr-FR')} crédits restants</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/pricing')}
+                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold transition-all"
+              >
+                <CreditCard size={14} />
+                {isFree ? 'Passer à un plan payant' : 'Changer de plan'}
+              </button>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Profile */}
       <form onSubmit={handleSaveAll} className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
