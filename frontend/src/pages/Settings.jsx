@@ -446,13 +446,6 @@ export default function Settings() {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => navigate('/dashboard/pricing')}
-                className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 text-black text-sm font-bold transition-all"
-              >
-                <CreditCard size={14} />
-                {isFree ? 'Passer à un plan payant' : 'Changer de plan'}
-              </button>
             </div>
           </div>
         )
