@@ -603,68 +603,6 @@ export default function Settings() {
                 />
               </label>
 
-              <div className="pt-2 border-t border-space-700/50 mt-2 mb-1">
-                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Modules Optionnels</p>
-              </div>
-
-              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-all ${
-                isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'
-              } ${!user?.plan_features?.analytics ? 'opacity-60 cursor-not-allowed grayscale-[0.5]' : ''}`}>
-                <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.analyticsModule', 'Statistiques & Analytics')}</div>
-                  <div className="text-xs text-gray-500 truncate">{t('settings.analyticsModuleDesc', 'Activer la vue détaillée des statistiques de vos agents.')}</div>
-                  {!user?.plan_features?.analytics && (
-                    <div className="text-[10px] text-amber-500 font-medium mt-1 uppercase tracking-wider">Non inclus dans votre plan</div>
-                  )}
-                </div>
-                <input
-                  type="checkbox"
-                  disabled={!user?.plan_features?.analytics}
-                  checked={formData.analytics_module_enabled && !!user?.plan_features?.analytics}
-                  onChange={(e) => setFormData({ ...formData, analytics_module_enabled: e.target.checked })}
-                  className="accent-blue-500"
-                />
-              </label>
-
-              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-all ${
-                isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'
-              } ${!user?.plan_features?.flows ? 'opacity-60 cursor-not-allowed grayscale-[0.5]' : ''}`}>
-                <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.flowsModule', 'Flows (Flux de travail)')}</div>
-                  <div className="text-xs text-gray-500 truncate">{t('settings.flowsModuleDesc', 'Activer le créateur de flux pour automatiser vos processus.')}</div>
-                  {!user?.plan_features?.flows && (
-                    <div className="text-[10px] text-amber-500 font-medium mt-1 uppercase tracking-wider">Non inclus dans votre plan</div>
-                  )}
-                </div>
-                <input
-                  type="checkbox"
-                  disabled={!user?.plan_features?.flows}
-                  checked={formData.flows_module_enabled && !!user?.plan_features?.flows}
-                  onChange={(e) => setFormData({ ...formData, flows_module_enabled: e.target.checked })}
-                  className="accent-blue-500"
-                />
-              </label>
-
-
-              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-all ${
-                isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'
-              } ${!user?.plan_features?.voice_responses ? 'opacity-60 cursor-not-allowed grayscale-[0.5]' : ''}`}>
-                <div className="min-w-0">
-                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Réponses vocales (TTS)</div>
-                  <div className="text-xs text-gray-500 truncate">Permet à l'IA de répondre par note vocale.</div>
-                  {!user?.plan_features?.voice_responses && (
-                    <div className="text-[10px] text-amber-500 font-medium mt-1 uppercase tracking-wider">Non inclus dans votre plan</div>
-                  )}
-                </div>
-                <input
-                  type="checkbox"
-                  disabled={!user?.plan_features?.voice_responses}
-                  checked={formData.voice_responses_enabled && !!user?.plan_features?.voice_responses}
-                  onChange={(e) => setFormData({ ...formData, voice_responses_enabled: e.target.checked })}
-                  className="accent-blue-500"
-                />
-              </label>
-
               <div className={`rounded-2xl border p-4 ${isDark ? 'border-space-700/60 bg-space-950/30' : 'border-gray-200 bg-white'}`}>
                 <p className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.currency')}</p>
                 <p className="text-xs text-gray-500 mt-1 mb-3">{t('settings.currencyDesc')}</p>
