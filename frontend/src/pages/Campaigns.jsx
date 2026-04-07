@@ -81,7 +81,10 @@ export default function Campaigns() {
     name: '',
     message: '',
     agent_id: '',
-    scheduled_at: ''
+    scheduled_at: '',
+    recurrence_type: 'none',
+    recurrence_interval: 1,
+    recurrence_days: ''
   })
 
   useEffect(() => {
@@ -265,19 +268,42 @@ export default function Campaigns() {
     }
 
     try {
+      const payload = {
+        ...form,
+        recurrence_interval: parseInt(form.recurrence_interval) || 1
+      }
       if (selectedCampaign) {
-        await api.put(`/campaigns/${selectedCampaign.id}`, form)
+        await api.put(`/campaigns/${selectedCampaign.id}`, payload)
         toast.success('Campagne mise à jour')
       } else {
-        await api.post('/campaigns', form)
+        await api.post('/campaigns', payload)
         toast.success('Campagne créée')
       }
       setShowModal(false)
-      setForm({ name: '', message: '', agent_id: '', scheduled_at: '' })
+      setForm({ 
+        name: '', 
+        message: '', 
+        agent_id: '', 
+        scheduled_at: '',
+        recurrence_type: 'none',
+        recurrence_interval: 1,
+        recurrence_days: ''
+      })
       setSelectedCampaign(null)
       loadData()
     } catch (error) {
       toast.error('Erreur lors de la sauvegarde')
+    }
+  }
+
+  const handleRelaunch = async (campaignId) => {
+    try {
+      const res = await api.post(`/campaigns/${campaignId}/relaunch`)
+      const newCampaign = res.data.campaign
+      toast.success('Campagne dupliquée ! Vous pouvez maintenant la modifier.')
+      openEditModal(newCampaign)
+    } catch (error) {
+      toast.error('Erreur lors de la relance')
     }
   }
 
@@ -341,10 +367,13 @@ export default function Campaigns() {
   const openEditModal = (campaign) => {
     setSelectedCampaign(campaign)
     setForm({
-      name: campaign.name,
-      message: campaign.message,
-      agent_id: campaign.agent_id,
-      scheduled_at: campaign.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : ''
+      name: campaign.name || '',
+      message: campaign.message || '',
+      agent_id: campaign.agent_id || '',
+      scheduled_at: campaign.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : '',
+      recurrence_type: campaign.recurrence_type || 'none',
+      recurrence_interval: campaign.recurrence_interval || 1,
+      recurrence_days: campaign.recurrence_days || ''
     })
     setShowModal(true)
   }
@@ -464,8 +493,15 @@ export default function Campaigns() {
               </button>
               <button
                 onClick={() => {
-                  setSelectedCampaign(null)
-                  setForm({ name: '', message: '', agent_id: '', scheduled_at: '' })
+                  setForm({ 
+                    name: '', 
+                    message: '', 
+                    agent_id: '', 
+                    scheduled_at: '',
+                    recurrence_type: 'none',
+                    recurrence_interval: 1,
+                    recurrence_days: ''
+                  })
                   setShowModal(true)
                 }}
                 className="btn-primary flex items-center gap-2 min-h-[44px]"
@@ -638,7 +674,17 @@ export default function Campaigns() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-100">{campaign.name}</h3>
-                      {getStatusBadge(campaign.status)}
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(campaign.status)}
+                        {campaign.recurrence_type && campaign.recurrence_type !== 'none' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-wider border border-indigo-500/20">
+                            <RefreshCw className="w-3 h-3" />
+                            {campaign.recurrence_type === 'daily' && `Tous les ${campaign.recurrence_interval} j`}
+                            {campaign.recurrence_type === 'weekly' && `Toutes les ${campaign.recurrence_interval} sem`}
+                            {campaign.recurrence_type === 'monthly' && `Tous les ${campaign.recurrence_interval} mois`}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-gray-400 text-sm line-clamp-2 mb-3">{campaign.message}</p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
@@ -703,6 +749,16 @@ export default function Campaigns() {
                             )}
                           </button>
                         </>
+                      )}
+                      {(campaign.status === 'sent' || campaign.status === 'failed') && (
+                        <button
+                          type="button"
+                          onClick={() => handleRelaunch(campaign.id)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-sm font-medium transition-colors"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Relancer
+                        </button>
                       )}
                       {(contactCount > 0 || campaign.status === 'sent' || campaign.status === 'sending') && (
                         <button
@@ -868,6 +924,74 @@ export default function Campaigns() {
                     placeholderText="Choisir une date et heure"
                     className="input-dark w-full py-4 px-5 text-base rounded-2xl"
                   />
+                </div>
+
+                <div className="space-y-4 pt-2 border-t border-white/5">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                      Récurrence
+                    </label>
+                    <select
+                      value={form.recurrence_type}
+                      onChange={(e) => setForm({ ...form, recurrence_type: e.target.value })}
+                      className="input-dark w-full py-4 px-5 text-base rounded-2xl appearance-none"
+                    >
+                      <option value="none">Aucune (Envoi unique)</option>
+                      <option value="daily">Quotidienne</option>
+                      <option value="weekly">Hebdomadaire</option>
+                      <option value="monthly">Mensuelle</option>
+                    </select>
+                  </div>
+
+                  {form.recurrence_type !== 'none' && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                          Répéter tous les {form.recurrence_type === 'daily' ? 'jours' : form.recurrence_type === 'weekly' ? 'semaines' : 'mois'}
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={form.recurrence_interval}
+                          onChange={(e) => setForm({ ...form, recurrence_interval: e.target.value })}
+                          className="input-dark w-full py-4 px-5 text-base rounded-2xl"
+                        />
+                      </div>
+
+                      {form.recurrence_type === 'weekly' && (
+                        <div className="space-y-2">
+                          <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">
+                            Jours de la semaine
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((day, idx) => {
+                              const days = form.recurrence_days ? form.recurrence_days.split(',') : [];
+                              const isSelected = days.includes(String(idx));
+                              return (
+                                <button
+                                  key={day}
+                                  type="button"
+                                  onClick={() => {
+                                    const newDays = isSelected 
+                                      ? days.filter(d => d !== String(idx))
+                                      : [...days, String(idx)];
+                                    setForm({ ...form, recurrence_days: newDays.sort().join(',') });
+                                  }}
+                                  className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                                    isSelected 
+                                      ? 'bg-gold-400 text-black border-gold-400' 
+                                      : 'bg-white/5 text-gray-500 border-white/10 hover:border-white/20'
+                                  }`}
+                                >
+                                  {day}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
 

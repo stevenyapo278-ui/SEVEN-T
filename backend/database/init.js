@@ -778,9 +778,14 @@ export async function initDatabase() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
-        -- Migration for existing databases
         ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS payment_url_external TEXT;
         ALTER TABLE payment_links ADD COLUMN IF NOT EXISTS external_id TEXT;
+
+        -- Campaign recurrence columns
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS recurrence_type TEXT DEFAULT 'none'; -- 'none', 'daily', 'weekly', 'monthly'
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS recurrence_interval INTEGER DEFAULT 1;
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS recurrence_days TEXT; -- '1,3,5' for Mon, Wed, Fri
+        ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS next_run_at TIMESTAMP;
 
 
         CREATE TABLE IF NOT EXISTS user_payment_providers (

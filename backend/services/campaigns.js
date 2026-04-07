@@ -76,13 +76,51 @@ export async function sendCampaign(campaignId) {
 }
 
 /**
+ * Helper to calculate the next run date for recurring campaigns.
+ * @param {Date} date - Current scheduled date
+ * @param {string} type - 'daily', 'weekly', 'monthly'
+ * @param {number} interval - Interval (every X days/weeks/months)
+ * @param {string} days - Comma-separated days of week for weekly (0=Sun, 1=Mon, ..., 6=Sat)
+ */
+function calculateNextRunAt(date, type, interval, days) {
+    const next = new Date(date);
+    const step = interval || 1;
+
+    if (type === 'daily') {
+        next.setDate(next.getDate() + step);
+    } else if (type === 'weekly') {
+        if (days && days.trim()) {
+            const allowedDays = days.split(',').map(d => parseInt(d.trim())).filter(d => !isNaN(d)).sort();
+            const currentDay = next.getDay();
+            const nextDayInWeek = allowedDays.find(d => d > currentDay);
+
+            if (nextDayInWeek !== undefined) {
+                next.setDate(next.getDate() + (nextDayInWeek - currentDay));
+            } else {
+                // Advance to first allowed day of the next interval week
+                const daysUntilNextWeek = 7 - currentDay + allowedDays[0];
+                next.setDate(next.getDate() + daysUntilNextWeek + (7 * (step - 1)));
+            }
+        } else {
+            next.setDate(next.getDate() + (7 * step));
+        }
+    } else if (type === 'monthly') {
+        next.setMonth(next.getMonth() + step);
+    } else {
+        return null;
+    }
+    return next;
+}
+
+/**
  * Job that finds and runs scheduled campaigns.
  */
 export async function runCampaignSchedulerJob() {
     try {
         // Find campaigns scheduled in the past that are still in 'scheduled' status
         const scheduledCampaigns = await db.all(`
-            SELECT id, name FROM campaigns 
+            SELECT id, name, recurrence_type, recurrence_interval, recurrence_days, scheduled_at 
+            FROM campaigns 
             WHERE status = 'scheduled' 
             AND scheduled_at <= CURRENT_TIMESTAMP
         `);
@@ -94,11 +132,49 @@ export async function runCampaignSchedulerJob() {
         for (const camp of scheduledCampaigns) {
             console.log(`[CampaignScheduler] Starting automatic send for: ${camp.name} (${camp.id})`);
             try {
+                // Execute sending
                 await sendCampaign(camp.id);
+
+                // Handle recurrence
+                if (camp.recurrence_type && camp.recurrence_type !== 'none') {
+                    const nextRun = calculateNextRunAt(
+                        new Date(camp.scheduled_at),
+                        camp.recurrence_type,
+                        camp.recurrence_interval,
+                        camp.recurrence_days
+                    );
+
+                    if (nextRun) {
+                        console.log(`[CampaignScheduler] Rescheduling recurring campaign ${camp.name} for ${nextRun.toISOString()}`);
+                        
+                        await db.transaction(async (tx) => {
+                            // Update campaign to next scheduled date
+                            await tx.run(`
+                                UPDATE campaigns 
+                                SET status = 'scheduled',
+                                    scheduled_at = ?,
+                                    next_run_at = ?,
+                                    sent_at = NULL
+                                WHERE id = ?
+                            `, nextRun, nextRun, camp.id);
+
+                            // Reset recipients to pending for the next run
+                            await tx.run(`
+                                UPDATE campaign_recipients 
+                                SET status = 'pending',
+                                    sent_at = NULL,
+                                    error_message = NULL
+                                WHERE campaign_id = ?
+                            `, camp.id);
+                        });
+                    }
+                }
             } catch (err) {
                 console.error(`[CampaignScheduler] Error processing campaign ${camp.id}:`, err.message);
                 // Optionally update status to failed if core error
-                await db.run("UPDATE campaigns SET status = 'failed' WHERE id = ?", camp.id);
+                if (!camp.recurrence_type || camp.recurrence_type === 'none') {
+                    await db.run("UPDATE campaigns SET status = 'failed' WHERE id = ?", camp.id);
+                }
             }
         }
     } catch (error) {

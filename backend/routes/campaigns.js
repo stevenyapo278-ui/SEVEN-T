@@ -62,7 +62,16 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create campaign
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { name, message, agent_id, recipients = [], scheduled_at } = req.body;
+        const { 
+            name, 
+            message, 
+            agent_id, 
+            recipients = [], 
+            scheduled_at,
+            recurrence_type = 'none',
+            recurrence_interval = 1,
+            recurrence_days = null
+        } = req.body;
 
         if (!name?.trim() || !message?.trim() || !agent_id) {
             return res.status(400).json({ error: 'Nom, message et agent requis' });
@@ -75,9 +84,16 @@ router.post('/', authenticateToken, async (req, res) => {
 
         const id = uuidv4();
         await db.run(`
-            INSERT INTO campaigns (id, user_id, agent_id, name, message, total_recipients, scheduled_at, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, id, req.user.id, agent_id, name.trim(), message.trim(), recipients.length, scheduled_at || null, scheduled_at ? 'scheduled' : 'draft');
+            INSERT INTO campaigns (
+                id, user_id, agent_id, name, message, total_recipients, 
+                scheduled_at, status, recurrence_type, recurrence_interval, recurrence_days
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, 
+            id, req.user.id, agent_id, name.trim(), message.trim(), recipients.length, 
+            scheduled_at || null, scheduled_at ? 'scheduled' : 'draft',
+            recurrence_type, recurrence_interval, recurrence_days
+        );
 
         for (const recipient of recipients) {
             await db.run('INSERT INTO campaign_recipients (id, campaign_id, contact_number, contact_name) VALUES (?, ?, ?, ?)', uuidv4(), id, recipient.number, recipient.name || null);
@@ -94,7 +110,15 @@ router.post('/', authenticateToken, async (req, res) => {
 // Update campaign
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
-        const { name, message, scheduled_at, agent_id } = req.body;
+        const { 
+            name, 
+            message, 
+            scheduled_at, 
+            agent_id,
+            recurrence_type,
+            recurrence_interval,
+            recurrence_days
+        } = req.body;
 
         const existing = await db.get('SELECT * FROM campaigns WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
@@ -118,9 +142,22 @@ router.put('/:id', authenticateToken, async (req, res) => {
                 message = COALESCE(?, message),
                 scheduled_at = COALESCE(?::timestamp, scheduled_at),
                 agent_id = COALESCE(?, agent_id),
+                recurrence_type = COALESCE(?, recurrence_type),
+                recurrence_interval = COALESCE(?, recurrence_interval),
+                recurrence_days = COALESCE(?, recurrence_days),
                 status = CASE WHEN (?::timestamp) IS NOT NULL THEN 'scheduled' ELSE status END
             WHERE id = ?
-        `, name?.trim() || null, message?.trim() || null, scheduled_at || null, agent_id || null, scheduled_at || null, req.params.id);
+        `, 
+            name?.trim() || null, 
+            message?.trim() || null, 
+            scheduled_at || null, 
+            agent_id || null, 
+            recurrence_type || null,
+            recurrence_interval || null,
+            recurrence_days || null,
+            scheduled_at || null, 
+            req.params.id
+        );
 
         const campaign = await db.get('SELECT * FROM campaigns WHERE id = ?', req.params.id);
         res.json({ campaign });
@@ -286,6 +323,47 @@ router.post('/:id/send', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Send campaign error:', error);
         res.status(500).json({ error: error.message || 'Erreur serveur' });
+    }
+});
+
+// Relaunch campaign (Duplicate as draft)
+router.post('/:id/relaunch', authenticateToken, async (req, res) => {
+    try {
+        const source = await db.get('SELECT * FROM campaigns WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
+        if (!source) {
+            return res.status(404).json({ error: 'Campagne source non trouvée' });
+        }
+
+        const recipients = await db.all('SELECT contact_number, contact_name FROM campaign_recipients WHERE campaign_id = ?', req.params.id);
+        
+        const newId = uuidv4();
+        await db.transaction(async (tx) => {
+            // Create new draft campaign
+            await tx.run(`
+                INSERT INTO campaigns (
+                    id, user_id, agent_id, name, message, total_recipients, 
+                    status, recurrence_type, recurrence_interval, recurrence_days
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, 
+                newId, req.user.id, source.agent_id, `${source.name} (Relance)`, source.message, recipients.length, 
+                'draft', source.recurrence_type, source.recurrence_interval, source.recurrence_days
+            );
+
+            // Copy recipients
+            for (const r of recipients) {
+                await tx.run(`
+                    INSERT INTO campaign_recipients (id, campaign_id, contact_number, contact_name, status)
+                    VALUES (?, ?, ?, ?, 'pending')
+                `, uuidv4(), newId, r.contact_number, r.contact_name);
+            }
+        });
+
+        const campaign = await db.get('SELECT * FROM campaigns WHERE id = ?', newId);
+        res.status(201).json({ campaign });
+    } catch (error) {
+        console.error('Relaunch campaign error:', error);
+        res.status(500).json({ error: 'Erreur serveur lors de la relance' });
     }
 });
 
