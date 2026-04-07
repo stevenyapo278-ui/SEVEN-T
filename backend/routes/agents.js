@@ -654,6 +654,78 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Bulk delete agents
+router.delete('/bulk/delete', authenticateToken, async (req, res) => {
+    try {
+        const { agent_ids } = req.body;
+        if (!Array.isArray(agent_ids) || agent_ids.length === 0) {
+            return res.status(400).json({ error: 'Liste d\'identifiants invalide' });
+        }
+
+        // Get agents to disconnect WhatsApp if needed
+        const agents = await db.all(`SELECT id, tool_id FROM agents WHERE id IN (${agent_ids.map(() => '?').join(',')}) AND user_id = ?`, ...agent_ids, req.user.ownerId);
+        
+        for (const agent of agents) {
+            if (agent.tool_id) {
+                try {
+                    if (whatsappManager.isConnected(agent.tool_id)) {
+                        await whatsappManager.disconnect(agent.tool_id, false);
+                    }
+                } catch (err) {
+                    console.error(`Error disconnecting WhatsApp for agent ${agent.id} during bulk deletion:`, err);
+                }
+            }
+        }
+
+        const placeholders = agent_ids.map(() => '?').join(',');
+        await db.run(`DELETE FROM agents WHERE id IN (${placeholders}) AND user_id = ?`, ...agent_ids, req.user.ownerId);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'bulk_delete_agents',
+            entityType: 'agent',
+            details: { count: agent_ids.length },
+            req
+        });
+
+        res.json({ message: `${agent_ids.length} agents supprimés` });
+    } catch (error) {
+        console.error('Bulk delete agents error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression groupée' });
+    }
+});
+
+// Bulk update agents active status
+router.put('/bulk/active', authenticateToken, async (req, res) => {
+    try {
+        const { agent_ids, is_active } = req.body;
+        if (!Array.isArray(agent_ids) || agent_ids.length === 0 || is_active === undefined) {
+            return res.status(400).json({ error: 'Données invalides' });
+        }
+
+        const placeholders = agent_ids.map(() => '?').join(',');
+        await db.run(
+            `UPDATE agents SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`,
+            is_active ? 1 : 0,
+            ...agent_ids,
+            req.user.ownerId
+        );
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'bulk_update_agents_active',
+            entityType: 'agent',
+            details: { count: agent_ids.length, is_active },
+            req
+        });
+
+        res.json({ message: `Statut mis à jour pour ${agent_ids.length} agents` });
+    } catch (error) {
+        console.error('Bulk active update error:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour groupée' });
+    }
+});
+
 // Test agent (Playground)
 router.post('/:id/test', authenticateToken, async (req, res) => {
     try {

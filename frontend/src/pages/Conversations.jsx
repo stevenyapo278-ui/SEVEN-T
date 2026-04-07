@@ -270,9 +270,63 @@ export default function Conversations() {
     })
   }
 
+  const toggleSelectAll = () => {
+    if (selectedConversations.size === filteredConversations.length && filteredConversations.length > 0) {
+      setSelectedConversations(new Set())
+    } else {
+      setSelectedConversations(new Set(filteredConversations.map(c => c.id)))
+    }
+  }
+
   const clearSelection = () => {
     setSelectedConversations(new Set())
     setBulkMode(false)
+  }
+
+  const handleDeleteSelected = async () => {
+    const count = selectedConversations.size
+    if (count === 0) return
+    
+    const ok = await showConfirm({
+      title: `Supprimer ${count} conversation(s) ?`,
+      message: `Cette action supprimera définitivement ${count} conversation(s) et tous leurs messages.`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer tout'
+    })
+    if (!ok) return
+
+    setBulkLoading(true)
+    try {
+      await api.delete('/conversations/bulk/delete', {
+        data: { conversation_ids: Array.from(selectedConversations) }
+      })
+      toast.success(`${count} conversation(s) supprimée(s)`)
+      loadConversations()
+      clearSelection()
+    } catch (e) {
+      toast.error('Erreur lors de la suppression')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleMarkSelectedRead = async () => {
+    const count = selectedConversations.size
+    if (count === 0) return
+    
+    setBulkLoading(true)
+    try {
+      await api.post('/conversations/bulk/mark-read', {
+        conversation_ids: Array.from(selectedConversations)
+      })
+      toast.success('Conversations marquées comme lues')
+      loadConversations()
+      clearSelection()
+    } catch (e) {
+      toast.error('Erreur')
+    } finally {
+      setBulkLoading(false)
+    }
   }
 
   const handleBulkTakeover = async (enableHumanMode) => {
@@ -345,6 +399,34 @@ export default function Conversations() {
             <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {selectedConversations.size > 0 && (
+              <div className="flex items-center gap-2 mr-2 pr-2 border-r border-space-700/50">
+                <button
+                  onClick={handleMarkSelectedRead}
+                  disabled={bulkLoading}
+                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-blue-400 hover:text-blue-300' : 'bg-white border-gray-200 text-blue-500'}`}
+                  title="Marquer comme lu"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => handleBulkTakeover(true)}
+                  disabled={bulkLoading}
+                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-emerald-400 hover:text-emerald-300' : 'bg-white border-gray-200 text-emerald-500'}`}
+                  title="Activer mode humain"
+                >
+                  <User className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={bulkLoading}
+                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-red-400 hover:text-red-300' : 'bg-white border-gray-200 text-red-500'}`}
+                  title="Supprimer la sélection"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            )}
             <button onClick={() => setContactPickerOpen(true)} className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-medium transition-all ${isDark ? 'bg-space-900 border-space-700 text-gold-400 hover:text-gold-300' : 'bg-white border-gray-200 text-gold-500 hover:bg-gray-50'}`}>
               <Plus className="w-5 h-5" /> Nouveau
             </button>
@@ -378,12 +460,27 @@ export default function Conversations() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <div className={`flex-1 flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 ${
+              isDark ? 'bg-space-800 border-space-700 focus-within:border-space-600' : 'bg-white border-gray-200'
+            }`}>
+              {bulkMode && (
+                <button
+                  onClick={toggleSelectAll}
+                  className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+                    selectedConversations.size === filteredConversations.length && filteredConversations.length > 0
+                      ? 'bg-blue-500 border-blue-500 text-white'
+                      : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+                  }`}
+                  title="Tout sélectionner"
+                >
+                  <Check className={`w-4 h-4 ${selectedConversations.size === filteredConversations.length && filteredConversations.length > 0 ? 'opacity-100' : 'opacity-0'}`} />
+                </button>
+              )}
+              <Search className="w-4 h-4 text-gray-500" />
               <input 
                 type="text" value={searchQuery} onChange={(e) => { const v = e.target.value; setSearchQuery(v); syncFiltersToUrl({ q: v || undefined }); }}
                 placeholder="Rechercher..."
-                className={`w-full pl-10 pr-4 py-2 rounded-xl border focus:outline-none focus:border-gold-400/50 ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200'}`}
+                className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
               />
             </div>
             <button onClick={() => setShowFilters(!showFilters)} className={`px-4 py-2 rounded-xl border flex items-center gap-2 ${showFilters ? 'bg-gold-400/10 border-gold-400/30 text-gold-400' : 'text-gray-400 border-space-700'}`}>
@@ -504,7 +601,18 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
       onClick={bulkMode ? onToggle : undefined}
       className={`flex items-center gap-4 p-3 border rounded-xl transition-all cursor-pointer ${isSelected ? 'bg-gold-400/10 border-gold-400/50' : 'bg-space-800/50 hover:bg-space-800 border-space-700/50'}`}
     >
-      {bulkMode && (isSelected ? <CheckSquare className="w-5 h-5 text-gold-400" /> : <Square className="w-5 h-5 text-gray-600" />)}
+      {bulkMode && (
+        <div 
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggle(); }}
+          className={`w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+            isSelected
+              ? 'bg-blue-500 border-blue-500 text-white'
+              : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+          }`}
+        >
+          {isSelected && <Check className="w-4 h-4" />}
+        </div>
+      )}
       <ProfileAvatar agentId={conv.agent_id} contactJid={conv.contact_jid} name={getDisplayName(conv)} profilePictureUrl={conv.profile_picture} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">

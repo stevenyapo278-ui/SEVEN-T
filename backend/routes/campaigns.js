@@ -370,6 +370,24 @@ router.post('/:id/relaunch', async (req, res) => {
     }
 });
 
+// Bulk delete campaigns
+router.delete('/bulk/delete', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'IDs requis' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        await db.run(`DELETE FROM campaigns WHERE user_id = ? AND id IN (${placeholders})`, req.user.id, ...ids);
+
+        res.json({ message: `${ids.length} campagne(s) supprimée(s)` });
+    } catch (error) {
+        console.error('Bulk delete campaigns error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Delete campaign
 router.delete('/:id', async (req, res) => {
     try {

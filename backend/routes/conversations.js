@@ -11,7 +11,9 @@ import {
     updateConversationContactSchema,
     bulkTakeoverSchema,
     toggleTakeoverSchema,
-    deleteMessagesSchema
+    deleteMessagesSchema,
+    bulkDeleteConversationsSchema,
+    bulkMarkReadSchema
 } from '../middleware/security.js';
 import { generateConversationPdf } from '../services/conversationPdfExport.js';
 
@@ -367,6 +369,70 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Bulk delete conversations
+router.delete('/bulk/delete', authenticateToken, validate(bulkDeleteConversationsSchema), async (req, res) => {
+    try {
+        const { conversation_ids } = req.body;
+        
+        if (!conversation_ids || !Array.isArray(conversation_ids) || conversation_ids.length === 0) {
+            return res.status(400).json({ error: 'Liste de conversations requise' });
+        }
+
+        const placeholders = conversation_ids.map(() => '?').join(',');
+        const ownedConversations = await db.all(`
+            SELECT c.id FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE c.id IN (${placeholders}) AND a.user_id = ?
+        `, ...conversation_ids, req.user.ownerId);
+
+        if (ownedConversations.length !== conversation_ids.length) {
+            return res.status(403).json({ error: 'Certaines conversations ne vous appartiennent pas' });
+        }
+
+        const validIds = ownedConversations.map(c => c.id);
+
+        // Delete messages first (cascade)
+        await db.run(`DELETE FROM messages WHERE conversation_id IN (${placeholders})`, ...validIds);
+        // Delete conversations
+        await db.run(`DELETE FROM conversations WHERE id IN (${placeholders})`, ...validIds);
+
+        res.json({ message: `${validIds.length} conversation(s) supprimée(s)`, deleted: validIds.length });
+    } catch (error) {
+        console.error('Bulk delete conversations error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Bulk mark conversations as read
+router.post('/bulk/mark-read', authenticateToken, validate(bulkMarkReadSchema), async (req, res) => {
+    try {
+        const { conversation_ids } = req.body;
+        
+        if (!conversation_ids || !Array.isArray(conversation_ids) || conversation_ids.length === 0) {
+            return res.status(400).json({ error: 'Liste de conversations requise' });
+        }
+
+        const placeholders = conversation_ids.map(() => '?').join(',');
+        const ownedConversations = await db.all(`
+            SELECT c.id FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE c.id IN (${placeholders}) AND a.user_id = ?
+        `, ...conversation_ids, req.user.ownerId);
+
+        if (ownedConversations.length !== conversation_ids.length) {
+            return res.status(403).json({ error: 'Certaines conversations ne vous appartiennent pas' });
+        }
+
+        const validIds = ownedConversations.map(c => c.id);
+        await db.run(`UPDATE conversations SET unread_messages_count = 0 WHERE id IN (${placeholders})`, ...validIds);
+
+        res.json({ message: 'Conversations marquées comme lues', updated: validIds.length });
+    } catch (error) {
+        console.error('Bulk mark read error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Bulk toggle human takeover for multiple conversations (MUST be before /:id routes)
 router.put('/bulk/takeover', authenticateToken, validate(bulkTakeoverSchema), async (req, res) => {
     try {
@@ -387,11 +453,7 @@ router.put('/bulk/takeover', authenticateToken, validate(bulkTakeoverSchema), as
             return res.status(403).json({ error: 'Certaines conversations ne vous appartiennent pas' });
         }
 
-        await db.transaction(async (txDb) => {
-            for (const id of conversation_ids) {
-                await txDb.run('UPDATE conversations SET human_takeover = ? WHERE id = ?', human_takeover ? 1 : 0, id);
-            }
-        });
+        await db.run(`UPDATE conversations SET human_takeover = ? WHERE id IN (${placeholders})`, human_takeover ? 1 : 0, ...conversation_ids);
 
         res.json({ 
             message: `${conversation_ids.length} conversation(s) ${human_takeover ? 'passée(s) en mode humain' : 'passée(s) en mode IA'}`,

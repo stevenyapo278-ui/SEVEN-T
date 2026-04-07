@@ -56,9 +56,65 @@ export default function Agents() {
   const [filter, setFilter] = useState('all')
   const [viewMode, setViewMode] = useState('grid')
   const [sortBy, setSortBy] = useState('last_activity')
-  const [selectedAgents, setSelectedAgents] = useState([])
-  const [bulkMode, setBulkMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
   const [showSortMenu, setShowSortMenu] = useState(false)
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredAgents.length && filteredAgents.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredAgents.map(a => a.id)))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size
+    if (count === 0) return
+    const ok = await showConfirm({
+      title: t('agents.confirm.bulkDeleteTitle') || `Supprimer ${count} agents ?`,
+      message: t('agents.confirm.bulkDeleteMessage') || `Cette action supprimera définitivement ${count} agents.`,
+      variant: 'danger',
+      confirmLabel: t('agents.actions.deleteAll') || 'Tout supprimer'
+    })
+    if (!ok) return
+    setBulkLoading(true)
+    try {
+      await api.delete('/agents/bulk/delete', { data: { agent_ids: Array.from(selectedIds) } })
+      toast.success(t('agents.actions.bulkDeleted', { count }) || `${count} agents supprimés`)
+      setSelectedIds(new Set())
+      refreshData()
+    } catch (e) {
+      toast.error(t('agents.actions.bulkDeleteError') || 'Erreur lors de la suppression')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleBulkActiveToggle = async (isActive) => {
+    const count = selectedIds.size
+    if (count === 0) return
+    setBulkLoading(true)
+    try {
+      await api.put('/agents/bulk/active', { agent_ids: Array.from(selectedIds), is_active: isActive })
+      toast.success(isActive ? t('agents.actions.bulkActivated') : t('agents.actions.bulkDeactivated'))
+      setSelectedIds(new Set())
+      refreshData()
+    } catch (e) {
+      toast.error(t('agents.actions.bulkUpdateError'))
+    } finally {
+      setBulkLoading(false)
+    }
+  }
   
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem('seven-t-favorite-agents')
@@ -193,12 +249,24 @@ export default function Agents() {
         <>
           {/* Filters & Actions */}
           <div className="flex flex-wrap items-center gap-4 mb-6">
-            <div className="relative flex-1 min-w-[300px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <div className={`flex-1 flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 ${
+              isDark ? 'bg-space-800 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
+            }`}>
+              <div 
+                onClick={(e) => { e.stopPropagation(); toggleSelectAll(); }}
+                className={`w-5 h-5 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                  selectedIds.size === filteredAgents.length && filteredAgents.length > 0
+                    ? 'bg-blue-500 border-blue-500 text-white'
+                    : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+                }`}
+              >
+                {selectedIds.size === filteredAgents.length && filteredAgents.length > 0 && <Check className="w-3.5 h-3.5" />}
+              </div>
+              <Search className="w-4 h-4 text-gray-500" />
               <input 
                 type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('agents.filters.search')}
-                className={`w-full pl-10 pr-4 py-2 rounded-xl border focus:outline-none focus:border-blue-500/50 ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200'}`}
+                className="bg-transparent border-none p-0 focus:ring-0 w-full text-sm placeholder:text-gray-500"
               />
             </div>
             {/* ... other filters ... */}
@@ -211,8 +279,60 @@ export default function Agents() {
             </div>
           ) : (
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Bulk Action Bar */}
+              {selectedIds.size > 0 && (
+                <div className={`col-span-full sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-2 rounded-2xl shadow-2xl animate-slideUp border ${
+                  isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+                }`}>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                      {selectedIds.size}
+                    </div>
+                    <div className="hidden sm:block">
+                      <p className="font-bold text-sm">Agents sélectionnés</p>
+                      <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleBulkActiveToggle(true)}
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm ${
+                        isDark ? 'bg-space-700 text-emerald-400 hover:text-emerald-300' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                      }`}
+                    >
+                      <Power className="w-4 h-4" />
+                      <span className="hidden xs:inline">Activer</span>
+                    </button>
+                    <button
+                      onClick={() => handleBulkActiveToggle(false)}
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm ${
+                        isDark ? 'bg-space-700 text-orange-400 hover:text-orange-300' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                      }`}
+                    >
+                      <PowerOff className="w-4 h-4" />
+                      <span className="hidden xs:inline">Désactiver</span>
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="hidden xs:inline">Supprimer</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {filteredAgents.map(agent => (
-                <AgentCard key={agent.id} agent={agent} isDark={isDark} canCreateAgent={canCreateAgent} onUpdate={() => refreshData()} />
+                <AgentCard 
+                  key={agent.id} 
+                  agent={agent} 
+                  isDark={isDark} 
+                  canCreateAgent={canCreateAgent} 
+                  onUpdate={() => refreshData()}
+                  isSelected={selectedIds.has(agent.id)}
+                  onToggleSelect={() => toggleSelect(agent.id)}
+                />
               ))}
             </div>
           )}
@@ -251,7 +371,7 @@ function SkeletonStat({ isDark }) {
   )
 }
 
-function AgentCard({ agent, isDark, canCreateAgent, onUpdate }) {
+function AgentCard({ agent, isDark, canCreateAgent, onUpdate, isSelected, onToggleSelect }) {
   const navigate = useNavigate()
   const { showConfirm } = useConfirm()
   const { t } = useTranslation()
@@ -314,10 +434,24 @@ function AgentCard({ agent, isDark, canCreateAgent, onUpdate }) {
   return (
     <div 
       onClick={() => navigate(`/dashboard/agents/${agent.id}`)} 
-      className={`card p-5 cursor-pointer hover:border-gold-400/50 transition-all group relative`}
+      className={`card p-5 cursor-pointer transition-all group relative border-l-4 ${
+        isSelected 
+          ? 'border-l-blue-500 bg-blue-500/5 border-blue-500/30' 
+          : 'hover:border-gold-400/50'
+      }`}
     >
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4 min-w-0">
+          <div 
+            onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}
+            className={`w-6 h-6 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+              isSelected
+                ? 'bg-blue-500 border-blue-500 text-white'
+                : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+            }`}
+          >
+            {isSelected && <Check className="w-4 h-4" />}
+          </div>
           <div className={`w-12 h-12 rounded-full flex items-center justify-center ${agent.whatsapp_connected ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-400/10 text-orange-400'}`}>
             <Bot className="w-6 h-6" />
           </div>

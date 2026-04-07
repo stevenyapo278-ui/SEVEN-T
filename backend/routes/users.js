@@ -443,6 +443,26 @@ router.put('/me/team/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Bulk delete managers
+router.delete('/me/team/bulk/delete', authenticateToken, async (req, res) => {
+    try {
+        if (req.user.role === 'manager') return res.status(403).json({ error: 'Accès refusé' });
+        
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Liste d\'identifiants requise' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        const result = await db.run(`DELETE FROM users WHERE parent_user_id = ? AND id IN (${placeholders})`, req.user.id, ...ids);
+        
+        res.json({ message: `${ids.length} membre(s) supprimé(s)`, deleted: ids.length });
+    } catch (error) {
+        console.error('Bulk delete manager error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Delete a manager
 router.delete('/me/team/:id', authenticateToken, async (req, res) => {
     try {

@@ -229,6 +229,67 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// Bulk delete leads
+router.delete('/bulk/delete', authenticateToken, async (req, res) => {
+    try {
+        const { lead_ids } = req.body;
+        if (!Array.isArray(lead_ids) || lead_ids.length === 0) {
+            return res.status(400).json({ error: 'Liste d\'identifiants invalide' });
+        }
+
+        const placeholders = lead_ids.map(() => '?').join(',');
+        await db.run(
+            `DELETE FROM leads WHERE id IN (${placeholders}) AND user_id = ?`,
+            ...lead_ids,
+            req.user.ownerId
+        );
+
+        await activityLogger?.log({
+            userId: req.user.id,
+            action: 'bulk_delete_leads',
+            entityType: 'lead',
+            details: { count: lead_ids.length },
+            req
+        });
+
+        res.json({ message: `${lead_ids.length} leads supprimés` });
+    } catch (error) {
+        console.error('Bulk delete leads error:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression groupée' });
+    }
+});
+
+// Bulk update leads status
+router.put('/bulk/status', authenticateToken, async (req, res) => {
+    try {
+        const { lead_ids, status } = req.body;
+        if (!Array.isArray(lead_ids) || lead_ids.length === 0 || !status) {
+            return res.status(400).json({ error: 'Données invalides' });
+        }
+
+        const placeholders = lead_ids.map(() => '?').join(',');
+        await db.run(
+            `UPDATE leads SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${placeholders}) AND user_id = ?`,
+            status,
+            ...lead_ids,
+            req.user.ownerId
+        );
+
+        await activityLogger?.log({
+            userId: req.user.id,
+            action: 'bulk_update_leads_status',
+            entityType: 'lead',
+            details: { count: lead_ids.length, new_status: status },
+            req
+        });
+
+        res.json({ message: `Statut mis à jour pour ${lead_ids.length} leads` });
+    } catch (error) {
+        console.error('Bulk status update error:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour groupée' });
+    }
+});
+
 // Get lead stats
 router.get('/stats/overview', authenticateToken, async (req, res) => {
     try {

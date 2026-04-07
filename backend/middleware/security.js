@@ -213,6 +213,14 @@ export const deleteMessagesSchema = z.object({
     message: 'Indiquez message_ids (tableau) ou delete_all: true'
 });
 
+export const bulkDeleteConversationsSchema = z.object({
+    conversation_ids: z.array(z.string().min(1)).min(1, 'Liste de conversations requise')
+});
+
+export const bulkMarkReadSchema = z.object({
+    conversation_ids: z.array(z.string().min(1)).min(1, 'Liste de conversations requise')
+});
+
 // Tools schema
 export const createToolSchema = z.object({
     type: z.enum(['whatsapp', 'outlook', 'google_calendar']),
@@ -375,6 +383,8 @@ export default {
     bulkTakeoverSchema,
     toggleTakeoverSchema,
     deleteMessagesSchema,
+    bulkDeleteConversationsSchema,
+    bulkMarkReadSchema,
     createToolSchema,
     createPaymentLinkSchema,
     orderPaymentLinkSchema,

@@ -35,6 +35,64 @@ export default function Polls() {
   const [agents, setAgents] = useState([])
   const [leads, setLeads] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredPolls.length && filteredPolls.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredPolls.map(p => p.id)))
+    }
+  }
+
+  const handleDeleteSelected = async () => {
+    const count = selectedIds.size
+    if (count === 0) return
+    const ok = await showConfirm({
+      title: `Supprimer ${count} sondage(s) ?`,
+      message: `Cette action supprimera définitivement ${count} sondage(s) et toutes leurs données de vote.`,
+      variant: 'danger',
+      confirmLabel: 'Supprimer'
+    })
+    if (!ok) return
+    setBulkLoading(true)
+    try {
+      await api.delete('/polls/bulk/delete', { data: { ids: Array.from(selectedIds) } })
+      toast.success(`${count} sondage(s) supprimé(s)`)
+      setSelectedIds(new Set())
+      load()
+    } catch { toast.error('Erreur lors de la suppression') }
+    finally { setBulkLoading(false) }
+  }
+
+  const handleCloseSelected = async () => {
+    const count = selectedIds.size
+    if (count === 0) return
+    setBulkLoading(true)
+    try {
+      await api.post('/polls/bulk/close', { ids: Array.from(selectedIds) })
+      toast.success(`${count} sondage(s) fermé(s)`)
+      setSelectedIds(new Set())
+      load()
+    } catch { toast.error('Erreur') }
+    finally { setBulkLoading(false) }
+  }
+
+  const filteredPolls = polls.filter(p => 
+    p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.question.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -99,7 +157,27 @@ export default function Polls() {
               Créez des sondages natifs WhatsApp et analysez les votes en temps réel.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 mr-2 pr-2 border-r border-space-700/50">
+                <button
+                  onClick={handleCloseSelected}
+                  disabled={bulkLoading}
+                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-amber-400 hover:text-amber-300' : 'bg-white border-gray-200 text-amber-500'}`}
+                  title="Fermer la sélection"
+                >
+                  <Lock className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={bulkLoading}
+                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-red-400 hover:text-red-300' : 'bg-white border-gray-200 text-red-500'}`}
+                  title="Supprimer la sélection"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            )}
             <button onClick={load} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualiser</span>
@@ -130,17 +208,41 @@ export default function Polls() {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {[['', 'Tous'], ['draft', 'Brouillons'], ['active', 'Actifs'], ['closed', 'Fermés']].map(([val, l]) => (
-          <button key={val} onClick={() => setStatusFilter(val)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === val
-              ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-              : isDark ? 'bg-space-800 text-gray-400 hover:bg-space-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
-            }`}>
-            {l}
+      {/* Filters & Search */}
+      <div className="flex flex-col sm:flex-row gap-3 min-w-0">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 ${
+          isDark ? 'bg-space-800 border-space-700 focus-within:border-space-600' : 'bg-white border-gray-200'
+        }`}>
+          <button
+            onClick={toggleSelectAll}
+            className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+              selectedIds.size === filteredPolls.length && filteredPolls.length > 0
+                ? 'bg-violet-600 border-violet-600 text-white'
+                : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+            }`}
+            title="Tout sélectionner"
+          >
+            <Check className={`w-4 h-4 ${selectedIds.size === filteredPolls.length && filteredPolls.length > 0 ? 'opacity-100' : 'opacity-0'}`} />
           </button>
-        ))}
+          <Search className="w-4 h-4 text-gray-500" />
+          <input 
+            type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Rechercher un sondage..."
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
+          />
+        </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {[['', 'Tous'], ['draft', 'Brouillons'], ['active', 'Actifs'], ['closed', 'Fermés']].map(([val, l]) => (
+            <button key={val} onClick={() => setStatusFilter(val)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === val
+                ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+                : isDark ? 'bg-space-800 text-gray-400 hover:bg-space-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+              }`}>
+              {l}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* List */}
@@ -157,19 +259,32 @@ export default function Polls() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {polls.map(poll => {
+          {filteredPolls.map(poll => {
             const results = safeJson(poll.results, [])
             const topResult = [...results].sort((a, b) => (b.count || 0) - (a.count || 0))[0]
             const badge = STATUS_BADGE[poll.status] || STATUS_BADGE.draft
+            const isSelected = selectedIds.has(poll.id)
             return (
               <div key={poll.id}
-                className={`group relative p-5 rounded-3xl border transition-all duration-300 cursor-pointer hover:shadow-xl ${isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/70 hover:border-violet-500/30' : 'bg-white border-gray-100 hover:shadow-violet-100 hover:border-violet-200'}`}
+                className={`group relative p-5 rounded-3xl border transition-all duration-300 cursor-pointer hover:shadow-xl ${isSelected ? 'bg-violet-500/10 border-violet-500/50' : isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/70 hover:border-violet-500/30' : 'bg-white border-gray-100 hover:shadow-violet-100 hover:border-violet-200'}`}
                 onClick={() => setSelectedPoll(poll)}
               >
                 <div className="flex items-start justify-between mb-3">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badge.class}`}>
-                    {badge.label}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(poll.id); }}
+                      className={`w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                        isSelected
+                          ? 'bg-violet-600 border-violet-600 text-white'
+                          : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-4 h-4" />}
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badge.class}`}>
+                      {badge.label}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                     {poll.status === 'active' && (
                       <button onClick={() => handleClose(poll.id)} className="p-1.5 hover:bg-red-500/10 text-red-400 rounded-lg" title="Fermer">

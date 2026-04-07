@@ -7,6 +7,36 @@ import { whatsappManager } from '../services/whatsapp.js';
 const router = Router();
 router.use(authenticateToken);
 
+// Bulk delete polls
+router.delete('/bulk/delete', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Liste d\'identifiants requise' });
+        }
+        await db.run(`DELETE FROM polls WHERE user_id = ? AND id IN (${ids.map(() => '?').join(',')})`, req.user.id, ...ids);
+        res.json({ message: `${ids.length} sondage(s) supprimé(s)` });
+    } catch (e) {
+        console.error('Bulk delete polls error:', e);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Bulk close polls
+router.post('/bulk/close', async (req, res) => {
+    try {
+        const { ids } = req.body;
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ error: 'Liste d\'identifiants requise' });
+        }
+        await db.run(`UPDATE polls SET status = 'closed', closed_at = CURRENT_TIMESTAMP WHERE user_id = ? AND id IN (${ids.map(() => '?').join(',')})`, req.user.id, ...ids);
+        res.json({ message: `${ids.length} sondage(s) fermé(s)` });
+    } catch (e) {
+        console.error('Bulk close polls error:', e);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // List all polls for user
 router.get('/', async (req, res) => {
     try {

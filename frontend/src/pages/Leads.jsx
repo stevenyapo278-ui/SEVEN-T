@@ -136,6 +136,71 @@ export default function Leads() {
   const [editingLead, setEditingLead] = useState(null)
   const [showSuggested, setShowSuggested] = useState(true)
   const [selectedLeadView, setSelectedLeadView] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+
+  const toggleSelect = useCallback((id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === filteredLeads.length && filteredLeads.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredLeads.map(l => l.id)))
+    }
+  }, [selectedIds.size, filteredLeads])
+
+  const handleBulkDelete = async () => {
+    const count = selectedIds.size
+    if (count === 0) return
+    const ok = await showConfirm({
+      title: `Supprimer ${count} lead(s) ?`,
+      message: `Cette action supprimera définitivement ${count} lead(s).`,
+      variant: 'danger',
+      confirmLabel: 'Tout supprimer'
+    })
+    if (!ok) return
+    setBulkLoading(true)
+    try {
+      await api.delete('/leads/bulk/delete', { data: { lead_ids: Array.from(selectedIds) } })
+      toast.success(`${count} lead(s) supprimé(s)`)
+      setSelectedIds(new Set())
+      loadLeads()
+    } catch (e) {
+      toast.error('Erreur lors de la suppression')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleBulkStatusChange = async (newStatus) => {
+    const count = selectedIds.size
+    if (count === 0) return
+    const statusLabel = LEAD_STATUSES.find(s => s.id === newStatus)?.label || newStatus
+    const ok = await showConfirm({
+      title: `Changer le statut de ${count} lead(s) ?`,
+      message: `Passer les ${count} leads sélectionnés en « ${statusLabel} » ?`,
+      confirmLabel: 'Confirmer'
+    })
+    if (!ok) return
+    setBulkLoading(true)
+    try {
+      await api.put('/leads/bulk/status', { lead_ids: Array.from(selectedIds), status: newStatus })
+      toast.success('Statuts mis à jour')
+      setSelectedIds(new Set())
+      loadLeads()
+    } catch (e) {
+      toast.error('Erreur lors de la mise à jour')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
 
   // Open create modal from URL param
   useEffect(() => {
@@ -402,10 +467,20 @@ export default function Leads() {
         <div className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 ${
           isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
         }`}>
+          <div 
+            onClick={(e) => { e.stopPropagation(); toggleSelectAll(); }}
+            className={`w-5 h-5 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+              selectedIds.size === filteredLeads.length && filteredLeads.length > 0
+                ? 'bg-blue-500 border-blue-500 text-white'
+                : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+            }`}
+          >
+            {selectedIds.size === filteredLeads.length && filteredLeads.length > 0 && <Check className="w-3.5 h-3.5" />}
+          </div>
           <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Rechercher un lead (nom, téléphone, email)..."
+            placeholder="Rechercher un lead..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
@@ -595,16 +670,92 @@ export default function Leads() {
         </div>
       ) : !loadError ? (
         <div className="grid gap-4">
+          {/* Bulk Action Bar */}
+          {selectedIds.size > 0 && (
+            <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-2 rounded-2xl shadow-2xl animate-slideUp border ${
+              isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+            }`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                  {selectedIds.size}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="font-bold text-sm">Leads sélectionnés</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative group/status flex-shrink-0">
+                  <button className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm ${
+                    isDark ? 'bg-space-700 text-gray-300 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}>
+                    <Layers className="w-4 h-4" />
+                    <span className="hidden xs:inline">Changer statut</span>
+                    <ChevronDown className="w-3 h-3 opacity-50" />
+                  </button>
+                  <div className={`absolute right-0 mt-2 w-48 py-2 rounded-xl border shadow-xl opacity-0 translate-y-2 pointer-events-none group-hover/status:opacity-100 group-hover/status:translate-y-0 group-hover/status:pointer-events-auto transition-all z-50 ${
+                    isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-100'
+                  }`}>
+                    {LEAD_STATUSES.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => handleBulkStatusChange(s.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-left transition-colors ${
+                          isDark ? 'hover:bg-space-800 text-gray-400 hover:text-white' : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${
+                          s.color === 'blue' ? 'bg-blue-400' :
+                          s.color === 'amber' ? 'bg-amber-400' :
+                          s.color === 'orange' ? 'bg-orange-400' :
+                          s.color === 'green' ? 'bg-emerald-400' : 'bg-red-400'
+                        }`} />
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden xs:inline">Supprimer</span>
+                </button>
+              </div>
+            </div>
+          )}
           {sortedLeads.map((lead, index) => {
             const statusInfo = getStatusInfo(lead.status)
             return (
               <div 
                 key={lead.id}
-                onClick={() => setSelectedLeadView(lead)}
-                className="card p-3 sm:p-5 hover:border-blue-500/50 hover:bg-space-800/80 transition-all cursor-pointer group animate-fadeIn"
+                onClick={(e) => {
+                  if (e.target.closest('.selection-checkbox')) return
+                  setSelectedLeadView(lead)
+                }}
+                className={`card p-3 sm:p-5 transition-all cursor-pointer group animate-fadeIn border-l-4 ${
+                  selectedIds.has(lead.id) 
+                    ? 'border-l-blue-500 bg-blue-500/5 border-blue-500/30' 
+                    : 'hover:border-blue-500/50 hover:bg-space-800/80'
+                }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-center gap-3 sm:gap-4">
+                  {/* Selection Checkbox */}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
+                    className="selection-checkbox flex-shrink-0"
+                  >
+                    <div className={`w-6 h-6 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                      selectedIds.has(lead.id)
+                        ? 'bg-blue-500 border-blue-500 text-white'
+                        : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                    }`}>
+                      {selectedIds.has(lead.id) && <Check className="w-4 h-4" />}
+                    </div>
+                  </div>
+
                   <div className="relative flex-shrink-0">
                     <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
                       <span className="text-space-950 font-bold text-sm sm:text-lg">
