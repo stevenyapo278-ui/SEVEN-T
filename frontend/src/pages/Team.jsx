@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 import api from '../services/api'
 import { 
   Users, 
@@ -25,6 +26,7 @@ import toast from 'react-hot-toast'
 export default function Team() {
   const { user } = useAuth()
   const { isDark } = useTheme()
+  const { showConfirm } = useConfirm()
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -89,7 +91,13 @@ export default function Team() {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce membre ?')) return
+    const ok = await showConfirm({
+      title: 'Supprimer ce membre ?',
+      message: 'Êtes-vous sûr de vouloir supprimer ce membre de votre équipe ? L\'action est irréversible.',
+      variant: 'danger',
+      confirmLabel: 'Supprimer'
+    })
+    if (!ok) return
     try {
       await api.delete(`/users/me/team/${id}`)
       toast.success('Membre supprimé')

@@ -652,9 +652,13 @@ export default function Admin() {
 
   const handleRollback = async (logId) => {
     try {
-      if (!window.confirm('Êtes-vous sûr de vouloir annuler cette action ? Cela restaurera les valeurs précédentes.')) {
-        return;
-      }
+      const ok = await showConfirm({
+        title: 'Annuler cette action ?',
+        message: 'Êtes-vous sûr de vouloir annuler cette action ? Cela restaurera les valeurs précédentes.',
+        variant: 'warning',
+        confirmLabel: 'Annuler l\'action'
+      })
+      if (!ok) return;
       
       const response = await api.post(`/admin/audit-logs/${logId}/rollback`)
       toast.success(response.data.message || 'Action annulée')

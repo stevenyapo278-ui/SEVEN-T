@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { registerLocale } from 'react-datepicker'
@@ -14,6 +15,7 @@ registerLocale('fr', fr)
 export default function Notifications() {
   const { t, i18n } = useTranslation()
   const { isDark } = useTheme()
+  const { showConfirm } = useConfirm()
   
   const FILTERS = [
     { id: 'all', label: t('common.all') },
@@ -148,7 +150,13 @@ export default function Notifications() {
     const readIds = notifications.filter(n => n.is_read).map(n => n.id)
     if (readIds.length === 0) return
     
-    if (!window.confirm(t('notifications.confirmDeleteRead', 'Supprimer toutes les notifications lues ?'))) return
+    const ok = await showConfirm({
+      title: t('notifications.confirmDeleteRead', 'Supprimer toutes les notifications lues ?'),
+      message: 'Cette action est irréversible.',
+      variant: 'danger',
+      confirmLabel: 'Supprimer'
+    })
+    if (!ok) return
 
     try {
       setActionLoading(true)

@@ -462,7 +462,7 @@ export default function Conversations() {
       )}
       
       <ImportedContactsPicker
-        isOpen={contactPickerOpen}
+        open={contactPickerOpen}
         onClose={() => setContactPickerOpen(false)}
         onSelect={handleInitiateDiscussion}
         mode="single"

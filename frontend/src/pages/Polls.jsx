@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 import api from '../services/api'
 import toast from 'react-hot-toast'
 import {
@@ -25,6 +26,7 @@ const STATUS_BADGE = {
 export default function Polls() {
   const { isDark } = useTheme()
   const { user } = useAuth()
+  const { showConfirm } = useConfirm()
   const [polls, setPolls] = useState([])
   const [stats, setStats] = useState({ total: 0, active: 0, closed: 0, totalVotes: 0 })
   const [loading, setLoading] = useState(true)
@@ -57,7 +59,13 @@ export default function Polls() {
   useEffect(() => { load() }, [load])
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer ce sondage ?')) return
+    const ok = await showConfirm({
+      title: 'Supprimer ce sondage ?',
+      message: 'Cette action est irréversible et supprimera toutes les données du sondage.',
+      variant: 'danger',
+      confirmLabel: 'Supprimer'
+    })
+    if (!ok) return
     try {
       await api.delete(`/polls/${id}`)
       toast.success('Sondage supprimé')
@@ -312,6 +320,7 @@ function CreatePollModal({ agents, onClose, onSuccess, isDark }) {
 
 /* ── Poll Detail Modal ─────────────────────────────────────────── */
 function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark }) {
+  const { showConfirm } = useConfirm()
   const [poll, setPoll] = useState(initialPoll)
   const [sending, setSending] = useState(false)
   const [jid, setJid] = useState('')
@@ -534,7 +543,13 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
             </button>
           )}
           <button onClick={async () => {
-            if (window.confirm('Confirmer la suppression ?')) {
+            const ok = await showConfirm({
+              title: 'Confirmer la suppression ?',
+              message: 'Cette action est irréversible.',
+              variant: 'danger',
+              confirmLabel: 'Supprimer'
+            })
+            if (ok) {
               try {
                 await api.delete(`/polls/${poll.id}`)
                 toast.success('Sondage supprimé')
