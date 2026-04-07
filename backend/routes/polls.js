@@ -108,11 +108,15 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// Send poll to a specific JID
+// Send poll to one or more JIDs
 router.post('/:id/send', async (req, res) => {
     try {
-        const { jid } = req.body; // phone number like 2250000000000
-        if (!jid) return res.status(400).json({ error: 'JID/numéro requis' });
+        const { jids, jid } = req.body; 
+        const targetJids = jids || (jid ? [jid] : []);
+        
+        if (targetJids.length === 0) {
+            return res.status(400).json({ error: 'JIDs/numéros requis' });
+        }
 
         const poll = await db.get('SELECT * FROM polls WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!poll) return res.status(404).json({ error: 'Sondage non trouvé' });
@@ -125,15 +129,37 @@ router.post('/:id/send', async (req, res) => {
         const tool = await db.get('SELECT t.* FROM tools t JOIN agents a ON a.tool_id = t.id WHERE a.id = ? AND t.status = ?', poll.agent_id, 'connected');
         if (!tool) return res.status(400).json({ error: 'Aucun agent WhatsApp connecté pour ce sondage' });
 
-        const result = await whatsappManager.sendPoll(tool.id, jid, poll.question, options, !!poll.allow_multiple);
-        if (!result?.key?.id) return res.status(500).json({ error: 'Échec envoi du sondage' });
+        let lastMessageId = null;
+        let lastMessageKey = null;
+        let sentCount = 0;
+        let errors = [];
+
+        for (const targetJid of targetJids) {
+            try {
+                const result = await whatsappManager.sendPoll(tool.id, targetJid, poll.question, options, !!poll.allow_multiple);
+                if (result?.key?.id) {
+                    lastMessageId = result.key.id;
+                    lastMessageKey = result.key;
+                    sentCount++;
+                }
+            } catch (err) {
+                errors.push({ jid: targetJid, error: err.message });
+            }
+        }
+
+        if (sentCount === 0) {
+            return res.status(500).json({ error: 'Échec envoi du sondage', details: errors });
+        }
 
         await db.run(`
-            UPDATE polls SET status = 'active', wa_message_id = ?, wa_message_key = ?, sent_at = CURRENT_TIMESTAMP
+            UPDATE polls SET status = 'active', 
+            wa_message_id = COALESCE(wa_message_id, ?), 
+            wa_message_key = COALESCE(wa_message_key, ?), 
+            sent_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, result.key.id, JSON.stringify(result.key), req.params.id);
+        `, lastMessageId, lastMessageKey ? JSON.stringify(lastMessageKey) : null, req.params.id);
 
-        res.json({ message: 'Sondage envoyé', messageId: result.key.id });
+        res.json({ message: `${sentCount} sondage(s) envoyé(s)`, sentCount, errors: errors.length > 0 ? errors : undefined });
     } catch (e) {
         console.error('Send poll error:', e);
         res.status(500).json({ error: e.message || 'Erreur serveur' });

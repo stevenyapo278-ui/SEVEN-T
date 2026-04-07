@@ -6,8 +6,9 @@ import api from '../services/api'
 import toast from 'react-hot-toast'
 import {
   BarChart2, Plus, Send, X, Trash2, CheckCircle2, Clock, Lock,
-  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon
+  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon, UserPlus, UserCheck, History, Search, Target
 } from 'lucide-react'
+import ImportedContactsPicker from '../components/ImportedContactsPicker'
 
 function safeJson(val, fallback) {
   if (!val) return fallback
@@ -30,19 +31,22 @@ export default function Polls() {
   const [showCreate, setShowCreate] = useState(false)
   const [selectedPoll, setSelectedPoll] = useState(null)
   const [agents, setAgents] = useState([])
+  const [leads, setLeads] = useState([])
   const [statusFilter, setStatusFilter] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [pollsRes, statsRes, agentsRes] = await Promise.all([
+      const [pollsRes, statsRes, agentsRes, leadsRes] = await Promise.all([
         api.get('/polls' + (statusFilter ? `?status=${statusFilter}` : '')),
         api.get('/polls/stats/overview'),
-        api.get('/agents')
+        api.get('/agents'),
+        api.get('/leads').catch(() => ({ data: { leads: [] } }))
       ])
       setPolls(pollsRes.data.polls || [])
       setStats(statsRes.data.stats || {})
       setAgents(agentsRes.data.agents || [])
+      setLeads(leadsRes.data.leads || [])
     } catch {
       toast.error('Erreur de chargement')
     } finally {
@@ -213,7 +217,7 @@ export default function Polls() {
 
       {/* Detail Modal */}
       {selectedPoll && createPortal(
-        <PollDetailModal poll={selectedPoll} onClose={() => setSelectedPoll(null)} onRefresh={load} isDark={isDark} />,
+        <PollDetailModal poll={selectedPoll} leads={leads} onClose={() => setSelectedPoll(null)} onRefresh={load} isDark={isDark} />,
         document.body
       )}
     </div>
@@ -309,11 +313,14 @@ function CreatePollModal({ agents, onClose, onSuccess, isDark }) {
 }
 
 /* ── Poll Detail Modal ─────────────────────────────────────────── */
-function PollDetailModal({ poll: initialPoll, onClose, onRefresh, isDark }) {
+function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark }) {
   const [poll, setPoll] = useState(initialPoll)
   const [sending, setSending] = useState(false)
   const [jid, setJid] = useState('')
-  const [agents, setAgents] = useState([])
+  const [selectedJids, setSelectedJids] = useState(new Set())
+  const [showLeadSelect, setShowLeadSelect] = useState(false)
+  const [contactPickerOpen, setContactPickerOpen] = useState(false)
+  const [leadSearch, setLeadSearch] = useState('')
 
   const results = safeJson(poll.results, [])
   const options = safeJson(poll.options, [])
@@ -330,19 +337,32 @@ function PollDetailModal({ poll: initialPoll, onClose, onRefresh, isDark }) {
     return () => clearInterval(iv)
   }, [poll.id])
 
-  const handleSend = async (e) => {
-    e.preventDefault()
-    if (!jid.trim()) return toast.error('Entrez un numéro')
+  const handleSend = async (targetJids) => {
+    if (!targetJids || (Array.isArray(targetJids) && targetJids.length === 0)) {
+       if (!jid.trim()) return toast.error('Entrez un numéro ou sélectionnez des contacts')
+       targetJids = [jid.trim()]
+    }
+    
     setSending(true)
     try {
-      await api.post(`/polls/${poll.id}/send`, { jid: jid.trim() })
+      await api.post(`/polls/${poll.id}/send`, { jids: Array.isArray(targetJids) ? targetJids : [targetJids] })
       toast.success('Sondage envoyé !')
       await refresh()
       onRefresh()
       setJid('')
+      setSelectedJids(new Set())
+      setShowLeadSelect(false)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur envoi')
     } finally { setSending(false) }
+  }
+
+  const toggleLead = (leadPhone) => {
+    if (!leadPhone) return
+    const next = new Set(selectedJids)
+    if (next.has(leadPhone)) next.delete(leadPhone)
+    else next.add(leadPhone)
+    setSelectedJids(next)
   }
 
   const handleClose = async () => {
@@ -413,24 +433,99 @@ function PollDetailModal({ poll: initialPoll, onClose, onRefresh, isDark }) {
 
           {/* Send form */}
           {poll.status !== 'closed' && (
-            <div className={`p-4 rounded-2xl border ${isDark ? 'border-space-700 bg-space-800/40' : 'border-gray-100 bg-gray-50'}`}>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <div className={`p-4 rounded-2xl border flex flex-col gap-3 ${isDark ? 'border-space-700 bg-space-800/40' : 'border-gray-100 bg-gray-50'}`}>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                 <Send className="w-3 h-3" /> Envoyer le sondage
               </h4>
-              <form onSubmit={handleSend} className="flex gap-2">
+              
+              <div className="flex gap-2">
                 <input
                   value={jid}
                   onChange={e => setJid(e.target.value)}
-                  placeholder="Ex: 2250700000000"
+                  placeholder="Numéro (ex: 225...)"
                   className={`flex-1 px-3 py-2.5 rounded-xl border bg-transparent outline-none focus:ring-2 focus:ring-violet-500 text-sm ${isDark ? 'border-space-600 text-white' : 'border-gray-200'}`}
                 />
-                <button type="submit" disabled={sending} className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold text-sm flex items-center gap-2 disabled:opacity-50 transition-all">
-                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                <button 
+                  onClick={() => handleSend([jid.trim()])} 
+                  disabled={sending || !jid.trim()} 
+                  className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold text-sm flex items-center gap-2 disabled:opacity-50 transition-all"
+                >
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 </button>
-              </form>
-              <p className="text-[10px] text-gray-500 mt-1.5">Format international sans '+' ni espaces</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button 
+                  onClick={() => setContactPickerOpen(true)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[11px] font-bold uppercase tracking-wider transition-all ${isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                >
+                  <Users className="w-3.5 h-3.5" /> Importés
+                </button>
+                <button 
+                  onClick={() => setShowLeadSelect(!showLeadSelect)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[11px] font-bold uppercase tracking-wider transition-all ${showLeadSelect ? 'bg-violet-600 border-violet-500 text-white' : isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:bg-space-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> Mes Leads
+                </button>
+              </div>
+
+              {showLeadSelect && (
+                <div className="animate-slideDown space-y-3 pt-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                    <input 
+                      type="text" 
+                      placeholder="Chercher un lead..."
+                      value={leadSearch}
+                      onChange={e => setLeadSearch(e.target.value)}
+                      className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs border bg-transparent focus:ring-1 focus:ring-violet-500 outline-none ${isDark ? 'border-space-700 text-white' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  <div className="max-h-[180px] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {leads
+                      .filter(l => l.phone && (l.name?.toLowerCase().includes(leadSearch.toLowerCase()) || l.phone.includes(leadSearch)))
+                      .map(l => (
+                      <label key={l.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedJids.has(l.phone) ? 'bg-violet-500/10 border border-violet-500/20' : 'hover:bg-white/5'}`}>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedJids.has(l.phone)}
+                          onChange={() => toggleLead(l.phone)}
+                          className="w-3.5 h-3.5 rounded border-gray-700 bg-black/20 text-violet-500"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-bold text-gray-200 truncate">{l.name || 'Inconnu'}</p>
+                          <p className="text-[9px] font-mono text-gray-500">{l.phone}</p>
+                        </div>
+                      </label>
+                    ))}
+                    {leads.filter(l => l.phone).length === 0 && <p className="text-[10px] text-gray-500 text-center py-2">Aucun lead trouvé</p>}
+                  </div>
+                  {selectedJids.size > 0 && (
+                    <button 
+                      onClick={() => handleSend(Array.from(selectedJids))}
+                      disabled={sending}
+                      className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Envoyer à {selectedJids.size} contact(s)
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
+          <ImportedContactsPicker 
+            open={contactPickerOpen}
+            onClose={() => setContactPickerOpen(false)}
+            agentId={poll.agent_id}
+            title="Contacts Importés"
+            mode="multi"
+            onSelect={(contacts) => {
+              setContactPickerOpen(false)
+              const jids = contacts.map(c => c.jid || c.number).filter(Boolean)
+              if (jids.length > 0) handleSend(jids)
+            }}
+          />
         </div>
 
         {/* Footer actions */}
