@@ -3,6 +3,7 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { whatsappManager } from '../services/whatsapp.js';
 import { checkToolLimit } from './tools.js';
+import { requireModule } from '../middleware/requireModule.js';
 import multer from 'multer';
 import fs from 'fs';
 import { join, dirname } from 'path';
@@ -638,7 +639,7 @@ router.get('/status/media/:filename', (req, res) => {
 });
 
 // Get scheduled/sent statuses history
-router.get('/statuses/:agentId', authenticateToken, async (req, res) => {
+router.get('/statuses/:agentId', authenticateToken, requireModule('whatsapp_status'), async (req, res) => {
     try {
         const statuses = await db.all(`
             SELECT * FROM whatsapp_statuses 
@@ -654,7 +655,7 @@ router.get('/statuses/:agentId', authenticateToken, async (req, res) => {
 });
 
 // Delete or revoke a status
-router.delete('/statuses/:id', authenticateToken, async (req, res) => {
+router.delete('/statuses/:id', authenticateToken, requireModule('whatsapp_status'), async (req, res) => {
     try {
         const row = await db.get(`
             SELECT ws.*, a.tool_id 
@@ -688,7 +689,7 @@ router.delete('/statuses/:id', authenticateToken, async (req, res) => {
 });
 
 // Send or schedule a WhatsApp Status (Story) - broadcasts to status@broadcast
-router.post('/status/:agentId', authenticateToken, async (req, res) => {
+router.post('/status/:agentId', authenticateToken, requireModule('whatsapp_status'), async (req, res) => {
     try {
         const { type, text, backgroundColor, font, mediaUrl, caption, mimeType, scheduled_at, recurrence_interval } = req.body;
 

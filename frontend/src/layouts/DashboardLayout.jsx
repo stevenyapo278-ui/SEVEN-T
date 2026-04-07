@@ -1158,12 +1158,15 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/products') return catalogImportModuleEnabled;
         if (item.href === '/dashboard/services') return catalogImportModuleEnabled;
 
-        if (item.href === '/dashboard/campaigns') return campaignsModuleEnabled;
+        if (item.href === '/dashboard/campaigns') {
+           // On affiche si le module est activé OU si on est sur la page (pour éviter que le lien disparaisse quand on y est)
+           return campaignsModuleEnabled || window.location.pathname === '/dashboard/campaigns';
+        }
         if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled
         return true;
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, isInfluencerOnly, user?.name])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, campaignsModuleEnabled, isInfluencerOnly, user?.name])
 
 
   const bottomNav = useMemo(() => {
