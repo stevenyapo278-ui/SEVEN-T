@@ -39,7 +39,8 @@ export const defaultPlans = [
             catalog_import: false,
             human_handoff_alerts: false,
             analytics: false,
-            leads_management: false
+            leads_management: false,
+            polls_module: false
         })
     },
     {
@@ -76,7 +77,8 @@ export const defaultPlans = [
             catalog_import: false,
             human_handoff_alerts: false,
             analytics: false,
-            leads_management: true
+            leads_management: true,
+            polls_module: false
         })
     },
     {
@@ -114,7 +116,8 @@ export const defaultPlans = [
             catalog_import: true,
             human_handoff_alerts: true,
             analytics: true,
-            leads_management: true
+            leads_management: true,
+            polls_module: true
         })
     },
     {
@@ -152,7 +155,8 @@ export const defaultPlans = [
             catalog_import: true,
             human_handoff_alerts: true,
             analytics: true,
-            leads_management: true
+            leads_management: true,
+            polls_module: true
         })
     },
     {
@@ -190,7 +194,8 @@ export const defaultPlans = [
             catalog_import: true,
             human_handoff_alerts: true,
             analytics: true,
-            leads_management: true
+            leads_management: true,
+            polls: true
         })
     }
 ];

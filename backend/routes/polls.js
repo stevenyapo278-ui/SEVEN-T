@@ -12,13 +12,9 @@ router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
         let query = `
-            SELECT p.*, a.name as agent_name,
-                   t.tool_id
+            SELECT p.*, a.name as agent_name
             FROM polls p
             JOIN agents a ON p.agent_id = a.id
-            LEFT JOIN tools t ON t.user_id = p.user_id AND t.id = (
-                SELECT id FROM tools WHERE user_id = p.user_id LIMIT 1
-            )
             WHERE p.user_id = ?
         `;
         const params = [req.user.id];

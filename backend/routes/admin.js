@@ -152,6 +152,7 @@ router.get('/users', authenticateAdmin, requirePermission('users.read'), async (
                    p.human_handoff_alerts_enabled as p_human_handoff_alerts_enabled,
                    p.flows_module_enabled as p_flows_module_enabled,
                    p.campaigns_module_enabled as p_campaigns_module_enabled,
+                   p.polls_module_enabled as p_polls_module_enabled,
                    (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
                    (SELECT COUNT(*) FROM conversations c 
                     JOIN agents a ON c.agent_id = a.id 
@@ -296,6 +297,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
+            polls_module_enabled,
             subscription_end_date,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             roles
@@ -447,6 +449,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('campaigns_module_enabled = ?');
             params.push(campaigns_module_enabled ? 1 : 0);
         }
+        if (polls_module_enabled !== undefined) {
+            setClauses.push('polls_module_enabled = ?');
+            params.push(polls_module_enabled ? 1 : 0);
+        }
         if (can_manage_users !== undefined) {
             setClauses.push('can_manage_users = ?');
             params.push(can_manage_users ? 1 : 0);
@@ -549,7 +555,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled', 'reports_module_enabled',
             'availability_hours_enabled', 'next_best_action_enabled', 'conversion_score_enabled', 'daily_briefing_enabled',
             'sentiment_routing_enabled', 'catalog_import_enabled', 'human_handoff_alerts_enabled',
-            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled', 'campaigns_module_enabled'
+            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled', 'campaigns_module_enabled', 'polls_module_enabled'
         ];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
@@ -849,6 +855,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
+            polls_module_enabled,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             parent_user_id,
             roles
@@ -896,6 +903,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
                 availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
                 sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
                 flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
+                polls_module_enabled,
                 can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
                 parent_user_id, role
             )
@@ -906,6 +914,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
            availability_hours_enabled ? 1 : 0, next_best_action_enabled ? 1 : 0, conversion_score_enabled ? 1 : 0, daily_briefing_enabled ? 1 : 0,
            sentiment_routing_enabled ? 1 : 0, catalog_import_enabled ? 1 : 0, human_handoff_alerts_enabled ? 1 : 0,
            flows_module_enabled ? 1 : 0, whatsapp_status_enabled ? 1 : 0, leads_management_enabled !== undefined ? (leads_management_enabled ? 1 : 0) : 1, campaigns_module_enabled !== undefined ? (campaigns_module_enabled ? 1 : 0) : 1,
+           polls_module_enabled !== undefined ? (polls_module_enabled ? 1 : 0) : 0,
            can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0, can_manage_tickets ? 1 : 0,
            parent_user_id || null, parent_user_id ? 'manager' : 'user'
         );

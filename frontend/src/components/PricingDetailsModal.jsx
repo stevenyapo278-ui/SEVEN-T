@@ -19,6 +19,7 @@ export const FEATURE_DESCRIPTIONS = {
   leads_management: "Gestion des prospects, analyse d'intention et conversion par l'IA.",
   campaigns: "Envoi de messages en masse et planification récurrente.",
   voice_responses: "L'IA peut répondre par message vocal au lieu de texte.",
+  polls_module: "Créez des sondages interactifs et collectez les votes en temps réel.",
   knowledgeBase: "Le cerveau de votre agent : transmettez des documents PDF, règles et informations pour que l'IA connaisse tout de votre business sur le bout des doigts.",
   prioritySupport: "Assistance technique dédiée et prioritaire avec un accès direct à notre équipe pour résoudre d'éventuels soucis dans l'heure."
 }
@@ -64,6 +65,7 @@ export default function PricingDetailsModal({ plan, isOpen, onClose }) {
     if (feats?.leads_management) items.push({ title: 'Gestion des Leads', description: FEATURE_DESCRIPTIONS.leads_management })
     if (feats?.campaigns) items.push({ title: 'Campagnes WhatsApp', description: FEATURE_DESCRIPTIONS.campaigns })
     if (feats?.voice_responses) items.push({ title: 'Réponses vocales (TTS)', description: FEATURE_DESCRIPTIONS.voice_responses })
+    if (feats?.polls_module) items.push({ title: 'Sondages WhatsApp', description: FEATURE_DESCRIPTIONS.polls_module })
     
     if (items.length <= 2) {
        if (feats?.knowledgeBase) items.push({ title: 'Base de connaissances IA', description: FEATURE_DESCRIPTIONS.knowledgeBase })

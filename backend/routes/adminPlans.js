@@ -31,7 +31,8 @@ const ALL_FEATURE_KEYS = {
     sentiment_routing: false,
     catalog_import: false,
     human_handoff_alerts: false,
-    analytics: false
+    analytics: false,
+    polls_module: false
 };
 
 /** Merge DB limits/features with default plan so keys like modules 3–7 are always present */
