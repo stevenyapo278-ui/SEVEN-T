@@ -177,6 +177,12 @@ router.post('/:id/send', async (req, res) => {
                     }
                     sentCount++;
                     console.log(`[Polls] Success for ${targetJid}: ${result.key.id}`);
+                    
+                    // Track this recipient's message for vote tracking
+                    await db.run(`
+                        INSERT INTO poll_recipients (poll_id, contact_jid, wa_message_id, wa_message_key)
+                        VALUES (?, ?, ?, ?)
+                    `, req.params.id, targetJid, result.key.id, JSON.stringify(result.key));
                 } else {
                     console.warn(`[Polls] Send skipped or no message ID for ${targetJid}`);
                 }

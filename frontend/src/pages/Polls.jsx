@@ -653,48 +653,50 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                         </div>
                       </label>
                     ))}
-                    {leads.filter(l => l.phone).length === 0 && <p className="text-[10px] text-gray-500 text-center py-2">Aucun lead trouvé</p>}
-                  </div>
-                    {selectedContacts.size > 0 && (
-                      <div className={`p-4 rounded-2xl border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} mb-4 animate-fadeIn`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">
-                              {selectedContacts.size}
-                            </div>
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Destinataires</span>
-                          </div>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setSelectedContacts(new Map()); }} 
-                            className="text-[10px] font-black text-gray-500 hover:text-red-400 uppercase tracking-widest transition-colors"
-                          >
-                            Vider
-                          </button>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto pr-1 custom-scrollbar">
-                          {Array.from(selectedContacts.values()).map(c => (
-                            <div key={normalizePhone(c.phone)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-space-800 border border-white/5 text-[10px] text-gray-300">
-                              <span className="font-bold truncate max-w-[100px]">{c.name}</span>
-                              <button onClick={(e) => { e.stopPropagation(); toggleContact(c); }} className="text-gray-500 hover:text-white transition-colors">
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  {selectedContacts.size > 0 && (
-                    <button 
-                      onClick={() => handleSend(Array.from(selectedContacts.values()).map(c => c.jid || c.phone))}
-                      disabled={sending}
-                      className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      Envoyer à {selectedContacts.size} contact(s)
-                    </button>
-                  )}
+                  {leads.filter(l => l.phone).length === 0 && <p className="text-[10px] text-gray-500 text-center py-2">Aucun lead trouvé</p>}
                 </div>
+              </div>
+            )}
+
+            {selectedContacts.size > 0 && (
+              <div className={`p-4 rounded-2xl border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} mb-4 animate-fadeIn`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">
+                      {selectedContacts.size}
+                    </div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Destinataires</span>
+                  </div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setSelectedContacts(new Map()); }} 
+                    className="text-[10px] font-black text-gray-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                  >
+                    Vider
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto pr-1 custom-scrollbar">
+                  {Array.from(selectedContacts.values()).map(c => (
+                    <div key={normalizePhone(c.phone)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-space-800 border border-white/5 text-[10px] text-gray-300">
+                      <span className="font-bold truncate max-w-[100px]">{c.name}</span>
+                      <button onClick={(e) => { e.stopPropagation(); toggleContact(c); }} className="text-gray-500 hover:text-white transition-colors">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedContacts.size > 0 && (
+              <button 
+                onClick={() => handleSend(Array.from(selectedContacts.values()).map(c => c.jid || c.phone))}
+                disabled={sending}
+                className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Envoyer à {selectedContacts.size} contact(s)
+              </button>
+            )}
               )}
             </div>
           )}
@@ -709,12 +711,15 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
               setSelectedContacts(prev => {
                 const next = new Map(prev)
                 contacts.forEach(c => {
-                  const phone = c.contact_number || c.number
-                  if (phone) next.set(phone, { 
-                    name: c.contact_name || c.name || 'Inconnu', 
-                    phone, 
-                    jid: c.jid || (phone + '@s.whatsapp.net') 
-                  })
+                  const rawPhone = c.contact_number || c.number
+                  if (rawPhone) {
+                    const phone = normalizePhone(rawPhone)
+                    next.set(phone, { 
+                      name: c.contact_name || c.name || 'Inconnu', 
+                      phone: rawPhone, 
+                      jid: c.jid || (phone + '@s.whatsapp.net') 
+                    })
+                  }
                 })
                 return next
               })

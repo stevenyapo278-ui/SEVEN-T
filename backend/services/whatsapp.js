@@ -671,8 +671,20 @@ class WhatsAppManager {
                             if (raw) pollCreationMessage = raw.message;
                         }
 
-                        // Get the poll from the database to see if we sent it
-                        const pollRow = await db.get('SELECT id, wa_message_full FROM polls WHERE wa_message_id = ? OR wa_message_key LIKE ?', key.id, `%${key.id}%`);
+                        // Get the poll from the database by checking all tracked message IDs
+                        let pollRow = await db.get(`
+                            SELECT p.id, p.wa_message_full 
+                            FROM polls p
+                            LEFT JOIN poll_recipients pr ON p.id = pr.poll_id
+                            WHERE p.wa_message_id = ? 
+                               OR pr.wa_message_id = ?
+                        `, key.id, key.id);
+
+                        if (!pollRow) {
+                            // Last resort: search by key JSON (fuzzy match)
+                            pollRow = await db.get('SELECT id, wa_message_full FROM polls WHERE wa_message_key LIKE ?', `%${key.id}%`);
+                        }
+
                         if (!pollRow) continue;
 
                         // Fall back to the saved message in db if we couldn't find it in the store
@@ -3668,11 +3680,15 @@ class WhatsAppManager {
             recipientJid = recipientJid.replace(/\D/g, '') + '@s.whatsapp.net';
         }
 
+        // Ensure options are clean strings (Baileys requirement)
+        const cleanOptions = Array.isArray(options) ? options.map(o => String(o).trim()) : [];
+        if (cleanOptions.length < 2) throw new Error('Un sondage nécessite au moins 2 options');
+
         const pollMessage = {
             poll: {
-                name: question,
-                values: options,
-                selectableCount: allowMultiple ? options.length : 1
+                name: String(question).trim(),
+                values: cleanOptions,
+                selectableCount: allowMultiple ? cleanOptions.length : 1
             }
         };
 
