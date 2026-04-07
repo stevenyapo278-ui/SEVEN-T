@@ -37,6 +37,7 @@ export function useModuleAvailability() {
     whatsappStatus: isEnabled('whatsapp_status', user?.plan_features?.whatsapp_status, user?.whatsapp_status_enabled),
     catalogImport: isEnabled('catalog_import', user?.plan_features?.catalog_import, user?.catalog_import_enabled),
     knowledgeBase: isEnabled('knowledge_base', user?.plan_features?.knowledge_base, user?.knowledge_base_enabled),
+    campaigns: isEnabled('campaigns_module', user?.plan_features?.campaigns, user?.campaigns_module_enabled),
     isInfluencerOnly: user?.influencer_only === true,
     isAdmin: user?.is_admin === 1
   }), [user, isEnabled]);

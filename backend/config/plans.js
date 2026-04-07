@@ -29,6 +29,7 @@ const FEATURES_BASELINE = {
     flows: false,
     whatsapp_status: false,
     leads_management: true,
+    campaigns: false,
     models: []
 
 };
@@ -321,7 +322,7 @@ export const PLANS = {
     }
 };
 
-export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows', 'whatsapp_status', 'leads_management'];
+export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows', 'whatsapp_status', 'leads_management', 'campaigns'];
 
 
 /** Map plan feature key to users table override column */
@@ -339,7 +340,8 @@ export const MODULE_TO_USER_COLUMN = {
     human_handoff_alerts: 'human_handoff_alerts_enabled',
     flows: 'flows_module_enabled',
     whatsapp_status: 'whatsapp_status_enabled',
-    leads_management: 'leads_management_enabled'
+    leads_management: 'leads_management_enabled',
+    campaigns: 'campaigns_module_enabled'
 };
 
 /**

@@ -944,6 +944,7 @@ export default function DashboardLayout() {
     whatsappStatus: whatsappStatusModuleEnabled,
     catalogImport: catalogImportModuleEnabled,
     knowledgeBase: knowledgeBaseModuleEnabled,
+    campaigns: campaignsModuleEnabled,
     isAdmin,
     isInfluencerOnly
   } = useModuleAvailability();
@@ -1154,6 +1155,7 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/products') return catalogImportModuleEnabled;
         if (item.href === '/dashboard/services') return catalogImportModuleEnabled;
 
+        if (item.href === '/dashboard/campaigns') return campaignsModuleEnabled;
         if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled
         return true;
       })

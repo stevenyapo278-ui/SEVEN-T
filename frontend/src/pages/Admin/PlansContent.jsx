@@ -99,6 +99,7 @@ export default function PlansContent({
                 {plan.features?.flows && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 10 : Flows</span>}
                 {plan.features?.whatsapp_status && <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-300 rounded">Module 11 : Statut WhatsApp</span>}
                 {plan.features?.leads_management && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 12 : Gestion des Leads</span>}
+                {plan.features?.campaigns && <span className="px-2 py-0.5 text-xs bg-orange-500/20 text-orange-300 rounded">Module 15 : Campagnes</span>}
                 {plan.features?.voice_responses && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Module 14 : Voix (TTS)</span>}
                 {plan.features?.models?.length > 0 && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">{plan.features.models.length} modèle(s) IA</span>}
 

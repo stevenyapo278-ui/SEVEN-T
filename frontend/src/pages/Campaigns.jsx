@@ -944,7 +944,7 @@ export default function Campaigns() {
                     />
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <button
                       type="button"
                       disabled={!form.agent_id}
@@ -954,7 +954,32 @@ export default function Campaigns() {
                       <Users className="w-4 h-4 inline-block mr-2" />
                       Contacts WhatsApp
                     </button>
-                    {/* If we want to keep a way to import everything automatically */}
+                    {leadsList.filter(l => l.phone).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allSelected = (leadsList || [])
+                            .filter(l => l.phone)
+                            .every(l => form.recipients.some(r => r.number === l.phone));
+                          
+                          let newRecs = [...form.recipients];
+                          if (allSelected) {
+                            const leadPhones = leadsList.map(l => l.phone);
+                            newRecs = newRecs.filter(r => !leadPhones.includes(r.number));
+                          } else {
+                            leadsList.filter(l => l.phone).forEach(l => {
+                              if (!newRecs.some(r => r.number === l.phone)) {
+                                newRecs.push({ number: l.phone, name: l.name });
+                              }
+                            });
+                          }
+                          setForm({ ...form, recipients: newRecs });
+                        }}
+                        className="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black text-gray-400 hover:text-white uppercase tracking-widest transition-all"
+                      >
+                        {(leadsList || []).filter(l => l.phone).every(l => form.recipients.some(r => r.number === l.phone)) ? 'Déselec. Leads' : 'Selec. Leads'}
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto rounded-2xl border border-white/5 p-3 bg-black/40 shadow-inner custom-scrollbar overscroll-contain">

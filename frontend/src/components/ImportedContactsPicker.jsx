@@ -142,6 +142,31 @@ export default function ImportedContactsPicker({
     })
   }
 
+  const toggleAll = () => {
+    if (mode === 'single') return
+    
+    const allVisibleSelected = list.every(c => {
+      const key = normalizePhoneForCompare(c.contact_number)
+      return key && selected.has(key)
+    })
+
+    setSelected(prev => {
+      const next = new Map(prev)
+      if (allVisibleSelected) {
+        list.forEach(c => {
+          const key = normalizePhoneForCompare(c.contact_number)
+          if (key) next.delete(key)
+        })
+      } else {
+        list.forEach(c => {
+          const key = normalizePhoneForCompare(c.contact_number)
+          if (key) next.set(key, c)
+        })
+      }
+      return next
+    })
+  }
+
   const confirm = () => {
     const items = Array.from(selected.values()).map((c) => ({
       agent_id: c.agent_id,
@@ -210,6 +235,20 @@ export default function ImportedContactsPicker({
               className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
             />
           </div>
+
+          {!loading && !error && list.length > 0 && mode === 'multi' && (
+            <div className="mt-4 px-1 flex justify-end">
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="text-[10px] font-black text-blue-400 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+              >
+                {list.every(c => selected.has(normalizePhoneForCompare(c.contact_number))) 
+                  ? 'Désélectionner tout' 
+                  : 'Tout sélectionner'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 pt-0 custom-scrollbar overscroll-contain">

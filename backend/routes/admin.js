@@ -151,6 +151,7 @@ router.get('/users', authenticateAdmin, requirePermission('users.read'), async (
                    p.catalog_import_enabled as p_catalog_import_enabled,
                    p.human_handoff_alerts_enabled as p_human_handoff_alerts_enabled,
                    p.flows_module_enabled as p_flows_module_enabled,
+                   p.campaigns_module_enabled as p_campaigns_module_enabled,
                    (SELECT COUNT(*) FROM agents WHERE user_id = u.id) as agents_count,
                    (SELECT COUNT(*) FROM conversations c 
                     JOIN agents a ON c.agent_id = a.id 
@@ -294,7 +295,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             voice_responses_enabled, payment_module_enabled, analytics_module_enabled, reports_module_enabled,
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
-            flows_module_enabled, whatsapp_status_enabled, leads_management_enabled,
+            flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
             subscription_end_date,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             roles
@@ -442,6 +443,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('leads_management_enabled = ?');
             params.push(leads_management_enabled ? 1 : 0);
         }
+        if (campaigns_module_enabled !== undefined) {
+            setClauses.push('campaigns_module_enabled = ?');
+            params.push(campaigns_module_enabled ? 1 : 0);
+        }
         if (can_manage_users !== undefined) {
             setClauses.push('can_manage_users = ?');
             params.push(can_manage_users ? 1 : 0);
@@ -544,7 +549,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled', 'reports_module_enabled',
             'availability_hours_enabled', 'next_best_action_enabled', 'conversion_score_enabled', 'daily_briefing_enabled',
             'sentiment_routing_enabled', 'catalog_import_enabled', 'human_handoff_alerts_enabled',
-            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled'
+            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled', 'campaigns_module_enabled'
         ];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
