@@ -65,8 +65,8 @@ const PLAN_MODULES = [
   { key: 'flows_module_enabled', label: 'Module 10 : Flows (Flux de travail)', description: "Créez des scénarios d'automatisation visuels." },
   { key: 'whatsapp_status_enabled', label: 'Module 11 : Statut WhatsApp', description: "Publication de statuts WhatsApp via l'IA ou l'interface." },
   { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads', description: "Gestion des prospects, analyse d'intention et conversion par l'IA." },
-  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: "L'IA peut répondre par message vocal au lieu de texte." },
-  { key: 'campaigns_module_enabled', label: 'Module 15 : Campagnes WhatsApp', description: "Envoi de messages en masse et planification récurrente." }
+  { key: 'campaigns_module_enabled', label: 'Module 13 : Campagnes WhatsApp', description: "Envoi de messages en masse et planification récurrente." },
+  { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: "L'IA peut répondre par message vocal au lieu de texte." }
 ]
 
 export default function Admin() {
@@ -2836,7 +2836,7 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'flows', label: 'Module 10 : Flows (Flux de travail)', desc: 'Créez des scénarios d\'automatisation visuels.' },
     { key: 'whatsapp_status', label: 'Module 11 : Statut WhatsApp', desc: 'Publication de statuts WhatsApp via l\'IA ou l\'interface.' },
     { key: 'leads_management', label: 'Module 12 : Gestion des Leads', desc: 'Gestion des prospects, analyse d\'intention et conversion par l\'IA.' },
-    { key: 'campaigns', label: 'Module 15 : Campagnes WhatsApp', desc: 'Envoi de messages en masse et planification récurrente.' },
+    { key: 'campaigns', label: 'Module 13 : Campagnes WhatsApp', desc: 'Envoi de messages en masse et planification récurrente.' },
     { key: 'voice_responses', label: 'Module 14 : Réponses vocales (TTS)', desc: 'L\'IA peut répondre par message vocal au lieu de texte.' }
   ]
 

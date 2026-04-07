@@ -195,6 +195,9 @@ const prefetchRouteData = (href, isAuthenticated) => {
   } else if (href === '/dashboard/agents') {
     api.get('/agents').catch(() => { })
     import('../pages/Agents')
+  } else if (href === '/dashboard/campaigns') {
+    api.get('/campaigns').catch(() => { })
+    import('../pages/Campaigns')
   } else if (href === '/dashboard/conversations') {
     api.get('/conversations').catch(() => { })
     import('../pages/Conversations')
