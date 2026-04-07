@@ -122,7 +122,9 @@ api.interceptors.response.use(
       // if we have a refresh token.
 
       if (!originalRequest._retry) {
+        console.warn(`[API] 401 Unauthorized for ${url}. Attempting token refresh...`);
         if (isRefreshing) {
+          console.log(`[API] Refresh already in progress, queuing request for ${url}`);
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject })
           })
@@ -138,17 +140,21 @@ api.interceptors.response.use(
         isRefreshing = true
 
         try {
+          console.log('[API] Calling /api/auth/refresh...');
           await axios.post('/api/auth/refresh', {}, { withCredentials: true })
+          console.log('[API] Refresh successful. Retrying original request.');
           isRefreshing = false
           processQueue(null)
           return api(originalRequest)
         } catch (refreshError) {
+          console.error('[API] Refresh failed:', refreshError.response?.data || refreshError.message);
           isRefreshing = false
           processQueue(refreshError)
           window.dispatchEvent(new Event('auth:unauthorized'))
           return Promise.reject(refreshError)
         }
       } else {
+        console.error(`[API] 401 persisted after retry for ${url}. Dispatching unauthorized event.`);
         window.dispatchEvent(new Event('auth:unauthorized'))
       }
     }
