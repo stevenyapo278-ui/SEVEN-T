@@ -37,8 +37,6 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
 
         const nameExpr = `COALESCE(NULLIF(TRIM(c.contact_name), ''), NULLIF(TRIM(c.push_name), ''), c.contact_number)`;
 
-        const nameExpr = `COALESCE(NULLIF(TRIM(c.contact_name), ''), NULLIF(TRIM(c.push_name), ''), c.contact_number)`;
-
         let query = `
             SELECT
                 c.agent_id,
