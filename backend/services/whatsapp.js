@@ -3659,8 +3659,8 @@ class WhatsAppManager {
         const sock = this.connections.get(toolId);
         if (!sock) throw new Error('WhatsApp non connecté pour cet outil');
 
-        // Normalise JID: add @s.whatsapp.net if needed
-        let recipientJid = jid;
+        // Normalise JID: add @s.whatsapp.net if needed, resolve LID if possible
+        let recipientJid = await this.resolveToPhoneJid(toolId, jid);
         if (!recipientJid.includes('@')) {
             recipientJid = recipientJid.replace(/[^\d+]/g, '') + '@s.whatsapp.net';
         }

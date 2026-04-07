@@ -167,17 +167,21 @@ router.post('/:id/send', async (req, res) => {
 
         for (const targetJid of targetJids) {
             try {
+                console.log(`[Polls] Sending poll ${poll.id} to ${targetJid}...`);
                 const result = await whatsappManager.sendPoll(tool.id, targetJid, poll.question, options, !!poll.allow_multiple);
                 if (result?.key?.id) {
                     lastMessageId = result.key.id;
                     lastMessageKey = result.key;
-                    // message includes pollCreationMessage which is needed to calculate votes
                     if (result.message) {
                         lastMessageFull = result.message;
                     }
                     sentCount++;
+                    console.log(`[Polls] Success for ${targetJid}: ${result.key.id}`);
+                } else {
+                    console.warn(`[Polls] Send skipped or no message ID for ${targetJid}`);
                 }
             } catch (err) {
+                console.error(`[Polls] Error for ${targetJid}:`, err.message);
                 errors.push({ jid: targetJid, error: err.message });
             }
         }

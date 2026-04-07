@@ -463,7 +463,7 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
   const [poll, setPoll] = useState(initialPoll)
   const [sending, setSending] = useState(false)
   const [jid, setJid] = useState('')
-  const [selectedJids, setSelectedJids] = useState(new Set())
+  const [selectedContacts, setSelectedContacts] = useState(new Map())
   const [showLeadSelect, setShowLeadSelect] = useState(false)
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
   const [leadSearch, setLeadSearch] = useState('')
@@ -496,19 +496,24 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
       await refresh()
       onRefresh()
       setJid('')
-      setSelectedJids(new Set())
+      setSelectedContacts(new Map())
       setShowLeadSelect(false)
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur envoi')
     } finally { setSending(false) }
   }
 
-  const toggleLead = (leadPhone) => {
-    if (!leadPhone) return
-    const next = new Set(selectedJids)
-    if (next.has(leadPhone)) next.delete(leadPhone)
-    else next.add(leadPhone)
-    setSelectedJids(next)
+  const toggleContact = (c) => {
+    const phone = c.phone || c.contact_number || c.number
+    if (!phone) return
+    const next = new Map(selectedContacts)
+    if (next.has(phone)) next.delete(phone)
+    else next.set(phone, { 
+      name: c.name || c.contact_name || 'Inconnu', 
+      phone, 
+      jid: c.jid || (phone + '@s.whatsapp.net') 
+    })
+    setSelectedContacts(next)
   }
 
   const handleClose = async () => {
@@ -631,11 +636,11 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                     {leads
                       .filter(l => l.phone && (l.name?.toLowerCase().includes(leadSearch.toLowerCase()) || l.phone.includes(leadSearch)))
                       .map(l => (
-                      <label key={l.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedJids.has(l.phone) ? 'bg-violet-500/10 border border-violet-500/20' : 'hover:bg-white/5'}`}>
+                      <label key={l.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedContacts.has(l.phone) ? 'bg-violet-500/10 border border-violet-500/20' : 'hover:bg-white/5'}`}>
                         <input 
                           type="checkbox" 
-                          checked={selectedJids.has(l.phone)}
-                          onChange={() => toggleLead(l.phone)}
+                          checked={selectedContacts.has(l.phone)}
+                          onChange={() => toggleContact(l)}
                           className="w-3.5 h-3.5 rounded border-gray-700 bg-black/20 text-violet-500"
                         />
                         <div className="min-w-0 flex-1">
@@ -646,14 +651,31 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                     ))}
                     {leads.filter(l => l.phone).length === 0 && <p className="text-[10px] text-gray-500 text-center py-2">Aucun lead trouvé</p>}
                   </div>
-                  {selectedJids.size > 0 && (
+                  {selectedContacts.size > 0 && !showLeadSelect && (
+                    <div className={`p-3 rounded-xl border ${isDark ? 'bg-space-800/60 border-space-700' : 'bg-white border-gray-200'} mb-2`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sélection ({selectedContacts.size})</span>
+                        <button onClick={() => setSelectedContacts(new Map())} className="text-[9px] text-red-400 hover:text-red-300 font-bold uppercase">Vider</button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
+                        {Array.from(selectedContacts.values()).map(c => (
+                          <div key={c.phone} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[10px] text-violet-400">
+                            <span className="font-bold truncate max-w-[80px]">{c.name}</span>
+                            <button onClick={() => toggleContact(c)}><X className="w-2.5 h-2.5" /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedContacts.size > 0 && (
                     <button 
-                      onClick={() => handleSend(Array.from(selectedJids))}
+                      onClick={() => handleSend(Array.from(selectedContacts.values()).map(c => c.jid || c.phone))}
                       disabled={sending}
                       className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2"
                     >
                       {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                      Envoyer à {selectedJids.size} contact(s)
+                      Envoyer à {selectedContacts.size} contact(s)
                     </button>
                   )}
                 </div>
@@ -668,8 +690,18 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
             mode="multi"
             onSelect={(contacts) => {
               setContactPickerOpen(false)
-              const jids = contacts.map(c => c.jid || c.number).filter(Boolean)
-              if (jids.length > 0) handleSend(jids)
+              setSelectedContacts(prev => {
+                const next = new Map(prev)
+                contacts.forEach(c => {
+                  const phone = c.contact_number || c.number
+                  if (phone) next.set(phone, { 
+                    name: c.contact_name || c.name || 'Inconnu', 
+                    phone, 
+                    jid: c.jid || (phone + '@s.whatsapp.net') 
+                  })
+                })
+                return next
+              })
             }}
           />
         </div>
