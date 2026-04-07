@@ -5,16 +5,20 @@ export const FEATURE_DESCRIPTIONS = {
   agents: "Nombre d'agents IA simultanés capables de gérer les conversations avec vos clients.",
   messages: "Nombre maximal de messages ou crédits que votre IA peut envoyer et traiter chaque mois.",
   models: "Choix de modèles d'intelligence artificielle avancés (GPT-4, Gemini, Claude...) configurables selon vos besoins en performance.",
-  analytics: "Accédez à un tableau de bord complet pour analyser en temps réel vos ventes, vos conversions et le temps de réponse moyen.",
-  payment_module: "Recevez vos paiements Mobile Money et cartes bancaires directement dans WhatsApp sans que le client ne quitte l'application grâce à notre intégration GeniusPay.",
-  voice_responses: "Permettez à votre agent IA de générer et d'envoyer des notes vocales naturelles (Text-to-Speech) pour plus d'humanité.",
-  flows: "Créez des parcours clients et scénarios d'automatisation complexes (tunnels de vente, séquences relationnelles personnalisées).",
-  next_best_action: "L'IA analyse le contexte en direct et suggère la meilleure action pour conclure une vente et booster votre conversion.",
-  catalog_import: "Importez facilement votre catalogue de produits depuis un fichier externe ou un site web compatible pour l'intégrer aux réponses IA.",
-  human_handoff_alerts: "Recevez une notification instantanée et transférez le contrôle à un humain lorsque l'IA détecte une situation délicate (plainte, requête très spécifique).",
-  whatsapp_status: "L'IA est capable d'analyser vos statuts WhatsApp et de répondre automatiquement avec le bon produit lorsqu'un client réagit à une story.",
-  daily_briefing: "Recevez automatiquement chaque matin un résumé complet de l'activité générée lors des dernières 24h par votre agent.",
-  leads_management: "Un CRM miniature intégré pour taguer automatiquement, classer et organiser vos prospects les plus chauds qualifiés par l'IA.",
+  availability_hours: "Permet de définir les horaires où l'agent répond automatiquement.",
+  payment_module: "Intégration des passerelles de paiement pour vendre via l'IA.",
+  next_best_action: "Relances automatiques intelligentes des prospects inactifs.",
+  conversion_score: "Analyse la probabilité d'achat de chaque prospect.",
+  daily_briefing: "Résumé quotidien des activités envoyé sur WhatsApp.",
+  sentiment_routing: "Transfère à un humain si le client semble frustré.",
+  catalog_import: "L'IA connaît vos produits via URL ou fichiers.",
+  human_handoff_alerts: "Notifications immédiates quand un agent demande de l'aide.",
+  analytics: "Accès aux tableaux de bord et rapports détaillés sur les performances.",
+  flows: "Créez des scénarios d'automatisation visuels.",
+  whatsapp_status: "Publication de statuts WhatsApp via l'IA ou l'interface.",
+  leads_management: "Gestion des prospects, analyse d'intention et conversion par l'IA.",
+  campaigns: "Envoi de messages en masse et planification récurrente.",
+  voice_responses: "L'IA peut répondre par message vocal au lieu de texte.",
   knowledgeBase: "Le cerveau de votre agent : transmettez des documents PDF, règles et informations pour que l'IA connaisse tout de votre business sur le bout des doigts.",
   prioritySupport: "Assistance technique dédiée et prioritaire avec un accès direct à notre équipe pour résoudre d'éventuels soucis dans l'heure."
 }
@@ -46,16 +50,20 @@ export default function PricingDetailsModal({ plan, isOpen, onClose }) {
 
     // Features
     if (feats?.models?.length) items.push({ title: `${feats.models.length} modèle(s) IA`, description: FEATURE_DESCRIPTIONS.models })
-    if (feats?.analytics) items.push({ title: 'Statistiques avancées', description: FEATURE_DESCRIPTIONS.analytics })
-    if (feats?.payment_module) items.push({ title: 'Module paiement', description: FEATURE_DESCRIPTIONS.payment_module })
-    if (feats?.voice_responses) items.push({ title: 'Réponses vocales (TTS)', description: FEATURE_DESCRIPTIONS.voice_responses })
-    if (feats?.flows) items.push({ title: 'Flows & automatisations', description: FEATURE_DESCRIPTIONS.flows })
+    if (feats?.availability_hours) items.push({ title: 'Heures de disponibilité', description: FEATURE_DESCRIPTIONS.availability_hours })
+    if (feats?.payment_module) items.push({ title: 'Paiement & Encaissement', description: FEATURE_DESCRIPTIONS.payment_module })
     if (feats?.next_best_action) items.push({ title: 'Next Best Action', description: FEATURE_DESCRIPTIONS.next_best_action })
+    if (feats?.conversion_score) items.push({ title: 'Score de conversion', description: FEATURE_DESCRIPTIONS.conversion_score })
+    if (feats?.daily_briefing) items.push({ title: 'Daily Briefing', description: FEATURE_DESCRIPTIONS.daily_briefing })
+    if (feats?.sentiment_routing) items.push({ title: 'Sentiment routing', description: FEATURE_DESCRIPTIONS.sentiment_routing })
     if (feats?.catalog_import) items.push({ title: 'Import catalogue', description: FEATURE_DESCRIPTIONS.catalog_import })
-    if (feats?.human_handoff_alerts) items.push({ title: 'Alertes intervention humaine', description: FEATURE_DESCRIPTIONS.human_handoff_alerts })
-    if (feats?.whatsapp_status) items.push({ title: 'WhatsApp Status', description: FEATURE_DESCRIPTIONS.whatsapp_status })
-    if (feats?.daily_briefing) items.push({ title: 'Briefing quotidien', description: FEATURE_DESCRIPTIONS.daily_briefing })
-    if (feats?.leads_management) items.push({ title: 'Gestion leads', description: FEATURE_DESCRIPTIONS.leads_management })
+    if (feats?.human_handoff_alerts) items.push({ title: 'Alertes Transfert Humain', description: FEATURE_DESCRIPTIONS.human_handoff_alerts })
+    if (feats?.analytics) items.push({ title: 'Analytics & Statistiques', description: FEATURE_DESCRIPTIONS.analytics })
+    if (feats?.flows) items.push({ title: 'Flows (Flux de travail)', description: FEATURE_DESCRIPTIONS.flows })
+    if (feats?.whatsapp_status) items.push({ title: 'Statut WhatsApp', description: FEATURE_DESCRIPTIONS.whatsapp_status })
+    if (feats?.leads_management) items.push({ title: 'Gestion des Leads', description: FEATURE_DESCRIPTIONS.leads_management })
+    if (feats?.campaigns) items.push({ title: 'Campagnes WhatsApp', description: FEATURE_DESCRIPTIONS.campaigns })
+    if (feats?.voice_responses) items.push({ title: 'Réponses vocales (TTS)', description: FEATURE_DESCRIPTIONS.voice_responses })
     
     if (items.length <= 2) {
        if (feats?.knowledgeBase) items.push({ title: 'Base de connaissances IA', description: FEATURE_DESCRIPTIONS.knowledgeBase })

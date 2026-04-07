@@ -42,16 +42,20 @@ function PlanFeatureList({ features }) {
   }
   const items = []
   if (parsed.models?.length) items.push(`${parsed.models.length} modèle(s) IA`)
-  if (parsed.analytics) items.push('Statistiques avancées')
-  if (parsed.payment_module) items.push('Module paiement')
-  if (parsed.voice_responses) items.push('Réponses vocales (TTS)')
-  if (parsed.flows) items.push('Flows & automatisations')
+  if (parsed.availability_hours) items.push('Heures de disponibilité')
+  if (parsed.payment_module) items.push('Paiement & Encaissement')
   if (parsed.next_best_action) items.push('Next Best Action')
+  if (parsed.conversion_score) items.push('Score de conversion')
+  if (parsed.daily_briefing) items.push('Daily Briefing')
+  if (parsed.sentiment_routing) items.push('Sentiment routing')
   if (parsed.catalog_import) items.push('Import catalogue')
-  if (parsed.human_handoff_alerts) items.push('Alertes intervention humaine')
-  if (parsed.whatsapp_status) items.push('WhatsApp Status')
-  if (parsed.daily_briefing) items.push('Briefing quotidien')
-  if (parsed.leads_management) items.push('Gestion leads')
+  if (parsed.human_handoff_alerts) items.push('Alertes Transfert Humain')
+  if (parsed.analytics) items.push('Analytics & Statistiques')
+  if (parsed.flows) items.push('Flows (Flux de travail)')
+  if (parsed.whatsapp_status) items.push('Statut WhatsApp')
+  if (parsed.leads_management) items.push('Gestion des Leads')
+  if (parsed.campaigns) items.push('Campagnes WhatsApp')
+  if (parsed.voice_responses) items.push('Réponses vocales (TTS)')
   return (
     <ul className="space-y-2 mt-4">
       {items.map(item => (
