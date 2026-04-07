@@ -662,6 +662,7 @@ class WhatsAppManager {
                 for (const { key, update } of updates) {
                     if (!update.pollUpdates) continue;
                     try {
+                        // Try to find the poll creation message in the store
                         const store = this.stores.get(toolId);
                         const jid = key.remoteJid;
                         let pollCreationMessage;
@@ -669,16 +670,26 @@ class WhatsAppManager {
                             const raw = store.messages[jid].find(m => m.key.id === key.id);
                             if (raw) pollCreationMessage = raw.message;
                         }
+
+                        // Get the poll from the database to see if we sent it
+                        const pollRow = await db.get('SELECT id, wa_message_full FROM polls WHERE wa_message_id = ? OR wa_message_key LIKE ?', key.id, `%${key.id}%`);
+                        if (!pollRow) continue;
+
+                        // Fall back to the saved message in db if we couldn't find it in the store
+                        if (!pollCreationMessage && pollRow.wa_message_full) {
+                            try {
+                                pollCreationMessage = JSON.parse(pollRow.wa_message_full);
+                            } catch (e) {
+                                console.error('[WhatsApp] Failed to parse wa_message_full from DB');
+                            }
+                        }
+
                         if (!pollCreationMessage) continue;
 
                         const aggregatedVotes = getAggregateVotesInPollMessage({
                             message: pollCreationMessage,
                             pollUpdates: update.pollUpdates
                         });
-
-                        // Persist votes in DB
-                        const pollRow = await db.get('SELECT id FROM polls WHERE wa_message_id = ?', key.id);
-                        if (!pollRow) continue;
 
                         for (const option of aggregatedVotes) {
                             for (const voterJid of option.voters) {
@@ -745,7 +756,7 @@ class WhatsAppManager {
             if (!agent) return null;
             const agentId = agent.id;
             if (!sender) return null;
-            if (sender.endsWith('@g.us') || sender === 'status@broadcast' || sender.includes('broadcast')) return null;
+            if (sender === 'status@broadcast' || sender.includes('broadcast')) return null;
             let messageText = this.extractMessageText(message);
             if (!messageText) return null;
             const contactNumber = sender.split('@')[0];
@@ -1170,6 +1181,12 @@ class WhatsAppManager {
             const autoReply = agent.auto_reply !== 0 && agent.auto_reply !== false;
             if (!autoReply) {
                 console.log(`[WhatsApp] Auto-reply disabled for agent ${agent.name}, skipping response`);
+                return;
+            }
+
+            // Check if it's a group: AI should never reply in groups
+            if (sender && sender.endsWith('@g.us')) {
+                console.log(`[WhatsApp] Group message detected, skipping AI reply for agent ${agent.name}`);
                 return;
             }
             
@@ -3107,8 +3124,9 @@ class WhatsAppManager {
                 const rawJid = c?.jid || c?.id || key;
                 if (!rawJid || typeof rawJid !== 'string') continue;
 
-                // Skip groups and broadcasts
-                if (rawJid.includes('@g.us') || rawJid.includes('broadcast')) continue;
+                // Skip broadcasts, but ALLOW groups
+                if (rawJid.includes('broadcast')) continue;
+                const isGroup = rawJid.includes('@g.us');
 
                 // Resolve LID to phone JID when possible
                 let jid = rawJid;
@@ -3117,11 +3135,11 @@ class WhatsAppManager {
                     if (phoneJid) jid = phoneJid;
                 }
 
-                // Only keep real phone contacts
-                if (!jid.endsWith('@s.whatsapp.net')) continue;
+                // Only keep real phone contacts or groups
+                if (!jid.endsWith('@s.whatsapp.net') && !isGroup) continue;
 
                 const number = jid.split('@')[0];
-                if (!number) continue;
+                if (!number && !isGroup) continue;
 
                 const name = c?.name || c?.notify || c?.verifiedName || c?.pushName || null;
                 const displayName = (name && String(name).trim()) ? String(name).trim() : number;
@@ -3135,7 +3153,8 @@ class WhatsAppManager {
                     jid,
                     number,
                     name: displayName,
-                    isMyContact: !!c?.name || !!c?.notify
+                    isMyContact: !!c?.name || !!c?.notify,
+                    isGroup
                 });
 
                 if (out.length >= safeLimit) break;

@@ -37,6 +37,8 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
 
         const nameExpr = `COALESCE(NULLIF(TRIM(c.contact_name), ''), NULLIF(TRIM(c.push_name), ''), c.contact_number)`;
 
+        const nameExpr = `COALESCE(NULLIF(TRIM(c.contact_name), ''), NULLIF(TRIM(c.push_name), ''), c.contact_number)`;
+
         let query = `
             SELECT
                 c.agent_id,
@@ -51,9 +53,8 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
             WHERE a.user_id = ?
             AND c.contact_number IS NOT NULL
             AND TRIM(c.contact_number) != ''
-            AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
-            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid' OR c.contact_jid LIKE '%@g.us')
         `;
         const params = [req.user.ownerId];
 
@@ -105,9 +106,8 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
                    (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as message_count
             FROM conversations c
             WHERE c.agent_id = ?
-            AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
-            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid' OR c.contact_jid LIKE '%@g.us')
             ORDER BY c.last_message_at DESC
         `, req.params.agentId);
 
@@ -140,9 +140,8 @@ router.get('/', authenticateToken, async (req, res) => {
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ?
-            AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
-            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid' OR c.contact_jid LIKE '%@g.us')
             ${scoreClause}
             ORDER BY c.last_message_at DESC
             LIMIT 100
@@ -153,9 +152,8 @@ router.get('/', authenticateToken, async (req, res) => {
             JOIN conversations c ON m.conversation_id = c.id
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ?
-            AND c.contact_jid NOT LIKE '%@g.us'
             AND c.contact_jid NOT LIKE '%broadcast%'
-            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid')
+            AND (c.contact_jid LIKE '%@s.whatsapp.net' OR c.contact_jid LIKE '%@lid' OR c.contact_jid LIKE '%@g.us')
         `, req.user.ownerId);
         const totalMessages = totalMessagesRow?.count ?? 0;
 
@@ -255,6 +253,36 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
         res.json({ count: row?.count || 0 });
     } catch (error) {
         console.error('Get unread conversation count error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Initiate or get existing conversation for a new contact message
+router.post('/initiate', authenticateToken, async (req, res) => {
+    try {
+        const { agent_id, contact_jid, contact_name, contact_number } = req.body;
+        if (!agent_id || !contact_jid) {
+            return res.status(400).json({ error: 'agent_id et contact_jid sont requis' });
+        }
+        const agent = await db.get('SELECT id FROM agents WHERE id = ? AND user_id = ?', agent_id, req.user.ownerId);
+        if (!agent) {
+            return res.status(404).json({ error: 'Agent non trouvé' });
+        }
+        let conv = await db.get('SELECT id FROM conversations WHERE agent_id = ? AND contact_jid = ?', agent_id, contact_jid);
+        if (conv) {
+            return res.json({ id: conv.id });
+        }
+        // Create new
+        const { v4: uuidv4 } = await import('uuid');
+        const newId = uuidv4();
+        await db.run(`
+            INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, last_message_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `, newId, agent_id, contact_jid, contact_name || contact_number, contact_number || contact_jid.split('@')[0]);
+
+        res.json({ id: newId });
+    } catch (error) {
+        console.error('Initiate conversation error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

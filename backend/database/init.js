@@ -1718,6 +1718,7 @@ export async function initDatabase() {
                 status TEXT DEFAULT 'draft',
                 wa_message_id TEXT,
                 wa_message_key TEXT,
+                wa_message_full TEXT,
                 total_votes INTEGER DEFAULT 0,
                 results TEXT DEFAULT '[]',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1728,7 +1729,16 @@ export async function initDatabase() {
             );
             CREATE INDEX IF NOT EXISTS idx_polls_user ON polls(user_id);
             CREATE INDEX IF NOT EXISTS idx_polls_status ON polls(status);
+        `);
+        
+        // Ensure column exists for existing DBs
+        try {
+            await db.exec('ALTER TABLE polls ADD COLUMN wa_message_full TEXT;');
+        } catch(e) {
+            // ignore if column exists
+        }
 
+        await db.exec(`
             CREATE TABLE IF NOT EXISTS poll_votes (
                 id SERIAL PRIMARY KEY,
                 poll_id TEXT NOT NULL,

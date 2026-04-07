@@ -168,11 +168,9 @@ export default function Polls() {
                         <Lock className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    {poll.status === 'draft' && (
-                      <button onClick={() => handleDelete(poll.id)} className="p-1.5 hover:bg-red-500/10 text-red-400 rounded-lg" title="Supprimer">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button onClick={() => handleDelete(poll.id)} className="p-1.5 hover:bg-red-500/10 text-red-500 rounded-lg" title="Supprimer">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
 
@@ -535,6 +533,18 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
               <Lock className="w-4 h-4" /> Fermer le sondage
             </button>
           )}
+          <button onClick={async () => {
+            if (window.confirm('Confirmer la suppression ?')) {
+              try {
+                await api.delete(`/polls/${poll.id}`)
+                toast.success('Sondage supprimé')
+                onRefresh()
+                onClose()
+              } catch { toast.error('Erreur') }
+            }
+          }} className="py-3 px-5 rounded-2xl text-sm font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-center">
+            <Trash2 className="w-4 h-4" />
+          </button>
           <button onClick={refresh} className={`py-3 px-5 rounded-2xl text-sm font-semibold transition-all ${isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
             <RefreshCw className="w-4 h-4" />
           </button>

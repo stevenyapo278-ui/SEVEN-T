@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
 import { useOnboardingTour } from '../components/Onboarding'
 import { useConversationSocket } from '../hooks/useConversationSocket'
-import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2 } from 'lucide-react'
+import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import EmptyState from '../components/EmptyState'
+import ImportedContactsPicker from '../components/ImportedContactsPicker'
 
 // Cache for profile pictures (shared across all ProfileAvatar instances)
 const profilePicCache = new Map()
@@ -138,6 +139,8 @@ export default function Conversations() {
   const [newMessageCount, setNewMessageCount] = useState(0)
   const [filterAgent, setFilterAgent] = useState(() => searchParams.get('agent') || '')
   const [filterMode, setFilterMode] = useState(() => searchParams.get('mode') || '') // 'human' | 'ai' | ''
+  const [contactPickerOpen, setContactPickerOpen] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const q = searchParams.get('q')
@@ -306,6 +309,23 @@ export default function Conversations() {
     }
   }
 
+  const handleInitiateDiscussion = async (jids, agentId, selectedContact) => {
+    if (!jids || jids.length === 0) return
+    setContactPickerOpen(false)
+    const targetJid = jids[0]
+    try {
+      const { data } = await api.post('/conversations/initiate', {
+        agent_id: agentId,
+        contact_jid: targetJid,
+        contact_name: selectedContact?.name,
+        contact_number: selectedContact?.number
+      })
+      navigate(`/dashboard/conversations/${data.id}`)
+    } catch (error) {
+      toast.error('Erreur lors de la création de la discussion')
+    }
+  }
+
   const patternDark = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
   const patternLight = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"
 
@@ -325,6 +345,9 @@ export default function Conversations() {
             <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => setContactPickerOpen(true)} className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-medium transition-all ${isDark ? 'bg-space-900 border-space-700 text-gold-400 hover:text-gold-300' : 'bg-white border-gray-200 text-gold-500 hover:bg-gray-50'}`}>
+              <Plus className="w-5 h-5" /> Nouveau
+            </button>
             <button onClick={loadConversations} disabled={loading} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -437,6 +460,15 @@ export default function Conversations() {
           </div>
         </>
       )}
+      
+      <ImportedContactsPicker
+        isOpen={contactPickerOpen}
+        onClose={() => setContactPickerOpen(false)}
+        onSelect={handleInitiateDiscussion}
+        mode="single"
+        title="Nouvelle discussion"
+        description="Sélectionnez un contact pour démarrer une conversation"
+      />
     </div>
   )
 }

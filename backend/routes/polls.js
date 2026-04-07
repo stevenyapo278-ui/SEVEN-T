@@ -131,6 +131,7 @@ router.post('/:id/send', async (req, res) => {
 
         let lastMessageId = null;
         let lastMessageKey = null;
+        let lastMessageFull = null;
         let sentCount = 0;
         let errors = [];
 
@@ -140,6 +141,10 @@ router.post('/:id/send', async (req, res) => {
                 if (result?.key?.id) {
                     lastMessageId = result.key.id;
                     lastMessageKey = result.key;
+                    // message includes pollCreationMessage which is needed to calculate votes
+                    if (result.message) {
+                        lastMessageFull = result.message;
+                    }
                     sentCount++;
                 }
             } catch (err) {
@@ -155,9 +160,10 @@ router.post('/:id/send', async (req, res) => {
             UPDATE polls SET status = 'active', 
             wa_message_id = COALESCE(wa_message_id, ?), 
             wa_message_key = COALESCE(wa_message_key, ?), 
+            wa_message_full = COALESCE(wa_message_full, ?),
             sent_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, lastMessageId, lastMessageKey ? JSON.stringify(lastMessageKey) : null, req.params.id);
+        `, lastMessageId, lastMessageKey ? JSON.stringify(lastMessageKey) : null, lastMessageFull ? JSON.stringify(lastMessageFull) : null, req.params.id);
 
         res.json({ message: `${sentCount} sondage(s) envoyé(s)`, sentCount, errors: errors.length > 0 ? errors : undefined });
     } catch (e) {
