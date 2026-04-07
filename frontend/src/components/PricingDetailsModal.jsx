@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import { CheckCircle, X } from 'lucide-react'
 
 export const FEATURE_DESCRIPTIONS = {
@@ -66,8 +67,8 @@ export default function PricingDetailsModal({ plan, isOpen, onClose }) {
 
   const features = getFeaturesDetails()
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 shadow-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+  const modalContent = (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 shadow-2xl" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
       <div 
         className="absolute inset-0 backdrop-blur-sm"
         onClick={onClose} 
@@ -119,4 +120,7 @@ export default function PricingDetailsModal({ plan, isOpen, onClose }) {
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }
+

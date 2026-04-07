@@ -776,7 +776,7 @@ export default function Tools() {
       {/* Overlay QR code en premier plan */}
       {connectingToolId && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && cancelConnect(connectingToolId)}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
@@ -853,7 +853,7 @@ export default function Tools() {
       {/* Configuration Modal (Outlook / Google) */}
       {configTool && (configTool.type === 'outlook' || configTool.type === 'google_calendar') && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && setConfigTool(null)}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >

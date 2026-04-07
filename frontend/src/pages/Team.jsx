@@ -233,7 +233,7 @@ export default function Team() {
       {/* Add/Edit Modal */}
       {showAddModal && createPortal(
         <div 
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
           onClick={() => setShowAddModal(false)}
         >
           <div 

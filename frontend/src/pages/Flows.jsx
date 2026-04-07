@@ -412,7 +412,7 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
       
       <div className={`relative z-10 w-full max-w-lg rounded-t-3xl sm:rounded-3xl border shadow-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-fadeIn overflow-hidden max-sm:rounded-b-none ${

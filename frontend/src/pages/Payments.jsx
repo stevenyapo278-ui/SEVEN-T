@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
@@ -557,7 +558,7 @@ export default function Payments() {
       )}
 
       {/* Preview QR Modal */}
-      {previewQrLink && (
+      {previewQrLink && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setPreviewQrLink(null)} />
           <div className={`relative z-10 w-full max-w-sm p-8 rounded-3xl shadow-2xl animate-fadeIn text-center ${
@@ -583,7 +584,8 @@ export default function Payments() {
               Fermer
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Print Layout (Hidden on Screen) */}
@@ -671,8 +673,8 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
       
       <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn ${
@@ -777,7 +779,8 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
@@ -798,8 +801,8 @@ function LinkCreatedModal({ link, isDark, onClose }) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl animate-fadeIn ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
@@ -867,6 +870,7 @@ function LinkCreatedModal({ link, isDark, onClose }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

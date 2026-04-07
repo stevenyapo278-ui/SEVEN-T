@@ -843,7 +843,7 @@ export default function Workflows() {
       {/* Create/Edit Modal */}
       {showModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={() => { setShowModal(false); resetForm(); }}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
@@ -1220,7 +1220,7 @@ export default function Workflows() {
       {/* Modal Ajouter/Modifier contact */}
       {showContactModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={() => setShowContactModal(false)}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
@@ -1444,7 +1444,7 @@ export default function Workflows() {
 function DetailOverlay({ children, onClose }) {
   return createPortal(
     <div 
-      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/80 backdrop-blur-xl"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-xl"
       onClick={onClose}
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >

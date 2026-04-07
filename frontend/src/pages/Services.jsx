@@ -174,7 +174,7 @@ export default function Services() {
       {/* View Modal (Overlay) */}
       {selectedServiceView && createPortal(
         <div 
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
           onClick={() => setSelectedServiceView(null)}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >

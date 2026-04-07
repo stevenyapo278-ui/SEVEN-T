@@ -4,7 +4,7 @@ import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Send,
   Plus,
@@ -41,10 +41,21 @@ import { registerLocale } from 'react-datepicker'
 import fr from 'date-fns/locale/fr'
 import CampaignPreviewModal from '../components/CampaignPreviewModal'
 registerLocale('fr', fr)
+import { useModuleAvailability } from '../hooks/useModuleAvailability'
 
 export default function Campaigns() {
   const { isDark } = useTheme()
   const { showConfirm } = useConfirm()
+  const navigate = useNavigate()
+  const { campaigns: campaignsModuleEnabled, isAdmin } = useModuleAvailability()
+
+  // Route guard: redirect if module is disabled (admins always have access)
+  useEffect(() => {
+    if (campaignsModuleEnabled === false && !isAdmin) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [campaignsModuleEnabled, isAdmin, navigate])
+
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
   const [campaigns, setCampaigns] = useState([])
@@ -786,7 +797,7 @@ export default function Campaigns() {
       {/* Create/Edit Modal */}
       {showModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={() => { setShowModal(false); setSelectedCampaign(null); }}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
@@ -1128,7 +1139,7 @@ export default function Campaigns() {
       {/* Gérer les destinataires (modal) */}
       {showRecipientsModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={closeRecipientsModal}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
@@ -1342,7 +1353,7 @@ export default function Campaigns() {
       {/* Modal Historique d'exécution */}
       {showHistoryModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
           onClick={() => setShowHistoryModal(false)}
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >

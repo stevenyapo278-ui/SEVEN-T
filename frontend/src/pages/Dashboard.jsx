@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
@@ -319,13 +320,14 @@ function AgentContent({ agent, onClose, t }) {
 }
 
 function DetailOverlay({ children, onClose }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-[101] w-full max-w-sm bg-space-900 border border-space-700/50 rounded-3xl shadow-2xl p-8 animate-in zoom-in duration-200">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

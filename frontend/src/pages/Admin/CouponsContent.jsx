@@ -259,7 +259,7 @@ export default function CouponsContent({ users = [] }) {
       )}
 
       {showModal && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-4">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-md" />
           <form 
             onSubmit={handleSubmit}

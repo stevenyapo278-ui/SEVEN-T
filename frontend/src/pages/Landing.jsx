@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -348,7 +349,7 @@ function ContactModal({ isOpen, onClose, isDark }) {
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className={`relative w-full max-w-2xl rounded-[2rem] border p-6 sm:p-10 shadow-2xl animate-fadeIn my-auto ${isDark ? 'bg-[#0D1120] border-white/10' : 'bg-white border-gray-200'}`}>
@@ -438,7 +439,8 @@ function ContactModal({ isOpen, onClose, isDark }) {
           </button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

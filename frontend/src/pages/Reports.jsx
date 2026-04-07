@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -812,8 +813,8 @@ export default function Reports() {
       </div>
 
       {/* Subscription Modal */}
-      {showSubModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      {showSubModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="relative z-10 card p-4 sm:p-6 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
             <h2 className="text-xl font-display font-bold text-gray-100 mb-6">
               {t('reports.schedule_report')}
@@ -867,7 +868,8 @@ export default function Reports() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

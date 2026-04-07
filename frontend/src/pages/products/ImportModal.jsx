@@ -45,7 +45,7 @@ export default function ImportModal({ onClose, onImported }) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 lg:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4 lg:p-4 bg-black/80 backdrop-blur-md animate-fade-in"
       onClick={onClose}
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
