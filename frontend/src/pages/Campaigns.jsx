@@ -77,6 +77,7 @@ export default function Campaigns() {
   const [importedPickerOpen, setImportedPickerOpen] = useState(false)
   const [historyData, setHistoryData] = useState({ campaign: null, recipients: [] })
   // Form state
+  const [leadSearchInModal, setLeadSearchInModal] = useState('')
   const [form, setForm] = useState({
     name: '',
     message: '',
@@ -84,7 +85,8 @@ export default function Campaigns() {
     scheduled_at: '',
     recurrence_type: 'none',
     recurrence_interval: 1,
-    recurrence_days: ''
+    recurrence_days: '',
+    recipients: []
   })
 
   useEffect(() => {
@@ -287,7 +289,8 @@ export default function Campaigns() {
         scheduled_at: '',
         recurrence_type: 'none',
         recurrence_interval: 1,
-        recurrence_days: ''
+        recurrence_days: '',
+        recipients: []
       })
       setSelectedCampaign(null)
       loadData()
@@ -373,7 +376,8 @@ export default function Campaigns() {
       scheduled_at: campaign.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : '',
       recurrence_type: campaign.recurrence_type || 'none',
       recurrence_interval: campaign.recurrence_interval || 1,
-      recurrence_days: campaign.recurrence_days || ''
+      recurrence_days: campaign.recurrence_days || '',
+      recipients: campaign.recipients || []
     })
     setShowModal(true)
   }
@@ -500,7 +504,8 @@ export default function Campaigns() {
                     scheduled_at: '',
                     recurrence_type: 'none',
                     recurrence_interval: 1,
-                    recurrence_days: ''
+                    recurrence_days: '',
+                    recipients: []
                   })
                   setShowModal(true)
                 }}
@@ -727,14 +732,6 @@ export default function Campaigns() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleImportContacts(campaign.id)}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-600/30 text-gray-300 hover:bg-gray-600/50 text-sm font-medium transition-colors"
-                          >
-                            <Users className="w-4 h-4" />
-                            Importer contacts
-                          </button>
-                          <button
-                            type="button"
                             onClick={() => handleSendCampaign(campaign)}
                             disabled={sendingCampaignId === campaign.id}
                             className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
@@ -924,6 +921,80 @@ export default function Campaigns() {
                     placeholderText="Choisir une date et heure"
                     className="input-dark w-full py-4 px-5 text-base rounded-2xl"
                   />
+                </div>
+
+                <div className="space-y-4 pt-2 border-t border-white/5">
+                  <div className="flex items-center justify-between ml-1">
+                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                      Destinataires ({form.recipients.length})
+                    </label>
+                    <span className="text-[10px] font-bold text-gold-400 uppercase tracking-widest">
+                      Sélectionnez vos leads
+                    </span>
+                  </div>
+                  
+                  <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-gold-400 transition-colors" />
+                    <input
+                      type="text"
+                      placeholder="Filtrer mes leads..."
+                      className="input-dark w-full py-3 px-11 text-sm rounded-xl"
+                      onChange={(e) => {
+                        // We can filter the visible list below
+                        const term = e.target.value.toLowerCase();
+                        setLeadSearchInModal(term);
+                      }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto rounded-2xl border border-white/5 p-3 bg-black/40 shadow-inner custom-scrollbar overscroll-contain">
+                    {(leadsList || [])
+                      .filter(lead => lead.phone && (
+                        !leadSearchInModal || 
+                        (lead.name || '').toLowerCase().includes(leadSearchInModal) || 
+                        (lead.phone || '').includes(leadSearchInModal)
+                      ))
+                      .map((lead) => {
+                        const isSelected = form.recipients.some(r => r.number === lead.phone);
+                        return (
+                          <label key={lead.id} className={`flex items-center gap-3 py-2.5 px-4 rounded-xl border transition-all cursor-pointer group ${
+                            isSelected 
+                              ? 'bg-gold-400/20 border-gold-400/40' 
+                              : 'bg-white/[0.02] border-white/5 hover:border-white/10'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => {
+                                let newRecipients;
+                                if (isSelected) {
+                                  newRecipients = form.recipients.filter(r => r.number !== lead.phone);
+                                } else {
+                                  newRecipients = [...form.recipients, { number: lead.phone, name: lead.name }];
+                                }
+                                setForm({ ...form, recipients: newRecipients });
+                              }}
+                              className="w-4 h-4 rounded bg-black/40 border-white/20 text-gold-400 focus:ring-gold-400/50"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-gray-200'}`}>{lead.name || 'Sans nom'}</p>
+                              <p className={`text-[10px] font-black font-mono truncate ${isSelected ? 'text-gold-400/80' : 'text-gray-500'}`}>{lead.phone}</p>
+                            </div>
+                            {lead.status && (
+                              <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/5 text-gray-500">
+                                {lead.status}
+                              </span>
+                            )}
+                          </label>
+                        );
+                      })
+                    }
+                    {leadsList.filter(l => l.phone).length === 0 && (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500 text-xs">Aucun lead avec numéro trouvé.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-4 pt-2 border-t border-white/5">
