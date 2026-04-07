@@ -221,7 +221,7 @@ export default function Orders() {
     try {
       const response = await api.get('/orders')
       setOrders(response.data.orders || [])
-      setSelectedOrderIds([]) // Reset selection on reload
+      setSelectedOrderIds(new Set()) // Reset selection on reload
     } catch (error) {
       console.error('Error loading orders:', error)
       toast.error(t('messages.errorLoad'))

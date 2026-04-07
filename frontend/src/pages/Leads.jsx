@@ -42,7 +42,9 @@ import {
   AlertCircle,
   RefreshCw,
   ArrowRight,
-  Layers
+  Layers,
+  Square,
+  CheckSquare
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -138,6 +140,35 @@ export default function Leads() {
   const [selectedLeadView, setSelectedLeadView] = useState(null)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
+
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         lead.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         lead.company?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter
+    const matchesSource = sourceFilter === 'all' || lead.source === sourceFilter
+    return matchesSearch && matchesStatus && matchesSource
+  })
+
+  // Sort: favorites first, then by created_at
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    if (a.is_favorite && !b.is_favorite) return -1
+    if (!a.is_favorite && b.is_favorite) return 1
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
+
+  // Stats
+  const stats = {
+    total: leads.length,
+    suggested: suggestedLeads.length,
+    new: leads.filter(l => l.status === 'new').length,
+    qualified: leads.filter(l => l.status === 'qualified').length,
+    customers: leads.filter(l => l.status === 'customer').length,
+    conversionRate: leads.length > 0 
+      ? Math.round((leads.filter(l => l.status === 'customer').length / leads.length) * 100) 
+      : 0
+  }
 
   const toggleSelect = useCallback((id) => {
     setSelectedIds(prev => {
@@ -307,37 +338,9 @@ export default function Leads() {
     }
   }
 
+
   const getStatusInfo = (statusId) => {
     return LEAD_STATUSES.find(s => s.id === statusId) || LEAD_STATUSES[0]
-  }
-
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         lead.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         lead.company?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter
-    const matchesSource = sourceFilter === 'all' || lead.source === sourceFilter
-    return matchesSearch && matchesStatus && matchesSource
-  })
-
-  // Sort: favorites first, then by created_at
-  const sortedLeads = [...filteredLeads].sort((a, b) => {
-    if (a.is_favorite && !b.is_favorite) return -1
-    if (!a.is_favorite && b.is_favorite) return 1
-    return new Date(b.created_at) - new Date(a.created_at)
-  })
-
-  // Stats
-  const stats = {
-    total: leads.length,
-    suggested: suggestedLeads.length,
-    new: leads.filter(l => l.status === 'new').length,
-    qualified: leads.filter(l => l.status === 'qualified').length,
-    customers: leads.filter(l => l.status === 'customer').length,
-    conversionRate: leads.length > 0 
-      ? Math.round((leads.filter(l => l.status === 'customer').length / leads.length) * 100) 
-      : 0
   }
 
   return (

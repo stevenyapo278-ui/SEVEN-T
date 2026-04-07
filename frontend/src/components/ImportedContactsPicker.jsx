@@ -52,7 +52,8 @@ export default function ImportedContactsPicker({
         contact_number: c.contact_number || c.phone_number || c.number,
         contact_name: c.contact_name || c.name || null,
         agent_id: c.agent_id || agentId || null,
-        agent_name: c.agent_name || null
+        agent_name: c.agent_name || null,
+        jid: c.jid || null
       })
     })
     setSelected(map)
@@ -172,7 +173,8 @@ export default function ImportedContactsPicker({
       agent_id: c.agent_id,
       agent_name: c.agent_name,
       contact_number: c.contact_number,
-      contact_name: c.contact_name || null
+      contact_name: c.contact_name || null,
+      jid: c.jid || null
     }))
     if (mode === 'single') {
       onSelect?.(items[0] || null)

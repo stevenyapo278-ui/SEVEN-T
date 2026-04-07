@@ -7,7 +7,7 @@ import api from '../services/api'
 import toast from 'react-hot-toast'
 import {
   BarChart2, Plus, Send, X, Trash2, CheckCircle2, Clock, Lock,
-  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon, UserPlus, UserCheck, History, Search, Target, Check
+  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon, UserPlus, UserCheck, History, Search, Target, Check, ChevronRight
 } from 'lucide-react'
 import ImportedContactsPicker from '../components/ImportedContactsPicker'
 
@@ -496,6 +496,7 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
       await refresh()
       onRefresh()
       setJid('')
+      setJid('')
       setSelectedContacts(new Map())
       setShowLeadSelect(false)
     } catch (err) {
@@ -503,14 +504,17 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
     } finally { setSending(false) }
   }
 
+  const normalizePhone = (p) => String(p || '').replace(/\D/g, '')
+
   const toggleContact = (c) => {
-    const phone = c.phone || c.contact_number || c.number
-    if (!phone) return
+    const rawPhone = c.phone || c.contact_number || c.number
+    if (!rawPhone) return
+    const phone = normalizePhone(rawPhone)
     const next = new Map(selectedContacts)
     if (next.has(phone)) next.delete(phone)
     else next.set(phone, { 
       name: c.name || c.contact_name || 'Inconnu', 
-      phone, 
+      phone: rawPhone, 
       jid: c.jid || (phone + '@s.whatsapp.net') 
     })
     setSelectedContacts(next)
@@ -636,10 +640,10 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                     {leads
                       .filter(l => l.phone && (l.name?.toLowerCase().includes(leadSearch.toLowerCase()) || l.phone.includes(leadSearch)))
                       .map(l => (
-                      <label key={l.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedContacts.has(l.phone) ? 'bg-violet-500/10 border border-violet-500/20' : 'hover:bg-white/5'}`}>
+                      <label key={l.id} className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${selectedContacts.has(normalizePhone(l.phone)) ? 'bg-violet-500/10 border border-violet-500/20' : 'hover:bg-white/5'}`}>
                         <input 
                           type="checkbox" 
-                          checked={selectedContacts.has(l.phone)}
+                          checked={selectedContacts.has(normalizePhone(l.phone))}
                           onChange={() => toggleContact(l)}
                           className="w-3.5 h-3.5 rounded border-gray-700 bg-black/20 text-violet-500"
                         />
@@ -651,22 +655,34 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                     ))}
                     {leads.filter(l => l.phone).length === 0 && <p className="text-[10px] text-gray-500 text-center py-2">Aucun lead trouvé</p>}
                   </div>
-                  {selectedContacts.size > 0 && !showLeadSelect && (
-                    <div className={`p-3 rounded-xl border ${isDark ? 'bg-space-800/60 border-space-700' : 'bg-white border-gray-200'} mb-2`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sélection ({selectedContacts.size})</span>
-                        <button onClick={() => setSelectedContacts(new Map())} className="text-[9px] text-red-400 hover:text-red-300 font-bold uppercase">Vider</button>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
-                        {Array.from(selectedContacts.values()).map(c => (
-                          <div key={c.phone} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[10px] text-violet-400">
-                            <span className="font-bold truncate max-w-[80px]">{c.name}</span>
-                            <button onClick={() => toggleContact(c)}><X className="w-2.5 h-2.5" /></button>
+                    {selectedContacts.size > 0 && (
+                      <div className={`p-4 rounded-2xl border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'} mb-4 animate-fadeIn`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold">
+                              {selectedContacts.size}
+                            </div>
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Destinataires</span>
                           </div>
-                        ))}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setSelectedContacts(new Map()); }} 
+                            className="text-[10px] font-black text-gray-500 hover:text-red-400 uppercase tracking-widest transition-colors"
+                          >
+                            Vider
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-[100px] overflow-y-auto pr-1 custom-scrollbar">
+                          {Array.from(selectedContacts.values()).map(c => (
+                            <div key={normalizePhone(c.phone)} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-space-800 border border-white/5 text-[10px] text-gray-300">
+                              <span className="font-bold truncate max-w-[100px]">{c.name}</span>
+                              <button onClick={(e) => { e.stopPropagation(); toggleContact(c); }} className="text-gray-500 hover:text-white transition-colors">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {selectedContacts.size > 0 && (
                     <button 

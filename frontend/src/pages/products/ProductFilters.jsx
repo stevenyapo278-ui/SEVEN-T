@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
+import { Search, Check } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 
 export default function ProductFilters({
@@ -14,8 +14,7 @@ export default function ProductFilters({
   allSelected
 }) {
   const { t } = useTranslation()
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const { isDark } = useTheme()
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 min-w-0 mb-6">

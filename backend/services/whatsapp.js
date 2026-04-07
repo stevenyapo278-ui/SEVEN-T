@@ -3659,10 +3659,13 @@ class WhatsAppManager {
         const sock = this.connections.get(toolId);
         if (!sock) throw new Error('WhatsApp non connecté pour cet outil');
 
-        // Normalise JID: add @s.whatsapp.net if needed, resolve LID if possible
+        // Normalise JID: resolve LID first, then ensure clean numeric-only JID for phone numbers
         let recipientJid = await this.resolveToPhoneJid(toolId, jid);
-        if (!recipientJid.includes('@')) {
-            recipientJid = recipientJid.replace(/[^\d+]/g, '') + '@s.whatsapp.net';
+        if (recipientJid.endsWith('@s.whatsapp.net')) {
+            const phone = recipientJid.split('@')[0].replace(/\D/g, '');
+            recipientJid = `${phone}@s.whatsapp.net`;
+        } else if (!recipientJid.includes('@')) {
+            recipientJid = recipientJid.replace(/\D/g, '') + '@s.whatsapp.net';
         }
 
         const pollMessage = {

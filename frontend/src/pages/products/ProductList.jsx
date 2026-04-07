@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Package, Edit, Trash2, History, Tag, Image, Maximize2, ShoppingCart, CheckCircle2, Circle, MoreVertical, MousePointer2 } from 'lucide-react'
+import { Package, Edit, Trash2, History, Tag, Image, Maximize2, ShoppingCart, CheckCircle2, Circle, MoreVertical, MousePointer2, Check, ChevronRight } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext'
 import { getProductImageUrl } from './utils'
 
 export default function ProductList({
