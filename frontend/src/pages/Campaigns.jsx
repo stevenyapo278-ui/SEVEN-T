@@ -939,12 +939,22 @@ export default function Campaigns() {
                       type="text"
                       placeholder="Filtrer mes leads..."
                       className="input-dark w-full py-3 px-11 text-sm rounded-xl"
-                      onChange={(e) => {
-                        // We can filter the visible list below
-                        const term = e.target.value.toLowerCase();
-                        setLeadSearchInModal(term);
-                      }}
+                      value={leadSearchInModal}
+                      onChange={(e) => setLeadSearchInModal(e.target.value)}
                     />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={!form.agent_id}
+                      onClick={() => setImportedPickerOpen(true)}
+                      className="flex-1 py-3 px-4 rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400 text-xs font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-all disabled:opacity-30 disabled:grayscale"
+                    >
+                      <Users className="w-4 h-4 inline-block mr-2" />
+                      Contacts WhatsApp
+                    </button>
+                    {/* If we want to keep a way to import everything automatically */}
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto rounded-2xl border border-white/5 p-3 bg-black/40 shadow-inner custom-scrollbar overscroll-contain">
@@ -1281,12 +1291,26 @@ export default function Campaigns() {
       <ImportedContactsPicker
         open={importedPickerOpen}
         onClose={() => setImportedPickerOpen(false)}
-        agentId={recipientsCampaign?.campaign?.agent_id || recipientsCampaign?.campaign?.agentId || ''}
-        title="Contacts importés"
+        agentId={showModal ? form.agent_id : (recipientsCampaign?.campaign?.agent_id || recipientsCampaign?.campaign?.agentId || '')}
+        title="Contacts WhatsApp"
         mode="multi"
         onSelect={(contacts) => {
           setImportedPickerOpen(false)
-          handleAddImportedContacts(contacts)
+          if (showModal) {
+            const newRecs = [...form.recipients];
+            contacts.forEach(c => {
+              const number = c.jid || c.number;
+              if (number && !newRecs.some(r => r.number === number)) {
+                newRecs.push({ 
+                  number, 
+                  name: c.name || c.pushName || c.notify || '' 
+                });
+              }
+            });
+            setForm({ ...form, recipients: newRecs });
+          } else {
+            handleAddImportedContacts(contacts)
+          }
         }}
       />
 
