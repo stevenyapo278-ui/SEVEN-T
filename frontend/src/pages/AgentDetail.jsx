@@ -45,7 +45,8 @@ import {
   Maximize2,
   Minimize2,
   Lock,
-  Info
+  Info,
+  Upload
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'

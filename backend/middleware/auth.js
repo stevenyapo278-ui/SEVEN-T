@@ -57,6 +57,7 @@ export function authenticateToken(req, res, next) {
     const token = extractToken(req);
 
     if (!token) {
+        console.warn(`[Auth] 401 - Token missing for ${req.method} ${req.url}. Cookies:`, req.cookies ? Object.keys(req.cookies) : 'none');
         return res.status(401).json({ error: 'Non authentifié' });
     }
 
@@ -67,6 +68,7 @@ export function authenticateToken(req, res, next) {
         req.user = decoded;
         next();
     } catch (error) {
+        console.warn(`[Auth] Token validation failed for ${req.method} ${req.url}:`, error.message);
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ error: 'Token expiré', code: 'TOKEN_EXPIRED' });
         }
