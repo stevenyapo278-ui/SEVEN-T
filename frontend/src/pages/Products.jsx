@@ -197,6 +197,8 @@ export default function Products() {
         stockFilter={stockFilter}
         setStockFilter={setStockFilter}
         categories={categories}
+        onToggleSelectAll={toggleSelectAll}
+        allSelected={filteredProducts.length > 0 && selectedIds.size === filteredProducts.length}
       />
 
       {loadError && (
@@ -234,23 +236,26 @@ export default function Products() {
         />
       ) : !loadError ? (
         <>
-          {/* Bulk Action Bar - Improved for Mobile */}
-          {selectedIds.length > 0 && (
+          {/* Bulk Action Bar */}
+          {selectedIds.size > 0 && (
             <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-6 rounded-2xl shadow-2xl animate-slideUp border ${
               isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
             }`}>
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
-                  {selectedIds.length}
+                  {selectedIds.size}
                 </div>
-                <div className="min-w-0">
-                  <p className="font-bold text-xs sm:text-sm truncate">Sélectionné(s)</p>
+                <div className="hidden sm:block">
+                  <p className="font-bold text-sm">Produits sélectionnés</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => toggleSelectAll()}
-                  className="hidden sm:block px-4 py-2 text-sm font-medium hover:bg-white/5 rounded-xl transition-colors"
+                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                    isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                  }`}
                 >
                   Désélectionner
                 </button>
@@ -274,7 +279,6 @@ export default function Products() {
             onView={setSelectedProductView}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
-            onToggleSelectAll={toggleSelectAll}
             data-tour="products-list"
           />
         </>

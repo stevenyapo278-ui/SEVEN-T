@@ -32,7 +32,8 @@ import {
   XCircle,
   MoreVertical,
   Copy,
-  Edit
+  Edit,
+  Check
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'

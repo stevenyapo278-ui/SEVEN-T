@@ -9,7 +9,9 @@ export default function ProductFilters({
   setCategoryFilter,
   stockFilter,
   setStockFilter,
-  categories
+  categories,
+  onToggleSelectAll,
+  allSelected
 }) {
   const { t } = useTranslation()
   const { theme } = useTheme()
@@ -18,8 +20,21 @@ export default function ProductFilters({
   return (
     <div className="flex flex-col sm:flex-row gap-3 min-w-0 mb-6">
       <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
-        isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
+        isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
       }`}>
+        {onToggleSelectAll && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); onToggleSelectAll(); }}
+            className={`p-1.5 rounded-lg border transition-all flex-shrink-0 ${
+              allSelected
+                ? 'bg-blue-500 border-blue-500 text-white'
+                : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
+            }`}
+            title="Tout sélectionner"
+          >
+            <Check className={`w-4 h-4 ${allSelected ? 'opacity-100' : 'opacity-0'}`} />
+          </button>
+        )}
         <Search className="w-5 h-5 text-gray-400" />
         <input
           id="products-search"

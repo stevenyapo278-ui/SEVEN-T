@@ -142,7 +142,7 @@ export default function Orders() {
   const [paymentLinkModal, setPaymentLinkModal] = useState({ open: false, order: null, message: '', url: '', loading: false })
   const [geniuspayConfigured, setGeniuspayConfigured] = useState(false)
   const [sendingInConversation, setSendingInConversation] = useState(null)
-  const [selectedOrderIds, setSelectedOrderIds] = useState([])
+  const [selectedOrderIds, setSelectedOrderIds] = useState(new Set())
   const [showNewOrderModal, setShowNewOrderModal] = useState(false)
   const [products, setProducts] = useState([])
   const [newOrderLoading, setNewOrderLoading] = useState(false)
@@ -420,20 +420,25 @@ export default function Orders() {
 
   const toggleOrderSelection = (id, e) => {
     e?.stopPropagation()
-    setSelectedOrderIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    )
+    setSelectedOrderIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const handleBulkValidate = async () => {
-    if (selectedOrderIds.length === 0) return
+    if (selectedOrderIds.size === 0) return
     setActionLoading(true)
     try {
-      const res = await api.post('/orders/bulk-validate', { orderIds: selectedOrderIds })
+      const res = await api.post('/orders/bulk-validate', { orderIds: Array.from(selectedOrderIds) })
       const count = res.data.success.length
       const failed = res.data.failed.length
       if (count > 0) toast.success(`${count} commande(s) validée(s)`)
       if (failed > 0) toast.error(`${failed} erreur(s) (problème de stock ?)`)
+      
+      setSelectedOrderIds(new Set())
       loadOrders()
       loadStats()
     } catch (error) {
@@ -444,12 +449,14 @@ export default function Orders() {
   }
 
   const handleBulkMarkDelivered = async () => {
-    if (selectedOrderIds.length === 0) return
+    if (selectedOrderIds.size === 0) return
     setActionLoading(true)
     try {
-      const res = await api.post('/orders/bulk-mark-delivered', { orderIds: selectedOrderIds })
+      const res = await api.post('/orders/bulk-mark-delivered', { orderIds: Array.from(selectedOrderIds) })
       const count = res.data.success.length
       if (count > 0) toast.success(`${count} commande(s) marquée(s) comme livrée(s)`)
+      
+      setSelectedOrderIds(new Set())
       loadOrders()
       loadStats()
     } catch (error) {
@@ -1273,8 +1280,35 @@ export default function Orders() {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col md:flex-row gap-3">
           <div className={`flex-1 min-w-0 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
-            isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300'
+            isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
           }`}>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                const allSelected = filteredOrders.length > 0 && filteredOrders.every(o => selectedOrderIds.has(o.id));
+                if (allSelected) {
+                  setSelectedOrderIds(prev => {
+                    const next = new Set(prev);
+                    filteredOrders.forEach(o => next.delete(o.id));
+                    return next;
+                  });
+                } else {
+                  setSelectedOrderIds(prev => {
+                    const next = new Set(prev);
+                    filteredOrders.forEach(o => next.add(o.id));
+                    return next;
+                  });
+                }
+              }}
+              className={`p-1.5 rounded-lg border transition-all flex-shrink-0 ${
+                filteredOrders.length > 0 && filteredOrders.every(o => selectedOrderIds.has(o.id))
+                  ? 'bg-blue-500 border-blue-500 text-white'
+                  : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
+              }`}
+              title="Tout sélectionner"
+            >
+              <Check className={`w-4 h-4 ${filteredOrders.length > 0 && filteredOrders.every(o => selectedOrderIds.has(o.id)) ? 'opacity-100' : 'opacity-0'}`} />
+            </button>
             <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
             <input
               type="text"
@@ -1355,56 +1389,44 @@ export default function Orders() {
       ) : (
         <div className="space-y-2 relative pb-20 sm:pb-0">
           {/* Intelligent Bulk Actions Bar */}
-          {selectedOrderIds.length > 0 && (() => {
-            const selectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+          {selectedOrderIds.size > 0 && (() => {
+            const selectedOrders = orders.filter(o => selectedOrderIds.has(o.id));
             const canValidateCount = selectedOrders.filter(o => o.status === 'pending').length;
             const canDeliverCount = selectedOrders.filter(o => o.status === 'validated').length;
             
             return (
-              <div className={`fixed sm:sticky bottom-4 sm:bottom-auto sm:top-0 left-4 right-4 sm:left-0 sm:right-0 z-40 sm:z-30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-3 sm:p-4 mb-4 rounded-2xl sm:rounded-3xl border animate-slideUp sm:animate-slideDown shadow-2xl backdrop-blur-xl ${
+              <div className={`sticky top-4 sm:top-0 z-40 sm:z-30 flex items-center justify-between p-3 sm:p-4 mb-4 rounded-2xl border animate-slideUp shadow-2xl backdrop-blur-xl ${
                 isDark 
-                  ? 'bg-space-900/90 border-blue-500/30 ring-1 ring-blue-500/20' 
-                  : 'bg-white/95 border-blue-200 ring-1 ring-blue-100'
+                  ? 'bg-space-900/90 border-blue-500/30' 
+                  : 'bg-white/95 border-blue-200 shadow-lg'
               }`}>
-                <div className="flex items-center justify-between sm:justify-start gap-4 mb-3 sm:mb-0 px-2 sm:px-0">
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={() => setSelectedOrderIds([])}
-                      className="p-2 hover:bg-red-500/10 rounded-xl text-red-500 transition-colors"
-                      title="Annuler la sélection"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                    <div className="flex flex-col">
-                      <span className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                        {selectedOrderIds.length} sélectionnée(s)
-                      </span>
-                      <button 
-                        onClick={() => {
-                          const allIds = filteredOrders.map(o => o.id);
-                          const allSelected = allIds.every(id => selectedOrderIds.includes(id));
-                          if (allSelected) {
-                            setSelectedOrderIds(prev => prev.filter(id => !allIds.includes(id)));
-                          } else {
-                            setSelectedOrderIds(prev => Array.from(new Set([...prev, ...allIds])));
-                          }
-                        }}
-                        className="text-[10px] text-gray-500 hover:text-blue-500 font-bold uppercase text-left transition-colors"
-                      >
-                        {filteredOrders.every(o => selectedOrderIds.includes(o.id)) ? 'Tout désélectionner' : 'Tout sélectionner'}
-                      </button>
-                    </div>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                    {selectedOrderIds.size}
+                  </div>
+                  <div className="hidden sm:block">
+                    <p className="font-bold text-sm">Commandes sélectionnées</p>
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSelectedOrderIds(new Set())}
+                    className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                      isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    Désélectionner
+                  </button>
+
                   {canValidateCount > 0 && (
                     <button
                       onClick={handleBulkValidate}
                       disabled={actionLoading}
-                      className="flex-1 sm:flex-none btn-primary py-2.5 sm:py-2 px-4 shadow-lg shadow-blue-500/20 text-xs sm:text-sm flex items-center justify-center gap-2 group transition-all active:scale-95"
+                      className="flex-1 sm:flex-none btn-primary py-2 sm:py-2.5 px-4 shadow-lg shadow-blue-500/20 text-xs sm:text-sm flex items-center justify-center gap-2 font-bold transition-all"
                     >
-                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                       <span className="whitespace-nowrap">Valider ({canValidateCount})</span>
                     </button>
                   )}
@@ -1413,19 +1435,11 @@ export default function Orders() {
                     <button
                       onClick={handleBulkMarkDelivered}
                       disabled={actionLoading}
-                      className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 sm:py-2 px-4 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 group"
+                      className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 sm:py-2.5 px-4 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all"
                     >
-                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />}
+                      {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />}
                       <span className="whitespace-nowrap">Livrer ({canDeliverCount})</span>
                     </button>
-                  )}
-
-                  {canValidateCount === 0 && canDeliverCount === 0 && (
-                    <div className="flex-1 text-center sm:text-right px-4">
-                      <span className="text-[10px] sm:text-xs text-gray-500 font-medium italic">
-                        Aucune action disponible pour ces statuts
-                      </span>
-                    </div>
                   )}
                 </div>
               </div>
@@ -1435,13 +1449,13 @@ export default function Orders() {
           {filteredOrders.map((order, index) => {
             const statusInfo = getStatusInfo(order.status)
             const StatusIcon = statusInfo.icon
-            const isSelected = selectedOrderIds.includes(order.id)
+            const isSelected = selectedOrderIds.has(order.id)
             return (
               <div 
                 key={order.id}
                 onClick={() => setSelectedOrderView(order)}
-                className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn cursor-pointer relative ${
-                  isSelected ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200') 
+                className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 animate-fadeIn cursor-pointer relative ${
+                  isSelected ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200 shadow-sm') 
                   : isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
                 } ${
                   order.status === 'pending' ? 'border-l-2 border-l-amber-500' : 
@@ -1450,16 +1464,22 @@ export default function Orders() {
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="flex items-center justify-between gap-4">
+                {/* Selection Checkbox */}
+                <div 
+                  onClick={(e) => toggleOrderSelection(order.id, e)}
+                  className="flex-shrink-0"
+                >
+                  <div className={`w-6 h-6 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                    isSelected
+                      ? 'bg-blue-500 border-blue-500 text-white'
+                      : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }`}>
+                    {isSelected && <Check className="w-4 h-4" />}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-4 flex-1 min-w-0">
                   <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div 
-                      onClick={(e) => toggleOrderSelection(order.id, e)}
-                      className={`p-1 rounded-lg transition-colors ${
-                        isSelected ? 'text-blue-500' : 'text-gray-600 hover:text-gray-400'
-                      }`}
-                    >
-                      {isSelected ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
-                    </div>
                     <div className={`p-2 rounded-xl flex-shrink-0 ${isDark ? 'bg-space-800' : 'bg-gray-100'} group-hover:scale-110 transition-transform duration-300`}>
                       <StatusIcon className={`w-6 h-6 ${getStatusIconClasses(order.status)}`} />
                     </div>

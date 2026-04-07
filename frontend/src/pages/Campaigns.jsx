@@ -27,7 +27,8 @@ import {
   History,
   RefreshCw,
   Wand2,
-  Layout
+  Layout,
+  Check
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
@@ -356,30 +357,76 @@ export default function Campaigns() {
       </div>
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
-        <div className="flex items-center gap-3 px-4 py-2 rounded-xl border border-white/10 bg-white/5 flex-1 max-w-md focus-within:border-white/20">
-          <button onClick={toggleSelectAll} className={`p-1.5 rounded-lg border transition-all ${selectedIds.size === filteredCampaigns.length && filteredCampaigns.length > 0 ? 'bg-blue-500 border-blue-500' : 'border-white/10'}`}>
-            <CheckCircle2 className={`w-4 h-4 ${selectedIds.size === filteredCampaigns.length && filteredCampaigns.length > 0 ? 'opacity-100' : 'opacity-0'}`} />
+        <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 flex-1 max-w-md ${
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+        }`}>
+          <button 
+            onClick={toggleSelectAll} 
+            className={`p-1.5 rounded-lg border transition-all flex items-center justify-center flex-shrink-0 ${
+              selectedIds.size === filteredCampaigns.length && filteredCampaigns.length > 0
+                ? 'bg-blue-500 border-blue-500 text-white'
+                : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
+            }`}
+            title="Tout sélectionner"
+          >
+            <Check className={`w-4 h-4 ${selectedIds.size === filteredCampaigns.length && filteredCampaigns.length > 0 ? 'opacity-100' : 'opacity-0'}`} />
           </button>
-          <Search className="w-5 h-5 text-gray-500" />
+          <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
           <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-transparent border-none focus:ring-0 w-full text-sm" />
         </div>
-        {selectedIds.size > 0 && (
-          <button onClick={handleDeleteSelected} disabled={bulkLoading} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all">
-            <Trash2 className="w-4 h-4" /><span>Supprimer ({selectedIds.size})</span>
-          </button>
-        )}
       </div>
 
       <div className="space-y-4">
+        {/* Bulk Action Bar */}
+        {selectedIds.size > 0 && (
+          <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-6 rounded-2xl shadow-2xl animate-slideUp border ${
+            isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+          }`}>
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                {selectedIds.size}
+              </div>
+              <div className="hidden sm:block">
+                <p className="font-bold text-sm">Campagnes sélectionnées</p>
+                <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                  isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                }`}
+              >
+                Désélectionner
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={bulkLoading}
+                className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span className="hidden xs:inline">Supprimer</span>
+              </button>
+            </div>
+          </div>
+        )}
         {filteredCampaigns.map(c => {
           const isSelected = selectedIds.has(c.id)
           return (
-            <div key={c.id} className={`card p-6 transition-all ${isSelected ? 'border-blue-500/50 bg-blue-500/5' : 'hover:border-white/10'}`}>
+            <div key={c.id} className={`card p-6 transition-all ${isSelected ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200 shadow-sm') : 'hover:border-white/10'}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-4 flex-1">
-                  <button onClick={() => toggleSelect(c.id)} className={`mt-1 w-6 h-6 rounded-lg border transition-all flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-white/10 bg-white/5'}`}>
-                    {isSelected && <CheckCircle2 className="w-4 h-4" />}
-                  </button>
+                  <div 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(c.id); }}
+                    className={`mt-1 w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-500 border-blue-500 text-white'
+                        : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-4 h-4" />}
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
                       <h3 className="font-bold text-gray-100">{c.name}</h3>

@@ -156,36 +156,40 @@ export function useProducts() {
     }
   }
 
-  const [selectedIds, setSelectedIds] = useState([])
+  const [selectedIds, setSelectedIds] = useState(new Set())
 
-  const toggleSelect = (id) => {
-    setSelectedIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    )
-  }
+  const toggleSelect = useCallback((id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filteredProducts.length) {
-      setSelectedIds([])
+  const toggleSelectAll = useCallback(() => {
+    if (selectedIds.size === filteredProducts.length && filteredProducts.length > 0) {
+      setSelectedIds(new Set())
     } else {
-      setSelectedIds(filteredProducts.map(p => p.id))
+      setSelectedIds(new Set(filteredProducts.map(p => p.id)))
     }
-  }
+  }, [selectedIds.size, filteredProducts])
 
   const handleBulkDelete = async () => {
-    if (selectedIds.length === 0) return
+    const count = selectedIds.size
+    if (count === 0) return
     const ok = await showConfirm({
       title: 'Suppression en masse',
-      message: `Voulez-vous vraiment supprimer les ${selectedIds.length} produits sélectionnés ?`,
+      message: `Voulez-vous vraiment supprimer les ${count} produits sélectionnés ?`,
       variant: 'danger',
       confirmLabel: 'Supprimer tout'
     })
     if (!ok) return
 
     try {
-      await api.post('/products/bulk-delete', { ids: selectedIds })
-      toast.success(`${selectedIds.length} produits supprimés`)
-      setSelectedIds([])
+      await api.post('/products/bulk-delete', { ids: Array.from(selectedIds) })
+      toast.success(`${count} produits supprimés`)
+      setSelectedIds(new Set())
       loadProducts()
     } catch (error) {
       toast.error('Erreur lors de la suppression en masse')

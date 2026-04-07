@@ -7,7 +7,7 @@ import api from '../services/api'
 import toast from 'react-hot-toast'
 import {
   BarChart2, Plus, Send, X, Trash2, CheckCircle2, Clock, Lock,
-  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon, UserPlus, UserCheck, History, Search, Target
+  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon, UserPlus, UserCheck, History, Search, Target, Check
 } from 'lucide-react'
 import ImportedContactsPicker from '../components/ImportedContactsPicker'
 
@@ -158,26 +158,6 @@ export default function Polls() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {selectedIds.size > 0 && (
-              <div className="flex items-center gap-2 mr-2 pr-2 border-r border-space-700/50">
-                <button
-                  onClick={handleCloseSelected}
-                  disabled={bulkLoading}
-                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-amber-400 hover:text-amber-300' : 'bg-white border-gray-200 text-amber-500'}`}
-                  title="Fermer la sélection"
-                >
-                  <Lock className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleDeleteSelected}
-                  disabled={bulkLoading}
-                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-red-400 hover:text-red-300' : 'bg-white border-gray-200 text-red-500'}`}
-                  title="Supprimer la sélection"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-              </div>
-            )}
             <button onClick={load} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualiser</span>
@@ -215,10 +195,10 @@ export default function Polls() {
         }`}>
           <button
             onClick={toggleSelectAll}
-            className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+            className={`p-1.5 rounded-lg border transition-all flex items-center justify-center flex-shrink-0 ${
               selectedIds.size === filteredPolls.length && filteredPolls.length > 0
-                ? 'bg-violet-600 border-violet-600 text-white'
-                : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+                ? 'bg-blue-500 border-blue-500 text-white'
+                : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
             }`}
             title="Tout sélectionner"
           >
@@ -258,7 +238,50 @@ export default function Polls() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <>
+          {/* Bulk Action Bar */}
+          {selectedIds.size > 0 && (
+            <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-6 rounded-2xl shadow-2xl animate-slideUp border ${
+              isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+            }`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                  {selectedIds.size}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="font-bold text-sm">Sondages sélectionnés</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                    isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  Désélectionner
+                </button>
+                <button
+                  onClick={handleCloseSelected}
+                  disabled={bulkLoading}
+                  className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20 text-xs sm:text-sm"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span className="hidden xs:inline">Fermer</span>
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={bulkLoading}
+                  className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden xs:inline">Supprimer</span>
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredPolls.map(poll => {
             const results = safeJson(poll.results, [])
             const topResult = [...results].sort((a, b) => (b.count || 0) - (a.count || 0))[0]
@@ -275,8 +298,8 @@ export default function Polls() {
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(poll.id); }}
                       className={`w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
                         isSelected
-                          ? 'bg-violet-600 border-violet-600 text-white'
-                          : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                       }`}
                     >
                       {isSelected && <Check className="w-4 h-4" />}
@@ -327,7 +350,8 @@ export default function Polls() {
               </div>
             )
           })}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Create Modal */}

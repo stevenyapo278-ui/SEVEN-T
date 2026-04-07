@@ -185,18 +185,6 @@ export default function Team() {
           <p className="text-gray-500 mt-1">Gérez les accès de vos collaborateurs à votre espace SaaS.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {selectedIds.size > 0 && (
-            <div className="flex items-center gap-2 mr-2 pr-2 border-r border-space-700/50">
-              <button
-                onClick={handleDeleteSelected}
-                disabled={bulkLoading}
-                className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-red-400 hover:text-red-300' : 'bg-white border-gray-200 text-red-500'}`}
-                title="Supprimer la sélection"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
-          )}
           <button onClick={loadTeam} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -219,10 +207,10 @@ export default function Team() {
       }`}>
         <button
           onClick={toggleSelectAll}
-          className={`p-1.5 rounded-lg border transition-all flex items-center justify-center ${
+          className={`p-1.5 rounded-lg border transition-all flex items-center justify-center flex-shrink-0 ${
             selectedIds.size === filteredMembers.length && filteredMembers.length > 0
               ? 'bg-blue-500 border-blue-500 text-white'
-              : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+              : isDark ? 'border-space-600 bg-space-800/50' : 'border-gray-200 bg-gray-50'
           }`}
           title="Tout sélectionner"
         >
@@ -250,7 +238,42 @@ export default function Team() {
           <button onClick={() => setShowAddModal(true)} className="text-blue-500 font-semibold hover:underline">Ajouter un membre</button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <>
+          {/* Bulk Action Bar */}
+          {selectedIds.size > 0 && (
+            <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-6 rounded-2xl shadow-2xl animate-slideUp border ${
+              isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+            }`}>
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                  {selectedIds.size}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="font-bold text-sm">Membres sélectionnés</p>
+                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+                    isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  Désélectionner
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={bulkLoading}
+                  className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden xs:inline">Supprimer</span>
+                </button>
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredMembers.map((member) => {
             const isSelected = selectedIds.has(member.id)
             return (
@@ -259,7 +282,11 @@ export default function Team() {
                   <div className="flex items-center gap-4">
                     <div 
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(member.id) }}
-                      className={`w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${isSelected ? 'bg-blue-500 border-blue-500 text-white' : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'}`}
+                      className={`w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                        isSelected 
+                          ? 'bg-blue-500 border-blue-500 text-white' 
+                          : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                      }`}
                     >
                       {isSelected && <Check className="w-4 h-4" />}
                     </div>
@@ -283,7 +310,8 @@ export default function Team() {
               </div>
             )
           })}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Add/Edit Modal */}
