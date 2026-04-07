@@ -54,6 +54,7 @@ import subscriptionRoutes, { handleGeniusPaySubscriptionWebhook } from './routes
 import landingChatRoutes from './routes/landingChat.js';
 import chatbotRoutes from './routes/chatbot.js';
 import settingsRoutes from './routes/settings.js';
+import pollRoutes from './routes/polls.js';
 import serviceRoutes from './routes/services.js';
 import ticketsRoutes from './routes/tickets.js';
 import adminTicketsRoutes from './routes/adminTickets.js';
@@ -200,6 +201,7 @@ app.use('/api/flows', flowRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/polls', pollRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/admin', adminTicketsRoutes);
 app.use('/api/subscription', subscriptionRoutes);

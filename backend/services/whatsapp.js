@@ -2,7 +2,8 @@ import makeWASocket, {
     DisconnectReason,
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
-    downloadMediaMessage
+    downloadMediaMessage,
+    getAggregateVotesInPollMessage
 } from 'baileys';
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
@@ -653,6 +654,60 @@ class WhatsAppManager {
 
                 for (const message of messages) {
                     await this.handleIncomingMessage(toolId, sock, message, type);
+                }
+            });
+
+            // Handle poll vote updates
+            sock.ev.on('messages.update', async (updates) => {
+                for (const { key, update } of updates) {
+                    if (!update.pollUpdates) continue;
+                    try {
+                        const store = this.stores.get(toolId);
+                        const jid = key.remoteJid;
+                        let pollCreationMessage;
+                        if (jid && store?.messages?.[jid]) {
+                            const raw = store.messages[jid].find(m => m.key.id === key.id);
+                            if (raw) pollCreationMessage = raw.message;
+                        }
+                        if (!pollCreationMessage) continue;
+
+                        const aggregatedVotes = getAggregateVotesInPollMessage({
+                            message: pollCreationMessage,
+                            pollUpdates: update.pollUpdates
+                        });
+
+                        // Persist votes in DB
+                        const pollRow = await db.get('SELECT id FROM polls WHERE wa_message_id = ?', key.id);
+                        if (!pollRow) continue;
+
+                        for (const option of aggregatedVotes) {
+                            for (const voterJid of option.voters) {
+                                // Upsert vote
+                                await db.run(`
+                                    INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
+                                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                                    ON CONFLICT DO NOTHING
+                                `, pollRow.id, voterJid, JSON.stringify([option.name]));
+                            }
+                        }
+
+                        // Recompute results
+                        const results = aggregatedVotes.map(opt => ({
+                            name: opt.name,
+                            count: opt.voters.length,
+                            voters: opt.voters
+                        }));
+                        const totalVotes = results.reduce((s, r) => s + r.count, 0);
+
+                        await db.run(
+                            'UPDATE polls SET results = ?, total_votes = ? WHERE id = ?',
+                            JSON.stringify(results), totalVotes, pollRow.id
+                        );
+
+                        console.log(`[WhatsApp] Poll ${pollRow.id} updated: ${totalVotes} vote(s)`);
+                    } catch (e) {
+                        console.error('[WhatsApp] Error handling poll update:', e.message);
+                    }
                 }
             });
 
@@ -3570,6 +3625,39 @@ class WhatsAppManager {
             });
             throw sendErr;
         }
+    }
+
+
+    /**
+     * Send a WhatsApp native Poll message
+     * @param {string} toolId
+     * @param {string} jid - recipient JID or phone number
+     * @param {string} question - poll question
+     * @param {string[]} options - list of answer choices (2 to 12)
+     * @param {boolean} allowMultiple - whether voters can pick multiple options
+     */
+    async sendPoll(toolId, jid, question, options, allowMultiple = false) {
+        const sock = this.connections.get(toolId);
+        if (!sock) throw new Error('WhatsApp non connecté pour cet outil');
+
+        // Normalise JID: add @s.whatsapp.net if needed
+        let recipientJid = jid;
+        if (!recipientJid.includes('@')) {
+            recipientJid = recipientJid.replace(/[^\d+]/g, '') + '@s.whatsapp.net';
+        }
+
+        const pollMessage = {
+            poll: {
+                name: question,
+                values: options,
+                selectableCount: allowMultiple ? options.length : 1
+            }
+        };
+
+        console.log(`[WhatsApp] Sending poll to ${recipientJid} for tool ${toolId}: "${question}" (${options.length} options)`);
+        const result = await sock.sendMessage(recipientJid, pollMessage);
+        console.log(`[WhatsApp] Poll sent: ${result?.key?.id}`);
+        return result;
     }
 
     /**

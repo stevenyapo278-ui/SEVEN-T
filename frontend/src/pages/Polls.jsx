@@ -1,0 +1,450 @@
+import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { useTheme } from '../contexts/ThemeContext'
+import { useAuth } from '../contexts/AuthContext'
+import api from '../services/api'
+import toast from 'react-hot-toast'
+import {
+  BarChart2, Plus, Send, X, Trash2, CheckCircle2, Clock, Lock,
+  Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon
+} from 'lucide-react'
+
+function safeJson(val, fallback) {
+  if (!val) return fallback
+  if (Array.isArray(val)) return val
+  try { return JSON.parse(val) } catch { return fallback }
+}
+
+const STATUS_BADGE = {
+  draft: { label: 'Brouillon', class: 'bg-gray-500/10 text-gray-400 border-gray-500/20' },
+  active: { label: 'Actif', class: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  closed: { label: 'Fermé', class: 'bg-red-500/10 text-red-400 border-red-500/20' },
+}
+
+export default function Polls() {
+  const { isDark } = useTheme()
+  const { user } = useAuth()
+  const [polls, setPolls] = useState([])
+  const [stats, setStats] = useState({ total: 0, active: 0, closed: 0, totalVotes: 0 })
+  const [loading, setLoading] = useState(true)
+  const [showCreate, setShowCreate] = useState(false)
+  const [selectedPoll, setSelectedPoll] = useState(null)
+  const [agents, setAgents] = useState([])
+  const [statusFilter, setStatusFilter] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [pollsRes, statsRes, agentsRes] = await Promise.all([
+        api.get('/polls' + (statusFilter ? `?status=${statusFilter}` : '')),
+        api.get('/polls/stats/overview'),
+        api.get('/agents')
+      ])
+      setPolls(pollsRes.data.polls || [])
+      setStats(statsRes.data.stats || {})
+      setAgents(agentsRes.data.agents || [])
+    } catch {
+      toast.error('Erreur de chargement')
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter])
+
+  useEffect(() => { load() }, [load])
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Supprimer ce sondage ?')) return
+    try {
+      await api.delete(`/polls/${id}`)
+      toast.success('Sondage supprimé')
+      load()
+    } catch { toast.error('Erreur lors de la suppression') }
+  }
+
+  const handleClose = async (id) => {
+    try {
+      await api.post(`/polls/${id}/close`)
+      toast.success('Sondage fermé')
+      load()
+    } catch { toast.error('Erreur') }
+  }
+
+  return (
+    <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
+      {/* Header */}
+      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 ${isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'}`}>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-violet-500/10 rounded-xl flex-shrink-0">
+                <BarChart2 className="w-6 h-6 text-violet-400" />
+              </div>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Sondages WhatsApp
+              </h1>
+            </div>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
+              Créez des sondages natifs WhatsApp et analysez les votes en temps réel.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+            <button onClick={load} className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Actualiser</span>
+            </button>
+            <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold shadow-lg shadow-violet-500/20 transition-all">
+              <Plus className="w-5 h-5" />
+              Nouveau sondage
+            </button>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+          {[
+            { label: 'Total', val: stats.total, icon: BarChart2, color: 'violet' },
+            { label: 'Actifs', val: stats.active, icon: CheckCircle2, color: 'emerald' },
+            { label: 'Fermés', val: stats.closed, icon: Lock, color: 'red' },
+            { label: 'Votes', val: stats.totalVotes, icon: Users, color: 'blue' }
+          ].map(({ label, val, icon: Icon, color }) => (
+            <div key={label} className={`p-4 rounded-2xl border ${isDark ? 'bg-space-800/40 border-space-700/50' : 'bg-white border-gray-100 shadow-sm'}`}>
+              <div className={`w-8 h-8 rounded-lg bg-${color}-500/10 flex items-center justify-center mb-2`}>
+                <Icon className={`w-4 h-4 text-${color}-400`} />
+              </div>
+              <p className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>{val ?? 0}</p>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {[['', 'Tous'], ['draft', 'Brouillons'], ['active', 'Actifs'], ['closed', 'Fermés']].map(([val, l]) => (
+          <button key={val} onClick={() => setStatusFilter(val)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${statusFilter === val
+              ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
+              : isDark ? 'bg-space-800 text-gray-400 hover:bg-space-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+            }`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="w-10 h-10 animate-spin text-violet-500" /></div>
+      ) : polls.length === 0 ? (
+        <div className={`p-12 rounded-3xl border-2 border-dashed text-center ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
+          <BarChart2 className="w-12 h-12 text-violet-400 opacity-30 mx-auto mb-4" />
+          <h3 className="text-xl font-bold mb-2">Aucun sondage</h3>
+          <p className="text-gray-500 mb-6">Créez votre premier sondage WhatsApp natif.</p>
+          <button onClick={() => setShowCreate(true)} className="px-6 py-3 bg-violet-600 text-white rounded-2xl font-semibold hover:bg-violet-500 transition-all">
+            Créer un sondage
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {polls.map(poll => {
+            const results = safeJson(poll.results, [])
+            const topResult = [...results].sort((a, b) => (b.count || 0) - (a.count || 0))[0]
+            const badge = STATUS_BADGE[poll.status] || STATUS_BADGE.draft
+            return (
+              <div key={poll.id}
+                className={`group relative p-5 rounded-3xl border transition-all duration-300 cursor-pointer hover:shadow-xl ${isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/70 hover:border-violet-500/30' : 'bg-white border-gray-100 hover:shadow-violet-100 hover:border-violet-200'}`}
+                onClick={() => setSelectedPoll(poll)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badge.class}`}>
+                    {badge.label}
+                  </span>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                    {poll.status === 'active' && (
+                      <button onClick={() => handleClose(poll.id)} className="p-1.5 hover:bg-red-500/10 text-red-400 rounded-lg" title="Fermer">
+                        <Lock className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {poll.status === 'draft' && (
+                      <button onClick={() => handleDelete(poll.id)} className="p-1.5 hover:bg-red-500/10 text-red-400 rounded-lg" title="Supprimer">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <h3 className={`font-bold text-base mb-1 line-clamp-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{poll.title}</h3>
+                <p className="text-sm text-gray-500 line-clamp-2 mb-3">{poll.question}</p>
+
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{poll.total_votes ?? 0} votes</span>
+                  <span>{safeJson(poll.options, []).length} options</span>
+                  <span className="text-gray-600 font-mono">{poll.agent_name}</span>
+                </div>
+
+                {results.length > 0 && topResult && (
+                  <div className="space-y-1.5">
+                    {results.slice(0, 3).map(r => {
+                      const pct = poll.total_votes > 0 ? Math.round((r.count / poll.total_votes) * 100) : 0
+                      return (
+                        <div key={r.name}>
+                          <div className="flex justify-between text-[10px] text-gray-500 mb-0.5">
+                            <span className="truncate max-w-[140px]">{r.name}</span>
+                            <span className="font-bold">{pct}%</span>
+                          </div>
+                          <div className={`h-1.5 rounded-full ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
+                            <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {showCreate && createPortal(
+        <CreatePollModal agents={agents} onClose={() => setShowCreate(false)} onSuccess={() => { setShowCreate(false); load() }} isDark={isDark} />,
+        document.body
+      )}
+
+      {/* Detail Modal */}
+      {selectedPoll && createPortal(
+        <PollDetailModal poll={selectedPoll} onClose={() => setSelectedPoll(null)} onRefresh={load} isDark={isDark} />,
+        document.body
+      )}
+    </div>
+  )
+}
+
+/* ── Create Poll Modal ─────────────────────────────────────────── */
+function CreatePollModal({ agents, onClose, onSuccess, isDark }) {
+  const [form, setForm] = useState({ agent_id: agents[0]?.id || '', title: '', question: '', options: ['', ''], allow_multiple: false })
+  const [saving, setSaving] = useState(false)
+
+  const addOption = () => form.options.length < 12 && setForm(f => ({ ...f, options: [...f.options, ''] }))
+  const removeOption = (i) => form.options.length > 2 && setForm(f => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
+  const setOption = (i, val) => setForm(f => ({ ...f, options: f.options.map((o, idx) => idx === i ? val : o) }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const opts = form.options.map(o => o.trim()).filter(Boolean)
+    if (opts.length < 2) return toast.error('Au moins 2 options requises')
+    setSaving(true)
+    try {
+      await api.post('/polls', { ...form, options: opts })
+      toast.success('Sondage créé !')
+      onSuccess()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+      <div className={`relative z-10 w-full max-w-lg rounded-3xl shadow-2xl border overflow-hidden ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-100'}`} onClick={e => e.stopPropagation()}>
+        <div className={`p-5 border-b flex items-center justify-between ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
+          <h2 className="font-bold text-lg flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 text-violet-400" />
+            Nouveau sondage
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-space-800 rounded-xl transition-colors"><X className="w-4 h-4 text-gray-400" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Agent WhatsApp</label>
+            <select value={form.agent_id} onChange={e => setForm(f => ({ ...f, agent_id: e.target.value }))} className={`w-full px-4 py-3 rounded-2xl border bg-transparent outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'border-space-700 text-white' : 'border-gray-200'}`} required>
+              {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Titre (interne)</label>
+            <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={`w-full px-4 py-3 rounded-2xl border bg-transparent outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'border-space-700 text-white' : 'border-gray-200'}`} placeholder="Ex: Sondage satisfaction client" required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Question du sondage</label>
+            <input value={form.question} onChange={e => setForm(f => ({ ...f, question: e.target.value }))} className={`w-full px-4 py-3 rounded-2xl border bg-transparent outline-none focus:ring-2 focus:ring-violet-500 ${isDark ? 'border-space-700 text-white' : 'border-gray-200'}`} placeholder="Que pensez-vous de notre service ?" required />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-gray-400 uppercase">Options ({form.options.length}/12)</label>
+              <button type="button" onClick={addOption} className="text-xs text-violet-400 hover:text-violet-300 font-semibold flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Ajouter
+              </button>
+            </div>
+            <div className="space-y-2">
+              {form.options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-5 text-center font-bold">{i + 1}</span>
+                  <input value={opt} onChange={e => setOption(i, e.target.value)} className={`flex-1 px-3 py-2.5 rounded-xl border bg-transparent outline-none focus:ring-2 focus:ring-violet-500 text-sm ${isDark ? 'border-space-700 text-white' : 'border-gray-200'}`} placeholder={`Option ${i + 1}`} />
+                  {form.options.length > 2 && (
+                    <button type="button" onClick={() => removeOption(i)} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className={`relative w-10 h-5 rounded-full transition-colors ${form.allow_multiple ? 'bg-violet-500' : isDark ? 'bg-space-700' : 'bg-gray-200'}`} onClick={() => setForm(f => ({ ...f, allow_multiple: !f.allow_multiple }))}>
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${form.allow_multiple ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            </div>
+            <span className="text-sm text-gray-400">Permettre plusieurs réponses</span>
+          </label>
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className={`flex-1 py-3 rounded-2xl font-semibold transition-all ${isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Annuler</button>
+            <button type="submit" disabled={saving} className="flex-1 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-semibold shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+              Créer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+/* ── Poll Detail Modal ─────────────────────────────────────────── */
+function PollDetailModal({ poll: initialPoll, onClose, onRefresh, isDark }) {
+  const [poll, setPoll] = useState(initialPoll)
+  const [sending, setSending] = useState(false)
+  const [jid, setJid] = useState('')
+  const [agents, setAgents] = useState([])
+
+  const results = safeJson(poll.results, [])
+  const options = safeJson(poll.options, [])
+
+  const refresh = async () => {
+    try {
+      const res = await api.get(`/polls/${poll.id}`)
+      setPoll(res.data.poll)
+    } catch {}
+  }
+
+  useEffect(() => {
+    const iv = setInterval(refresh, 8000)
+    return () => clearInterval(iv)
+  }, [poll.id])
+
+  const handleSend = async (e) => {
+    e.preventDefault()
+    if (!jid.trim()) return toast.error('Entrez un numéro')
+    setSending(true)
+    try {
+      await api.post(`/polls/${poll.id}/send`, { jid: jid.trim() })
+      toast.success('Sondage envoyé !')
+      await refresh()
+      onRefresh()
+      setJid('')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur envoi')
+    } finally { setSending(false) }
+  }
+
+  const handleClose = async () => {
+    try {
+      await api.post(`/polls/${poll.id}/close`)
+      toast.success('Sondage fermé')
+      await refresh()
+      onRefresh()
+    } catch { toast.error('Erreur') }
+  }
+
+  const badge = STATUS_BADGE[poll.status] || STATUS_BADGE.draft
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-fade-in" onClick={onClose}>
+      <div className={`relative z-10 w-full max-w-xl rounded-3xl shadow-2xl border overflow-hidden flex flex-col max-h-[90dvh] ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-100'}`} onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={`p-5 border-b flex-shrink-0 ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                <BarChart2 className="w-5 h-5 text-violet-400" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-base truncate">{poll.title}</h2>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badge.class}`}>{badge.label}</span>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-space-800 rounded-xl transition-colors flex-shrink-0 ml-2"><X className="w-4 h-4 text-gray-400" /></button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Question */}
+          <div className={`p-4 rounded-2xl ${isDark ? 'bg-space-800/60 border border-space-700' : 'bg-violet-50 border border-violet-100'}`}>
+            <p className="text-xs font-bold text-violet-400 uppercase mb-1 tracking-wider">Question</p>
+            <p className={`text-base font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{poll.question}</p>
+            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+              <span className="flex items-center gap-1"><Users className="w-3 h-3" />{poll.total_votes ?? 0} votes</span>
+              <span>{poll.allow_multiple ? 'Choix multiple' : 'Choix unique'}</span>
+              <span>{poll.agent_name}</span>
+            </div>
+          </div>
+
+          {/* Results */}
+          <div>
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Résultats</h4>
+            <div className="space-y-3">
+              {options.map(opt => {
+                const r = results.find(res => res.name === opt) || { count: 0 }
+                const pct = poll.total_votes > 0 ? Math.round((r.count / poll.total_votes) * 100) : 0
+                return (
+                  <div key={opt}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{opt}</span>
+                      <span className="font-bold text-violet-400">{r.count} vote{r.count !== 1 ? 's' : ''} • {pct}%</span>
+                    </div>
+                    <div className={`h-2 rounded-full ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
+                      <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Send form */}
+          {poll.status !== 'closed' && (
+            <div className={`p-4 rounded-2xl border ${isDark ? 'border-space-700 bg-space-800/40' : 'border-gray-100 bg-gray-50'}`}>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Send className="w-3 h-3" /> Envoyer le sondage
+              </h4>
+              <form onSubmit={handleSend} className="flex gap-2">
+                <input
+                  value={jid}
+                  onChange={e => setJid(e.target.value)}
+                  placeholder="Ex: 2250700000000"
+                  className={`flex-1 px-3 py-2.5 rounded-xl border bg-transparent outline-none focus:ring-2 focus:ring-violet-500 text-sm ${isDark ? 'border-space-600 text-white' : 'border-gray-200'}`}
+                />
+                <button type="submit" disabled={sending} className="px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-semibold text-sm flex items-center gap-2 disabled:opacity-50 transition-all">
+                  {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </button>
+              </form>
+              <p className="text-[10px] text-gray-500 mt-1.5">Format international sans '+' ni espaces</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className={`p-4 border-t flex-shrink-0 flex gap-3 ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
+          {poll.status === 'active' && (
+            <button onClick={handleClose} className="flex-1 py-3 rounded-2xl text-sm font-semibold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2">
+              <Lock className="w-4 h-4" /> Fermer le sondage
+            </button>
+          )}
+          <button onClick={refresh} className={`py-3 px-5 rounded-2xl text-sm font-semibold transition-all ${isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

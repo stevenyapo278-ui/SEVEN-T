@@ -1702,7 +1702,60 @@ export async function initDatabase() {
         }
     }
 
+
+    // Migration: Module 15 - Sondages WhatsApp
+    try {
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS polls (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                agent_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                question TEXT NOT NULL,
+                options TEXT NOT NULL DEFAULT '[]',
+                allow_multiple INTEGER DEFAULT 0,
+                target_jids TEXT,
+                status TEXT DEFAULT 'draft',
+                wa_message_id TEXT,
+                wa_message_key TEXT,
+                total_votes INTEGER DEFAULT 0,
+                results TEXT DEFAULT '[]',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                sent_at TIMESTAMP,
+                closed_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_polls_user ON polls(user_id);
+            CREATE INDEX IF NOT EXISTS idx_polls_status ON polls(status);
+
+            CREATE TABLE IF NOT EXISTS poll_votes (
+                id SERIAL PRIMARY KEY,
+                poll_id TEXT NOT NULL,
+                voter_jid TEXT NOT NULL,
+                selected_options TEXT NOT NULL DEFAULT '[]',
+                voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON poll_votes(poll_id);
+        `);
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('polls migration error:', e?.message);
+        }
+    }
+
+    // Migration: polls_module_enabled per user
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS polls_module_enabled INTEGER DEFAULT 0');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.polls_module_enabled migration:', e?.message);
+        }
+    }
+
     console.log('PostgreSQL schema initialized successfully');
+
 }
 
 export default db;
