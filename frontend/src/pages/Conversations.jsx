@@ -309,16 +309,16 @@ export default function Conversations() {
     }
   }
 
-  const handleInitiateDiscussion = async (jids, agentId, selectedContact) => {
-    if (!jids || jids.length === 0) return
+  const handleInitiateDiscussion = async (contact) => {
+    if (!contact || !contact.contact_number) return
     setContactPickerOpen(false)
-    const targetJid = jids[0]
+    const targetJid = contact.contact_number.includes('@') ? contact.contact_number : `${contact.contact_number}@s.whatsapp.net`
     try {
       const { data } = await api.post('/conversations/initiate', {
-        agent_id: agentId,
+        agent_id: contact.agent_id,
         contact_jid: targetJid,
-        contact_name: selectedContact?.name,
-        contact_number: selectedContact?.number
+        contact_name: contact.contact_name,
+        contact_number: contact.contact_number
       })
       navigate(`/dashboard/conversations/${data.id}`)
     } catch (error) {
