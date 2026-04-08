@@ -1739,6 +1739,18 @@ export async function initDatabase() {
         }
 
         await db.exec(`
+            CREATE TABLE IF NOT EXISTS poll_recipients (
+                id SERIAL PRIMARY KEY,
+                poll_id TEXT NOT NULL,
+                contact_jid TEXT NOT NULL,
+                wa_message_id TEXT,
+                wa_message_key TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_poll_recipients_poll ON poll_recipients(poll_id);
+            CREATE INDEX IF NOT EXISTS idx_poll_recipients_wa_id ON poll_recipients(wa_message_id);
+
             CREATE TABLE IF NOT EXISTS poll_votes (
                 id SERIAL PRIMARY KEY,
                 poll_id TEXT NOT NULL,
@@ -1748,6 +1760,7 @@ export async function initDatabase() {
                 FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
             );
             CREATE INDEX IF NOT EXISTS idx_poll_votes_poll ON poll_votes(poll_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_poll_votes_unique_voter ON poll_votes(poll_id, voter_jid);
         `);
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {

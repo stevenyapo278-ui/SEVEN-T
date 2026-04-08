@@ -709,7 +709,10 @@ class WhatsAppManager {
                                 await db.run(`
                                     INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
                                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                                    ON CONFLICT DO NOTHING
+                                    ON CONFLICT (poll_id, voter_jid) 
+                                    DO UPDATE SET 
+                                        selected_options = EXCLUDED.selected_options,
+                                        voted_at = EXCLUDED.voted_at
                                 `, pollRow.id, voterJid, JSON.stringify([option.name]));
                             }
                         }
