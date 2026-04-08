@@ -697,7 +697,6 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                 Envoyer à {selectedContacts.size} contact(s)
               </button>
             )}
-              )}
             </div>
           )}
           <ImportedContactsPicker 
