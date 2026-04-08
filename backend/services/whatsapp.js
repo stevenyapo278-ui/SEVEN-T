@@ -2538,6 +2538,12 @@ class WhatsAppManager {
         // Handle different message types
         if (msg.conversation) return msg.conversation;
         if (msg.extendedTextMessage?.text) return msg.extendedTextMessage.text;
+        
+        // Handle Polls
+        const poll = msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3 || msg.poll;
+        if (poll?.name) return `[Sondage] ${poll.name}`;
+        if (poll) return '[Sondage]';
+
         if (msg.imageMessage?.caption) return msg.imageMessage.caption;
         if (msg.videoMessage?.caption) return msg.videoMessage.caption;
         if (msg.documentMessage?.caption) return msg.documentMessage.caption;

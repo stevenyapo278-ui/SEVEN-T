@@ -4,14 +4,11 @@ import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { whatsappManager } from '../services/whatsapp.js';
 import { sendCampaign } from '../services/campaigns.js';
-import { requireModule } from '../middleware/requireModule.js';
 
 const router = Router();
-router.use(authenticateToken);
-router.use(requireModule('campaigns'));
 
 // Get all campaigns for user
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const { status } = req.query;
 
@@ -40,7 +37,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get campaign by ID with recipients
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
     try {
         const campaign = await db.get(`
             SELECT c.*, a.name as agent_name
@@ -63,7 +60,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create campaign
-router.post('/', async (req, res) => {
+router.post('/', authenticateToken, async (req, res) => {
     try {
         const { 
             name, 
@@ -111,7 +108,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update campaign
-router.put('/:id', async (req, res) => {
+router.put('/:id', authenticateToken, async (req, res) => {
     try {
         const { 
             name, 
@@ -171,7 +168,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Add recipients to campaign
-router.post('/:id/recipients', async (req, res) => {
+router.post('/:id/recipients', authenticateToken, async (req, res) => {
     try {
         const { recipients = [] } = req.body;
 
@@ -200,7 +197,7 @@ router.post('/:id/recipients', async (req, res) => {
 });
 
 // Add recipients from leads (selected lead IDs)
-router.post('/:id/recipients/from-leads', async (req, res) => {
+router.post('/:id/recipients/from-leads', authenticateToken, async (req, res) => {
     try {
         const { lead_ids = [] } = req.body;
         const campaign = await db.get('SELECT * FROM campaigns WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
@@ -241,7 +238,7 @@ router.post('/:id/recipients/from-leads', async (req, res) => {
 });
 
 // Remove one recipient from campaign
-router.delete('/:id/recipients/:recipientId', async (req, res) => {
+router.delete('/:id/recipients/:recipientId', authenticateToken, async (req, res) => {
     try {
         const campaign = await db.get('SELECT * FROM campaigns WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!campaign) {
@@ -264,7 +261,7 @@ router.delete('/:id/recipients/:recipientId', async (req, res) => {
 });
 
 // Import recipients from conversations
-router.post('/:id/import-conversations', async (req, res) => {
+router.post('/:id/import-conversations', authenticateToken, async (req, res) => {
     try {
         const { agent_id, filters = {} } = req.body;
 
@@ -316,7 +313,7 @@ router.post('/:id/import-conversations', async (req, res) => {
 });
 
 // Send campaign
-router.post('/:id/send', async (req, res) => {
+router.post('/:id/send', authenticateToken, async (req, res) => {
     try {
         const result = await sendCampaign(req.params.id);
         if (result.already_sent) {
@@ -330,7 +327,7 @@ router.post('/:id/send', async (req, res) => {
 });
 
 // Relaunch campaign (Duplicate as draft)
-router.post('/:id/relaunch', async (req, res) => {
+router.post('/:id/relaunch', authenticateToken, async (req, res) => {
     try {
         const source = await db.get('SELECT * FROM campaigns WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!source) {
@@ -370,26 +367,8 @@ router.post('/:id/relaunch', async (req, res) => {
     }
 });
 
-// Bulk delete campaigns
-router.delete('/bulk/delete', async (req, res) => {
-    try {
-        const { ids } = req.body;
-        if (!Array.isArray(ids) || ids.length === 0) {
-            return res.status(400).json({ error: 'IDs requis' });
-        }
-
-        const placeholders = ids.map(() => '?').join(',');
-        await db.run(`DELETE FROM campaigns WHERE user_id = ? AND id IN (${placeholders})`, req.user.id, ...ids);
-
-        res.json({ message: `${ids.length} campagne(s) supprimée(s)` });
-    } catch (error) {
-        console.error('Bulk delete campaigns error:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
 // Delete campaign
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const existing = await db.get('SELECT * FROM campaigns WHERE id = ? AND user_id = ?', req.params.id, req.user.id);
         if (!existing) {
@@ -405,7 +384,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Get campaign stats
-router.get('/stats/overview', async (req, res) => {
+router.get('/stats/overview', authenticateToken, async (req, res) => {
     try {
         const r1 = await db.get('SELECT COUNT(*) as count FROM campaigns WHERE user_id = ?', req.user.id);
         const r2 = await db.get("SELECT COUNT(*) as count FROM campaigns WHERE user_id = ? AND status = 'sent'", req.user.id);
