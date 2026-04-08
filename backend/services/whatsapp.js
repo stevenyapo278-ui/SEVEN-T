@@ -358,8 +358,23 @@ class WhatsAppManager {
                         const msg = store.messages[jid].find(m => m.key.id === key.id);
                         if (msg) return msg.message || undefined;
                     }
-                    // Database fallback: we only store text content, not the full proto.Message payload
-                    // so we can't fully satisfy getMessage if it's not in memory.
+
+                    // Database fallback: retrieve full proto.Message from pools or poll_recipients
+                    try {
+                        const row = await db.get(`
+                            SELECT COALESCE(pr.wa_message_full, p.wa_message_full) as full_msg
+                            FROM polls p
+                            LEFT JOIN poll_recipients pr ON p.id = pr.poll_id AND pr.wa_message_id = ?
+                            WHERE p.wa_message_id = ? OR pr.wa_message_id = ?
+                        `, key.id, key.id, key.id);
+
+                        if (row?.full_msg) {
+                            return JSON.parse(row.full_msg);
+                        }
+                    } catch (err) {
+                        console.warn('[WhatsApp] getMessage database fallback failed:', err.message);
+                    }
+
                     return undefined;
                 }
             });
@@ -710,35 +725,70 @@ class WhatsAppManager {
 
                         console.log(`[WhatsApp] Decrypted ${aggregatedVotes.length} options with votes`);
 
+                        // Correctly aggregate votes per voter (to handle multi-choice polls)
+                        const votesByVoter = new Map(); // voterJid -> Set of selected options
+                        
                         for (const option of aggregatedVotes) {
                             for (const voterJid of option.voters) {
-                                // Upsert vote
-                                console.log(`[WhatsApp] Recording vote from ${voterJid} for option: ${option.name}`);
-                                await db.run(`
-                                    INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
-                                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                                    ON CONFLICT (poll_id, voter_jid) 
-                                    DO UPDATE SET 
-                                        selected_options = EXCLUDED.selected_options,
-                                        voted_at = EXCLUDED.voted_at
-                                `, pollRow.id, voterJid, JSON.stringify([option.name]));
+                                if (!votesByVoter.has(voterJid)) {
+                                    votesByVoter.set(voterJid, new Set());
+                                }
+                                votesByVoter.get(voterJid).add(option.name);
                             }
                         }
 
-                        // Recompute results
-                        const results = aggregatedVotes.map(opt => ({
-                            name: opt.name,
-                            count: opt.voters.length,
-                            voters: opt.voters
-                        }));
-                        const totalVotes = results.reduce((s, r) => s + r.count, 0);
+                        for (const [voterJid, optionsSet] of votesByVoter.entries()) {
+                            const selectedOptions = Array.from(optionsSet);
+                            console.log(`[WhatsApp] Recording vote from ${voterJid} for options: ${selectedOptions.join(', ')}`);
+                            
+                            // Upsert vote for this voter
+                            await db.run(`
+                                INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
+                                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                                ON CONFLICT (poll_id, voter_jid) 
+                                DO UPDATE SET 
+                                    selected_options = EXCLUDED.selected_options,
+                                    voted_at = EXCLUDED.voted_at
+                            `, pollRow.id, voterJid, JSON.stringify(selectedOptions));
+                        }
+
+                        // Recompute results from ALL votes in DB
+                        const allVotes = await db.all('SELECT voter_jid, selected_options FROM poll_votes WHERE poll_id = ?', pollRow.id);
+                        
+                        // Get original options from pollCreationMessage to ensure 0-vote options are included
+                        // Compatible with both old and newer Baileys poll message structures
+                        const pollData = pollCreationMessage.pollCreationMessage || pollCreationMessage.pollCreationMessageV2 || pollCreationMessage.pollCreationMessageV3 || pollCreationMessage.poll;
+                        const pollOptions = pollData?.options?.map(o => o.optionName) || pollData?.values || [];
+                        
+                        const resultsMap = new Map();
+                        pollOptions.forEach(opt => resultsMap.set(opt, { name: opt, count: 0, voters: [] }));
+
+                        for (const vote of allVotes) {
+                            try {
+                                const selected = JSON.parse(vote.selected_options);
+                                if (Array.isArray(selected)) {
+                                    for (const optName of selected) {
+                                        if (resultsMap.has(optName)) {
+                                            const r = resultsMap.get(optName);
+                                            r.count++;
+                                            r.voters.push(vote.voter_jid);
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('[WhatsApp] Error parsing vote options:', e);
+                            }
+                        }
+
+                        const results = Array.from(resultsMap.values());
+                        const totalUniqueVoters = allVotes.length;
 
                         await db.run(
                             'UPDATE polls SET results = ?, total_votes = ? WHERE id = ?',
-                            JSON.stringify(results), totalVotes, pollRow.id
+                            JSON.stringify(results), totalUniqueVoters, pollRow.id
                         );
 
-                        console.log(`[WhatsApp] Poll ${pollRow.id} total results updated: ${totalVotes} vote(s)`);
+                        console.log(`[WhatsApp] Poll ${pollRow.id} total results updated: ${totalUniqueVoters} voter(s)`);
                     } catch (e) {
                         console.error('[WhatsApp] Error handling poll update:', e.message);
                     }

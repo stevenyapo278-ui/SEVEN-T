@@ -1751,11 +1751,13 @@ export async function initDatabase() {
             );
             CREATE INDEX IF NOT EXISTS idx_poll_recipients_poll ON poll_recipients(poll_id);
             CREATE INDEX IF NOT EXISTS idx_poll_recipients_wa_id ON poll_recipients(wa_message_id);
+        `);
 
-            try {
-                await db.exec('ALTER TABLE poll_recipients ADD COLUMN wa_message_full TEXT;');
-            } catch(e) {}
+        try {
+            await db.run('ALTER TABLE poll_recipients ADD COLUMN IF NOT EXISTS wa_message_full TEXT');
+        } catch(e) {}
 
+        await db.exec(`
             CREATE TABLE IF NOT EXISTS poll_votes (
                 id SERIAL PRIMARY KEY,
                 poll_id TEXT NOT NULL,
