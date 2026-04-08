@@ -673,12 +673,12 @@ class WhatsAppManager {
 
                         // Get the poll from the database by checking all tracked message IDs
                         let pollRow = await db.get(`
-                            SELECT p.id, p.wa_message_full 
+                            SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
                             FROM polls p
-                            LEFT JOIN poll_recipients pr ON p.id = pr.poll_id
+                            LEFT JOIN poll_recipients pr ON p.id = pr.poll_id AND pr.wa_message_id = ?
                             WHERE p.wa_message_id = ? 
                                OR pr.wa_message_id = ?
-                        `, key.id, key.id);
+                        `, key.id, key.id, key.id);
 
                         if (!pollRow) {
                             // Last resort: search by key JSON (fuzzy match)
@@ -696,16 +696,24 @@ class WhatsAppManager {
                             }
                         }
 
-                        if (!pollCreationMessage) continue;
+                        if (!pollCreationMessage) {
+                            console.warn(`[WhatsApp] Poll creation message not found for key ${key.id}`);
+                            continue;
+                        }
+
+                        console.log(`[WhatsApp] Processing poll update for poll ${pollRow.id} from ${jid}`);
 
                         const aggregatedVotes = getAggregateVotesInPollMessage({
                             message: pollCreationMessage,
                             pollUpdates: update.pollUpdates
                         });
 
+                        console.log(`[WhatsApp] Decrypted ${aggregatedVotes.length} options with votes`);
+
                         for (const option of aggregatedVotes) {
                             for (const voterJid of option.voters) {
                                 // Upsert vote
+                                console.log(`[WhatsApp] Recording vote from ${voterJid} for option: ${option.name}`);
                                 await db.run(`
                                     INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
                                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
@@ -730,7 +738,7 @@ class WhatsAppManager {
                             JSON.stringify(results), totalVotes, pollRow.id
                         );
 
-                        console.log(`[WhatsApp] Poll ${pollRow.id} updated: ${totalVotes} vote(s)`);
+                        console.log(`[WhatsApp] Poll ${pollRow.id} total results updated: ${totalVotes} vote(s)`);
                     } catch (e) {
                         console.error('[WhatsApp] Error handling poll update:', e.message);
                     }

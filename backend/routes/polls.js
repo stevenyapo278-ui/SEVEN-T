@@ -180,9 +180,9 @@ router.post('/:id/send', async (req, res) => {
                     
                     // Track this recipient's message for vote tracking
                     await db.run(`
-                        INSERT INTO poll_recipients (poll_id, contact_jid, wa_message_id, wa_message_key)
-                        VALUES (?, ?, ?, ?)
-                    `, req.params.id, targetJid, result.key.id, JSON.stringify(result.key));
+                        INSERT INTO poll_recipients (poll_id, contact_jid, wa_message_id, wa_message_key, wa_message_full)
+                        VALUES (?, ?, ?, ?, ?)
+                    `, req.params.id, targetJid, result.key.id, JSON.stringify(result.key), result.message ? JSON.stringify(result.message) : null);
                 } else {
                     console.warn(`[Polls] Send skipped or no message ID for ${targetJid}`);
                 }

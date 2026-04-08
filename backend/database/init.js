@@ -1745,11 +1745,16 @@ export async function initDatabase() {
                 contact_jid TEXT NOT NULL,
                 wa_message_id TEXT,
                 wa_message_key TEXT,
+                wa_message_full TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
             );
             CREATE INDEX IF NOT EXISTS idx_poll_recipients_poll ON poll_recipients(poll_id);
             CREATE INDEX IF NOT EXISTS idx_poll_recipients_wa_id ON poll_recipients(wa_message_id);
+
+            try {
+                await db.exec('ALTER TABLE poll_recipients ADD COLUMN wa_message_full TEXT;');
+            } catch(e) {}
 
             CREATE TABLE IF NOT EXISTS poll_votes (
                 id SERIAL PRIMARY KEY,
