@@ -686,7 +686,10 @@ class WhatsAppManager {
                             if (raw) pollCreationMessage = raw.message;
                         }
 
-                        // Get the poll from the database by checking all tracked message IDs
+                        console.log(`[PollDebug] Received poll update for message ID: ${key.id} from: ${key.remoteJid}`);
+                        console.log(`[PollDebug] Update payload:`, JSON.stringify(update.pollUpdates));
+
+                        // 1. Get the poll from the database by checking all tracked message IDs
                         let pollRow = await db.get(`
                             SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
                             FROM polls p
@@ -696,32 +699,48 @@ class WhatsAppManager {
                         `, key.id, key.id, key.id);
 
                         if (!pollRow) {
-                            // Last resort: search by key JSON (fuzzy match)
-                            pollRow = await db.get('SELECT id, wa_message_full FROM polls WHERE wa_message_key LIKE ?', `%${key.id}%`);
+                            console.warn(`[PollDebug] No poll found in DB for message ID: ${key.id}`);
+                            continue;
                         }
 
-                        if (!pollRow) continue;
+                        console.log(`[PollDebug] Found poll ID ${pollRow.id} in DB`);
 
-                        // Fall back to the saved message in db if we couldn't find it in the store
+                        // Try to get from store first
+                        if (jid && store?.messages?.[jid]) {
+                            const raw = store.messages[jid].find(m => m.key.id === key.id);
+                            if (raw) {
+                                pollCreationMessage = raw.message;
+                                console.log(`[PollDebug] Found creation message in Baileys store`);
+                            }
+                        }
+
                         if (!pollCreationMessage && pollRow.wa_message_full) {
                             try {
                                 pollCreationMessage = JSON.parse(pollRow.wa_message_full);
+                                console.log(`[PollDebug] Loaded creation message from Database binary storage`);
                             } catch (e) {
-                                console.error('[WhatsApp] Failed to parse wa_message_full from DB');
+                                console.error(`[PollDebug] Failed to parse poll_message_full:`, e.message);
                             }
                         }
 
                         if (!pollCreationMessage) {
-                            console.warn(`[WhatsApp] Poll creation message not found for key ${key.id}`);
+                            console.warn(`[PollDebug] Could not retrieve original poll message for décryptage`);
                             continue;
                         }
 
-                        console.log(`[WhatsApp] Processing poll update for poll ${pollRow.id} from ${jid}`);
+                        console.log(`[PollDebug] Attempting aggregation with getAggregateVotesInPollMessage...`);
 
                         const aggregatedVotes = getAggregateVotesInPollMessage({
                             message: pollCreationMessage,
                             pollUpdates: update.pollUpdates
                         });
+
+                        console.log(`[PollDebug] Aggregation result (count): ${aggregatedVotes.length} options`);
+                        console.log(`[PollDebug] Aggregated Data:`, JSON.stringify(aggregatedVotes));
+
+                        if (aggregatedVotes.length === 0) {
+                            console.warn(`[PollDebug] Aggregation returned 0 options. Decryption might have failed or no votes yet.`);
+                        }
 
                         console.log(`[WhatsApp] Decrypted ${aggregatedVotes.length} options with votes`);
 

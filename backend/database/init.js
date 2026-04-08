@@ -1743,6 +1743,7 @@ export async function initDatabase() {
                 id SERIAL PRIMARY KEY,
                 poll_id TEXT NOT NULL,
                 contact_jid TEXT NOT NULL,
+                contact_name TEXT,
                 wa_message_id TEXT,
                 wa_message_key TEXT,
                 wa_message_full TEXT,
@@ -1755,6 +1756,7 @@ export async function initDatabase() {
 
         try {
             await db.run('ALTER TABLE poll_recipients ADD COLUMN IF NOT EXISTS wa_message_full TEXT');
+            await db.run('ALTER TABLE poll_recipients ADD COLUMN IF NOT EXISTS contact_name TEXT');
         } catch(e) {}
 
         await db.exec(`

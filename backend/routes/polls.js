@@ -72,7 +72,7 @@ router.get('/:id', async (req, res) => {
         
         const [votes, recipients] = await Promise.all([
             db.all('SELECT * FROM poll_votes WHERE poll_id = ? ORDER BY voted_at DESC', req.params.id),
-            db.all('SELECT contact_jid, created_at FROM poll_recipients WHERE poll_id = ? ORDER BY created_at DESC', req.params.id)
+            db.all('SELECT contact_jid, contact_name, created_at FROM poll_recipients WHERE poll_id = ? ORDER BY created_at DESC', req.params.id)
         ]);
         
         res.json({
@@ -171,30 +171,31 @@ router.post('/:id/send', async (req, res) => {
         let sentCount = 0;
         let errors = [];
 
-        for (const targetJid of targetJids) {
+        for (const item of targetJids) {
             try {
-                console.log(`[Polls] Sending poll ${poll.id} to ${targetJid}...`);
+                // Support both old string format and new object format
+                const targetJid = typeof item === 'object' ? item.jid : item;
+                const contactName = typeof item === 'object' ? item.name : null;
+
                 const result = await whatsappManager.sendPoll(tool.id, targetJid, poll.question, options, !!poll.allow_multiple);
                 if (result?.key?.id) {
+                    sentCount++;
                     lastMessageId = result.key.id;
                     lastMessageKey = result.key;
                     if (result.message) {
                         lastMessageFull = result.message;
                     }
-                    sentCount++;
-                    console.log(`[Polls] Success for ${targetJid}: ${result.key.id}`);
-                    
-                    // Track this recipient's message for vote tracking
+
                     await db.run(`
-                        INSERT INTO poll_recipients (poll_id, contact_jid, wa_message_id, wa_message_key, wa_message_full)
-                        VALUES (?, ?, ?, ?, ?)
-                    `, req.params.id, targetJid, result.key.id, JSON.stringify(result.key), result.message ? JSON.stringify(result.message) : null);
+                        INSERT INTO poll_recipients (poll_id, contact_jid, contact_name, wa_message_id, wa_message_key, wa_message_full)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    `, req.params.id, targetJid, contactName, result.key.id, JSON.stringify(result.key), result.message ? JSON.stringify(result.message) : null);
                 } else {
                     console.warn(`[Polls] Send skipped or no message ID for ${targetJid}`);
                 }
             } catch (err) {
-                console.error(`[Polls] Error for ${targetJid}:`, err.message);
-                errors.push({ jid: targetJid, error: err.message });
+                console.error(`[Polls] Error for one recipient:`, err.message);
+                errors.push({ jid: typeof item === 'object' ? item.jid : item, error: err.message });
             }
         }
 
