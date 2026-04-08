@@ -69,10 +69,16 @@ router.get('/:id', async (req, res) => {
     try {
         const poll = await db.get('SELECT p.*, a.name as agent_name FROM polls p JOIN agents a ON p.agent_id = a.id WHERE p.id = ? AND p.user_id = ?', req.params.id, req.user.id);
         if (!poll) return res.status(404).json({ error: 'Sondage non trouvé' });
-        const votes = await db.all('SELECT * FROM poll_votes WHERE poll_id = ? ORDER BY voted_at DESC', req.params.id);
+        
+        const [votes, recipients] = await Promise.all([
+            db.all('SELECT * FROM poll_votes WHERE poll_id = ? ORDER BY voted_at DESC', req.params.id),
+            db.all('SELECT contact_jid, created_at FROM poll_recipients WHERE poll_id = ? ORDER BY created_at DESC', req.params.id)
+        ]);
+        
         res.json({
             poll: parsePoll(poll),
-            votes: votes.map(v => ({ ...v, selected_options: safeJson(v.selected_options, []) }))
+            votes: votes.map(v => ({ ...v, selected_options: safeJson(v.selected_options, []) })),
+            recipients: recipients
         });
     } catch (e) {
         console.error('Get poll error:', e);
@@ -197,13 +203,15 @@ router.post('/:id/send', async (req, res) => {
         }
 
         await db.run(`
-            UPDATE polls SET status = 'active', 
-            wa_message_id = COALESCE(wa_message_id, ?), 
-            wa_message_key = COALESCE(wa_message_key, ?), 
-            wa_message_full = COALESCE(wa_message_full, ?),
-            sent_at = CURRENT_TIMESTAMP
+            UPDATE polls SET 
+                status = 'active', 
+                wa_message_id = COALESCE(wa_message_id, ?), 
+                wa_message_key = COALESCE(wa_message_key, ?), 
+                wa_message_full = COALESCE(wa_message_full, ?),
+                total_recipients = COALESCE(total_recipients, 0) + ?,
+                sent_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        `, lastMessageId, lastMessageKey ? JSON.stringify(lastMessageKey) : null, lastMessageFull ? JSON.stringify(lastMessageFull) : null, req.params.id);
+        `, lastMessageId, lastMessageKey ? JSON.stringify(lastMessageKey) : null, lastMessageFull ? JSON.stringify(lastMessageFull) : null, sentCount, req.params.id);
 
         res.json({ message: `${sentCount} sondage(s) envoyé(s)`, sentCount, errors: errors.length > 0 ? errors : undefined });
     } catch (e) {

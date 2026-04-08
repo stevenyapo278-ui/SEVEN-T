@@ -324,9 +324,10 @@ export default function Polls() {
                 <p className="text-sm text-gray-500 line-clamp-2 mb-3">{poll.question}</p>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3" />{poll.total_votes ?? 0} votes</span>
+                  <span className="flex items-center gap-1" title="Votes reçus"><Users className="w-3 h-3 text-violet-400" />{poll.total_votes ?? 0}</span>
+                  <span className="flex items-center gap-1" title="Envoyé à"><Send className="w-3 h-3 text-blue-400" />{poll.total_recipients ?? 0}</span>
                   <span>{safeJson(poll.options, []).length} options</span>
-                  <span className="text-gray-600 font-mono">{poll.agent_name}</span>
+                  <span className="text-gray-600 font-mono text-[9px] truncate max-w-[80px]">{poll.agent_name}</span>
                 </div>
 
                 {results.length > 0 && topResult && (
@@ -461,6 +462,8 @@ function CreatePollModal({ agents, onClose, onSuccess, isDark }) {
 function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark }) {
   const { showConfirm } = useConfirm()
   const [poll, setPoll] = useState(initialPoll)
+  const [recipients, setRecipients] = useState([])
+  const [activeTab, setActiveTab] = useState('results') // 'results' or 'history'
   const [sending, setSending] = useState(false)
   const [jid, setJid] = useState('')
   const [selectedContacts, setSelectedContacts] = useState(new Map())
@@ -475,6 +478,7 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
     try {
       const res = await api.get(`/polls/${poll.id}`)
       setPoll(res.data.poll)
+      setRecipients(res.data.recipients || [])
     } catch {}
   }
 
@@ -565,26 +569,68 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
           </div>
 
           {/* Results */}
-          <div>
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Résultats</h4>
-            <div className="space-y-3">
-              {options.map(opt => {
-                const r = results.find(res => res.name === opt) || { count: 0 }
-                const pct = poll.total_votes > 0 ? Math.round((r.count / poll.total_votes) * 100) : 0
-                return (
-                  <div key={opt}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{opt}</span>
-                      <span className="font-bold text-violet-400">{r.count} vote{r.count !== 1 ? 's' : ''} • {pct}%</span>
-                    </div>
-                    <div className={`h-2 rounded-full ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
-                      <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+          <div className="flex border-b border-white/5 mb-2">
+            <button 
+              onClick={() => setActiveTab('results')}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${activeTab === 'results' ? 'border-violet-500 text-violet-400' : 'border-transparent text-gray-500'}`}
+            >
+              Résultats
+            </button>
+            <button 
+              onClick={() => setActiveTab('history')}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${activeTab === 'history' ? 'border-violet-500 text-violet-400' : 'border-transparent text-gray-500'}`}
+            >
+              Historique ({poll.total_recipients ?? 0})
+            </button>
           </div>
+
+          {activeTab === 'results' ? (
+            <div className="space-y-4 animate-fadeIn">
+              <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <BarChart2 className="w-3 h-3" /> Détail des votes
+              </h4>
+              <div className="space-y-3">
+                {options.map(opt => {
+                  const r = results.find(res => res.name === opt) || { count: 0 }
+                  const pct = poll.total_votes > 0 ? Math.round((r.count / poll.total_votes) * 100) : 0
+                  return (
+                    <div key={opt}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{opt}</span>
+                        <span className="font-bold text-violet-400">{r.count} vote{r.count !== 1 ? 's' : ''} • {pct}%</span>
+                      </div>
+                      <div className={`h-2 rounded-full ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
+                        <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3 animate-fadeIn">
+              <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <History className="w-3 h-3" /> Log des envois
+              </h4>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                {recipients.length === 0 ? (
+                  <p className="text-center py-8 text-gray-500 text-xs italic">Aucun envoi enregistré</p>
+                ) : (
+                  recipients.map((r, i) => (
+                    <div key={i} className={`p-3 rounded-xl border flex items-center justify-between ${isDark ? 'bg-space-800/40 border-space-700/50' : 'bg-white border-gray-100'}`}>
+                      <div className="min-w-0">
+                        <p className={`text-xs font-bold truncate ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>{r.contact_jid?.split('@')[0]}</p>
+                        <p className="text-[9px] text-gray-500">{new Date(r.created_at).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 text-[8px] font-bold uppercase border border-blue-500/20">Envoyé</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Send form */}
           {poll.status !== 'closed' && (

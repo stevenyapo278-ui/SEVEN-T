@@ -1719,6 +1719,7 @@ export async function initDatabase() {
                 wa_message_id TEXT,
                 wa_message_key TEXT,
                 wa_message_full TEXT,
+                total_recipients INTEGER DEFAULT 0,
                 total_votes INTEGER DEFAULT 0,
                 results TEXT DEFAULT '[]',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1731,12 +1732,11 @@ export async function initDatabase() {
             CREATE INDEX IF NOT EXISTS idx_polls_status ON polls(status);
         `);
         
-        // Ensure column exists for existing DBs
+        // Ensure columns exist for existing DBs
         try {
-            await db.exec('ALTER TABLE polls ADD COLUMN wa_message_full TEXT;');
-        } catch(e) {
-            // ignore if column exists
-        }
+            await db.run('ALTER TABLE polls ADD COLUMN IF NOT EXISTS wa_message_full TEXT');
+            await db.run('ALTER TABLE polls ADD COLUMN IF NOT EXISTS total_recipients INTEGER DEFAULT 0');
+        } catch(e) {}
 
         await db.exec(`
             CREATE TABLE IF NOT EXISTS poll_recipients (
