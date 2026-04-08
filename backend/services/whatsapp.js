@@ -746,9 +746,18 @@ class WhatsAppManager {
 
                         // Correctly aggregate votes per voter (to handle multi-choice polls)
                         const votesByVoter = new Map(); // voterJid -> Set of selected options
+                        const lidMap = this.lidToPhoneMap.get(toolId);
+                        this.ensureLidMapFromStore(toolId); // Refresh it
                         
                         for (const option of aggregatedVotes) {
-                            for (const voterJid of option.voters) {
+                            for (let voterJid of option.voters) {
+                                // LID Handling: Map LID to Phone JID if possible
+                                if (voterJid.endsWith('@lid') && lidMap && lidMap.has(voterJid)) {
+                                    const resolvedPhone = lidMap.get(voterJid);
+                                    console.log(`[PollDebug] Resolved LID ${voterJid} to Phone ${resolvedPhone}`);
+                                    voterJid = resolvedPhone;
+                                }
+
                                 if (!votesByVoter.has(voterJid)) {
                                     votesByVoter.set(voterJid, new Set());
                                 }
@@ -758,7 +767,7 @@ class WhatsAppManager {
 
                         for (const [voterJid, optionsSet] of votesByVoter.entries()) {
                             const selectedOptions = Array.from(optionsSet);
-                            console.log(`[WhatsApp] Recording vote from ${voterJid} for options: ${selectedOptions.join(', ')}`);
+                            console.log(`[PollDebug] Recording vote from ${voterJid} for options: ${selectedOptions.join(', ')}`);
                             
                             // Upsert vote for this voter
                             await db.run(`
