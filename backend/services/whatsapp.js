@@ -668,8 +668,18 @@ class WhatsAppManager {
                 if (type !== 'notify' && type !== 'append') return;
 
                 for (const message of messages) {
+                    // Check for poll votes arriving in upsert (un-aggregated)
                     if (message.message?.pollUpdateMessage) {
-                        console.log(`[PollDebug] Detect raw pollUpdateMessage in upsert from ${message.key.remoteJid}`);
+                        const voterJid = message.key.remoteJid;
+                        const pollKey = message.message.pollUpdateMessage.pollCreationMessageKey;
+                        console.log(`[PollDebug] Detect raw pollUpdateMessage in upsert from ${voterJid} for poll ${pollKey?.id}`);
+                        
+                        if (pollKey?.id) {
+                            // Construct a fake update object to pass to handlePollUpdate
+                            this.handlePollUpdate(toolId, pollKey, [message]).catch(e => {
+                                console.error('[PollDebug] Error in handlePollUpdate from upsert:', e.message);
+                            });
+                        }
                     }
                     await this.handleIncomingMessage(toolId, sock, message, type);
                 }
@@ -681,160 +691,140 @@ class WhatsAppManager {
                 for (const { key, update } of updates) {
                     console.log(`[PollDebug] Update for MsgID: ${key.id}, Fields: ${Object.keys(update).join(', ')}`);
                     if (!update.pollUpdates) continue;
-                    try {
-                        // Try to find the poll creation message in the store
-                        const store = this.stores.get(toolId);
-                        const jid = key.remoteJid;
-                        let pollCreationMessage;
-                        if (jid && store?.messages?.[jid]) {
-                            const raw = store.messages[jid].find(m => m.key.id === key.id);
-                            if (raw) pollCreationMessage = raw.message;
-                        }
-
-                        console.log(`[PollDebug] Received poll update for message ID: ${key.id} from: ${key.remoteJid}`);
-                        console.log(`[PollDebug] Update payload:`, JSON.stringify(update.pollUpdates));
-
-                        // 1. Get the poll from the database by checking all tracked message IDs
-                        let pollRow = await db.get(`
-                            SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
-                            FROM polls p
-                            LEFT JOIN poll_recipients pr ON p.id = pr.poll_id AND pr.wa_message_id = ?
-                            WHERE p.wa_message_id = ? 
-                               OR pr.wa_message_id = ?
-                        `, key.id, key.id, key.id);
-
-                        if (!pollRow) {
-                            console.warn(`[PollDebug] No poll found in DB for message ID: ${key.id}`);
-                            continue;
-                        }
-
-                        console.log(`[PollDebug] Found poll ID ${pollRow.id} in DB`);
-
-                        // Try to get from store first
-                        if (jid && store?.messages?.[jid]) {
-                            const raw = store.messages[jid].find(m => m.key.id === key.id);
-                            if (raw) {
-                                pollCreationMessage = raw.message;
-                                console.log(`[PollDebug] Found creation message in Baileys store`);
-                            }
-                        }
-
-                        if (!pollCreationMessage && pollRow.wa_message_full) {
-                            try {
-                                pollCreationMessage = JSON.parse(pollRow.wa_message_full);
-                                console.log(`[PollDebug] Loaded creation message from Database binary storage`);
-                            } catch (e) {
-                                console.error(`[PollDebug] Failed to parse poll_message_full:`, e.message);
-                            }
-                        }
-
-                        if (!pollCreationMessage) {
-                            console.warn(`[PollDebug] Could not retrieve original poll message for décryptage`);
-                            continue;
-                        }
-
-                        console.log(`[PollDebug] Attempting aggregation with getAggregateVotesInPollMessage...`);
-
-                        const aggregatedVotes = getAggregateVotesInPollMessage({
-                            message: pollCreationMessage,
-                            pollUpdates: update.pollUpdates
-                        });
-
-                        console.log(`[PollDebug] Aggregation result (count): ${aggregatedVotes.length} options`);
-                        console.log(`[PollDebug] Aggregated Data:`, JSON.stringify(aggregatedVotes));
-
-                        if (aggregatedVotes.length === 0) {
-                            console.warn(`[PollDebug] Aggregation returned 0 options. Decryption might have failed or no votes yet.`);
-                        }
-
-                        console.log(`[WhatsApp] Decrypted ${aggregatedVotes.length} options with votes`);
-
-                        // Correctly aggregate votes per voter (to handle multi-choice polls)
-                        const votesByVoter = new Map(); // voterJid -> Set of selected options
-                        const lidMap = this.lidToPhoneMap.get(toolId);
-                        this.ensureLidMapFromStore(toolId); // Refresh it
-                        
-                        for (const option of aggregatedVotes) {
-                            for (let voterJid of option.voters) {
-                                // LID Handling: Map LID to Phone JID if possible
-                                if (voterJid.endsWith('@lid') && lidMap && lidMap.has(voterJid)) {
-                                    const resolvedPhone = lidMap.get(voterJid);
-                                    console.log(`[PollDebug] Resolved LID ${voterJid} to Phone ${resolvedPhone}`);
-                                    voterJid = resolvedPhone;
-                                }
-
-                                if (!votesByVoter.has(voterJid)) {
-                                    votesByVoter.set(voterJid, new Set());
-                                }
-                                votesByVoter.get(voterJid).add(option.name);
-                            }
-                        }
-
-                        for (const [voterJid, optionsSet] of votesByVoter.entries()) {
-                            const selectedOptions = Array.from(optionsSet);
-                            console.log(`[PollDebug] Recording vote from ${voterJid} for options: ${selectedOptions.join(', ')}`);
-                            
-                            // Upsert vote for this voter
-                            await db.run(`
-                                INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
-                                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                                ON CONFLICT (poll_id, voter_jid) 
-                                DO UPDATE SET 
-                                    selected_options = EXCLUDED.selected_options,
-                                    voted_at = EXCLUDED.voted_at
-                            `, pollRow.id, voterJid, JSON.stringify(selectedOptions));
-                        }
-
-                        // Recompute results from ALL votes in DB
-                        const allVotes = await db.all('SELECT voter_jid, selected_options FROM poll_votes WHERE poll_id = ?', pollRow.id);
-                        
-                        // Get original options from pollCreationMessage to ensure 0-vote options are included
-                        // Compatible with both old and newer Baileys poll message structures
-                        const pollData = pollCreationMessage.pollCreationMessage || pollCreationMessage.pollCreationMessageV2 || pollCreationMessage.pollCreationMessageV3 || pollCreationMessage.poll;
-                        const pollOptions = pollData?.options?.map(o => o.optionName) || pollData?.values || [];
-                        
-                        const resultsMap = new Map();
-                        pollOptions.forEach(opt => resultsMap.set(opt, { name: opt, count: 0, voters: [] }));
-
-                        for (const vote of allVotes) {
-                            try {
-                                const selected = JSON.parse(vote.selected_options);
-                                if (Array.isArray(selected)) {
-                                    for (const optName of selected) {
-                                        if (resultsMap.has(optName)) {
-                                            const r = resultsMap.get(optName);
-                                            r.count++;
-                                            r.voters.push(vote.voter_jid);
-                                        }
-                                    }
-                                }
-                            } catch (e) {
-                                console.error('[WhatsApp] Error parsing vote options:', e);
-                            }
-                        }
-
-                        const results = Array.from(resultsMap.values());
-                        const totalUniqueVoters = allVotes.length;
-
-                        await db.run(
-                            'UPDATE polls SET results = ?, total_votes = ? WHERE id = ?',
-                            JSON.stringify(results), totalUniqueVoters, pollRow.id
-                        );
-
-                        console.log(`[WhatsApp] Poll ${pollRow.id} total results updated: ${totalUniqueVoters} voter(s)`);
-                    } catch (e) {
-                        console.error('[WhatsApp] Error handling poll update:', e.message);
-                    }
+                    await this.handlePollUpdate(toolId, key, update.pollUpdates);
                 }
             });
+ 
+             this.connectingInProgress.delete(toolId);
+             return { message: 'Connexion initiée', status: 'connecting' };
+         } catch (error) {
+             this.connectingInProgress.delete(toolId);
+             console.error(`[WhatsApp] Connection error for tool ${toolId}:`, error);
+             this.statuses.set(toolId, { status: 'error', message: error.message });
+             throw error;
+         }
+     }
+ 
+    /**
+     * Reusable logic to handle poll votes (updates)
+     */
+    async handlePollUpdate(toolId, key, pollUpdates) {
+        try {
+            const jid = key.remoteJid;
+            const store = this.stores.get(toolId);
+            const sock = this.connections.get(toolId);
+            if (!sock) return;
 
-            this.connectingInProgress.delete(toolId);
-            return { message: 'Connexion initiée', status: 'connecting' };
-        } catch (error) {
-            this.connectingInProgress.delete(toolId);
-            console.error(`[WhatsApp] Connection error for tool ${toolId}:`, error);
-            this.statuses.set(toolId, { status: 'error', message: error.message });
-            throw error;
+            console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
+
+            // 1. Get the poll from the database
+            let pollRow = await db.get(`
+                SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
+                FROM polls p
+                LEFT JOIN poll_recipients pr ON p.id = pr.poll_id AND pr.wa_message_id = ?
+                WHERE p.wa_message_id = ? 
+                   OR pr.wa_message_id = ?
+            `, key.id, key.id, key.id);
+
+            if (!pollRow) {
+                console.warn(`[PollDebug] No poll found in DB for message ID: ${key.id}`);
+                return;
+            }
+
+            // 2. Retrieve original poll creation message (required for decryption)
+            let pollCreationMessage;
+            if (jid && store?.messages?.[jid]) {
+                const raw = store.messages[jid].find(m => m.key.id === key.id);
+                if (raw) pollCreationMessage = raw.message;
+            }
+
+            if (!pollCreationMessage && pollRow.wa_message_full) {
+                try {
+                    pollCreationMessage = JSON.parse(pollRow.wa_message_full);
+                } catch (e) {
+                    console.error(`[PollDebug] Failed to parse poll_message_full:`, e.message);
+                }
+            }
+
+            if (!pollCreationMessage) {
+                console.warn(`[PollDebug] Could not retrieve original poll message for cryptography`);
+                return;
+            }
+
+            // 3. Aggregate votes using Baileys utility
+            const aggregatedVotes = getAggregateVotesInPollMessage({
+                message: pollCreationMessage,
+                pollUpdates: pollUpdates
+            });
+
+            if (aggregatedVotes.length === 0) {
+                console.warn(`[PollDebug] Aggregation returned 0 options. This may be normal if decryption is pending.`);
+                return;
+            }
+
+            // 4. Record votes with LID-to-Phone resolution
+            const votesByVoter = new Map();
+            const lidMap = this.lidToPhoneMap.get(toolId);
+            this.ensureLidMapFromStore(toolId);
+            
+            for (const option of aggregatedVotes) {
+                for (let voterJid of option.voters) {
+                    if (voterJid.endsWith('@lid') && lidMap?.has(voterJid)) {
+                        voterJid = lidMap.get(voterJid);
+                    }
+                    if (!votesByVoter.has(voterJid)) {
+                        votesByVoter.set(voterJid, new Set());
+                    }
+                    votesByVoter.get(voterJid).add(option.name);
+                }
+            }
+
+            for (const [voterJid, optionsSet] of votesByVoter.entries()) {
+                const selectedOptions = Array.from(optionsSet);
+                console.log(`[PollDebug] Recording vote from ${voterJid} for options: ${selectedOptions.join(', ')}`);
+                
+                await db.run(`
+                    INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT (poll_id, voter_jid) 
+                    DO UPDATE SET 
+                        selected_options = EXCLUDED.selected_options,
+                        voted_at = EXCLUDED.voted_at
+                `, pollRow.id, voterJid, JSON.stringify(selectedOptions));
+            }
+
+            // 5. Update overall poll results in DB
+            const allVotes = await db.all('SELECT voter_jid, selected_options FROM poll_votes WHERE poll_id = ?', pollRow.id);
+            const pollData = pollCreationMessage.pollCreationMessage || pollCreationMessage.pollCreationMessageV2 || pollCreationMessage.pollCreationMessageV3 || pollCreationMessage.poll;
+            const pollOptions = pollData?.options?.map(o => o.optionName) || pollData?.values || [];
+            
+            const resultsMap = new Map();
+            pollOptions.forEach(opt => resultsMap.set(opt, { name: opt, count: 0, voters: [] }));
+
+            for (const vote of allVotes) {
+                try {
+                    const selected = JSON.parse(vote.selected_options);
+                    if (Array.isArray(selected)) {
+                        for (const optName of selected) {
+                            if (resultsMap.has(optName)) {
+                                let r = resultsMap.get(optName);
+                                r.count++;
+                                r.voters.push(vote.voter_jid);
+                            }
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            const results = Array.from(resultsMap.values());
+            await db.run(
+                'UPDATE polls SET results = ?, total_votes = ? WHERE id = ?',
+                JSON.stringify(results), allVotes.length, pollRow.id
+            );
+
+            console.log(`[WhatsApp] Poll ${pollRow.id} updated: ${allVotes.length} voters`);
+        } catch (e) {
+            console.error('[PollDebug] Error in handlePollUpdate:', e.message);
         }
     }
 
