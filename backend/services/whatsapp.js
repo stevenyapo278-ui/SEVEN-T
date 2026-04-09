@@ -361,6 +361,7 @@ class WhatsAppManager {
 
                     // Database fallback: retrieve full proto.Message from pools or poll_recipients
                     try {
+                        // 1. Try exact match by message ID
                         const row = await db.get(`
                             SELECT COALESCE(pr.wa_message_full, p.wa_message_full) as full_msg
                             FROM polls p
@@ -370,6 +371,18 @@ class WhatsAppManager {
 
                         if (row?.full_msg) {
                             return JSON.parse(row.full_msg);
+                        }
+
+                        // 2. If not found, try to find ANY recent poll in that conversation
+                        // (Sometimes IDs change slightly or are reported differently)
+                        const recentPoll = await db.get(`
+                            SELECT wa_message_full FROM polls 
+                            WHERE recipient_jid = ? 
+                            ORDER BY created_at DESC LIMIT 1
+                        `, jid);
+                        
+                        if (recentPoll?.wa_message_full) {
+                            return JSON.parse(recentPoll.wa_message_full);
                         }
                     } catch (err) {
                         console.warn('[WhatsApp] getMessage database fallback failed:', err.message);
