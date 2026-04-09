@@ -801,29 +801,58 @@ class WhatsAppManager {
                         ? meIdNormalised
                         : (creationKey.participant || creationKey.remoteJid || '');
 
-                    // voterJid: who voted (the sender of the update message)
-                    const voterJid = update.key.fromMe
+                    // voterJid: need the PHONE NUMBER JID (xxx@s.whatsapp.net), not the LID (xxx@lid)
+                    // The voter's WhatsApp encrypts the vote using their own PN JID as identifier.
+                    // Resolution order: senderPn (Baileys field) → lidToPhoneMap → raw JID
+                    this.ensureLidMapFromStore(toolId);
+                    const tidLidMap = this.lidToPhoneMap.get(toolId);
+                    const rawVoterJid = update.key.fromMe
                         ? meIdNormalised
                         : (update.key.participant || update.key.remoteJid || '');
+                    const senderPn = update.key.senderPn;
+                    const voterJidFromMap = rawVoterJid.endsWith('@lid') ? tidLidMap?.get(rawVoterJid) : null;
+                    // Build candidate list: most specific first
+                    const voterJidCandidates = [...new Set([
+                        senderPn,
+                        voterJidFromMap,
+                        rawVoterJid,
+                        rawVoterJid.endsWith('@lid') ? rawVoterJid.replace('@lid', '@s.whatsapp.net') : null,
+                    ].filter(Boolean))];
 
-                    try {
-                        // decryptPollVote is SYNCHRONOUS and returns proto.Message.PollVoteMessage
-                        const voteMsg = decryptPollVote(pollUpdateMsg.vote, {
-                            pollEncKey,
-                            pollCreatorJid,
-                            pollMsgId: key.id,
-                            voterJid
-                        });
+                    console.log(`[PollDebug] Trying voterJid candidates for ${update.key?.id}: ${voterJidCandidates.join(', ')}`);
+                    console.log(`[PollDebug] pollCreatorJid=${pollCreatorJid}, pollMsgId=${key.id}`);
 
+                    let voteMsg = null;
+                    let successVoterJid = null;
+                    for (const candidateJid of voterJidCandidates) {
+                        try {
+                            voteMsg = decryptPollVote(pollUpdateMsg.vote, {
+                                pollEncKey,
+                                pollCreatorJid,
+                                pollMsgId: key.id,
+                                voterJid: candidateJid
+                            });
+                            successVoterJid = candidateJid;
+                            break;
+                        } catch (e) {
+                            console.warn(`[PollDebug] Decryption attempt with voterJid=${candidateJid} failed: ${e.message}`);
+                        }
+                    }
+
+                    if (voteMsg && successVoterJid) {
+                        // Store the resolved PN in lidMap for future use
+                        if (rawVoterJid.endsWith('@lid') && !voterJidFromMap) {
+                            tidLidMap?.set(rawVoterJid, successVoterJid);
+                        }
                         // Format expected by getAggregateVotesInPollMessage
                         normalizedUpdates.push({
                             pollUpdateMessageKey: update.key,
                             vote: voteMsg,
                             senderTimestampMs: pollUpdateMsg.senderTimestampMs
                         });
-                        console.log(`[PollDebug] Decrypted vote from ${voterJid}, selectedOptions: ${voteMsg.selectedOptions?.length ?? 0}`);
-                    } catch (e) {
-                        console.warn(`[PollDebug] Decryption failed for ${update.key?.id}:`, e.message, e.stack?.split('\n')[1]);
+                        console.log(`[PollDebug] Decrypted vote from ${successVoterJid}, selectedOptions: ${voteMsg.selectedOptions?.length ?? 0}`);
+                    } else {
+                        console.warn(`[PollDebug] All decryption attempts failed for ${update.key?.id}`);
                     }
                 } else {
                     // Already-decrypted format from messages.update (Baileys processed it internally)
