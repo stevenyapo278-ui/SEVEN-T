@@ -723,22 +723,20 @@ class WhatsAppManager {
                 // Case 1: Raw WAMessage from upsert (needs decryption)
                 if (update.message?.pollUpdateMessage) {
                     try {
-                        // Compatibility: Baileys sometimes changes the name or placement of the decryption function
-                        const decryptFn = sock.decryptPollUpdate || sock.decodePollVote || sock.pollUpdateDecrypt;
-                        
-                        if (typeof decryptFn !== 'function') {
-                            throw new Error('No decryption function found on socket');
+                        // Compatibility: If decryptPollUpdate is NOT a function, log the socket surface for debugging
+                        if (typeof sock.decryptPollUpdate !== 'function') {
+                            const availableFns = Object.keys(sock).filter(k => typeof sock[k] === 'function' && k.toLowerCase().includes('poll'));
+                            throw new Error(`decryptPollUpdate is not a function. Available poll methods: ${availableFns.join(', ')}`);
                         }
 
-                        const decrypted = await decryptFn.call(sock, update);
+                        const decrypted = await sock.decryptPollUpdate(update);
                         normalizedUpdates.push(decrypted);
                         console.log(`[PollDebug] Decrypted poll update from ${decrypted.voter}`);
                     } catch (e) {
                         console.warn(`[PollDebug] Manual decryption failed:`, e.message);
-                        // If decryption failed, we can't use this update
                     }
                 } 
-                // Case 2: Standard update format (already decrypted by Baileys)
+                // Case 2: Standard update format
                 else if (update.pollUpdate) {
                     normalizedUpdates.push(update);
                 }
