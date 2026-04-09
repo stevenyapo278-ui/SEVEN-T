@@ -717,22 +717,28 @@ class WhatsAppManager {
 
             console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
 
-            // Normalize pollUpdates to the format expected by Baileys: { pollUpdate, voter }[]
-            const normalizedUpdates = pollUpdates.map(update => {
-                // If it's a raw WAMessage from upsert
+            // Normalize and decrypt pollUpdates
+            const normalizedUpdates = [];
+            for (const update of pollUpdates) {
+                // Case 1: Raw WAMessage from upsert (needs decryption)
                 if (update.message?.pollUpdateMessage) {
-                    return {
-                        pollUpdate: update.message.pollUpdateMessage,
-                        voter: update.key.participant || update.key.remoteJid
-                    };
+                    try {
+                        const decrypted = await sock.decryptPollUpdate(update);
+                        normalizedUpdates.push(decrypted);
+                        console.log(`[PollDebug] Decrypted poll update from ${decrypted.voter}`);
+                    } catch (e) {
+                        console.warn(`[PollDebug] Manual decryption failed:`, e.message);
+                        // If decryption failed, we can't use this update
+                    }
+                } 
+                // Case 2: Standard update format (already decrypted by Baileys)
+                else if (update.pollUpdate) {
+                    normalizedUpdates.push(update);
                 }
-                // If it's already in the standard update format
-                if (update.pollUpdate) return update;
-                return null;
-            }).filter(Boolean);
+            }
 
             if (normalizedUpdates.length === 0) {
-                console.warn(`[PollDebug] No valid poll updates found after normalization`);
+                console.warn(`[PollDebug] No valid decrypted poll updates found`);
                 return;
             }
 
