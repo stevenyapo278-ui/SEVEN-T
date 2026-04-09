@@ -801,54 +801,63 @@ class WhatsAppManager {
                         ? meIdNormalised
                         : (creationKey.participant || creationKey.remoteJid || '');
 
-                    this.ensureLidMapFromStore(toolId);
-                    const tidLidMap = this.lidToPhoneMap.get(toolId);
-                    const rawVoterJid = update.key.fromMe
-                        ? meIdNormalised
-                        : (update.key.participant || update.key.remoteJid || '');
+                    // pollCreatorJid: build candidates. In LID chats, the voter's phone might use our LID as the creator!
+                    const sock = this.connections.get(toolId);
+                    const myLid = sock?.authState?.creds?.me?.lid 
+                        ? `${sock.authState.creds.me.lid.split(':')[0]}@lid` 
+                        : null;
                     
-                    const senderPn = update.key.senderPn;
+                    const creatorCandidates = [...new Set([
+                        meIdNormalised,
+                        myLid
+                    ].filter(Boolean))];
+
                     const altVoterJid = update.key.participantAlt || update.key.remoteJidAlt;
-                    const voterJidFromMap = rawVoterJid.endsWith('@lid') ? tidLidMap?.get(rawVoterJid) : null;
+                    const voterJidFromMap = update.key.remoteJid.endsWith('@lid') ? tidLidMap?.get(update.key.remoteJid) : null;
                     
-                    // Build candidate list: most specific first
+                    // Build voter candidate list
                     const voterJidCandidates = [...new Set([
                         altVoterJid, // from Baileys getKeyAuthor
-                        senderPn,
+                        update.key.senderPn,
                         voterJidFromMap,
-                        rawVoterJid,
-                        rawVoterJid.endsWith('@lid') ? rawVoterJid.replace('@lid', '@s.whatsapp.net') : null,
+                        update.key.remoteJid,
+                        update.key.remoteJid.endsWith('@lid') ? update.key.remoteJid.replace('@lid', '@s.whatsapp.net') : null,
                     ].filter(Boolean))];
 
                     console.log(`[PollDebug] --- DECRYPTION DIAGNOSTICS ---`);
                     console.log(`[PollDebug] pollEncKey (hex): ${pollEncKey.toString('hex')}`);
-                    console.log(`[PollDebug] creationKey:`, JSON.stringify(creationKey));
-                    console.log(`[PollDebug] update.key:`, JSON.stringify(update.key));
-                    console.log(`[PollDebug] meIdNormalised: ${meIdNormalised}`);
-                    console.log(`[PollDebug] pollCreatorJid: ${pollCreatorJid}`);
-                    console.log(`[PollDebug] Trying voterJid candidates: ${voterJidCandidates.join(', ')}`);
+                    console.log(`[PollDebug] meLid: ${myLid}`);
+                    console.log(`[PollDebug] Trying Creator JIDs: ${creatorCandidates.join(', ')}`);
+                    console.log(`[PollDebug] Trying Voter JIDs: ${voterJidCandidates.join(', ')}`);
 
                     let voteMsg = null;
                     let successVoterJid = null;
-                    for (const candidateJid of voterJidCandidates) {
-                        try {
-                            voteMsg = decryptPollVote(pollUpdateMsg.vote, {
-                                pollEncKey,
-                                pollCreatorJid,
-                                pollMsgId: key.id,
-                                voterJid: candidateJid
-                            });
-                            successVoterJid = candidateJid;
-                            break;
-                        } catch (e) {
-                            console.warn(`[PollDebug] Decryption attempt with voterJid=${candidateJid} failed: ${e.message}`);
+                    let successCreatorJid = null;
+
+                    for (const candCreator of creatorCandidates) {
+                        for (const candVoter of voterJidCandidates) {
+                            try {
+                                voteMsg = decryptPollVote(pollUpdateMsg.vote, {
+                                    pollEncKey,
+                                    pollCreatorJid: candCreator,
+                                    pollMsgId: key.id,
+                                    voterJid: candVoter
+                                });
+                                successVoterJid = candVoter;
+                                successCreatorJid = candCreator;
+                                break;
+                            } catch (e) {
+                                // Ignore
+                            }
                         }
+                        if (voteMsg) break;
                     }
 
                     if (voteMsg && successVoterJid) {
+                        console.log(`[PollDebug] --- SUCCESS --- Decrypted vote with Creator=${successCreatorJid}, Voter=${successVoterJid}`);
                         // Store the resolved PN in lidMap for future use
-                        if (rawVoterJid.endsWith('@lid') && !voterJidFromMap) {
-                            tidLidMap?.set(rawVoterJid, successVoterJid);
+                        if (update.key.remoteJid.endsWith('@lid') && !voterJidFromMap) {
+                            tidLidMap?.set(update.key.remoteJid, successVoterJid);
                         }
                         // Format expected by getAggregateVotesInPollMessage
                         normalizedUpdates.push({
@@ -856,7 +865,6 @@ class WhatsAppManager {
                             vote: voteMsg,
                             senderTimestampMs: pollUpdateMsg.senderTimestampMs
                         });
-                        console.log(`[PollDebug] Decrypted vote from ${successVoterJid}, selectedOptions: ${voteMsg.selectedOptions?.length ?? 0}`);
                     } else {
                         console.warn(`[PollDebug] All decryption attempts failed for ${update.key?.id}`);
                     }
