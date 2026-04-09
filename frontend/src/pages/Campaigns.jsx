@@ -31,7 +31,8 @@ import {
   Check,
   Bot,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  ChevronRight
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
