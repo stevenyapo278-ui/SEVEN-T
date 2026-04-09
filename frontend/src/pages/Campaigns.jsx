@@ -100,6 +100,13 @@ export default function Campaigns() {
     { name: 'Bienvenue', message: 'Bienvenue chez nous {{nom}} ! Ravi de vous compter parmi nos membres. N\'hésitez pas si vous avez des questions.' },
   ]
 
+  const RECURRENCE_OPTIONS = [
+    { value: 'none', label: 'Pas de répétition' },
+    { value: 'daily', label: 'Quotidienne' },
+    { value: 'weekly', label: 'Hebdomadaire' },
+    { value: 'monthly', label: 'Mensuelle' }
+  ]
+
   const loadData = useCallback(async () => {
     setLoadError(null)
     setLoading(true)
@@ -337,22 +344,48 @@ export default function Campaigns() {
 
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 pb-12">
-      <div className={`relative rounded-3xl border p-8 ${isDark ? 'bg-gradient-to-br from-space-800 to-space-900 border-space-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-500/10 rounded-xl"><Send className="w-6 h-6 text-blue-400" /></div>
-              <h1 className="text-3xl font-display font-bold text-gray-100">Campagnes</h1>
+      {/* Hero Header */}
+      <div className={`relative rounded-[2.5rem] border p-8 overflow-hidden ${
+        isDark 
+          ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50 shadow-2xl' 
+          : 'bg-white border-gray-100 shadow-xl shadow-gray-200/50'
+      }`}>
+        {/* Animated Background Orbs */}
+        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full" />
+        <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-64 h-64 bg-gold-400/10 blur-[100px] rounded-full" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/20">
+                <Send className="w-6 h-6 text-white" />
+              </div>
+              <h1 className={`text-3xl sm:text-4xl font-display font-black italic tracking-tight uppercase ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Campagnes
+              </h1>
             </div>
-            <p className="text-gray-400">Diffusion de messages en masse</p>
+            <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              Diffusez des messages personnalisés en masse via WhatsApp
+            </p>
           </div>
-          <button onClick={() => { setForm({ name: '', message: '', agent_id: '', scheduled_at: '', recurrence_type: 'none', recurrence_interval: 1, recurrence_days: '', recipients: [] }); setSelectedCampaign(null); setShowModal(true); }} className="btn-primary flex items-center gap-2"><Plus className="w-5 h-5" />Nouvelle campagne</button>
+          <button 
+            onClick={() => { 
+              setForm({ name: '', message: '', agent_id: '', scheduled_at: '', recurrence_type: 'none', recurrence_interval: 1, recurrence_days: '', recipients: [] }); 
+              setSelectedCampaign(null); 
+              setShowModal(true); 
+            }} 
+            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-display font-black italic uppercase tracking-wider hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1 transition-all group"
+          >
+            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+            Nouvelle campagne
+          </button>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-           <div className="card p-4 bg-space-800/50 border-white/5"><p className="text-2xl font-bold">{stats?.total || 0}</p><p className="text-xs text-gray-500">Total</p></div>
-           <div className="card p-4 bg-emerald-500/5 border-emerald-500/10"><p className="text-2xl font-bold text-emerald-400">{stats?.sent || 0}</p><p className="text-xs text-gray-500">Envoyées</p></div>
-           <div className="card p-4 bg-blue-500/5 border-blue-500/10"><p className="text-2xl font-bold text-blue-400">{stats?.totalMessages ?? 0}</p><p className="text-xs text-gray-500">Messages</p></div>
-           <div className="card p-4 bg-gold-400/5 border-gold-400/10"><p className="text-2xl font-bold text-gold-400">{stats?.totalRecipients > 0 ? Math.round((stats.totalSent / stats.totalRecipients) * 100) : 0}%</p><p className="text-xs text-gray-500">Succès</p></div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+          <StatCard icon={Target} value={stats?.total || 0} label="Total" isDark={isDark} color="blue" />
+          <StatCard icon={CheckCircle2} value={stats?.sent || 0} label="Envoyées" isDark={isDark} color="emerald" />
+          <StatCard icon={Calendar} value={stats?.scheduled || 0} label="Programmées" isDark={isDark} color="gold" />
+          <StatCard icon={BarChart2} value={stats?.totalRecipients > 0 ? `${Math.round((stats.totalSent / stats.totalRecipients) * 100)}%` : '0%'} label="Succès" isDark={isDark} color="indigo" />
         </div>
       </div>
 
@@ -400,57 +433,119 @@ export default function Campaigns() {
               >
                 Désélectionner
               </button>
-              <button
-                onClick={handleDeleteSelected}
-                disabled={bulkLoading}
-                className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden xs:inline">Supprimer</span>
-              </button>
             </div>
           </div>
         )}
-        {filteredCampaigns.map(c => {
+
+        {filteredCampaigns.length === 0 ? (
+          <div className={`p-20 text-center rounded-[2rem] border-2 border-dashed ${isDark ? 'bg-space-800/20 border-space-700/50' : 'bg-gray-50 border-gray-200'}`}>
+            <Send className="w-16 h-16 text-gray-600 mx-auto mb-4 opacity-20" />
+            <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>Aucune campagne trouvée</h3>
+            <p className="text-gray-500">Commencez par créer votre première campagne de diffusion.</p>
+          </div>
+        ) : filteredCampaigns.map(c => {
           const isSelected = selectedIds.has(c.id)
           return (
-            <div key={c.id} className={`card p-6 transition-all ${isSelected ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200 shadow-sm') : 'hover:border-white/10'}`}>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 flex-1">
+            <div key={c.id} className={`group relative rounded-3xl border transition-all duration-300 ${
+              isSelected 
+                ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30 shadow-2xl' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200 shadow-xl') 
+                : (isDark ? 'bg-space-900/50 border-space-700/50 hover:bg-space-800/80 hover:border-space-600' : 'bg-white border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md')
+            }`}>
+              <div className="p-6 flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex items-center gap-4 flex-1">
                   <div 
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(c.id); }}
-                    className={`mt-1 w-6 h-6 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                    className={`w-10 h-10 flex-shrink-0 rounded-2xl border-2 transition-all flex items-center justify-center cursor-pointer ${
                       isSelected
-                        ? 'bg-blue-500 border-blue-500 text-white'
-                        : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                        ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/20'
+                        : isDark ? 'border-space-700 bg-space-950/50 hover:border-space-500' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
                     }`}
                   >
-                    {isSelected && <Check className="w-4 h-4" />}
+                    <Check className={`w-5 h-5 transition-transform duration-300 ${isSelected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`} />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-bold text-gray-100">{c.name}</h3>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className={`font-display font-black italic uppercase tracking-tight text-lg truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{c.name}</h3>
                       {getStatusBadge(c.status)}
                     </div>
-                    <p className="text-sm text-gray-400 line-clamp-1 mb-3">{c.message}</p>
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
-                      <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{c.recipients_count ?? 0}</span>
-                      {c.scheduled_at && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(c.scheduled_at).toLocaleDateString()}</span>}
-                    </div>
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
-                      {c.status !== 'sent' && (
-                        <>
-                          <button onClick={() => openRecipientsModal(c)} className="text-[10px] font-bold uppercase tracking-widest text-blue-400 hover:text-white px-3 py-1.5 rounded-lg bg-blue-400/10 hover:bg-blue-400 transition-all border border-blue-400/20">Destinataires</button>
-                          <button onClick={() => openEditModal(c)} className="text-[10px] font-bold uppercase tracking-widest text-gold-400 hover:text-black px-3 py-1.5 rounded-lg bg-gold-400/10 hover:bg-gold-400 transition-all border border-gold-400/20">Modifier</button>
-                          <button onClick={() => handleSendCampaign(c)} className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 hover:text-white px-3 py-1.5 rounded-lg bg-emerald-400/10 hover:bg-emerald-400 transition-all border border-emerald-400/20">Envoyer</button>
-                        </>
+                    <p className={`text-sm line-clamp-1 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{c.message}</p>
+                    
+                    <div className="flex flex-wrap items-center gap-5">
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? 'bg-space-950/50 border-space-700/30' : 'bg-gray-50 border-gray-100'}`}>
+                        <Users className="w-4 h-4 text-blue-400" />
+                        <span className={`text-xs font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{c.recipients_count ?? 0}</span>
+                      </div>
+                      {c.scheduled_at && (
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? 'bg-space-950/50 border-space-700/30' : 'bg-gray-50 border-gray-100'}`}>
+                          <Calendar className="w-4 h-4 text-gold-400" />
+                          <span className={`text-xs font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {new Date(c.scheduled_at).toLocaleString('fr-FR', {
+                              day: '2-digit', month: '2-digit', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
                       )}
-                      {(c.status === 'sent' || c.status === 'failed') && <button onClick={() => handleRelaunch(c.id)} className="text-[10px] font-bold uppercase tracking-widest text-orange-400 hover:text-white px-3 py-1.5 rounded-lg bg-orange-400/10 hover:bg-orange-400 transition-all border border-orange-400/20">Relancer</button>}
-                      <button onClick={() => openHistoryModal(c)} className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-all border border-white/10">Historique</button>
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? 'bg-space-950/50 border-space-700/30' : 'bg-gray-50 border-gray-100'}`}>
+                        <Bot className="w-4 h-4 text-emerald-400" />
+                        <span className={`text-xs font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{c.agent_name || 'Aucun agent'}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <button onClick={() => handleDelete(c.id)} className="p-2 text-gray-500 hover:text-red-400 transition-colors"><Trash2 className="w-5 h-5" /></button>
+
+                <div className="flex items-center gap-2 md:border-l md:pl-6 border-space-700/50">
+                  {c.status !== 'sent' && c.status !== 'sending' && (
+                    <>
+                      <button onClick={() => openRecipientsModal(c)} className="p-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-2xl transition-all border border-blue-500/20" title="Gérer les destinataires">
+                        <Users className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => openEditModal(c)} className="p-3 bg-gold-400/10 text-gold-400 hover:bg-gold-400 hover:text-black rounded-2xl transition-all border border-gold-400/20" title="Modifier">
+                        <Edit3 className="w-5 h-5" />
+                      </button>
+                      
+                      {c.status === 'scheduled' ? (
+                        <div className="flex items-center gap-2">
+                           <button 
+                            onClick={() => handleSendCampaign(c)} 
+                            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-display font-black italic uppercase text-xs tracking-wider transition-all shadow-lg bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20"
+                            title="Lancer immédiatement"
+                          >
+                            <Send className="w-4 h-4" />
+                            Lancer
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleSendCampaign(c)} 
+                          className="flex items-center gap-2 px-5 py-3 rounded-2xl font-display font-black italic uppercase text-xs tracking-wider transition-all shadow-lg bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20"
+                        >
+                          <Send className="w-4 h-4" />
+                          Lancer
+                        </button>
+                      )}
+                    </>
+                  )}
+                  {c.status === 'sending' && (
+                    <div className="flex items-center gap-2 px-5 py-3 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs font-black uppercase italic">En cours...</span>
+                    </div>
+                  )}
+                  {(c.status === 'sent' || c.status === 'failed') && (
+                    <button onClick={() => handleRelaunch(c.id)} className="flex items-center gap-2 px-5 py-3 bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white rounded-2xl transition-all border border-orange-500/20 font-black uppercase italic text-xs">
+                      <RefreshCw className="w-4 h-4" />
+                      Relancer
+                    </button>
+                  )}
+                  <button onClick={() => openHistoryModal(c)} className="p-3 bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 rounded-2xl transition-all border border-white/10" title="Historique">
+                    <History className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => handleDelete(c.id)} className="p-3 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all" title="Supprimer">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           )
@@ -458,22 +553,140 @@ export default function Campaigns() {
       </div>
 
       {showModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowModal(false)}>
-          <div className="relative z-10 w-full max-w-lg flex flex-col bg-[#0B0F1A] border border-white/10 rounded-3xl animate-fadeIn" onClick={e => e.stopPropagation()}>
-            <div className="p-8">
-              <h2 className="text-2xl font-bold mb-6">{selectedCampaign ? 'Modifier' : 'Nouveau'}</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <input type="text" placeholder="Nom" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="input-dark w-full" required />
-                <select value={form.agent_id} onChange={e => setForm({...form, agent_id: e.target.value})} className="input-dark w-full" required>
-                  <option value="">Agent</option>
-                  {agents.filter(a => a.whatsapp_connected).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
-                <textarea placeholder="Message" value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="input-dark w-full min-h-[120px]" required />
-                <div className="flex gap-4 pt-4">
-                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3 rounded-xl bg-white/5 font-bold">Annuler</button>
-                  <button type="submit" className="flex-1 py-3 rounded-xl bg-white text-black font-bold">Suivant</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowModal(false)}>
+          <div className={`relative z-10 w-full max-w-2xl flex flex-col rounded-[2.5rem] shadow-2xl border transition-all duration-300 animate-in zoom-in-95 ${
+            isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
+          }`} onClick={e => e.stopPropagation()}>
+            
+            <div className={`p-8 border-b ${isDark ? 'border-space-800' : 'border-gray-100'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-500/10 rounded-2xl">
+                    <Edit3 className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className={`text-2xl font-display font-black italic uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedCampaign ? 'Modifier la campagne' : 'Nouvelle Campagne'}</h2>
+                    <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Étape 1 : Configuration générale</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowModal(false)} className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-space-800 text-gray-500 hover:text-white' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-900'}`}>
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <form onSubmit={handleSubmit} id="campaign-form" className="space-y-6">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Nom de la campagne</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ex: Soldes d'Automne" 
+                      value={form.name} 
+                      onChange={e => setForm({...form, name: e.target.value})} 
+                      className="input-premium w-full" 
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className={`text-[10px] font-black uppercase tracking-widest ml-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Agent WhatsApp</label>
+                    <select 
+                      value={form.agent_id} 
+                      onChange={e => setForm({...form, agent_id: e.target.value})} 
+                      className="input-premium w-full appearance-none" 
+                      required
+                    >
+                      <option value="">Sélectionner un agent</option>
+                      {agents.filter(a => a.whatsapp_connected).map(a => (
+                        <option key={a.id} value={a.id}>{a.name} ({a.phone})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Contenu du message</label>
+                    <button type="button" onClick={handleAiRewrite} disabled={rewritingMessage || !form.message.trim()} className="flex items-center gap-1.5 text-xs font-bold text-gold-400 hover:text-gold-300 transition-colors disabled:opacity-30">
+                      {rewritingMessage ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                      Améliorer avec l'IA
+                    </button>
+                  </div>
+                  <textarea 
+                    placeholder="Votre message ici..." 
+                    value={form.message} 
+                    onChange={e => setForm({...form, message: e.target.value})} 
+                    className="input-premium w-full min-h-[160px] resize-none" 
+                    required 
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {CAMPAIGN_TEMPLATES.map(tpl => (
+                      <button key={tpl.name} type="button" onClick={() => applyTemplate(tpl)} className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase transition-all ${isDark ? 'bg-space-950 border-space-700 hover:border-blue-500 text-gray-500 hover:text-blue-400' : 'bg-gray-50 border-gray-200 hover:border-blue-500 text-gray-600 hover:text-blue-600'}`}>
+                        {tpl.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-3xl border ${isDark ? 'bg-space-950/50 border-space-700/50' : 'bg-gray-50 border-gray-100'}`}>
+                  <h3 className={`text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <Calendar className="w-3.5 h-3.5" />
+                    Programmation (Optionnel)
+                  </h3>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-gray-500 ml-1">Date & Heure d'envoi</label>
+                      <DatePicker
+                        selected={form.scheduled_at ? new Date(form.scheduled_at) : null}
+                        onChange={(date) => setForm({ ...form, scheduled_at: date ? date.toISOString() : '' })}
+                        showTimeSelect
+                        timeFormat="HH:mm"
+                        timeIntervals={15}
+                        dateFormat="dd/MM/yyyy HH:mm"
+                        locale="fr"
+                        placeholderText="Maintenant (Immédiat)"
+                        className="input-premium w-full"
+                        isClearable
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase text-gray-500 ml-1">Répétition</label>
+                      <select 
+                        value={form.recurrence_type} 
+                        onChange={e => setForm({...form, recurrence_type: e.target.value})} 
+                        className="input-premium w-full"
+                      >
+                        {RECURRENCE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {form.scheduled_at && (
+                    <p className="mt-4 text-[10px] font-bold text-amber-500 flex items-center gap-1.5 animate-pulse">
+                      <AlertCircle className="w-3 h-3" />
+                      La campagne sera automatiquement lancée à la date prévue.
+                    </p>
+                  )}
                 </div>
               </form>
+            </div>
+
+            <div className={`p-8 border-t flex gap-4 ${isDark ? 'border-space-800' : 'border-gray-100'}`}>
+              <button 
+                type="button" 
+                onClick={() => setShowModal(false)} 
+                className="flex-1 py-4 px-6 rounded-2xl font-bold bg-gray-500/10 hover:bg-gray-500/20 text-gray-500 hover:text-white transition-all"
+              >
+                Annuler
+              </button>
+              <button 
+                type="submit" 
+                form="campaign-form"
+                className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-display font-black italic uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-100 transition-all flex items-center justify-center gap-3"
+              >
+                {selectedCampaign ? 'Mettre à jour' : 'Étape Suivante'}
+                <ArrowRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>, document.body
@@ -529,7 +742,35 @@ export default function Campaigns() {
         </div>, document.body
       )}
 
-      <CampaignPreviewModal isOpen={showPreviewModal} onClose={() => { setShowPreviewModal(false); setCampaignToPreview(null); }} onConfirm={handleConfirmSend} campaign={campaignToPreview} isSending={!!sendingCampaignId} />
+      <CampaignPreviewModal 
+        isOpen={showPreviewModal} 
+        onClose={() => { setShowPreviewModal(false); setCampaignToPreview(null); }} 
+        onConfirm={handleConfirmSend} 
+        campaign={campaignToPreview} 
+        isSending={!!sendingCampaignId} 
+      />
+    </div>
+  )
+}
+
+function StatCard({ icon: Icon, value, label, isDark, color }) {
+  const colors = {
+    blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-blue-500/5',
+    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/5',
+    gold: 'bg-gold-500/10 text-gold-400 border-gold-500/20 shadow-gold-500/5',
+    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-indigo-500/5'
+  }
+  return (
+    <div className={`p-4 rounded-3xl border transition-all duration-300 hover:-translate-y-1 shadow-lg ${isDark ? 'bg-space-950/50' : 'bg-white'} ${colors[color] || colors.blue}`}>
+      <div className="flex flex-col items-center text-center gap-2">
+        <div className={`p-2 rounded-xl bg-white/5`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div>
+          <p className="text-xl sm:text-2xl font-display font-black italic">{value}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{label}</p>
+        </div>
+      </div>
     </div>
   )
 }

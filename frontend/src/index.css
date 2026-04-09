@@ -4,10 +4,36 @@
 
 @layer components {
   .input-dark, .input {
-    @apply w-full rounded-xl border px-4 py-3 transition-all duration-200 box-border border-transparent focus:ring-2 focus:ring-opacity-50;
+    @apply w-full rounded-xl border px-4 py-3 transition-all duration-200 box-border border-transparent focus:ring-2 focus:ring-opacity-50 outline-none;
     background: var(--bg-tertiary);
     color: var(--text-primary);
     border-color: var(--border-color);
+  }
+
+  .input-premium {
+    @apply w-full rounded-[1.2rem] border px-5 py-3.5 transition-all duration-300 outline-none font-medium;
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-premium:focus {
+    @apply ring-4 ring-blue-500/10 border-blue-500/50;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .light .input-premium {
+    background: rgba(15, 23, 42, 0.02);
+    border-color: #e2e8f0;
+    color: #0f172a;
+  }
+  
+  .light .input-premium:focus {
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
   }
 
   /* Selects: même style que .input + chevron intégré */

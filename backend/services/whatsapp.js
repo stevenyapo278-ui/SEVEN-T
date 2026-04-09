@@ -674,6 +674,7 @@ class WhatsAppManager {
 
             // Handle poll vote updates
             sock.ev.on('messages.update', async (updates) => {
+                console.log(`[WhatsApp] messages.update event received: ${updates.length} updates`);
                 for (const { key, update } of updates) {
                     if (!update.pollUpdates) continue;
                     try {
