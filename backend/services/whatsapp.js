@@ -723,7 +723,14 @@ class WhatsAppManager {
                 // Case 1: Raw WAMessage from upsert (needs decryption)
                 if (update.message?.pollUpdateMessage) {
                     try {
-                        const decrypted = await sock.decryptPollUpdate(update);
+                        // Compatibility: Baileys sometimes changes the name or placement of the decryption function
+                        const decryptFn = sock.decryptPollUpdate || sock.decodePollVote || sock.pollUpdateDecrypt;
+                        
+                        if (typeof decryptFn !== 'function') {
+                            throw new Error('No decryption function found on socket');
+                        }
+
+                        const decrypted = await decryptFn.call(sock, update);
                         normalizedUpdates.push(decrypted);
                         console.log(`[PollDebug] Decrypted poll update from ${decrypted.voter}`);
                     } catch (e) {
