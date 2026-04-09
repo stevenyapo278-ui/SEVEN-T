@@ -3,7 +3,8 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
     downloadMediaMessage,
-    getAggregateVotesInPollMessage
+    getAggregateVotesInPollMessage,
+    decryptPollUpdate
 } from '@whiskeysockets/baileys';
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
@@ -723,17 +724,20 @@ class WhatsAppManager {
                 // Case 1: Raw WAMessage from upsert (needs decryption)
                 if (update.message?.pollUpdateMessage) {
                     try {
-                        // Compatibility: Log ALL functions on the socket to find the correct one
-                        if (typeof sock.decryptPollUpdate !== 'function') {
-                            const allFns = Object.keys(sock).filter(k => typeof sock[k] === 'function');
-                            throw new Error(`decryptPollUpdate is not a function. All available methods: ${allFns.join(', ')}`);
+                        // Use the imported decryptPollUpdate or the one on the socket
+                        const decrypt = typeof decryptPollUpdate === 'function' ? decryptPollUpdate : sock.decryptPollUpdate;
+                        
+                        if (typeof decrypt !== 'function') {
+                            throw new Error('Decryption utility not found');
                         }
 
-                        const decrypted = await sock.decryptPollUpdate(update);
+                        // Standalone decryptPollUpdate often needs context or is bound to sock
+                        // We try to call it with the message
+                        const decrypted = await decrypt.call(sock, update);
                         normalizedUpdates.push(decrypted);
-                        console.log(`[PollDebug] Decrypted poll update from ${decrypted.voter}`);
+                        console.log(`[PollDebug] Successfully decrypted poll update from ${decrypted.voter}`);
                     } catch (e) {
-                        console.warn(`[PollDebug] Manual decryption failed:`, e.message);
+                        console.warn(`[PollDebug] Decryption attempt failed:`, e.message);
                     }
                 } 
                 // Case 2: Standard update format
