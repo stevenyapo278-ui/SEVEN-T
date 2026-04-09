@@ -801,26 +801,32 @@ class WhatsAppManager {
                         ? meIdNormalised
                         : (creationKey.participant || creationKey.remoteJid || '');
 
-                    // voterJid: need the PHONE NUMBER JID (xxx@s.whatsapp.net), not the LID (xxx@lid)
-                    // The voter's WhatsApp encrypts the vote using their own PN JID as identifier.
-                    // Resolution order: senderPn (Baileys field) → lidToPhoneMap → raw JID
                     this.ensureLidMapFromStore(toolId);
                     const tidLidMap = this.lidToPhoneMap.get(toolId);
                     const rawVoterJid = update.key.fromMe
                         ? meIdNormalised
                         : (update.key.participant || update.key.remoteJid || '');
+                    
                     const senderPn = update.key.senderPn;
+                    const altVoterJid = update.key.participantAlt || update.key.remoteJidAlt;
                     const voterJidFromMap = rawVoterJid.endsWith('@lid') ? tidLidMap?.get(rawVoterJid) : null;
+                    
                     // Build candidate list: most specific first
                     const voterJidCandidates = [...new Set([
+                        altVoterJid, // from Baileys getKeyAuthor
                         senderPn,
                         voterJidFromMap,
                         rawVoterJid,
                         rawVoterJid.endsWith('@lid') ? rawVoterJid.replace('@lid', '@s.whatsapp.net') : null,
                     ].filter(Boolean))];
 
-                    console.log(`[PollDebug] Trying voterJid candidates for ${update.key?.id}: ${voterJidCandidates.join(', ')}`);
-                    console.log(`[PollDebug] pollCreatorJid=${pollCreatorJid}, pollMsgId=${key.id}`);
+                    console.log(`[PollDebug] --- DECRYPTION DIAGNOSTICS ---`);
+                    console.log(`[PollDebug] pollEncKey (hex): ${pollEncKey.toString('hex')}`);
+                    console.log(`[PollDebug] creationKey:`, JSON.stringify(creationKey));
+                    console.log(`[PollDebug] update.key:`, JSON.stringify(update.key));
+                    console.log(`[PollDebug] meIdNormalised: ${meIdNormalised}`);
+                    console.log(`[PollDebug] pollCreatorJid: ${pollCreatorJid}`);
+                    console.log(`[PollDebug] Trying voterJid candidates: ${voterJidCandidates.join(', ')}`);
 
                     let voteMsg = null;
                     let successVoterJid = null;
