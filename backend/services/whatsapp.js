@@ -4,7 +4,7 @@ import makeWASocket, {
     makeCacheableSignalKeyStore,
     downloadMediaMessage,
     getAggregateVotesInPollMessage
-} from 'baileys';
+} from '@whiskeysockets/baileys';
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
 import { v4 as uuidv4 } from 'uuid';
