@@ -347,53 +347,53 @@ export default function Campaigns() {
 
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 pb-12">
-      {/* Hero Header */}
-      <div className={`relative rounded-[2.5rem] border p-8 overflow-hidden ${
-        isDark 
-          ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50 shadow-2xl' 
-          : 'bg-white border-gray-100 shadow-xl shadow-gray-200/50'
+      {/* Header Hero */}
+      <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
-        {/* Animated Background Orbs */}
-        <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full" />
-        <div className="absolute bottom-0 left-0 translate-y-12 -translate-x-12 w-64 h-64 bg-gold-400/10 blur-[100px] rounded-full" />
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/20">
-                <Send className="w-6 h-6 text-white" />
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{ backgroundImage: `url(${isDark ? "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+" : "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2NDc0OGIiIGZpbGwtb3BhY2l0eT0iMC4wNiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+"})` }}
+          aria-hidden
+        />
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2 min-w-0">
+                <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
+                  <Send className="w-6 h-6 text-blue-400" />
+                </div>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Campagnes</h1>
               </div>
-              <h1 className={`text-3xl sm:text-4xl font-display font-black italic tracking-tight uppercase ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Campagnes
-              </h1>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Diffusez des messages personnalisés en masse via WhatsApp</p>
             </div>
-            <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Diffusez des messages personnalisés en masse via WhatsApp
-            </p>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+              <button 
+                type="button"
+                onClick={() => { 
+                  setForm({ name: '', message: '', agent_id: '', scheduled_at: '', recurrence_type: 'none', recurrence_interval: 1, recurrence_days: '', recipients: [] }); 
+                  setSelectedCampaign(null); 
+                  setShowModal(true); 
+                }} 
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/20 min-h-[44px]"
+              >
+                <Plus className="w-5 h-5" aria-hidden />
+                <span>Nouvelle campagne</span>
+              </button>
+            </div>
           </div>
-          <button 
-            onClick={() => { 
-              setForm({ name: '', message: '', agent_id: '', scheduled_at: '', recurrence_type: 'none', recurrence_interval: 1, recurrence_days: '', recipients: [] }); 
-              setSelectedCampaign(null); 
-              setShowModal(true); 
-            }} 
-            className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-2xl font-display font-black italic uppercase tracking-wider hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1 transition-all group"
-          >
-            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-            Nouvelle campagne
-          </button>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-          <StatCard icon={Target} value={stats?.total || 0} label="Total" isDark={isDark} color="blue" />
-          <StatCard icon={CheckCircle2} value={stats?.sent || 0} label="Envoyées" isDark={isDark} color="emerald" />
-          <StatCard icon={Calendar} value={stats?.scheduled || 0} label="Programmées" isDark={isDark} color="gold" />
-          <StatCard icon={BarChart2} value={stats?.totalRecipients > 0 ? `${Math.round((stats.totalSent / stats.totalRecipients) * 100)}%` : '0%'} label="Succès" isDark={isDark} color="indigo" />
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-8 min-w-0">
+            <StatCard icon={Target} value={stats?.total || 0} label="Total" isDark={isDark} color="blue" />
+            <StatCard icon={CheckCircle2} value={stats?.sent || 0} label="Envoyées" isDark={isDark} color="emerald" />
+            <StatCard icon={Calendar} value={stats?.scheduled || 0} label="Programmées" isDark={isDark} color="gold" />
+            <StatCard icon={BarChart2} value={stats?.totalRecipients > 0 ? `${Math.round((stats.totalSent / stats.totalRecipients) * 100)}%` : '0%'} label="Succès" isDark={isDark} color="indigo" />
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 flex-1 max-w-md ${
+      <div className="flex flex-col sm:flex-row gap-3 min-w-0 mb-6">
+        <div className={`flex-1 flex items-center gap-3 px-4 py-3 sm:py-3.5 rounded-2xl border transition-all duration-300 ${
           isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
         }`}>
           <button 
@@ -408,7 +408,13 @@ export default function Campaigns() {
             <Check className={`w-4 h-4 ${selectedIds.size === filteredCampaigns.length && filteredCampaigns.length > 0 ? 'opacity-100' : 'opacity-0'}`} />
           </button>
           <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
-          <input type="text" placeholder="Rechercher..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-transparent border-none focus:ring-0 w-full text-sm" />
+          <input 
+            type="text" 
+            placeholder="Rechercher..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500" 
+          />
         </div>
       </div>
 
@@ -446,109 +452,124 @@ export default function Campaigns() {
             <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-800'}`}>Aucune campagne trouvée</h3>
             <p className="text-gray-500">Commencez par créer votre première campagne de diffusion.</p>
           </div>
-        ) : filteredCampaigns.map(c => {
+        ) : filteredCampaigns.map((c, index) => {
           const isSelected = selectedIds.has(c.id)
           return (
-            <div key={c.id} className={`group relative rounded-3xl border transition-all duration-300 ${
-              isSelected 
-                ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30 shadow-2xl' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200 shadow-xl') 
-                : (isDark ? 'bg-space-900/50 border-space-700/50 hover:bg-space-800/80 hover:border-space-600' : 'bg-white border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md')
-            }`}>
-              <div className="p-6 flex flex-col md:flex-row md:items-center gap-6">
-                <div className="flex items-center gap-4 flex-1">
-                  <div 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(c.id); }}
-                    className={`w-10 h-10 flex-shrink-0 rounded-2xl border-2 transition-all flex items-center justify-center cursor-pointer ${
-                      isSelected
-                        ? 'bg-blue-500 border-blue-400 text-white shadow-lg shadow-blue-500/20'
-                        : isDark ? 'border-space-700 bg-space-950/50 hover:border-space-500' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                    }`}
-                  >
-                    <Check className={`w-5 h-5 transition-transform duration-300 ${isSelected ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}`} />
+            <div 
+              key={c.id} 
+              className={`card p-3 sm:p-5 transition-all cursor-pointer group animate-fadeIn border-l-4 ${
+                isSelected 
+                  ? 'border-l-blue-500 bg-blue-500/5 border-blue-500/30' 
+                  : 'hover:border-blue-500/10 hover:bg-space-800/80 border-l-transparent'
+              }`}
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* Selection Checkbox */}
+                <div 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSelect(c.id); }}
+                  className="flex-shrink-0"
+                >
+                  <div className={`w-6 h-6 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                    isSelected
+                      ? 'bg-blue-500 border-blue-500 text-white'
+                      : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                  }`}>
+                    {isSelected && <Check className="w-4 h-4" />}
                   </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className={`font-display font-black italic uppercase tracking-tight text-lg truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{c.name}</h3>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-semibold text-gray-100 truncate group-hover:text-gold-400 transition-colors">
+                        {c.name}
+                      </h3>
                       {getStatusBadge(c.status)}
                     </div>
-                    <p className={`text-sm line-clamp-1 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{c.message}</p>
-                    
-                    <div className="flex flex-wrap items-center gap-5">
-                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? 'bg-space-950/50 border-space-700/30' : 'bg-gray-50 border-gray-100'}`}>
-                        <Users className="w-4 h-4 text-blue-400" />
-                        <span className={`text-xs font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{c.recipients_count ?? 0}</span>
+                  </div>
+                  <p className={`text-xs sm:text-sm line-clamp-1 mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{c.message}</p>
+                  
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[10px] sm:text-xs text-gray-400 font-bold">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{c.recipients_count ?? 0}</span>
+                    </div>
+                    {c.scheduled_at && (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-gold-400" />
+                        <span>
+                          {new Date(c.scheduled_at).toLocaleString('fr-FR', {
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit'
+                          })}
+                        </span>
                       </div>
-                      {c.scheduled_at && (
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? 'bg-space-950/50 border-space-700/30' : 'bg-gray-50 border-gray-100'}`}>
-                          <Calendar className="w-4 h-4 text-gold-400" />
-                          <span className={`text-xs font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {new Date(c.scheduled_at).toLocaleString('fr-FR', {
-                              day: '2-digit', month: '2-digit', year: 'numeric',
-                              hour: '2-digit', minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                      )}
-                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isDark ? 'bg-space-950/50 border-space-700/30' : 'bg-gray-50 border-gray-100'}`}>
-                        <Bot className="w-4 h-4 text-emerald-400" />
-                        <span className={`text-xs font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{c.agent_name || 'Aucun agent'}</span>
-                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="truncate max-w-[120px]">{c.agent_name || 'Aucun agent'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 md:border-l md:pl-6 border-space-700/50">
+                {/* Actions */}
+                <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
+                  {(c.status === 'sent' || c.status === 'failed') && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleRelaunch(c.id); }} 
+                      className="p-2 text-orange-400 hover:bg-orange-500/10 rounded-xl transition-all"
+                      title="Relancer"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  )}
                   {c.status !== 'sent' && c.status !== 'sending' && (
                     <>
-                      <button onClick={() => openRecipientsModal(c)} className="p-3 bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white rounded-2xl transition-all border border-blue-500/20" title="Gérer les destinataires">
-                        <Users className="w-5 h-5" />
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); openRecipientsModal(c); }} 
+                        className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-xl transition-all"
+                        title="Destinataires"
+                      >
+                        <Users className="w-4 h-4" />
                       </button>
-                      <button onClick={() => openEditModal(c)} className="p-3 bg-gold-400/10 text-gold-400 hover:bg-gold-400 hover:text-black rounded-2xl transition-all border border-gold-400/20" title="Modifier">
-                        <Edit3 className="w-5 h-5" />
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); openEditModal(c); }} 
+                        className="p-2 text-amber-400 hover:bg-amber-500/10 rounded-xl transition-all"
+                        title="Modifier"
+                      >
+                        <Edit3 className="w-4 h-4" />
                       </button>
-                      
-                      {c.status === 'scheduled' ? (
-                        <div className="flex items-center gap-2">
-                           <button 
-                            onClick={() => handleSendCampaign(c)} 
-                            className="flex items-center gap-2 px-5 py-3 rounded-2xl font-display font-black italic uppercase text-xs tracking-wider transition-all shadow-lg bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20"
-                            title="Lancer immédiatement"
-                          >
-                            <Send className="w-4 h-4" />
-                            Lancer
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => handleSendCampaign(c)} 
-                          className="flex items-center gap-2 px-5 py-3 rounded-2xl font-display font-black italic uppercase text-xs tracking-wider transition-all shadow-lg bg-emerald-500 text-white hover:bg-emerald-400 shadow-emerald-500/20"
-                        >
-                          <Send className="w-4 h-4" />
-                          Lancer
-                        </button>
-                      )}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleSendCampaign(c); }} 
+                        className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all"
+                        title="Lancer"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
                     </>
                   )}
                   {c.status === 'sending' && (
-                    <div className="flex items-center gap-2 px-5 py-3 bg-indigo-500/10 text-indigo-400 rounded-2xl border border-indigo-500/20">
+                    <div className="p-2 text-indigo-400">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-xs font-black uppercase italic">En cours...</span>
                     </div>
                   )}
-                  {(c.status === 'sent' || c.status === 'failed') && (
-                    <button onClick={() => handleRelaunch(c.id)} className="flex items-center gap-2 px-5 py-3 bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white rounded-2xl transition-all border border-orange-500/20 font-black uppercase italic text-xs">
-                      <RefreshCw className="w-4 h-4" />
-                      Relancer
-                    </button>
-                  )}
-                  <button onClick={() => openHistoryModal(c)} className="p-3 bg-white/5 text-gray-500 hover:text-white hover:bg-white/10 rounded-2xl transition-all border border-white/10" title="Historique">
-                    <History className="w-5 h-5" />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); openHistoryModal(c); }} 
+                    className="p-2 text-gray-500 hover:text-white hover:bg-white/10 rounded-xl transition-all"
+                    title="Historique"
+                  >
+                    <History className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(c.id)} className="p-3 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all" title="Supprimer">
-                    <Trash2 className="w-5 h-5" />
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }} 
+                    className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+                <ChevronRight className="w-4 h-4 text-gray-600 sm:hidden" />
               </div>
             </div>
           )
@@ -757,21 +778,24 @@ export default function Campaigns() {
 }
 
 function StatCard({ icon: Icon, value, label, isDark, color }) {
-  const colors = {
-    blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-blue-500/5',
-    emerald: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/5',
-    gold: 'bg-gold-500/10 text-gold-400 border-gold-500/20 shadow-gold-500/5',
-    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-indigo-500/5'
+  const colorClasses = {
+    blue: 'bg-blue-500/10 text-blue-400',
+    emerald: 'bg-emerald-500/10 text-emerald-400',
+    gold: 'bg-gold-400/10 text-gold-400',
+    indigo: 'bg-indigo-500/10 text-indigo-400'
   }
+  
   return (
-    <div className={`p-4 rounded-3xl border transition-all duration-300 hover:-translate-y-1 shadow-lg ${isDark ? 'bg-space-950/50' : 'bg-white'} ${colors[color] || colors.blue}`}>
-      <div className="flex flex-col items-center text-center gap-2">
-        <div className={`p-2 rounded-xl bg-white/5`}>
+    <div className={`rounded-xl p-4 border transition-all duration-300 ${
+      isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md shadow-sm hover:scale-[1.02]'
+    }`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`p-2 rounded-xl flex-shrink-0 ${colorClasses[color] || colorClasses.blue}`}>
           <Icon className="w-5 h-5" />
         </div>
-        <div>
-          <p className="text-xl sm:text-2xl font-display font-black italic">{value}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-60">{label}</p>
+        <div className="min-w-0 flex-1">
+          <p className={`text-lg sm:text-xl font-bold break-words leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</p>
+          <p className={`text-[10px] sm:text-xs truncate font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'} mt-0.5`}>{label}</p>
         </div>
       </div>
     </div>

@@ -9,7 +9,10 @@ import {
   BarChart2, Plus, Send, X, Trash2, CheckCircle2, Clock, Lock,
   Loader2, Users, RefreshCw, ChevronDown, Settings2, VoteIcon, UserPlus, UserCheck, History, Search, Target, Check, ChevronRight
 } from 'lucide-react'
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
 import ImportedContactsPicker from '../components/ImportedContactsPicker'
+
+const CHART_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16', '#a855f7', '#14b8a6', '#f43f5e', '#eab308']
 
 function safeJson(val, fallback) {
   if (!val) return fallback
@@ -585,26 +588,74 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
           </div>
 
           {activeTab === 'results' ? (
-            <div className="space-y-4 animate-fadeIn">
-              <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-                <BarChart2 className="w-3 h-3" /> Détail des votes
-              </h4>
-              <div className="space-y-3">
-                {options.map(opt => {
-                  const r = results.find(res => res.name === opt) || { count: 0 }
-                  const pct = poll.total_votes > 0 ? Math.round((r.count / poll.total_votes) * 100) : 0
-                  return (
-                    <div key={opt}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{opt}</span>
-                        <span className="font-bold text-violet-400">{r.count} vote{r.count !== 1 ? 's' : ''} • {pct}%</span>
+            <div className="space-y-6 animate-fadeIn">
+              
+              {/* Recharts Graph */}
+              {poll.total_votes > 0 ? (
+                <div className={`p-4 rounded-3xl border flex items-center justify-center ${isDark ? 'bg-space-800/40 border-space-700' : 'bg-gray-50 border-gray-100'}`} style={{ height: '240px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={options.map(opt => ({ name: opt, value: (results.find(res => res.name === opt) || {count:0}).count })).filter(d => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {options.map((opt, index) => (
+                           <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip 
+                        contentStyle={{ 
+                          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+                          borderColor: isDark ? '#374151' : '#e5e7eb',
+                          borderRadius: '12px',
+                          color: isDark ? '#f3f4f6' : '#111827',
+                          fontWeight: 'bold',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        }}
+                        itemStyle={{ color: isDark ? '#f3f4f6' : '#111827' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className={`h-[160px] flex flex-col items-center justify-center border-2 border-dashed rounded-3xl ${isDark ? 'bg-space-800/20 border-space-700' : 'bg-gray-50 border-gray-200'} mb-4`}>
+                  <Target className="w-8 h-8 text-violet-400 opacity-40 mb-2" />
+                  <p className="text-sm font-semibold text-gray-400">Aucun vote pour l'instant</p>
+                </div>
+              )}
+
+              {/* Textual progress bars */}
+              <div>
+                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-3">
+                  <BarChart2 className="w-3 h-3" /> Répartition
+                </h4>
+                <div className="space-y-3">
+                  {options.map((opt, idx) => {
+                    const r = results.find(res => res.name === opt) || { count: 0 }
+                    const color = CHART_COLORS[idx % CHART_COLORS.length]
+                    const pct = poll.total_votes > 0 ? Math.round((r.count / poll.total_votes) * 100) : 0
+                    return (
+                      <div key={opt}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'} flex items-center gap-2`}>
+                            <div className="w-2 h-2 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                            {opt}
+                          </span>
+                          <span className="font-bold flex-shrink-0 ml-2" style={{ color }}>{r.count} vote{r.count !== 1 ? 's' : ''} • {pct}%</span>
+                        </div>
+                        <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
+                        </div>
                       </div>
-                      <div className={`h-2 rounded-full ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
-                        <div className="h-full rounded-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-500" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           ) : (
