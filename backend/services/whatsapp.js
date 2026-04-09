@@ -812,8 +812,11 @@ class WhatsAppManager {
                         myLid
                     ].filter(Boolean))];
 
+                    this.ensureLidMapFromStore(toolId);
+                    const tidLidMap = this.lidToPhoneMap.get(toolId);
+                    
                     const altVoterJid = update.key.participantAlt || update.key.remoteJidAlt;
-                    const voterJidFromMap = update.key.remoteJid.endsWith('@lid') ? tidLidMap?.get(update.key.remoteJid) : null;
+                    const voterJidFromMap = update.key.remoteJid?.endsWith('@lid') ? tidLidMap?.get(update.key.remoteJid) : null;
                     
                     // Build voter candidate list
                     const voterJidCandidates = [...new Set([
