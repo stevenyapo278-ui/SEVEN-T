@@ -3,8 +3,7 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
     downloadMediaMessage,
-    getAggregateVotesInPollMessage,
-    decryptPollUpdate
+    getAggregateVotesInPollMessage
 } from '@whiskeysockets/baileys';
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
@@ -718,36 +717,20 @@ class WhatsAppManager {
 
             console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
 
-            // Normalize and decrypt pollUpdates
+            // Normalize pollUpdates
             const normalizedUpdates = [];
             for (const update of pollUpdates) {
-                // Case 1: Raw WAMessage from upsert (needs decryption)
-                if (update.message?.pollUpdateMessage) {
-                    try {
-                        // Use the imported decryptPollUpdate or the one on the socket
-                        const decrypt = typeof decryptPollUpdate === 'function' ? decryptPollUpdate : sock.decryptPollUpdate;
-                        
-                        if (typeof decrypt !== 'function') {
-                            throw new Error('Decryption utility not found');
-                        }
-
-                        // Standalone decryptPollUpdate often needs context or is bound to sock
-                        // We try to call it with the message
-                        const decrypted = await decrypt.call(sock, update);
-                        normalizedUpdates.push(decrypted);
-                        console.log(`[PollDebug] Successfully decrypted poll update from ${decrypted.voter}`);
-                    } catch (e) {
-                        console.warn(`[PollDebug] Decryption attempt failed:`, e.message);
-                    }
-                } 
-                // Case 2: Standard update format
-                else if (update.pollUpdate) {
+                // If it's already in the standard update format (already decrypted by Baileys)
+                if (update.pollUpdate) {
                     normalizedUpdates.push(update);
-                }
+                } 
+                // Fallback for raw messages: if session is stable, Baileys usually 
+                // handles the decryption and emits a 'messages.update' later.
             }
 
             if (normalizedUpdates.length === 0) {
-                console.warn(`[PollDebug] No valid decrypted poll updates found`);
+                // We don't log warning here because it might be a raw message 
+                // waiting for its standard update event.
                 return;
             }
 
