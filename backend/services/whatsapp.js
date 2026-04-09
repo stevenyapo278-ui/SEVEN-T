@@ -720,12 +720,30 @@ class WhatsAppManager {
             // Normalize pollUpdates
             const normalizedUpdates = [];
             for (const update of pollUpdates) {
-                // If it's already in the standard update format (already decrypted by Baileys)
-                if (update.pollUpdate) {
-                    normalizedUpdates.push(update);
+                // Case 1: Raw WAMessage from upsert (needs decryption)
+                if (update.message?.pollUpdateMessage) {
+                    try {
+                        // Find the decryption function. It might be on the socket, 
+                        // or we might need to use the one hidden in the message processing logic.
+                        const decryptFn = sock.decryptPollUpdate || sock.decodePollVote;
+                        
+                        if (typeof decryptFn === 'function') {
+                            const decrypted = await decryptFn.call(sock, update);
+                            normalizedUpdates.push(decrypted);
+                            console.log(`[PollDebug] Decrypted raw poll update from ${decrypted.voter}`);
+                        } else {
+                            // If still not found, we try to use getAggregateVotesInPollMessage directly 
+                            // after internal Baileys processing has run (it might have patched it)
+                            console.log(`[PollDebug] Decryption method still missing, skipping raw message`);
+                        }
+                    } catch (e) {
+                        console.warn(`[PollDebug] Decryption error:`, e.message);
+                    }
                 } 
-                // Fallback for raw messages: if session is stable, Baileys usually 
-                // handles the decryption and emits a 'messages.update' later.
+                // Case 2: Standard update format
+                else if (update.pollUpdate) {
+                    normalizedUpdates.push(update);
+                }
             }
 
             if (normalizedUpdates.length === 0) {
