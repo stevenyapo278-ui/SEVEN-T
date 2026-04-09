@@ -4,7 +4,8 @@ import makeWASocket, {
     makeCacheableSignalKeyStore,
     downloadMediaMessage,
     getAggregateVotesInPollMessage,
-    decryptPollVote
+    decryptPollVote,
+    jidNormalizedUser
 } from '@whiskeysockets/baileys';
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
@@ -729,54 +730,13 @@ class WhatsAppManager {
             const sock = this.connections.get(toolId);
             if (!sock) return;
 
-            // 1. Check for raw messages
-            const hasRaw = pollUpdates.some(u => u.message?.pollUpdateMessage);
-            if (hasRaw) {
-                console.log(`[PollDebug] Raw poll updates detected, proceeding to decrypt immediately...`);
-            }
+            const meId = sock.user?.id;
+            const meIdNormalised = jidNormalizedUser(meId);
 
-            // 2. Normalize and check for decryption
-            const normalizedUpdates = [];
-            for (const update of pollUpdates) {
-                // If it's a raw WAMessage from upsert, we NEED to decrypt it
-                if (update.message?.pollUpdateMessage) {
-                    try {
-                        const meId = sock.user?.id;
-                        const voterJid = update.key.participant || update.key.remoteJid;
-                        
-                        // decryptPollVote expects (pollUpdate, { pollMsgId, pollCreatorJid, voterJid, meId })
-                        const decrypted = await decryptPollVote(update.message.pollUpdateMessage, {
-                            pollMsgId: key.id,
-                            pollCreatorJid: key.participant || key.remoteJid, // The exact user who created the poll
-                            voterJid: voterJid,
-                            meId: meId
-                        });
-
-                        normalizedUpdates.push({
-                            pollUpdate: decrypted,
-                            voter: voterJid
-                        });
-                        console.log(`[PollDebug] Successfully decrypted vote from ${voterJid}`);
-                    } catch (e) {
-                        console.warn(`[PollDebug] Decryption attempt failed for ${update.key.id}:`, e.message);
-                        // Fallback: push raw if only logic error
-                        normalizedUpdates.push({
-                            pollUpdate: update.message.pollUpdateMessage,
-                            voter: update.key.participant || update.key.remoteJid
-                        });
-                    }
-                } 
-                // Case 2: Standard update format
-                else if (update.pollUpdate) {
-                    normalizedUpdates.push(update);
-                }
-            }
-
-            if (normalizedUpdates.length === 0) return;
-
+            // 1. Fetch poll from DB and original poll creation message FIRST
+            //    We need messageContextInfo.messageSecret (pollEncKey) for decryption
             console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
 
-            // 3. Get the poll from the database
             let pollRow = await db.get(`
                 SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
                 FROM polls p
@@ -790,13 +750,12 @@ class WhatsAppManager {
                 return;
             }
 
-            // 4. Retrieve original poll creation message (required for decryption)
+            // Try store first, then DB
             let pollCreationMessage;
             if (jid && store?.messages?.[jid]) {
                 const raw = store.messages[jid].find(m => m.key.id === key.id);
                 if (raw) pollCreationMessage = raw.message;
             }
-
             if (!pollCreationMessage && pollRow.wa_message_full) {
                 try {
                     pollCreationMessage = JSON.parse(pollRow.wa_message_full);
@@ -804,41 +763,104 @@ class WhatsAppManager {
                     console.error(`[PollDebug] Failed to parse poll_message_full:`, e.message);
                 }
             }
-
             if (!pollCreationMessage) {
                 console.warn(`[PollDebug] Could not retrieve original poll message for cryptography`);
                 return;
             }
 
-            // 5. Aggregate votes using Baileys utility
-            console.log(`[PollDebug] normalizedUpdates details:`, JSON.stringify(normalizedUpdates));
-            console.log(`[PollDebug] pollCreationMessage:`, JSON.stringify(pollCreationMessage).substring(0, 500) + '...');
-            
+            // Extract pollEncKey = messageContextInfo.messageSecret from the creation message
+            let pollEncKey = pollCreationMessage?.messageContextInfo?.messageSecret;
+            if (!pollEncKey) {
+                console.warn(`[PollDebug] Missing messageSecret (pollEncKey) in poll creation message`);
+                return;
+            }
+            // May be a base64 string when parsed from JSON (DB), needs to be a Buffer
+            if (typeof pollEncKey === 'string') {
+                pollEncKey = Buffer.from(pollEncKey, 'base64');
+            } else if (!(pollEncKey instanceof Buffer)) {
+                pollEncKey = Buffer.from(pollEncKey);
+            }
+            console.log(`[PollDebug] Got pollEncKey (${pollEncKey.length} bytes) from creation message`);
+
+            // 2. Normalize poll updates — decrypt if raw from messages.upsert
+            // Based on the actual Baileys source (process-message.js, commented-out block)
+            const normalizedUpdates = [];
+            for (const update of pollUpdates) {
+                if (update.message?.pollUpdateMessage) {
+                    // Raw WAMessage from messages.upsert — decrypt manually
+                    const pollUpdateMsg = update.message.pollUpdateMessage;
+
+                    if (!pollUpdateMsg.vote?.encPayload) {
+                        console.warn(`[PollDebug] Missing vote.encPayload for ${update.key?.id}, skipping`);
+                        continue;
+                    }
+
+                    // pollCreatorJid: if the original poll was sent by us, use our normalised JID
+                    const creationKey = pollUpdateMsg.pollCreationMessageKey || key;
+                    const pollCreatorJid = creationKey.fromMe
+                        ? meIdNormalised
+                        : (creationKey.participant || creationKey.remoteJid || '');
+
+                    // voterJid: who voted (the sender of the update message)
+                    const voterJid = update.key.fromMe
+                        ? meIdNormalised
+                        : (update.key.participant || update.key.remoteJid || '');
+
+                    try {
+                        // decryptPollVote is SYNCHRONOUS and returns proto.Message.PollVoteMessage
+                        const voteMsg = decryptPollVote(pollUpdateMsg.vote, {
+                            pollEncKey,
+                            pollCreatorJid,
+                            pollMsgId: key.id,
+                            voterJid
+                        });
+
+                        // Format expected by getAggregateVotesInPollMessage
+                        normalizedUpdates.push({
+                            pollUpdateMessageKey: update.key,
+                            vote: voteMsg,
+                            senderTimestampMs: pollUpdateMsg.senderTimestampMs
+                        });
+                        console.log(`[PollDebug] Decrypted vote from ${voterJid}, selectedOptions: ${voteMsg.selectedOptions?.length ?? 0}`);
+                    } catch (e) {
+                        console.warn(`[PollDebug] Decryption failed for ${update.key?.id}:`, e.message, e.stack?.split('\n')[1]);
+                    }
+                } else {
+                    // Already-decrypted format from messages.update (Baileys processed it internally)
+                    normalizedUpdates.push(update);
+                }
+            }
+
+            if (normalizedUpdates.length === 0) {
+                console.warn(`[PollDebug] No valid decrypted updates to process`);
+                return;
+            }
+
+            // 3. Aggregate votes using Baileys utility
+            console.log(`[PollDebug] Aggregating ${normalizedUpdates.length} update(s) for poll ${key.id}`);
             const aggregatedVotes = getAggregateVotesInPollMessage({
                 message: pollCreationMessage,
                 pollUpdates: normalizedUpdates
             });
 
-            console.log(`[PollDebug] aggregatedVotes details:`, JSON.stringify(aggregatedVotes));
+            console.log(`[PollDebug] aggregatedVotes:`, JSON.stringify(aggregatedVotes));
 
             if (aggregatedVotes.length === 0) {
-                console.warn(`[PollDebug] Aggregation returned 0 options. This may be normal if decryption is pending.`);
+                console.warn(`[PollDebug] Aggregation returned 0 options.`);
                 return;
             }
 
             // 4. Record votes with LID-to-Phone resolution
             const votesByVoter = new Map();
-            const lidMap = this.lidToPhoneMap.get(toolId);
             this.ensureLidMapFromStore(toolId);
-            
+            const lidMap = this.lidToPhoneMap.get(toolId);
+
             for (const option of aggregatedVotes) {
                 for (let voterJid of option.voters) {
                     if (voterJid.endsWith('@lid') && lidMap?.has(voterJid)) {
                         voterJid = lidMap.get(voterJid);
                     }
-                    if (!votesByVoter.has(voterJid)) {
-                        votesByVoter.set(voterJid, new Set());
-                    }
+                    if (!votesByVoter.has(voterJid)) votesByVoter.set(voterJid, new Set());
                     votesByVoter.get(voterJid).add(option.name);
                 }
             }
@@ -846,7 +868,6 @@ class WhatsAppManager {
             for (const [voterJid, optionsSet] of votesByVoter.entries()) {
                 const selectedOptions = Array.from(optionsSet);
                 console.log(`[PollDebug] Recording vote from ${voterJid} for options: ${selectedOptions.join(', ')}`);
-                
                 await db.run(`
                     INSERT INTO poll_votes (poll_id, voter_jid, selected_options, voted_at)
                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
@@ -857,21 +878,20 @@ class WhatsAppManager {
                 `, pollRow.id, voterJid, JSON.stringify(selectedOptions));
             }
 
-            // 5. Update overall poll results in DB
+            // 5. Recompute and store full results
             const allVotes = await db.all('SELECT voter_jid, selected_options FROM poll_votes WHERE poll_id = ?', pollRow.id);
-            const pollData = pollCreationMessage.pollCreationMessage || pollCreationMessage.pollCreationMessageV2 || pollCreationMessage.pollCreationMessageV3 || pollCreationMessage.poll;
-            const pollOptions = pollData?.options?.map(o => o.optionName) || pollData?.values || [];
-            
+            const pollData = pollCreationMessage.pollCreationMessage || pollCreationMessage.pollCreationMessageV2 || pollCreationMessage.pollCreationMessageV3;
+            const pollOptions = pollData?.options?.map(o => o.optionName) || [];
+
             const resultsMap = new Map();
             pollOptions.forEach(opt => resultsMap.set(opt, { name: opt, count: 0, voters: [] }));
-
             for (const vote of allVotes) {
                 try {
                     const selected = JSON.parse(vote.selected_options);
                     if (Array.isArray(selected)) {
                         for (const optName of selected) {
                             if (resultsMap.has(optName)) {
-                                let r = resultsMap.get(optName);
+                                const r = resultsMap.get(optName);
                                 r.count++;
                                 r.voters.push(vote.voter_jid);
                             }
@@ -888,7 +908,7 @@ class WhatsAppManager {
 
             console.log(`[WhatsApp] Poll ${pollRow.id} updated: ${allVotes.length} voters`);
         } catch (e) {
-            console.error('[PollDebug] Error in handlePollUpdate:', e.message);
+            console.error('[PollDebug] Error in handlePollUpdate:', e.message, e.stack?.split('\n').slice(0,3).join(' | '));
         }
     }
 
