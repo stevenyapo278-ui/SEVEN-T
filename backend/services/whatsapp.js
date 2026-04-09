@@ -3,7 +3,8 @@ import makeWASocket, {
     fetchLatestBaileysVersion,
     makeCacheableSignalKeyStore,
     downloadMediaMessage,
-    getAggregateVotesInPollMessage
+    getAggregateVotesInPollMessage,
+    decryptPollVote
 } from '@whiskeysockets/baileys';
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
@@ -728,25 +729,44 @@ class WhatsAppManager {
             const sock = this.connections.get(toolId);
             if (!sock) return;
 
-            // 1. If we have raw messages, wait a bit for Baileys to process/decrypt them internally
+            // 1. Check for raw messages
             const hasRaw = pollUpdates.some(u => u.message?.pollUpdateMessage);
             if (hasRaw) {
-                console.log(`[PollDebug] Raw poll updates detected, waiting 500ms for internal decryption...`);
-                await new Promise(resolve => setTimeout(resolve, 500));
+                console.log(`[PollDebug] Raw poll updates detected, proceeding to decrypt immediately...`);
             }
 
-            // 2. Normalize pollUpdates
+            // 2. Normalize and check for decryption
             const normalizedUpdates = [];
             for (const update of pollUpdates) {
-                // If it's a raw WAMessage from upsert, try to find a decrypted version in the store or just use it
+                // If it's a raw WAMessage from upsert, we NEED to decrypt it
                 if (update.message?.pollUpdateMessage) {
-                    // Search in store for an update that might have been decrypted
-                    normalizedUpdates.push({
-                        pollUpdate: update.message.pollUpdateMessage,
-                        voter: update.key.participant || update.key.remoteJid
-                    });
+                    try {
+                        const meId = sock.user?.id;
+                        const voterJid = update.key.participant || update.key.remoteJid;
+                        
+                        // decryptPollVote expects (pollUpdate, { pollMsgId, pollCreatorJid, voterJid, meId })
+                        const decrypted = await decryptPollVote(update.message.pollUpdateMessage, {
+                            pollMsgId: key.id,
+                            pollCreatorJid: key.participant || key.remoteJid, // The exact user who created the poll
+                            voterJid: voterJid,
+                            meId: meId
+                        });
+
+                        normalizedUpdates.push({
+                            pollUpdate: decrypted,
+                            voter: voterJid
+                        });
+                        console.log(`[PollDebug] Successfully decrypted vote from ${voterJid}`);
+                    } catch (e) {
+                        console.warn(`[PollDebug] Decryption attempt failed for ${update.key.id}:`, e.message);
+                        // Fallback: push raw if only logic error
+                        normalizedUpdates.push({
+                            pollUpdate: update.message.pollUpdateMessage,
+                            voter: update.key.participant || update.key.remoteJid
+                        });
+                    }
                 } 
-                // Case 2: Standard update format (already decrypted by Baileys)
+                // Case 2: Standard update format
                 else if (update.pollUpdate) {
                     normalizedUpdates.push(update);
                 }
@@ -791,10 +811,15 @@ class WhatsAppManager {
             }
 
             // 5. Aggregate votes using Baileys utility
+            console.log(`[PollDebug] normalizedUpdates details:`, JSON.stringify(normalizedUpdates));
+            console.log(`[PollDebug] pollCreationMessage:`, JSON.stringify(pollCreationMessage).substring(0, 500) + '...');
+            
             const aggregatedVotes = getAggregateVotesInPollMessage({
                 message: pollCreationMessage,
                 pollUpdates: normalizedUpdates
             });
+
+            console.log(`[PollDebug] aggregatedVotes details:`, JSON.stringify(aggregatedVotes));
 
             if (aggregatedVotes.length === 0) {
                 console.warn(`[PollDebug] Aggregation returned 0 options. This may be normal if decryption is pending.`);
