@@ -723,10 +723,10 @@ class WhatsAppManager {
                 // Case 1: Raw WAMessage from upsert (needs decryption)
                 if (update.message?.pollUpdateMessage) {
                     try {
-                        // Compatibility: If decryptPollUpdate is NOT a function, log the socket surface for debugging
+                        // Compatibility: Log ALL functions on the socket to find the correct one
                         if (typeof sock.decryptPollUpdate !== 'function') {
-                            const availableFns = Object.keys(sock).filter(k => typeof sock[k] === 'function' && k.toLowerCase().includes('poll'));
-                            throw new Error(`decryptPollUpdate is not a function. Available poll methods: ${availableFns.join(', ')}`);
+                            const allFns = Object.keys(sock).filter(k => typeof sock[k] === 'function');
+                            throw new Error(`decryptPollUpdate is not a function. All available methods: ${allFns.join(', ')}`);
                         }
 
                         const decrypted = await sock.decryptPollUpdate(update);
