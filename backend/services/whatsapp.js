@@ -715,44 +715,35 @@ class WhatsAppManager {
             const sock = this.connections.get(toolId);
             if (!sock) return;
 
-            console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
+            // 1. If we have raw messages, wait a bit for Baileys to process/decrypt them internally
+            const hasRaw = pollUpdates.some(u => u.message?.pollUpdateMessage);
+            if (hasRaw) {
+                console.log(`[PollDebug] Raw poll updates detected, waiting 500ms for internal decryption...`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
 
-            // Normalize pollUpdates
+            // 2. Normalize pollUpdates
             const normalizedUpdates = [];
             for (const update of pollUpdates) {
-                // Case 1: Raw WAMessage from upsert (needs decryption)
+                // If it's a raw WAMessage from upsert, try to find a decrypted version in the store or just use it
                 if (update.message?.pollUpdateMessage) {
-                    try {
-                        // Find the decryption function. It might be on the socket, 
-                        // or we might need to use the one hidden in the message processing logic.
-                        const decryptFn = sock.decryptPollUpdate || sock.decodePollVote;
-                        
-                        if (typeof decryptFn === 'function') {
-                            const decrypted = await decryptFn.call(sock, update);
-                            normalizedUpdates.push(decrypted);
-                            console.log(`[PollDebug] Decrypted raw poll update from ${decrypted.voter}`);
-                        } else {
-                            // If still not found, we try to use getAggregateVotesInPollMessage directly 
-                            // after internal Baileys processing has run (it might have patched it)
-                            console.log(`[PollDebug] Decryption method still missing, skipping raw message`);
-                        }
-                    } catch (e) {
-                        console.warn(`[PollDebug] Decryption error:`, e.message);
-                    }
+                    // Search in store for an update that might have been decrypted
+                    normalizedUpdates.push({
+                        pollUpdate: update.message.pollUpdateMessage,
+                        voter: update.key.participant || update.key.remoteJid
+                    });
                 } 
-                // Case 2: Standard update format
+                // Case 2: Standard update format (already decrypted by Baileys)
                 else if (update.pollUpdate) {
                     normalizedUpdates.push(update);
                 }
             }
 
-            if (normalizedUpdates.length === 0) {
-                // We don't log warning here because it might be a raw message 
-                // waiting for its standard update event.
-                return;
-            }
+            if (normalizedUpdates.length === 0) return;
 
-            // 1. Get the poll from the database
+            console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
+
+            // 3. Get the poll from the database
             let pollRow = await db.get(`
                 SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
                 FROM polls p
@@ -766,7 +757,7 @@ class WhatsAppManager {
                 return;
             }
 
-            // 2. Retrieve original poll creation message (required for decryption)
+            // 4. Retrieve original poll creation message (required for decryption)
             let pollCreationMessage;
             if (jid && store?.messages?.[jid]) {
                 const raw = store.messages[jid].find(m => m.key.id === key.id);
@@ -786,7 +777,7 @@ class WhatsAppManager {
                 return;
             }
 
-            // 3. Aggregate votes using Baileys utility
+            // 5. Aggregate votes using Baileys utility
             const aggregatedVotes = getAggregateVotesInPollMessage({
                 message: pollCreationMessage,
                 pollUpdates: normalizedUpdates
