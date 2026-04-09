@@ -668,6 +668,9 @@ class WhatsAppManager {
                 if (type !== 'notify' && type !== 'append') return;
 
                 for (const message of messages) {
+                    if (message.message?.pollUpdateMessage) {
+                        console.log(`[PollDebug] Detect raw pollUpdateMessage in upsert from ${message.key.remoteJid}`);
+                    }
                     await this.handleIncomingMessage(toolId, sock, message, type);
                 }
             });
@@ -676,6 +679,7 @@ class WhatsAppManager {
             sock.ev.on('messages.update', async (updates) => {
                 console.log(`[WhatsApp] messages.update event received: ${updates.length} updates`);
                 for (const { key, update } of updates) {
+                    console.log(`[PollDebug] Update for MsgID: ${key.id}, Fields: ${Object.keys(update).join(', ')}`);
                     if (!update.pollUpdates) continue;
                     try {
                         // Try to find the poll creation message in the store

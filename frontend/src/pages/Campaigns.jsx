@@ -28,7 +28,10 @@ import {
   RefreshCw,
   Wand2,
   Layout,
-  Check
+  Check,
+  Bot,
+  ArrowRight,
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
