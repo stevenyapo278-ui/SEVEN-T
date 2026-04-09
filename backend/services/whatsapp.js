@@ -717,6 +717,25 @@ class WhatsAppManager {
 
             console.log(`[PollDebug] Processing poll update for message ID: ${key.id}`);
 
+            // Normalize pollUpdates to the format expected by Baileys: { pollUpdate, voter }[]
+            const normalizedUpdates = pollUpdates.map(update => {
+                // If it's a raw WAMessage from upsert
+                if (update.message?.pollUpdateMessage) {
+                    return {
+                        pollUpdate: update.message.pollUpdateMessage,
+                        voter: update.key.participant || update.key.remoteJid
+                    };
+                }
+                // If it's already in the standard update format
+                if (update.pollUpdate) return update;
+                return null;
+            }).filter(Boolean);
+
+            if (normalizedUpdates.length === 0) {
+                console.warn(`[PollDebug] No valid poll updates found after normalization`);
+                return;
+            }
+
             // 1. Get the poll from the database
             let pollRow = await db.get(`
                 SELECT p.id, COALESCE(pr.wa_message_full, p.wa_message_full) as wa_message_full 
@@ -754,7 +773,7 @@ class WhatsAppManager {
             // 3. Aggregate votes using Baileys utility
             const aggregatedVotes = getAggregateVotesInPollMessage({
                 message: pollCreationMessage,
-                pollUpdates: pollUpdates
+                pollUpdates: normalizedUpdates
             });
 
             if (aggregatedVotes.length === 0) {
