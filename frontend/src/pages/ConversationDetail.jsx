@@ -1036,14 +1036,14 @@ export default function ConversationDetail() {
                         {/* WhatsApp Business Order Card */}
                         {message.message_type === 'order' ? (
                           <OrderMessageCard content={message.content} isDark={isDark} />
-                        ) : message.message_type === 'poll' ? (
+                        ) : message.message_type === 'poll' || message.content?.startsWith('[Sondage]') ? (
                           <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
                             isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'
                           }`}>
                             <span className="text-lg">📊</span>
                             <div>
                               <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>Sondage envoyé</p>
-                              <p className={`text-xs ${isDark ? 'text-blue-400/70' : 'text-blue-500/80'}`}>{message.content?.replace('📊 ', '') || 'Sondage'}</p>
+                              <p className={`text-xs ${isDark ? 'text-blue-400/70' : 'text-blue-500/80'}`}>{message.content?.replace('📊 ', '').replace('[Sondage] ', '') || 'Sondage'}</p>
                             </div>
                           </div>
                         ) : (message.content && message.content !== '[Image]' && message.content !== '[Audio]') || (!message.media_url && message.content) ? (

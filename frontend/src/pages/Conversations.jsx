@@ -627,9 +627,9 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
             <ShoppingCart className="w-3.5 h-3.5 flex-shrink-0" />
             Commande via le catalogue
           </p>
-        ) : conv.last_message?.startsWith('📊') ? (
+        ) : conv.last_message?.startsWith('📊') || conv.last_message?.startsWith('[Sondage]') ? (
           <p className={`text-sm truncate flex items-center gap-1 font-medium ${isDark ? 'text-blue-400' : 'text-blue-500'}`}>
-            {conv.last_message}
+            <span className="text-sm">📊</span> Sondage envoyé
           </p>
         ) : (
           <p className="text-sm text-gray-400 truncate">{conv.last_message || 'Aucun message'}</p>
