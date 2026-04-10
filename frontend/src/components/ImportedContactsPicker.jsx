@@ -75,22 +75,34 @@ export default function ImportedContactsPicker({
           limit: 2000
         }
       })
-      const storeContacts = res.data?.contacts || []
-      if (storeContacts.length > 0) {
-        setContacts(storeContacts)
-        return
+      let finalContacts = res.data?.contacts || []
+
+      try {
+        // Fallback: contacts based on conversations (always available even when Baileys store is empty)
+        const fallback = await api.get('/conversations/imported-contacts', {
+          params: {
+            agent_id: agentId || undefined,
+            q: qValue || undefined,
+            min_messages: minMessages || undefined,
+            limit: 2000 // Get all fallback contacts
+          }
+        })
+        
+        const fallbackContacts = fallback.data?.contacts || []
+        const existingKeys = new Set(finalContacts.map(c => normalizePhoneForCompare(c.contact_number)).filter(Boolean))
+        
+        for (const fc of fallbackContacts) {
+          const key = normalizePhoneForCompare(fc.contact_number)
+          if (key && !existingKeys.has(key)) {
+            finalContacts.push(fc)
+            existingKeys.add(key)
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn('Fallback contacts fetch failed', fallbackErr)
       }
 
-      // Fallback: contacts based on conversations (always available even when Baileys store is empty)
-      const fallback = await api.get('/conversations/imported-contacts', {
-        params: {
-          agent_id: agentId || undefined,
-          q: qValue || undefined,
-          min_messages: minMessages || undefined,
-          limit: 300
-        }
-      })
-      setContacts(fallback.data?.contacts || [])
+      setContacts(finalContacts)
     } catch (e) {
       setError(e.response?.data?.error || 'Erreur lors du chargement des contacts')
       setContacts([])
