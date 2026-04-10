@@ -296,36 +296,33 @@ class AIService {
      * Specialized method to improve/rewrite text (e.g. for campaigns)
      */
     async improveText(originalText, context = "marketing WhatsApp", userId = null) {
-        console.log('[AI] improveText debug 1: starting');
         this.initialize();
-        console.log('[AI] improveText debug 2: initialized');
         await this.refreshClientsFromDb();
-        console.log('[AI] improveText debug 3: refreshed db');
 
-        const modelId = 'gemini-1.5-flash'; // Fixed cheap model for small tasks
+        const modelId = 'gemini-1.5-flash'; 
         const provider = this.getProvider(modelId);
-        console.log('[AI] improveText debug 4: provider is', provider);
         const apiKey = await this.getApiKey(provider, modelId);
 
-        const systemPrompt = `Tu es un expert en marketing digital sur WhatsApp. 
-Ta mission est d'améliorer, reformuler et optimiser le message fourni pour qu'il soit plus percutant, engageant et professionnel.
-Garde le ton : ${context}.
-Utilise des emojis de façon pertinente.
-Garde le message CONCIS (maximum 1000 caractères).
-Réponds au format JSON avec un champ "response" contenant le texte uniquement.`;
+        const systemPrompt = `Tu es un outil d'optimisation de message marketing.
+TACHE : Réécrire et améliorer le message utilisateur pour WhatsApp.
+TON : ${context}.
+RÈGLES : 
+1. Pas d'introduction (ex: pas de "Bonjour", pas de "Voici le message").
+2. Pas de salutations ni de présentations (ex: pas de "Je suis...").
+3. Garde le message concis et percutant.
+4. Utilise des emojis si approprié.
+5. Réponds UNIQUEMENT via un objet JSON: {"response": "ton message ici"}`;
 
         const mockAgent = {
-            id: 'internal-chatbot', // Bypass complex system prompt logic
-            name: 'Optimiseur de Message',
+            id: 'internal-chatbot', 
+            name: 'TextOpt', // Nom générique pour éviter l'introduction
             model: modelId,
             system_prompt: systemPrompt,
-            template: 'assistant' // Force JSON formatting focus
+            template: 'assistant'
         };
 
         try {
-            console.log('[AI] improveText debug 5: calling generateResponse');
             const response = await this.generateResponse(mockAgent, [], originalText, [], null, userId, false);
-            console.log('[AI] improveText debug 6: response obtained');
             return response.content;
         } catch (error) {
             console.error('[AI] Improve text fatal error:', error.message);
