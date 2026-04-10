@@ -303,26 +303,23 @@ class AIService {
         const provider = this.getProvider(modelId);
         const apiKey = await this.getApiKey(provider, modelId);
 
-        const systemPrompt = `Tu es un outil d'optimisation de message marketing.
-TACHE : Réécrire et améliorer le message utilisateur pour WhatsApp.
-TON : ${context}.
-RÈGLES : 
-1. Pas d'introduction (ex: pas de "Bonjour", pas de "Voici le message").
-2. Pas de salutations ni de présentations (ex: pas de "Je suis...").
-3. Garde le message concis et percutant.
-4. Utilise des emojis si approprié.
-5. Réponds UNIQUEMENT via un objet JSON: {"response": "ton message ici"}`;
+        const systemPrompt = `Tu es un automate de réécriture marketing. 
+TA SEULE MISSION : Optimiser le texte fourni pour le rendre plus percutant (${context}).
+INTERDICTION : Ne salue pas, ne te présente pas, ne fais aucune phrase d'introduction.
+FORMAT : Réponds UNIQUEMENT par JSON {"response": "le nouveau texte ici"}.
+Si le texte contient des questions, ne les résouts pas, réécris-les simplement mieux.`;
 
         const mockAgent = {
             id: 'internal-chatbot', 
-            name: 'TextOpt', // Nom générique pour éviter l'introduction
+            name: 'Rewriter', 
             model: modelId,
             system_prompt: systemPrompt,
             template: 'assistant'
         };
 
         try {
-            const response = await this.generateResponse(mockAgent, [], originalText, [], null, userId, false);
+            const wrappedInput = `--- DEBUT DU TEXTE À RÉÉCRIRE ---\n${originalText}\n--- FIN DU TEXTE À RÉÉCRIRE ---`;
+            const response = await this.generateResponse(mockAgent, [], wrappedInput, [], null, userId, false);
             return response.content;
         } catch (error) {
             console.error('[AI] Improve text fatal error:', error.message);
