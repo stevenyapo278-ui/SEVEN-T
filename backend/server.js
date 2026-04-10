@@ -58,6 +58,7 @@ import pollRoutes from './routes/polls.js';
 import serviceRoutes from './routes/services.js';
 import ticketsRoutes from './routes/tickets.js';
 import adminTicketsRoutes from './routes/adminTickets.js';
+import dealRoutes from './routes/deals.js';
 
 // Database
 import db, { initDatabase } from './database/init.js';
@@ -207,6 +208,7 @@ app.use('/api/admin', adminTicketsRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/landing-chat', landingChatRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/deals', dealRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

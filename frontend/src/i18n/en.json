@@ -881,6 +881,35 @@
     "leave_empty_email": "Leave empty to use the account email",
     "cancel": "Cancel",
     "create_subscription": "Create subscription"
+  },
+  "deals": {
+    "title": "Deals Tracking",
+    "subtitle": "Manage your commercial opportunities and track your pipeline",
+    "addDeal": "Add deal",
+    "totalValue": "Total value",
+    "avgProbability": "Avg. Probability",
+    "wonDeals": "Won",
+    "ongoing": "Ongoing",
+    "searchPlaceholder": "Search a deal...",
+    "filterAllStages": "All stages",
+    "emptyTitle": "No deals found",
+    "emptyHint": "Start by adding your first deal to track your opportunities.",
+    "modalAddTitle": "New Deal",
+    "modalEditTitle": "Edit Deal",
+    "fieldName": "Deal Name",
+    "fieldAmount": "Amount",
+    "fieldStage": "Stage",
+    "fieldProbability": "Probability (%)",
+    "fieldLead": "Associated Lead",
+    "fieldCloseDate": "Expected Close Date",
+    "fieldNotes": "Notes & Comments",
+    "noLead": "No lead selected",
+    "stageProspecting": "Prospecting",
+    "stageQualification": "Qualification",
+    "stageProposal": "Proposal",
+    "stageNegotiation": "Negotiation",
+    "stageClosedWon": "Closed Won",
+    "stageClosedLost": "Closed Lost"
   }
 }
 

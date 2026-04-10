@@ -951,6 +951,7 @@ export default function DashboardLayout() {
     catalogImport: catalogImportModuleEnabled,
     knowledgeBase: knowledgeBaseModuleEnabled,
     campaigns: campaignsModuleEnabled,
+    deals: dealsModuleEnabled,
     isAdmin,
     isInfluencerOnly
   } = useModuleAvailability();
@@ -1162,11 +1163,12 @@ export default function DashboardLayout() {
         if (item.href === '/dashboard/services') return catalogImportModuleEnabled;
 
         if (item.href === '/dashboard/campaigns') return campaignsModuleEnabled;
+        if (item.href === '/dashboard/deals') return dealsModuleEnabled;
         if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled
         return true;
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, campaignsModuleEnabled, isInfluencerOnly, user?.name])
+  }, [paymentModuleEnabled, analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, campaignsModuleEnabled, dealsModuleEnabled, isInfluencerOnly, user?.name])
 
 
   const bottomNav = useMemo(() => {

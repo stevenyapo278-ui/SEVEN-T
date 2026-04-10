@@ -1777,12 +1777,43 @@ export async function initDatabase() {
         }
     }
 
-    // Migration: polls_module_enabled per user
+    // Migration: Module 16 - Deals management
     try {
-        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS polls_module_enabled INTEGER DEFAULT 0');
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS deals (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                contact_name TEXT,
+                contact_phone TEXT,
+                lead_id TEXT,
+                amount DOUBLE PRECISION DEFAULT 0,
+                currency TEXT DEFAULT 'XOF',
+                stage TEXT DEFAULT 'qualification', -- qualification, proposal, negotiation, closed_won, closed_lost
+                probability INTEGER DEFAULT 0,
+                expected_close_date TIMESTAMP,
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_deals_user ON deals(user_id);
+            CREATE INDEX IF NOT EXISTS idx_deals_stage ON deals(stage);
+            CREATE INDEX IF NOT EXISTS idx_deals_lead ON deals(lead_id);
+        `);
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
-            console.warn('users.polls_module_enabled migration:', e?.message);
+            console.warn('deals migration error:', e?.message);
+        }
+    }
+
+    // Migration: deals_module_enabled per user
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS deals_module_enabled INTEGER DEFAULT 1');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.deals_module_enabled migration:', e?.message);
         }
     }
 

@@ -5,10 +5,11 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import { useModuleAvailability } from '../hooks/useModuleAvailability'
 import { WelcomeModal, OnboardingChecklist, useOnboardingTour } from '../components/Onboarding'
 import {
   Bot, MessageSquare, Sparkles, TrendingUp,
-  Plus, ArrowRight, AlertCircle, Zap, Crown, RefreshCw, XCircle
+  Plus, ArrowRight, AlertCircle, Zap, Crown, RefreshCw, XCircle, Target
 } from 'lucide-react'
 import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import NextBestAction from '../components/NextBestAction'
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
   const { startTour, completedTours } = useOnboardingTour()
+  const { deals: dealsModuleEnabled } = useModuleAvailability()
 
   const [showWelcome, setShowWelcome] = useState(false)
   const [selectedAlertView, setSelectedAlertView] = useState(null)
@@ -31,22 +33,24 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     if (!isAuthenticated) return null;
-    const [statsRes, agentsRes, quotasRes, weeklyRes] = await Promise.all([
+    const [statsRes, agentsRes, quotasRes, weeklyRes, dealsRes] = await Promise.all([
       api.get('/stats/dashboard'),
       api.get('/agents'),
       api.get('/agents/quotas').catch(() => ({ data: null })),
       api.get('/stats/weekly-activity').catch(() => ({ data: { data: [] } })),
+      dealsModuleEnabled ? api.get('/deals/stats/overview').catch(() => ({ data: null })) : Promise.resolve({ data: null })
     ])
     return {
       stats: statsRes.data.stats,
       agents: agentsRes.data.agents,
       quotas: quotasRes.data,
-      weeklyActivity: weeklyRes.data?.data || []
+      weeklyActivity: weeklyRes.data?.data || [],
+      deals: dealsRes?.data || null
     }
   }
 
   const { data, isLoading: loading, mutate } = useSWR(
-    isAuthenticated ? 'dashboardData' : null, 
+    isAuthenticated ? ['dashboardData', dealsModuleEnabled] : null, 
     fetchDashboardData, 
     { 
       revalidateOnFocus: true, 
@@ -158,16 +162,19 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-8">
+          <div className={`grid grid-cols-2 lg:grid-cols-${dealsModuleEnabled ? '5' : '4'} gap-3 mt-8`}>
             {!loading && stats ? (
               <>
                 <StatCard icon={Bot} color="blue" value={stats.agents?.total || 0} label={t('dashboard.stats.agents')} isDark={isDark} />
                 <StatCard icon={MessageSquare} color="emerald" value={stats.conversations?.total || 0} label={t('dashboard.stats.conversations')} isDark={isDark} />
                 <StatCard icon={TrendingUp} color="blue" value={stats.messages?.total || 0} label={t('dashboard.stats.messages')} isDark={isDark} />
+                {dealsModuleEnabled && (
+                  <StatCard icon={Target} color="emerald" value={data?.deals?.total_deals || 0} label="Deals" isDark={isDark} />
+                )}
                 <StatCard icon={Zap} color="gold" value={stats.credits || quotas?.credits || 0} label={t('dashboard.stats.credits')} isDark={isDark} />
               </>
             ) : (
-              [1, 2, 3, 4].map(i => <SkeletonStatCard key={i} isDark={isDark} />)
+              [1, 2, 3, 4, ...(dealsModuleEnabled ? [5] : [])].map(i => <SkeletonStatCard key={i} isDark={isDark} />)
             )}
           </div>
         </div>

@@ -183,7 +183,8 @@ router.get('/history', authenticateToken, async (req, res) => {
 router.get('/image/:filename', (req, res) => {
     try {
         const { filename } = req.params;
-        if (!filename || filename.includes('..')) {
+        if (!filename || typeof filename !== 'string' || filename.includes('..')) {
+            console.warn('[Products] Invalid image filename requested:', filename);
             return res.status(400).json({ error: 'Nom de fichier invalide' });
         }
         const uploadsDir = join(__dirname, '..', '..', 'uploads', 'products');
@@ -562,12 +563,15 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
 // Get images for a product
 router.get('/:id/images', authenticateToken, async (req, res) => {
     try {
+        console.log(`[Products] Getting images for product ID: ${req.params.id} (User: ${req.user.id}, Owner: ${req.user.ownerId})`);
         const product = await db.get('SELECT id FROM products WHERE id = ? AND user_id = ?', req.params.id, req.user.ownerId);
         if (!product) {
+            console.warn(`[Products] Product ${req.params.id} not found for owner ${req.user.ownerId}`);
             return res.status(404).json({ error: 'Produit non trouvé' });
         }
 
         const images = await db.all('SELECT * FROM product_images WHERE product_id = ? ORDER BY position ASC', req.params.id);
+        console.log(`[Products] Found ${images.length} images for product ${req.params.id}`);
         res.json({ images });
     } catch (error) {
         console.error('Get product images error:', error);
