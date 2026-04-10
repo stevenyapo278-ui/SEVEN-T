@@ -3419,8 +3419,8 @@ class WhatsAppManager {
     }
 
     /**
-     * Get ALL contacts from Baileys store (not limited to conversations).
-     * This is closer to the WhatsApp address book and can include contacts with no chat history.
+     * Get ALL contacts from Baileys store (not limited to conversations)
+     * AND merge with existing platform conversations to ensure completeness.
      */
     async getStoreContacts(toolId, { q = '', limit = 2000 } = {}) {
         const store = this.stores.get(toolId);
@@ -3434,8 +3434,45 @@ class WhatsAppManager {
             this.ensureLidMapFromStore(toolId);
             const lidMap = this.lidToPhoneMap.get(toolId);
 
+            const outMap = new Map();
+
+            // 1. Load known contacts from the database (ensures we don't lose them if store is purged)
+            try {
+                const dbContacts = await db.all(`
+                    SELECT contact_jid, contact_number, contact_name, notify_name, saved_contact_name 
+                    FROM conversations 
+                    WHERE agent_id = ? 
+                `, agent.id);
+
+                for (const row of dbContacts) {
+                    let jid = row.contact_jid;
+                    if (jid.endsWith('@lid') && lidMap && lidMap.has(jid)) {
+                        jid = lidMap.get(jid);
+                    }
+                    if (!jid.endsWith('@s.whatsapp.net')) continue;
+
+                    const number = row.contact_number || jid.split('@')[0];
+                    const name = row.saved_contact_name || row.contact_name || row.notify_name || number;
+
+                    if (query) {
+                        const hay = `${name} ${number}`.toLowerCase();
+                        if (!hay.includes(query)) continue;
+                    }
+
+                    outMap.set(jid, {
+                        jid,
+                        number,
+                        name: name,
+                        isMyContact: !!row.saved_contact_name,
+                        isGroup: false
+                    });
+                }
+            } catch (dbErr) {
+                console.error('[WhatsApp] DB contacts merge error:', dbErr.message);
+            }
+
+            // 2. Load contacts from Baileys memory store
             const entries = Object.entries(store?.contacts || {});
-            const out = [];
             for (const [key, c] of entries) {
                 const rawJid = c?.jid || c?.id || key;
                 if (!rawJid || typeof rawJid !== 'string') continue;
@@ -3465,19 +3502,28 @@ class WhatsAppManager {
                     if (!hay.includes(query)) continue;
                 }
 
-                out.push({
+                const existing = outMap.get(jid);
+                let finalName = displayName;
+                // Prefer DB contact name if store name is just the phone number
+                if (existing && existing.name !== existing.number && displayName === number) {
+                    finalName = existing.name;
+                }
+
+                outMap.set(jid, {
                     jid,
                     number,
-                    name: displayName,
-                    isMyContact: !!c?.name || !!c?.notify,
+                    name: finalName,
+                    isMyContact: existing ? (existing.isMyContact || !!c?.name || !!c?.notify) : (!!c?.name || !!c?.notify),
                     isGroup
                 });
-
-                if (out.length >= safeLimit) break;
             }
 
+            // Convert to array and slice
+            const out = Array.from(outMap.values());
+            const limitedOut = out.slice(0, safeLimit);
+
             // Best UX: stable ordering (name then number)
-            out.sort((a, b) => {
+            limitedOut.sort((a, b) => {
                 const an = String(a.name || '').toLowerCase();
                 const bn = String(b.name || '').toLowerCase();
                 if (an < bn) return -1;
@@ -3485,7 +3531,7 @@ class WhatsAppManager {
                 return String(a.number || '').localeCompare(String(b.number || ''));
             });
 
-            return out;
+            return limitedOut;
         } catch (error) {
             console.error('[WhatsApp] Get store contacts error:', error);
             return [];
@@ -3845,9 +3891,32 @@ class WhatsAppManager {
         const store = this.stores.get(toolId);
         // We filter for personal JIDs to avoid sending to groups in statusJidList
         const statusJidList = store ? Object.keys(store.contacts).filter(jid => jid.endsWith('@s.whatsapp.net')) : [];
+        
+        // Fetch known contacts from the database to ensure a comprehensive broadcast list
+        try {
+            const agentRow = await db.get('SELECT id FROM agents WHERE tool_id = ?', toolId);
+            if (agentRow) {
+                const dbContacts = await db.all('SELECT DISTINCT contact_jid FROM conversations WHERE agent_id = ? AND contact_jid LIKE ?', agentRow.id, '%@s.whatsapp.net');
+                for (const row of dbContacts) {
+                    if (!statusJidList.includes(row.contact_jid)) {
+                        statusJidList.push(row.contact_jid);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('[WhatsApp] Error fetching contacts for status broadcast:', err);
+        }
+
+        // Add self JID to make sure sender explicitly receives its own status view
+        if (sock?.user?.id) {
+            const selfJid = jidNormalizedUser(sock.user.id);
+            if (!statusJidList.includes(selfJid)) {
+                statusJidList.push(selfJid);
+            }
+        }
+
         if (statusJidList.length === 0) {
-            console.warn('[WhatsApp] No contacts found in store. Status might fail or be invisible.');
-            // Some Baileys versions require at least one recipient to render colors/media correctly
+            console.warn('[WhatsApp] No contacts found in store or DB. Status might fail or be invisible.');
         }
         
         const options = { 
