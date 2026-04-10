@@ -81,10 +81,11 @@ export default function ImportModal({ onClose, onImported }) {
                 <Info className="w-5 h-5" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-bold text-blue-100">{t('products.importFormat')}</p>
-                <p className="text-xs text-blue-100/60 leading-relaxed font-medium">
-                  Le fichier doit inclure : name, sku, price, cost_price, stock, category, description, image_url.
-                </p>
+                <p className="text-sm font-bold text-blue-100">{t('products.importFormat', 'Format du fichier')}</p>
+                <div className="text-xs text-blue-100/60 leading-relaxed font-medium space-y-2">
+                  <p>Déposez l'export brut depuis <strong className="text-blue-300">WhatsApp Business</strong> (Retailer ID, Name, Sale price, etc.)</p>
+                  <p>Ou utilisez notre format standard : name, sku, price, cost_price, stock, category, description, image_url.</p>
+                </div>
               </div>
             </div>
 

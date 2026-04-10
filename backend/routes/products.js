@@ -10,7 +10,6 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validate, productCreateSchema, productUpdateSchema } from '../middleware/security.js';
 import { messageAnalyzer } from '../services/messageAnalyzer.js';
 import { requireModule } from '../middleware/requireModule.js';
-import { importFromUrl } from '../services/catalogImport.js';
 import { activityLogger } from '../services/activityLogger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -75,43 +74,8 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
-// Import products from a catalog URL (module catalog_import)
-router.post('/import-from-url', authenticateToken, requireModule('catalog_import'), async (req, res) => {
-    try {
-        const { url } = req.body;
-        if (!url || typeof url !== 'string') {
-            return res.status(400).json({ error: 'URL requise' });
-        }
-        const extracted = await importFromUrl(url.trim());
-        const created = [];
-        for (const item of extracted) {
-            const id = uuidv4();
-            const price = item.price != null && !Number.isNaN(item.price) && item.price >= 0 ? item.price : 0;
-            await db.run(`
-                INSERT INTO products (id, user_id, name, sku, price, cost_price, stock, category, description, image_url)
-                VALUES (?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)
-            `, id, req.user.ownerId, item.title || 'Sans nom', null, price, item.description || null, item.imageUrl || null);
-            created.push({ id, name: item.title || 'Sans nom', price, image_url: item.imageUrl || null });
-        }
-        messageAnalyzer.invalidateProductCache(req.user.ownerId);
-        
-        await activityLogger.log({
-            userId: req.user.id,
-            action: 'import_products_url',
-            entityType: 'product',
-            details: { count: created.length, url },
-            req
-        });
+// (import-from-url route removed — use CSV import instead)
 
-        res.json({ imported: created.length, products: created });
-    } catch (error) {
-        const message = error?.message || 'Erreur lors de l\'import';
-        const status = message.includes('invalide') || message.includes('délai') || message.includes('accessible') || message.includes('Aucun produit')
-            ? 400
-            : 500;
-        res.status(status).json({ error: message });
-    }
-});
 
 // Get product margin stats (stock valorisation & marge théorique)
 router.get('/stats/margins', authenticateToken, async (req, res) => {
@@ -477,7 +441,7 @@ router.post('/bulk-delete', authenticateToken, async (req, res) => {
     }
 });
 
-// Import products from CSV
+// Import products from CSV (supports standard format AND WhatsApp Business export format)
 router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, res) => {
     try {
         if (!req.file) {
@@ -491,8 +455,48 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
             trim: true
         });
 
+        if (records.length === 0) {
+            return res.status(400).json({ error: 'Le fichier CSV est vide ou illisible' });
+        }
+
+        // ── Auto-detect WhatsApp Business export format ──
+        // WA Business columns: "Retailer ID", "Name", "Description", "Sale price", "Category", "URL"
+        const firstRow = records[0];
+        const isWhatsAppFormat = 'Name' in firstRow || 'Retailer ID' in firstRow || 'Sale price' in firstRow;
+
+        /**
+         * Map a raw record to our internal product shape.
+         * Handles both standard (name, price, sku...) and WhatsApp Business CSV columns.
+         */
+        const mapRecord = (r) => {
+            if (isWhatsAppFormat) {
+                // Parse price: WA exports like "12000 XOF" or "12000"
+                const rawPrice = (r['Sale price'] || r['Price'] || '').toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+                return {
+                    name: r['Name'] || r['name'] || '',
+                    sku: r['Retailer ID'] || r['sku'] || null,
+                    price: parseFloat(rawPrice) || 0,
+                    cost_price: 0,
+                    stock: parseInt(r['Quantity'] || r['stock'] || '0') || 0,
+                    category: r['Category'] || r['category'] || null,
+                    description: r['Description'] || r['description'] || null,
+                    image_url: r['URL'] || r['image_url'] || null,
+                };
+            }
+            return {
+                name: r.name || '',
+                sku: r.sku || null,
+                price: parseFloat(r.price) || 0,
+                cost_price: parseFloat(r.cost_price) || 0,
+                stock: parseInt(r.stock) || 0,
+                category: r.category || null,
+                description: r.description || null,
+                image_url: r.image_url || null,
+            };
+        };
+
         let imported = 0;
-        let errors = [];
+        const errors = [];
 
         // Pre-fetch existing categories to avoid redundant inserts
         const existingCats = await db.all('SELECT name FROM product_categories WHERE user_id = ?', req.user.ownerId);
@@ -500,58 +504,48 @@ router.post('/import', authenticateToken, uploadCsv.single('file'), async (req, 
 
         for (const record of records) {
             try {
-                if (!record.name?.trim()) {
-                    continue;
-                }
+                const p = mapRecord(record);
+                if (!p.name?.trim()) continue;
 
-                const catName = record.category?.trim();
-                if (catName && !catSet.has(catName.toLowerCase())) {
+                const safePrice = !Number.isNaN(p.price) && p.price >= 0 ? p.price : 0;
+                const safeCostPrice = !Number.isNaN(p.cost_price) && p.cost_price >= 0 ? p.cost_price : 0;
+
+                if (p.category && !catSet.has(p.category.toLowerCase())) {
                     const catId = uuidv4();
-                    await db.run(`
-                        INSERT INTO product_categories (id, user_id, name)
-                        VALUES (?, ?, ?)
-                    `, catId, req.user.ownerId, catName);
-                    catSet.add(catName.toLowerCase());
+                    await db.run(
+                        'INSERT INTO product_categories (id, user_id, name) VALUES (?, ?, ?)',
+                        catId, req.user.ownerId, p.category
+                    );
+                    catSet.add(p.category.toLowerCase());
                 }
-
-                const parsedPrice = record.price !== undefined && record.price !== null
-                    ? parseFloat(record.price)
-                    : 0;
-                const parsedCostPrice = record.cost_price !== undefined && record.cost_price !== null
-                    ? parseFloat(record.cost_price)
-                    : 0;
-
-                const safePrice = !Number.isNaN(parsedPrice) && parsedPrice >= 0 ? parsedPrice : 0;
-                const safeCostPrice = !Number.isNaN(parsedCostPrice) && parsedCostPrice >= 0 ? parsedCostPrice : 0;
 
                 const id = uuidv4();
                 await db.run(`
                     INSERT INTO products (id, user_id, name, sku, price, cost_price, stock, category, description, image_url)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `,
-                    id, 
-                    req.user.ownerId, 
-                    record.name, 
-                    record.sku || null, 
-                    safePrice, 
-                    safeCostPrice,
-                    parseInt(record.stock) || 0, 
-                    catName || null, 
-                    record.description || null, 
-                    record.image_url || null
-                );
+                `, id, req.user.ownerId, p.name, p.sku, safePrice, safeCostPrice, p.stock, p.category || null, p.description || null, p.image_url || null);
                 imported++;
             } catch (e) {
-                errors.push(`Ligne ignorée: ${record.name || 'sans nom'} - ${e.message}`);
+                errors.push(`Ligne ignorée: ${record.name || record['Name'] || 'sans nom'} - ${e.message}`);
             }
         }
 
-        res.json({ 
-            imported, 
+        messageAnalyzer.invalidateProductCache(req.user.ownerId);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'import_products_csv',
+            entityType: 'product',
+            details: { count: imported, format: isWhatsAppFormat ? 'whatsapp_business' : 'standard' },
+            req
+        });
+
+        res.json({
+            imported,
             total: records.length,
+            format: isWhatsAppFormat ? 'whatsapp_business' : 'standard',
             errors: errors.length > 0 ? errors : undefined
         });
-        messageAnalyzer.invalidateProductCache(req.user.ownerId);
     } catch (error) {
         console.error('Import products error:', error);
         res.status(500).json({ error: 'Erreur lors de l\'import: ' + error.message });

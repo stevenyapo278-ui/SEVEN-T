@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Package, Plus, Upload, History, RefreshCw, Loader2, Link, X, XCircle, Target, ShoppingCart, TrendingUp, Phone, User, Trash2, CheckCircle, ArrowLeft, Layers, Check } from 'lucide-react'
+import { Package, Plus, Upload, History, RefreshCw, Loader2, X, XCircle, Target, ShoppingCart, TrendingUp, Phone, User, Trash2, CheckCircle, ArrowLeft, Layers, Check } from 'lucide-react'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useAuth } from '../contexts/AuthContext'
 import { useCurrency } from '../contexts/CurrencyContext'
@@ -28,7 +28,6 @@ export default function Products() {
   const isDark = theme === 'dark'
   const { user } = useAuth()
   const { formatPrice, getSymbol } = useCurrency()
-  const hasCatalogImport = user?.plan_features?.catalog_import === true
   const {
     products,
     loading,
@@ -51,12 +50,8 @@ export default function Products() {
     toggleSelectAll,
     handleBulkDelete
   } = useProducts()
-
   const [showAddModal, setShowAddModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
-  const [showImportUrlModal, setShowImportUrlModal] = useState(false)
-  const [importUrlValue, setImportUrlValue] = useState('')
-  const [importUrlLoading, setImportUrlLoading] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [showHistory, setShowHistory] = useState(false)
   const [historyProductId, setHistoryProductId] = useState(null)
@@ -66,7 +61,7 @@ export default function Products() {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [imageZoom, setImageZoom] = useState(null)
 
-  const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showImportUrlModal || showHistory || !!selectedProductView || showCategoryModal
+  const anyModalOpen = showAddModal || !!editingProduct || showImportModal || showHistory || !!selectedProductView || showCategoryModal
   useLockBodyScroll(anyModalOpen)
 
   const loadHistory = async (productId = null) => {
@@ -89,31 +84,9 @@ export default function Products() {
     setShowAddModal(false)
     setEditingProduct(null)
     setShowImportModal(false)
-    setShowImportUrlModal(false)
-    setImportUrlValue('')
     setShowHistory(false)
     setHistoryProductId(null)
     setHistoryList([])
-  }
-
-  const handleImportFromUrl = async (e) => {
-    e.preventDefault()
-    const url = importUrlValue?.trim()
-    if (!url) {
-      toast.error(t('products.importUrlRequired') || 'Indiquez une URL')
-      return
-    }
-    setImportUrlLoading(true)
-    try {
-      const { data } = await api.post('/products/import-from-url', { url })
-      toast.success(t('messages.productsImported', { count: data.imported }) || `${data.imported} produit(s) importé(s)`)
-      loadProducts()
-      closeModals()
-    } catch (err) {
-      toast.error(err.response?.data?.error || t('messages.errorImport') || 'Erreur lors de l\'import')
-    } finally {
-      setImportUrlLoading(false)
-    }
   }
 
   useEffect(() => {
@@ -171,14 +144,6 @@ export default function Products() {
                 <Upload className="w-4 h-4" aria-hidden />
                 <span className="hidden sm:inline">{t('products.btnImportCsv')}</span>
               </button>
-              {hasCatalogImport && (
-                <button type="button" onClick={() => setShowImportUrlModal(true)} className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
-                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}>
-                  <Link className="w-4 h-4" aria-hidden />
-                  <span className="hidden sm:inline">Importer URL</span>
-                </button>
-              )}
               <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2 min-h-[44px]" data-tour="create-product">
                 <Plus className="w-5 h-5" aria-hidden />
                 <span>{t('products.btnAdd')}</span>
@@ -311,90 +276,6 @@ export default function Products() {
         />
       )}
 
-      {showImportUrlModal && createPortal(
-        <div 
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
-          onClick={() => !importUrlLoading && setShowImportUrlModal(false)}
-          style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
-        >
-          <div 
-            className="relative z-10 w-full max-w-lg bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Mobile Handle */}
-            <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
-              <div className="w-12 h-1.5 rounded-full bg-white/10" />
-            </div>
-
-            <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-display font-bold text-gray-100 truncate">Importer via URL</h2>
-                  <p className="text-sm text-gray-500 mt-1 truncate">Collez l'URL d'un catalogue produit</p>
-                </div>
-                <button 
-                  onClick={() => setShowImportUrlModal(false)} 
-                  disabled={importUrlLoading}
-                  className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 custom-scrollbar overscroll-contain">
-              <form onSubmit={handleImportFromUrl} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">URL du catalogue</label>
-                  <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                      <Link className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="url"
-                      value={importUrlValue}
-                      onChange={(e) => setImportUrlValue(e.target.value)}
-                      placeholder="https://votre-boutique.com/produits"
-                      className="input-dark w-full py-4 pl-12 pr-5 text-base rounded-2xl"
-                      required
-                      disabled={importUrlLoading}
-                    />
-                  </div>
-                </div>
-
-                <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
-                  <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
-                    <Target className="w-5 h-5" />
-                  </div>
-                  <p className="text-sm text-blue-100/60 leading-relaxed">
-                    Notre IA va analyser la page pour extraire automatiquement les photos, noms et prix des produits.
-                  </p>
-                </div>
-
-                <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
-                  <button 
-                    type="button" 
-                    onClick={() => setShowImportUrlModal(false)} 
-                    disabled={importUrlLoading} 
-                    className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all"
-                  >
-                    Annuler
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={importUrlLoading || !importUrlValue?.trim()} 
-                    className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl inline-flex items-center justify-center gap-2 uppercase tracking-tight"
-                  >
-                    {importUrlLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <RefreshCw className="w-5 h-5" />}
-                    {importUrlLoading ? 'Analyse...' : 'Lancer l\'import'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {showHistory && (
         <HistoryModal
