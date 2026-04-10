@@ -66,6 +66,7 @@ export default function Campaigns() {
   const [showModal, setShowModal] = useState(false)
   const [selectedCampaign, setSelectedCampaign] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState(null)
   const [showRecipientsModal, setShowRecipientsModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [recipientsCampaign, setRecipientsCampaign] = useState(null)
@@ -323,7 +324,8 @@ export default function Campaigns() {
       }
     } catch (error) {
       console.error('AI Rewrite Error:', error)
-      toast.error("Échec de l'optimisation IA")
+      const details = error.response?.data?.details || error.message
+      toast.error(`Échec : ${details}`)
     } finally {
       setRewritingMessage(false)
     }
@@ -353,7 +355,11 @@ export default function Campaigns() {
     return <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${s.bg} ${s.text}`}>{s.label}</span>
   }
 
-  const filteredCampaigns = campaigns.filter(c => (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+  const filteredCampaigns = campaigns.filter(c => {
+    const matchesSearch = (c.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = !statusFilter || c.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  })
 
   if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="animate-spin text-gold-400" /></div>
 
@@ -428,6 +434,22 @@ export default function Campaigns() {
             className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500" 
           />
         </div>
+
+        <select
+          value={statusFilter || 'all'}
+          onChange={(e) => setStatusFilter(e.target.value === 'all' ? null : e.target.value)}
+          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[160px] transition-all duration-300 [color-scheme:dark] ${
+            isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
+          }`}
+        >
+          <option value="all">Tous les statuts</option>
+          <option value="draft">Brouillons</option>
+          <option value="scheduled">Programmées</option>
+          <option value="sending">En cours</option>
+          <option value="sent">Envoyées</option>
+          <option value="paused">En pause</option>
+          <option value="failed">Échecs</option>
+        </select>
       </div>
 
       <div className="space-y-4">
@@ -601,7 +623,7 @@ export default function Campaigns() {
                     <Edit3 className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h2 className={`text-2xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedCampaign ? 'Modifier la campagne' : 'Nouvelle Campagne'}</h2>
+                    <h2 className={`text-xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedCampaign ? 'Modifier la campagne' : 'Nouvelle campagne'}</h2>
                     <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Étape 1 : Configuration générale</p>
                   </div>
                 </div>
@@ -630,7 +652,7 @@ export default function Campaigns() {
                     <select 
                       value={form.agent_id} 
                       onChange={e => setForm({...form, agent_id: e.target.value})} 
-                      className="input-premium w-full appearance-none [color-scheme:dark]" 
+                      className={`input-premium w-full appearance-none cursor-pointer ${isDark ? 'bg-space-800 text-white border-space-700' : 'bg-white text-gray-900 border-gray-200'}`} 
                       required
                     >
                       <option value="" className={isDark ? 'bg-space-900 text-gray-100' : ''}>Sélectionner un agent</option>
@@ -691,7 +713,7 @@ export default function Campaigns() {
                       <select 
                         value={form.recurrence_type} 
                         onChange={e => setForm({...form, recurrence_type: e.target.value})} 
-                        className="input-premium w-full [color-scheme:dark]"
+                        className={`input-premium w-full appearance-none cursor-pointer ${isDark ? 'bg-space-800 text-white border-space-700' : 'bg-white text-gray-900 border-gray-200'}`}
                       >
                         {RECURRENCE_OPTIONS.map(opt => (
                           <option key={opt.value} value={opt.value} className={isDark ? 'bg-space-900 text-gray-100' : ''}>
@@ -724,7 +746,7 @@ export default function Campaigns() {
                 form="campaign-form"
                 className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-100 transition-all flex items-center justify-center gap-3"
               >
-                {selectedCampaign ? 'Mettre à jour' : 'Étape Suivante'}
+                {selectedCampaign ? 'Mettre à jour' : 'Étape suivante'}
                 <ArrowRight className="w-5 h-5" />
               </button>
             </div>

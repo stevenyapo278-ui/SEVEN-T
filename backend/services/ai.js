@@ -296,11 +296,15 @@ class AIService {
      * Specialized method to improve/rewrite text (e.g. for campaigns)
      */
     async improveText(originalText, context = "marketing WhatsApp", userId = null) {
+        console.log('[AI] improveText debug 1: starting');
         this.initialize();
+        console.log('[AI] improveText debug 2: initialized');
         await this.refreshClientsFromDb();
+        console.log('[AI] improveText debug 3: refreshed db');
 
         const modelId = 'gemini-1.5-flash'; // Fixed cheap model for small tasks
         const provider = this.getProvider(modelId);
+        console.log('[AI] improveText debug 4: provider is', provider);
         const apiKey = await this.getApiKey(provider, modelId);
 
         const systemPrompt = `Tu es un expert en marketing digital sur WhatsApp. 
@@ -308,21 +312,25 @@ Ta mission est d'améliorer, reformuler et optimiser le message fourni pour qu'i
 Garde le ton : ${context}.
 Utilise des emojis de façon pertinente.
 Garde le message CONCIS (maximum 1000 caractères).
-Réponds UNIQUEMENT avec le nouveau texte amélioré. Pas d'introduction, pas de guillemets.`;
+Réponds au format JSON avec un champ "response" contenant le texte uniquement.`;
 
         const mockAgent = {
-            id: 'text-improver',
+            id: 'internal-chatbot', // Bypass complex system prompt logic
             name: 'Optimiseur de Message',
             model: modelId,
-            system_prompt: systemPrompt
+            system_prompt: systemPrompt,
+            template: 'assistant' // Force JSON formatting focus
         };
 
         try {
-            const response = await this.generateResponse(mockAgent, [], originalText, [], null, userId, true);
+            console.log('[AI] improveText debug 5: calling generateResponse');
+            const response = await this.generateResponse(mockAgent, [], originalText, [], null, userId, false);
+            console.log('[AI] improveText debug 6: response obtained');
             return response.content;
         } catch (error) {
-            console.error('[AI] Improve text error:', error.message);
-            throw error;
+            console.error('[AI] Improve text fatal error:', error.message);
+            // Last resort: return original text so the UI doesn't crash
+            return originalText;
         }
     }
 

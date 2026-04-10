@@ -1130,11 +1130,15 @@ router.post('/ai-rewrite', authenticateToken, async (req, res) => {
         const { message, context } = req.body;
         if (!message) return res.status(400).json({ error: 'Message requis' });
         
-        const improved = await aiService.improveText(message, context || 'marketing WhatsApp', req.user.id);
+        const improved = await aiService.improveText(message, context || 'marketing WhatsApp', req.user.ownerId);
         res.json({ improved });
     } catch (error) {
         console.error('AI rewrite error:', error);
-        res.status(500).json({ error: 'Erreur lors de l\'amélioration du message' });
+        res.status(500).json({ 
+            error: 'Erreur lors de l\'amélioration du message', 
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 });
 
