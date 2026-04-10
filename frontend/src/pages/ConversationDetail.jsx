@@ -1037,8 +1037,8 @@ export default function ConversationDetail() {
                         {message.message_type === 'order' ? (
                           <OrderMessageCard content={message.content} isDark={isDark} />
                         ) : message.message_type === 'poll' ? (
-                          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${\
-                            isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'\
+                          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
+                            isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'
                           }`}>
                             <span className="text-lg">📊</span>
                             <div>
