@@ -7,11 +7,87 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConversationSocket } from '../hooks/useConversationSocket'
 import Breadcrumbs from '../components/Breadcrumbs'
-import { ArrowLeft, User, Bot, Phone, Calendar, Send, RefreshCw, Loader2, Edit2, Check, X, UserCircle, UserCheck, Sparkles, FileDown, Trash2, Square, CheckSquare } from 'lucide-react'
+import { ArrowLeft, User, Bot, Phone, Calendar, Send, RefreshCw, Loader2, Edit2, Check, X, UserCircle, UserCheck, Sparkles, FileDown, Trash2, Square, CheckSquare, ShoppingCart, Package } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // Cache for profile pictures (shared across all ProfileAvatar instances)
 const profilePicCache = new Map()
+
+// WhatsApp Business Catalog Order Card
+function OrderMessageCard({ content, isDark }) {
+  let order = null
+  try { order = JSON.parse(content) } catch { return <p className="text-sm italic text-gray-400">{content}</p> }
+  
+  const total = order.totalAmount 
+    ? `${Number(order.totalAmount).toLocaleString('fr-FR')} ${order.currency}`
+    : 'N/A'
+
+  return (
+    <div className={`rounded-2xl overflow-hidden border w-full max-w-xs ${
+      isDark ? 'bg-space-800 border-space-600' : 'bg-white border-gray-200 shadow-md'
+    }`}>
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-[#128C7E] text-white">
+        <ShoppingCart className="w-4 h-4" />
+        <span className="text-sm font-bold">Commande via le catalogue</span>
+      </div>
+      
+      {/* Products */}
+      {order.products?.length > 0 ? (
+        <div className="px-4 pt-3 pb-2 space-y-2">
+          {order.products.map((p, i) => (
+            <div key={i} className="flex items-center gap-3">
+              {p.imageUrl ? (
+                <img src={p.imageUrl} alt={p.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+              ) : (
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  isDark ? 'bg-space-700' : 'bg-gray-100'
+                }`}>
+                  <Package className="w-5 h-5 text-gray-400" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
+                <p className="text-xs text-gray-500">
+                  {p.quantity > 1 ? `x${p.quantity} · ` : ''}
+                  {p.price ? `${(p.price * (p.quantity || 1)).toLocaleString('fr-FR')} ${p.currency}` : ''}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="px-4 pt-3 flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+            isDark ? 'bg-space-700' : 'bg-gray-100'
+          }`}>
+            <ShoppingCart className="w-5 h-5 text-[#128C7E]" />
+          </div>
+          <div>
+            <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {order.itemCount} article{order.itemCount > 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className={`px-4 py-3 border-t mt-2 ${
+        isDark ? 'border-space-600' : 'border-gray-100'
+      }`}>
+        <div className="flex items-center justify-between">
+          <span className={`text-xs font-black uppercase tracking-wider ${
+            isDark ? 'text-gray-500' : 'text-gray-400'
+          }`}>Total estimé</span>
+          <span className="text-sm font-bold text-[#128C7E]">{total}</span>
+        </div>
+        {order.message && (
+          <p className={`text-xs mt-1 italic ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>“{order.message}”</p>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // Message image: fetch with auth and display (for user-sent images)
 function MessageImage({ conversationId, messageId }) {
@@ -957,7 +1033,20 @@ export default function ConversationDetail() {
                           </div>
                         )}
 
-                        {(message.content && message.content !== '[Image]' && message.content !== '[Audio]') || (!message.media_url && message.content) ? (
+                        {/* WhatsApp Business Order Card */}
+                        {message.message_type === 'order' ? (
+                          <OrderMessageCard content={message.content} isDark={isDark} />
+                        ) : message.message_type === 'poll' ? (
+                          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${\
+                            isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'\
+                          }`}>
+                            <span className="text-lg">📊</span>
+                            <div>
+                              <p className={`text-sm font-semibold ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>Sondage envoyé</p>
+                              <p className={`text-xs ${isDark ? 'text-blue-400/70' : 'text-blue-500/80'}`}>{message.content?.replace('📊 ', '') || 'Sondage'}</p>
+                            </div>
+                          </div>
+                        ) : (message.content && message.content !== '[Image]' && message.content !== '[Audio]') || (!message.media_url && message.content) ? (
                           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
                         ) : null}
 

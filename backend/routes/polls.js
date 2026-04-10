@@ -190,6 +190,41 @@ router.post('/:id/send', async (req, res) => {
                         INSERT INTO poll_recipients (poll_id, contact_jid, contact_name, wa_message_id, wa_message_key, wa_message_full)
                         VALUES (?, ?, ?, ?, ?, ?)
                     `, req.params.id, targetJid, contactName, result.key.id, JSON.stringify(result.key), result.message ? JSON.stringify(result.message) : null);
+
+                    // ── Create / update conversation so it appears in the Conversations view ──
+                    try {
+                        const agent = await db.get('SELECT * FROM agents WHERE id = ?', poll.agent_id);
+                        if (agent) {
+                            const contactNumber = targetJid.split('@')[0];
+                            const displayName = contactName || contactNumber;
+                            const pollSummary = `📊 ${poll.question}`;
+
+                            // Find or create conversation
+                            let conv = await db.get(
+                                'SELECT id FROM conversations WHERE agent_id = ? AND (contact_jid = ? OR contact_number = ?)',
+                                agent.id, targetJid, contactNumber
+                            );
+                            if (!conv) {
+                                const convId = uuidv4();
+                                await db.run(`
+                                    INSERT INTO conversations (id, agent_id, contact_jid, contact_number, contact_name, status, last_message_at)
+                                    VALUES (?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
+                                `, convId, agent.id, targetJid, contactNumber, displayName);
+                                conv = { id: convId };
+                            } else {
+                                await db.run(`UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?`, conv.id);
+                            }
+
+                            // Insert the poll as a message in the conversation
+                            const msgId = uuidv4();
+                            await db.run(`
+                                INSERT OR IGNORE INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
+                                VALUES (?, ?, 'assistant', ?, ?, 'poll', 'bot', CURRENT_TIMESTAMP)
+                            `, msgId, conv.id, pollSummary, result.key.id);
+                        }
+                    } catch (convErr) {
+                        console.warn('[Polls] Could not create/update conversation:', convErr.message);
+                    }
                 } else {
                     console.warn(`[Polls] Send skipped or no message ID for ${targetJid}`);
                 }

@@ -6,7 +6,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
 import { useOnboardingTour } from '../components/Onboarding'
 import { useConversationSocket } from '../hooks/useConversationSocket'
-import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2, Plus, Check, CheckCircle } from 'lucide-react'
+import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2, Plus, Check, CheckCircle, ShoppingCart } from 'lucide-react'
 import toast from 'react-hot-toast'
 import EmptyState from '../components/EmptyState'
 import ImportedContactsPicker from '../components/ImportedContactsPicker'
@@ -201,7 +201,7 @@ export default function Conversations() {
         }
         const next = [...prev]
         const current = next[idx]
-        const content = message.content || (message.message_type === 'image' ? '📷 Image' : message.message_type === 'audio' ? '🎤 Audio' : '')
+        const content = message.message_type === 'order' ? '🛒 Commande via le catalogue' : message.message_type === 'poll' ? (message.content || '📊 Sondage') : (message.content || (message.message_type === 'image' ? '📷 Image' : message.message_type === 'audio' ? '🎤 Audio' : ''))
         const createdAt = message.created_at || new Date().toISOString()
         const isIncomingUser = message.role === 'user'
         const updated = {
@@ -622,7 +622,18 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
           <h3 className="font-bold text-gray-100 truncate">{getDisplayName(conv)}</h3>
           <span className="text-[10px] text-gray-500">{getTimeAgo(conv.last_message_at)}</span>
         </div>
-        <p className="text-sm text-gray-400 truncate">{conv.last_message || 'Aucun message'}</p>
+        {conv.last_message?.startsWith('[Commande]') || conv.last_message === '🛒 Commande via le catalogue' ? (
+          <p className="text-sm text-[#128C7E] truncate flex items-center gap-1 font-medium">
+            <ShoppingCart className="w-3.5 h-3.5 flex-shrink-0" />
+            Commande via le catalogue
+          </p>
+        ) : conv.last_message?.startsWith('📊') ? (
+          <p className={`text-sm truncate flex items-center gap-1 font-medium ${isDark ? 'text-blue-400' : 'text-blue-500'}`}>
+            {conv.last_message}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-400 truncate">{conv.last_message || 'Aucun message'}</p>
+        )}
       </div>
       {!bulkMode && unreadCount > 0 && (
         <span className="min-w-[28px] h-6 px-2 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200 text-xs font-bold flex items-center justify-center">

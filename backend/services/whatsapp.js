@@ -1151,6 +1151,80 @@ class WhatsAppManager {
                 return null;
             }
 
+            // Detect WhatsApp Business catalog order BEFORE the null check
+            const orderMsg = message.message?.orderMessage;
+            if (orderMsg) {
+                const inMsgId = uuidv4();
+                const createdAt = message.messageTimestamp
+                    ? new Date(Number(message.messageTimestamp) * 1000).toISOString()
+                    : new Date().toISOString();
+
+                // Try to fetch full product details from WhatsApp
+                let orderPayload = {
+                    orderId: orderMsg.orderId,
+                    token: orderMsg.token,
+                    itemCount: orderMsg.itemCount || 1,
+                    totalAmount: orderMsg.totalAmount1000 ? orderMsg.totalAmount1000 / 1000 : null,
+                    currency: orderMsg.totalCurrencyCode || 'CFA',
+                    message: orderMsg.message || null,
+                    products: []
+                };
+                try {
+                    const sock = this.connections.get(toolId);
+                    if (sock && orderMsg.orderId && orderMsg.token) {
+                        const details = await sock.getOrderDetails(orderMsg.orderId, orderMsg.token);
+                        if (details?.products?.length) {
+                            orderPayload.products = details.products.map(p => ({
+                                name: p.name,
+                                quantity: p.quantity || 1,
+                                price: p.amount ? p.amount / 1000 : null,
+                                currency: p.currency || orderPayload.currency,
+                                sku: p.sku || null,
+                                imageUrl: p.productImageUrl || null
+                            }));
+                        }
+                        if (details?.priceInfo?.totalAmount) {
+                            orderPayload.totalAmount = details.priceInfo.totalAmount / 1000;
+                            orderPayload.currency = details.priceInfo.currency || orderPayload.currency;
+                        }
+                    }
+                } catch(e) {
+                    console.warn('[WhatsApp] Could not fetch order details:', e.message);
+                }
+
+                const totalStr = orderPayload.totalAmount 
+                    ? `${orderPayload.totalAmount.toLocaleString('fr-FR')} ${orderPayload.currency}`
+                    : 'N/A';
+                const summaryText = `[Commande] ${orderPayload.itemCount} article(s) — ${totalStr} (total estimé)`;
+
+                // Build or get conversation
+                let conversation = await db.get('SELECT * FROM conversations WHERE agent_id = ? AND contact_jid = ?', agentId, sender);
+                if (!conversation) {
+                    const convId = uuidv4();
+                    await db.run(`INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, push_name, last_message_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+                        convId, agentId, sender, contactName, contactNumber, message.pushName || null);
+                    conversation = await db.get('SELECT * FROM conversations WHERE id = ?', convId);
+                }
+
+                // Save order message with JSON payload as content
+                await db.run(`
+                    INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, created_at)
+                    VALUES (?, ?, 'user', ?, ?, 'order', ?)
+                    ON CONFLICT(whatsapp_id) DO NOTHING
+                `, inMsgId, conversation.id, JSON.stringify(orderPayload), message.key.id, createdAt);
+
+                await db.run(`UPDATE conversations SET last_message_at = ?, status = 'unread', unread_messages_count = COALESCE(unread_messages_count, 0) + 1 WHERE id = ?`,
+                    createdAt, conversation.id);
+
+                void notifyConversationUpdate(conversation.id, {
+                    id: inMsgId, role: 'user', content: JSON.stringify(orderPayload),
+                    whatsapp_id: message.key.id, message_type: 'order', created_at: createdAt
+                });
+
+                console.log(`[WhatsApp] 🛒 Catalog order received from ${contactName}: ${summaryText}`);
+                return null; // Stop further processing — no AI reply for orders
+            }
+
             // If image message: download and save to uploads for display in conversation
             const inMsgId = uuidv4();
             let messageType = 'text';
@@ -2668,6 +2742,16 @@ class WhatsAppManager {
         const poll = msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3 || msg.poll;
         if (poll?.name) return `[Sondage] ${poll.name}`;
         if (poll) return '[Sondage]';
+
+        // Handle WhatsApp Business catalog orders
+        if (msg.orderMessage) {
+            const order = msg.orderMessage;
+            const total = order.totalAmount1000 ? (order.totalAmount1000 / 1000) : null;
+            const currency = order.totalCurrencyCode || 'CFA';
+            const items = order.itemCount || 1;
+            const totalStr = total ? `${total.toLocaleString('fr-FR')} ${currency}` : 'N/A';
+            return `[Commande] ${items} article(s) — ${totalStr} (total estimé)`;
+        }
 
         if (msg.imageMessage?.caption) return msg.imageMessage.caption;
         if (msg.videoMessage?.caption) return msg.videoMessage.caption;
