@@ -81,11 +81,14 @@ class SimpleStore {
         this.chats = new Map();
         this.contacts = {};
         this.messages = {};
+        this.isSyncingHistory = false;
+        this.historySyncProgress = 0;
     }
 
     bind(ev) {
         ev.on('messaging-history.set', ({ chats, contacts, messages, isLatest }) => {
-            console.log(`[WhatsApp] Received messaging-history.set: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages`);
+            console.log(`[WhatsApp] Received messaging-history.set: ${chats.length} chats, ${contacts.length} contacts, ${messages.length} messages, isLatest: ${isLatest}`);
+            this.isSyncingHistory = !isLatest;
             for (const chat of chats) this.addChat(chat);
             for (const contact of contacts) this.addContact(contact.id, contact);
             for (const message of messages) {
@@ -352,7 +355,7 @@ class WhatsAppManager {
                 defaultQueryTimeoutMs: 60000,
                 keepAliveIntervalMs: 30000,
                 markOnlineOnConnect: true,
-                syncFullHistory: false,
+                syncFullHistory: true,
                 retryRequestDelayMs: 5000,
                 getMessage: async (key) => {
                     const jid = key.remoteJid;
@@ -522,8 +525,29 @@ class WhatsAppManager {
                     
                     // Update tool status and meta
                     await db.run('UPDATE tools SET status = ?, meta = ? WHERE id = ?', 'connected', JSON.stringify({ phone: phoneNumber, name: sock.user?.name || null }), toolId);
-                    const agent = await this.getAgentByToolId(toolId);
-                    if (agent) {
+                    
+                    let agent = await this.getAgentByToolId(toolId);
+                    
+                    // --- AUTO-REPAIR ASSOCIATION ---
+                    if (!agent) {
+                        console.log(`[WhatsApp] No agent found for tool ${toolId}. Attempting auto-repair...`);
+                        const tool = await db.get('SELECT user_id FROM tools WHERE id = ?', toolId);
+                        if (tool) {
+                            // Try to find an agent for this user that matches this phone number OR has no tool assigned
+                            let candidate = await db.get('SELECT * FROM agents WHERE user_id = ? AND whatsapp_number = ?', tool.user_id, phoneNumber);
+                            if (!candidate) {
+                                candidate = await db.get('SELECT * FROM agents WHERE user_id = ? AND (tool_id IS NULL OR tool_id = \'\') LIMIT 1', tool.user_id);
+                            }
+                            
+                            if (candidate) {
+                                console.log(`[WhatsApp] Auto-repair: Linking tool ${toolId} to agent "${candidate.name}" (${candidate.id})`);
+                                await db.run('UPDATE agents SET tool_id = ?, whatsapp_connected = 1, whatsapp_number = ? WHERE id = ?', toolId, phoneNumber, candidate.id);
+                                agent = candidate;
+                            } else {
+                                console.warn(`[WhatsApp] Auto-repair failed: No suitable agent found for user ${tool.user_id}`);
+                            }
+                        }
+                    } else {
                         await db.run('UPDATE agents SET whatsapp_connected = 1, whatsapp_number = ? WHERE id = ?', phoneNumber, agent.id);
                     }
                     
@@ -531,13 +555,15 @@ class WhatsAppManager {
                         status: 'connected', 
                         message: 'Connecté',
                         phoneNumber,
-                        name: sock.user?.name
+                        name: sock.user?.name,
+                        isSyncing: store.isSyncingHistory
                     });
                     notifyWhatsAppStatus(toolId, { 
                         status: 'connected', 
                         message: 'Connecté',
                         phoneNumber,
-                        name: sock.user?.name
+                        name: sock.user?.name,
+                        isSyncing: store.isSyncingHistory
                     });
                     console.log(`[WhatsApp] Connected for tool ${toolId}: ${phoneNumber}`);
 
@@ -3436,7 +3462,7 @@ class WhatsAppManager {
 
             const outMap = new Map();
 
-            // 1. Load known contacts from the database (ensures we don't lose them if store is purged)
+            // 1. Load known contacts from the database
             try {
                 const dbContacts = await db.all(`
                     SELECT contact_jid, contact_number, contact_name, notify_name, saved_contact_name 
@@ -3477,18 +3503,15 @@ class WhatsAppManager {
                 const rawJid = c?.jid || c?.id || key;
                 if (!rawJid || typeof rawJid !== 'string') continue;
 
-                // Skip broadcasts, but ALLOW groups
                 if (rawJid.includes('broadcast')) continue;
                 const isGroup = rawJid.includes('@g.us');
 
-                // Resolve LID to phone JID when possible
                 let jid = rawJid;
                 if (jid.endsWith('@lid') && lidMap) {
                     const phoneJid = lidMap.get(jid) || lidMap.get(c?.id) || lidMap.get(key);
                     if (phoneJid) jid = phoneJid;
                 }
 
-                // Only keep real phone contacts or groups
                 if (!jid.endsWith('@s.whatsapp.net') && !isGroup) continue;
 
                 const number = jid.split('@')[0];
@@ -3504,7 +3527,6 @@ class WhatsAppManager {
 
                 const existing = outMap.get(jid);
                 let finalName = displayName;
-                // Prefer DB contact name if store name is just the phone number
                 if (existing && existing.name !== existing.number && displayName === number) {
                     finalName = existing.name;
                 }
@@ -3514,15 +3536,20 @@ class WhatsAppManager {
                     number,
                     name: finalName,
                     isMyContact: existing ? (existing.isMyContact || !!c?.name || !!c?.notify) : (!!c?.name || !!c?.notify),
-                    isGroup
+                    isGroup,
+                    isFromSync: true
                 });
             }
 
-            // Convert to array and slice
             const out = Array.from(outMap.values());
+            
+            // If we have zero contacts and history sync is running, return a placeholder or at least the DB ones
+            if (out.length === 0 && store?.isSyncingHistory) {
+                console.log(`[WhatsApp] Store empty but sync in progress for tool ${toolId}`);
+            }
+
             const limitedOut = out.slice(0, safeLimit);
 
-            // Best UX: stable ordering (name then number)
             limitedOut.sort((a, b) => {
                 const an = String(a.name || '').toLowerCase();
                 const bn = String(b.name || '').toLowerCase();
