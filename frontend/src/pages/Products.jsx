@@ -142,7 +142,7 @@ export default function Products() {
                 isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}>
                 <Upload className="w-4 h-4" aria-hidden />
-                <span className="hidden sm:inline">{t('products.btnImportCsv')}</span>
+                <span className="hidden sm:inline">Importer WhatsApp / CSV</span>
               </button>
               <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2 min-h-[44px]" data-tour="create-product">
                 <Plus className="w-5 h-5" aria-hidden />
