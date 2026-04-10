@@ -293,6 +293,40 @@ class AIService {
     }
 
     /**
+     * Specialized method to improve/rewrite text (e.g. for campaigns)
+     */
+    async improveText(originalText, context = "marketing WhatsApp", userId = null) {
+        this.initialize();
+        await this.refreshClientsFromDb();
+
+        const modelId = 'gemini-1.5-flash'; // Fixed cheap model for small tasks
+        const provider = this.getProvider(modelId);
+        const apiKey = await this.getApiKey(provider, modelId);
+
+        const systemPrompt = `Tu es un expert en marketing digital sur WhatsApp. 
+Ta mission est d'améliorer, reformuler et optimiser le message fourni pour qu'il soit plus percutant, engageant et professionnel.
+Garde le ton : ${context}.
+Utilise des emojis de façon pertinente.
+Garde le message CONCIS (maximum 1000 caractères).
+Réponds UNIQUEMENT avec le nouveau texte amélioré. Pas d'introduction, pas de guillemets.`;
+
+        const mockAgent = {
+            id: 'text-improver',
+            name: 'Optimiseur de Message',
+            model: modelId,
+            system_prompt: systemPrompt
+        };
+
+        try {
+            const response = await this.generateResponse(mockAgent, [], originalText, [], null, userId, true);
+            return response.content;
+        } catch (error) {
+            console.error('[AI] Improve text error:', error.message);
+            throw error;
+        }
+    }
+
+    /**
      * Helper to execute a provider call with credits and logging
      * Refactored to be reusable for fallback loops
      */

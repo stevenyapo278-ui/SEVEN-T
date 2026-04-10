@@ -70,6 +70,25 @@ html {
   font-size: var(--base-font-size, 16px);
 }
 
+/* Global Select & Dropdown Visibility Fix */
+.dark select,
+.dark input[type="date"],
+.dark input[type="time"],
+.dark .input-dark,
+.dark .input {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #1e212d !important;
+  color: #f8fafc !important;
+}
+
+.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
 /* Bloquer le scroll global de la page lorsqu'une modale est ouverte */
 /* On ignore les éléments avec pointer-events-none, ceux en arrière-plan z-index, et ceux qui sont invisibles (opacity, hidden, invisible) */
 body:has(.fixed.inset-0:not(.pointer-events-none):not(.-z-10):not(.opacity-0):not(.hidden):not(.invisible):not([style*="display: none"])) {

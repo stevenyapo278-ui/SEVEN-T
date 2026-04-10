@@ -1124,4 +1124,18 @@ router.post('/:id/global-knowledge', authenticateToken, async (req, res) => {
     }
 });
 
+// AI Rewrite message for campaigns or general text
+router.post('/ai-rewrite', authenticateToken, async (req, res) => {
+    try {
+        const { message, context } = req.body;
+        if (!message) return res.status(400).json({ error: 'Message requis' });
+        
+        const improved = await aiService.improveText(message, context || 'marketing WhatsApp', req.user.id);
+        res.json({ improved });
+    } catch (error) {
+        console.error('AI rewrite error:', error);
+        res.status(500).json({ error: 'Erreur lors de l\'amélioration du message' });
+    }
+});
+
 export default router;

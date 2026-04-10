@@ -289,13 +289,13 @@ export default function Deals() {
           <select
             value={stageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
-            className={`flex-1 sm:min-w-[200px] px-5 py-3 rounded-2xl border bg-transparent focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${
-              isDark ? 'border-space-700 text-gray-200' : 'border-gray-200 text-gray-700 bg-white shadow-sm'
+            className={`flex-1 sm:min-w-[200px] px-5 py-3 rounded-2xl border [color-scheme:dark] focus:ring-2 focus:ring-blue-500/20 outline-none transition-all ${
+              isDark ? 'border-space-700 text-gray-200 bg-space-800' : 'border-gray-200 text-gray-700 bg-white shadow-sm'
             }`}
           >
             <option value="all">Toutes les étapes</option>
             {DEAL_STAGES.map(stage => (
-              <option key={stage.id} value={stage.id}>{stage.label}</option>
+              <option key={stage.id} value={stage.id} className={isDark ? 'bg-space-800 text-gray-200' : ''}>{stage.label}</option>
             ))}
           </select>
         </div>
@@ -484,11 +484,11 @@ export default function Deals() {
                   <select
                     name="lead_id"
                     defaultValue={editingDeal?.lead_id || ''}
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
                   >
-                    <option value="">-- Aucun --</option>
+                    <option value="" className="bg-space-800 text-white">-- Aucun --</option>
                     {leads.map(l => (
-                      <option key={l.id} value={l.id}>{l.name} {l.phone ? `(${l.phone})` : ''}</option>
+                      <option key={l.id} value={l.id} className="bg-space-800 text-white">{l.name} {l.phone ? `(${l.phone})` : ''}</option>
                     ))}
                   </select>
                 </div>
@@ -512,10 +512,10 @@ export default function Deals() {
                   <select
                     name="stage"
                     defaultValue={editingDeal?.stage || 'qualification'}
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
                   >
                     {DEAL_STAGES.map(s => (
-                      <option key={s.id} value={s.id}>{s.label}</option>
+                      <option key={s.id} value={s.id} className="bg-space-800 text-white">{s.label}</option>
                     ))}
                   </select>
                 </div>

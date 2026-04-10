@@ -313,9 +313,20 @@ export default function Campaigns() {
     if (!form.message.trim()) return
     setRewritingMessage(true)
     try {
-      await new Promise(r => setTimeout(r, 1000))
-      setForm(prev => ({ ...prev, message: prev.message + " (Amélioré par l'IA ✨)" }))
-    } finally { setRewritingMessage(false) }
+      const res = await api.post('/agents/ai-rewrite', { 
+        message: form.message,
+        context: 'marketing campagne WhatsApp'
+      })
+      if (res.data?.improved) {
+        setForm(prev => ({ ...prev, message: res.data.improved }))
+        toast.success('Message optimisé ✨')
+      }
+    } catch (error) {
+      console.error('AI Rewrite Error:', error)
+      toast.error("Échec de l'optimisation IA")
+    } finally {
+      setRewritingMessage(false)
+    }
   }
 
   const applyTemplate = (tpl) => setForm(prev => ({ ...prev, message: tpl.message }))
@@ -590,7 +601,7 @@ export default function Campaigns() {
                     <Edit3 className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h2 className={`text-2xl font-display font-black italic uppercase tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedCampaign ? 'Modifier la campagne' : 'Nouvelle Campagne'}</h2>
+                    <h2 className={`text-2xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedCampaign ? 'Modifier la campagne' : 'Nouvelle Campagne'}</h2>
                     <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Étape 1 : Configuration générale</p>
                   </div>
                 </div>
@@ -619,12 +630,12 @@ export default function Campaigns() {
                     <select 
                       value={form.agent_id} 
                       onChange={e => setForm({...form, agent_id: e.target.value})} 
-                      className="input-premium w-full appearance-none" 
+                      className="input-premium w-full appearance-none [color-scheme:dark]" 
                       required
                     >
-                      <option value="">Sélectionner un agent</option>
+                      <option value="" className={isDark ? 'bg-space-900 text-gray-100' : ''}>Sélectionner un agent</option>
                       {agents.filter(a => a.whatsapp_connected).map(a => (
-                        <option key={a.id} value={a.id}>{a.name} ({a.phone})</option>
+                        <option key={a.id} value={a.id} className={isDark ? 'bg-space-900 text-gray-100' : ''}>{a.name} ({a.phone})</option>
                       ))}
                     </select>
                   </div>
@@ -680,9 +691,13 @@ export default function Campaigns() {
                       <select 
                         value={form.recurrence_type} 
                         onChange={e => setForm({...form, recurrence_type: e.target.value})} 
-                        className="input-premium w-full"
+                        className="input-premium w-full [color-scheme:dark]"
                       >
-                        {RECURRENCE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        {RECURRENCE_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value} className={isDark ? 'bg-space-900 text-gray-100' : ''}>
+                            {opt.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -707,7 +722,7 @@ export default function Campaigns() {
               <button 
                 type="submit" 
                 form="campaign-form"
-                className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-display font-black italic uppercase tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-100 transition-all flex items-center justify-center gap-3"
+                className="flex-1 py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:scale-[1.02] active:scale-100 transition-all flex items-center justify-center gap-3"
               >
                 {selectedCampaign ? 'Mettre à jour' : 'Étape Suivante'}
                 <ArrowRight className="w-5 h-5" />

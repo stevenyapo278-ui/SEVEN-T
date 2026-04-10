@@ -50,7 +50,7 @@ export default function ProductFilters({
           id="products-category"
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[160px] transition-all duration-300 ${
+          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[160px] transition-all duration-300 [color-scheme:dark] ${
             isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
           }`}
           aria-label={t('products.filterAllCategories')}
@@ -66,7 +66,7 @@ export default function ProductFilters({
           id="products-stock"
           value={stockFilter}
           onChange={(e) => setStockFilter(e.target.value)}
-          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[140px] transition-all duration-300 ${
+          className={`px-4 py-3 sm:py-3.5 rounded-2xl border min-w-[140px] transition-all duration-300 [color-scheme:dark] ${
             isDark ? 'bg-space-800 focus:bg-space-700 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
           }`}
           aria-label={t('products.filterAllStock')}

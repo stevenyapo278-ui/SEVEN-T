@@ -493,7 +493,7 @@ export default function Leads() {
           <select
             value={statusFilter}
             onChange={(e) => handleStatusFilterChange(e.target.value)}
-            className="input min-w-[160px] rounded-2xl px-4 py-3 text-sm"
+            className="input min-w-[160px] rounded-2xl px-4 py-3 text-sm [color-scheme:dark]"
           >
             <option value="all">Tous statuts</option>
             {LEAD_STATUSES.map(status => (
@@ -503,7 +503,7 @@ export default function Leads() {
           <select
             value={sourceFilter}
             onChange={(e) => handleSourceFilterChange(e.target.value)}
-            className="input min-w-[160px] rounded-2xl px-4 py-3 text-sm"
+            className="input min-w-[160px] rounded-2xl px-4 py-3 text-sm [color-scheme:dark]"
           >
             <option value="all">Toutes sources</option>
             {LEAD_SOURCES.map(source => (
@@ -1062,10 +1062,10 @@ function LeadModal({ lead, onClose, onSaved }) {
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Source d'acquisition</label>
                   <div className="relative group">
                     <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
-                    <select
+                     <select
                       value={formData.source}
                       onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                      className="input-dark w-full py-4 pl-12 pr-12 text-base rounded-2xl appearance-none bg-transparent"
+                      className="input-dark w-full py-4 pl-12 pr-12 text-base rounded-2xl [color-scheme:dark]"
                     >
                     {LEAD_SOURCES.map(source => (
                       <option key={source.id} value={source.id}>{source.label}</option>
