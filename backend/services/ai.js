@@ -1862,6 +1862,8 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
         } catch (error) {
             // Ignore any errors to prevent debug logging from breaking the app
         }
+    }
+
     /**
      * Extraite et sauvegarde les nouveaux faits sur le client
      */
