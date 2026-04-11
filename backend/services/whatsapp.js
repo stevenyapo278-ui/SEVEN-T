@@ -1069,8 +1069,10 @@ class WhatsAppManager {
 
             const isStatusReply = contextInfo?.remoteJid === 'status@broadcast' ? 1 : 0;
             let quotedContent = null;
+            let quotedMsgId = null;
             if (contextInfo?.quotedMessage) {
                 quotedContent = this.extractMessageText({ message: contextInfo.quotedMessage });
+                quotedMsgId = contextInfo.stanzaId || null;
             }
 
             // ==================== CHECK BLACKLIST ====================
@@ -1319,7 +1321,9 @@ class WhatsAppManager {
                     quoted_content: quotedContent
                 },
                 context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend },
-                audioTranscriptionFailed
+                audioTranscriptionFailed,
+                quotedMsgId,
+                messageText
             };
         } catch (e) {
             return null;
@@ -1344,8 +1348,51 @@ class WhatsAppManager {
 
             const result = await this.processReceptionOnly(toolId, sock, message, type);
             if (!result) return;
+
+            const { payload, context, quotedMsgId, messageText } = result;
+
+            // ==================== REPLY-TO-VALIDATE ORDER LOGIC ====================
+            // Check if this is a reply to an order notification message
+            if (quotedMsgId) {
+                const validationKeywords = ['valider', 'confirmer', 'ok', 'oui'];
+                const cleanMsg = (messageText || '').trim().toLowerCase();
+                
+                if (validationKeywords.includes(cleanMsg)) {
+                    // Find if this message ID was an alert for an order
+                    const order = await db.get('SELECT id, user_id FROM orders WHERE alert_whatsapp_id = ?', quotedMsgId);
+                    if (order) {
+                        // Get user settings to verify the sender is the authorized notification_number
+                        const owner = await db.get('SELECT notification_number FROM users WHERE id = ?', order.user_id);
+                        if (owner?.notification_number) {
+                            const senderNumber = jidNormalizedUser(sender).split('@')[0];
+                            const authorizedNumber = owner.notification_number.replace(/\D/g, '');
+                            
+                            if (senderNumber === authorizedNumber) {
+                                console.log(`[WhatsApp] Order ${order.id} validation triggered by reply from ${senderNumber}`);
+                                try {
+                                    const { orderService } = await import('./orders.js');
+                                    const validationResult = await orderService.validateOrder(order.id, order.user_id, `WhatsApp (${senderNumber})`);
+                                    
+                                    if (validationResult.success) {
+                                        await sock.sendMessage(sender, { text: `✅ Commande #${order.id.substring(0, 8)} validée avec succès !` });
+                                    } else {
+                                        await sock.sendMessage(sender, { text: `❌ Erreur validation: ${validationResult.error}` });
+                                    }
+                                } catch (err) {
+                                    console.error('[WhatsApp] Order validation error:', err);
+                                    await sock.sendMessage(sender, { text: '❌ Une erreur est survenue lors de la validation de la commande.' });
+                                }
+                                return; // Stop processing further
+                            } else {
+                                console.log(`[WhatsApp] Reply to order alert from unauthorized number ${senderNumber} (expected ${authorizedNumber})`);
+                            }
+                        }
+                    }
+                }
+            }
+            // ======================================================================
+
             if (result.audioTranscriptionFailed) {
-                const { payload, context } = result;
                 await db.run(`
                     INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, is_status_reply, quoted_content, created_at)
                     VALUES (?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)
@@ -2574,20 +2621,20 @@ class WhatsAppManager {
             }
 
             // Send message via WhatsApp
-            await sock.sendMessage(recipientJid, { text: messageText });
+            const sendResult = await sock.sendMessage(recipientJid, { text: messageText });
 
             // Save message to database with sender_type = 'human'
             const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             await db.run(`
-                INSERT INTO messages (id, conversation_id, role, content, sender_type, created_at)
-                VALUES (?, ?, 'assistant', ?, 'human', ?)
-            `, messageId, conversationId, messageText, new Date().toISOString());
+                INSERT INTO messages (id, conversation_id, role, content, sender_type, whatsapp_id, created_at)
+                VALUES (?, ?, 'assistant', ?, 'human', ?, ?)
+            `, messageId, conversationId, messageText, sendResult?.key?.id, new Date().toISOString());
 
             await db.run('UPDATE conversations SET human_takeover = 1 WHERE id = ?', conversationId);
 
             console.log(`[WhatsApp] Human message sent to ${conversation.contact_number}: ${messageText.substring(0, 50)}...`);
 
-            return { success: true, messageId };
+            return { success: true, messageId, sendResult };
         } catch (error) {
             console.error('[WhatsApp] Error sending message:', error);
             throw error;
@@ -2949,9 +2996,9 @@ class WhatsAppManager {
             throw new Error('Contact JID invalide');
         }
         const jid = await this.resolveJidForSend(toolId, sock, phoneJid);
-        await sock.sendMessage(jid, { text });
+        const result = await sock.sendMessage(jid, { text });
 
-        return { success: true };
+        return { success: true, messageId: result?.key?.id, sendResult: result };
     }
 
     /**
@@ -3015,24 +3062,15 @@ class WhatsAppManager {
             conversation = await db.get('SELECT * FROM conversations WHERE id = ?', conversationId);
         }
 
-        const msgId = uuidv4();
-        await db.run(
-            `
-                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
-                VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?)
-            `,
-            msgId,
-            conversation.id,
-            text,
-            whatsappId,
-            messageType,
-            new Date().toISOString()
-        );
+        await db.run(`
+            INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, whatsapp_id, created_at)
+            VALUES (?, ?, 'assistant', ?, 'ai', ?, ?, ?)
+        `, uuidv4(), conversation.id, text, messageType, whatsappId, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', conversation.id);
 
         void notifyConversationUpdate(conversation.id, {
-            id: msgId,
+            id: uuidv4(),
             role: 'assistant',
             content: text,
             whatsapp_id: whatsappId,
@@ -3040,7 +3078,7 @@ class WhatsAppManager {
             created_at: new Date().toISOString()
         });
 
-        return { success: true, messageId: msgId, whatsappId, conversationId: conversation.id };
+        return { success: true, messageId: whatsappId, sendResult };
     }
 
     /**
@@ -3070,24 +3108,15 @@ class WhatsAppManager {
         const result = await sock.sendMessage(recipientJid, { text });
         const whatsappId = result?.key?.id || null;
 
-        const msgId = uuidv4();
-        await db.run(
-            `
-                INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
-                VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?)
-            `,
-            msgId,
-            conversationId,
-            text,
-            whatsappId,
-            messageType,
-            new Date().toISOString()
-        );
+        await db.run(`
+            INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, whatsapp_id, created_at)
+            VALUES (?, ?, 'assistant', ?, 'ai', ?, ?, ?)
+        `, uuidv4(), conversationId, text, messageType, whatsappId, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', conversationId);
 
         void notifyConversationUpdate(conversationId, {
-            id: msgId,
+            id: uuidv4(),
             role: 'assistant',
             content: text,
             whatsapp_id: whatsappId,
@@ -3095,7 +3124,7 @@ class WhatsAppManager {
             created_at: new Date().toISOString()
         });
 
-        return { success: true, messageId: msgId, whatsappId };
+        return { success: true, messageId: whatsappId, sendResult: result };
     }
 
     getQRCode(toolId) {

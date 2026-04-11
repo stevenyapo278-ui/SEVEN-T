@@ -582,6 +582,7 @@ export async function initDatabase() {
             total_amount DOUBLE PRECISION DEFAULT 0,
             currency TEXT DEFAULT 'XOF',
             notes TEXT,
+            alert_whatsapp_id TEXT, -- WhatsApp message ID of the alert sent to notification_number
             validated_by TEXT,
             validated_at TIMESTAMP,
             rejected_at TIMESTAMP,
@@ -590,6 +591,8 @@ export async function initDatabase() {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
+        ALTER TABLE orders ADD COLUMN IF NOT EXISTS alert_whatsapp_id TEXT;
+        CREATE INDEX IF NOT EXISTS idx_orders_alert_whatsapp_id ON orders(alert_whatsapp_id);
 
         CREATE TABLE IF NOT EXISTS order_items (
             id TEXT PRIMARY KEY,

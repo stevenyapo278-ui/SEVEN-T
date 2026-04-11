@@ -349,9 +349,20 @@ class WorkflowExecutor {
             }
 
             await this.whatsappManager.ensureConversationDisplay(toolId, agentId, phoneJid, contact.name, contact.phone_number);
-            await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageAndSave(toolId, phoneJid, processedMessage, { messageType: 'workflow' }));
+            const sendRes = await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageAndSave(toolId, phoneJid, processedMessage, { messageType: 'workflow' }));
 
-            return { sent: true, recipient: contact.name, phone: contact.phone_number };
+            if (sendRes?.messageId && triggerData.orderId) {
+                const userObj = await db.get('SELECT notification_number FROM users WHERE id = ?', workflow.user_id);
+                if (userObj?.notification_number) {
+                    const targetPhone = phoneJid.split('@')[0];
+                    const authPhone = userObj.notification_number.replace(/\D/g, '');
+                    if (targetPhone === authPhone) {
+                        await db.run('UPDATE orders SET alert_whatsapp_id = ? WHERE id = ?', sendRes.messageId, triggerData.orderId);
+                    }
+                }
+            }
+
+            return { sent: true, recipient: contact.name, phone: contact.phone_number, messageId: sendRes?.messageId };
         } else if ((config.send_to === 'imported' || config.send_to === 'phone') && config.phone_number) {
             // Send to a raw phone number (imported contact)
             const phone = String(config.phone_number || '').trim();
@@ -372,8 +383,19 @@ class WorkflowExecutor {
             }
 
             await this.whatsappManager.ensureConversationDisplay(toolId, agentId, phoneJid, name, phone);
-            await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageAndSave(toolId, phoneJid, processedMessage, { messageType: 'workflow' }));
-            return { sent: true, recipient: name, phone };
+            const sendRes = await this.sendMessageWithRetry(() => this.whatsappManager.sendAutomatedMessageAndSave(toolId, phoneJid, processedMessage, { messageType: 'workflow' }));
+
+            if (sendRes?.messageId && triggerData.orderId) {
+                const userObj = await db.get('SELECT notification_number FROM users WHERE id = ?', workflow.user_id);
+                if (userObj?.notification_number) {
+                    const targetPhone = phoneJid.split('@')[0];
+                    const authPhone = userObj.notification_number.replace(/\D/g, '');
+                    if (targetPhone === authPhone) {
+                        await db.run('UPDATE orders SET alert_whatsapp_id = ? WHERE id = ?', sendRes.messageId, triggerData.orderId);
+                    }
+                }
+            }
+            return { sent: true, recipient: name, phone, messageId: sendRes?.messageId };
         } else {
             // Send to conversation contact (default)
             const conversationId = triggerData.conversationId;

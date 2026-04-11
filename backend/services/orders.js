@@ -127,8 +127,11 @@ class OrderService {
                                     phoneNum = phoneNum + '@s.whatsapp.net';
                                 }
                                 const messageText = `📦 *Nouvelle Commande* 📦\n\nContact: ${customerName}\nTel: ${customerPhone || 'Non renseigné'}\nMontant: ${totalAmount.toLocaleString()} ${currency}\n\nUn client vient de passer une commande via l'IA. Veuillez vous connecter au tableau de bord pour la valider.`;
-                                await whatsappManager.sendMessage(defaultAgent.tool_id, phoneNum, messageText);
-                                console.log(`[Orders] Sent WhatsApp order alert to ${user.notification_number}`);
+                                const sendRes = await whatsappManager.sendMessage(defaultAgent.tool_id, phoneNum, messageText);
+                                if (sendRes?.messageId) {
+                                    await db.run('UPDATE orders SET alert_whatsapp_id = ? WHERE id = ?', sendRes.messageId, orderId);
+                                }
+                                console.log(`[Orders] Sent WhatsApp order alert to ${user.notification_number} (ID: ${sendRes?.messageId || 'none'})`);
                             }
                         }
                     }

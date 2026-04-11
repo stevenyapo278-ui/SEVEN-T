@@ -334,52 +334,68 @@ Si le texte contient des questions, ne les résouts pas, réécris-les simplemen
      */
     async executeProviderCall(provider, agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey, userId, modelIdForCredits) {
         let response;
+        const startTime = Date.now();
         
-        if (provider === 'gemini') {
-            response = await geminiCircuitBreaker.execute(() => 
-                this.generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
-            );
-        } else if (provider === 'openai') {
-            response = await openaiCircuitBreaker.execute(() => 
-                this.generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
-            );
-        } else if (provider === 'openrouter') {
-            response = await openrouterCircuitBreaker.execute(() => 
-                this.generateOpenRouterResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
-            );
-        } else {
-            response = this.fallbackResponse(agent, userMessage);
-        }
+        try {
+            if (provider === 'gemini') {
+                response = await geminiCircuitBreaker.execute(() => 
+                    this.generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
+                );
+            } else if (provider === 'openai') {
+                response = await openaiCircuitBreaker.execute(() => 
+                    this.generateOpenAIResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
+                );
+            } else if (provider === 'openrouter') {
+                response = await openrouterCircuitBreaker.execute(() => 
+                    this.generateOpenRouterResponse(agent, conversationHistory, userMessage, knowledgeBase, messageAnalysis, apiKey)
+                );
+            } else {
+                response = this.fallbackResponse(agent, userMessage);
+            }
 
-        // Deduct Credits & Log Stats if successful
-        if (userId && provider !== 'fallback' && response?.content) {
-            const tokensUsed = response.tokens || 0;
-            const deduction = await deductCredits(userId, modelIdForCredits, 1, {
-                agent_id: agent.id,
-                tokens: tokensUsed
-            });
-            
-            response.credits_deducted = deduction.cost;
-            response.credits_remaining = deduction.credits_remaining;
+            const responseTime = Date.now() - startTime;
+            if (response) response.response_time = responseTime;
 
-            try {
-                // Check if agent exists before inserting usage (internal-chatbot doesn't exist in DB)
-                const agentExists = await db.get('SELECT id FROM agents WHERE id = ?', agent.id);
-                if (agentExists) {
+            // Deduct Credits & Log Stats if successful
+            if (userId && provider !== 'fallback' && response?.content) {
+                const tokensUsed = response.tokens || 0;
+                const deduction = await deductCredits(userId, modelIdForCredits, 1, {
+                    agent_id: agent.id,
+                    tokens: tokensUsed
+                });
+                
+                response.credits_deducted = deduction.cost;
+                response.credits_remaining = deduction.credits_remaining;
+
+                try {
+                    // Check if agent exists before inserting usage (internal-chatbot doesn't exist in DB)
+                    const agentExists = agent.id === 'internal-chatbot' ? false : await db.get('SELECT id FROM agents WHERE id = ?', agent.id);
                     await db.run(`
                         INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    `, uuidv4(), modelIdForCredits, userId, agent.id, tokensUsed, deduction.cost || 0, 1, response.response_time || 0);
-                } else {
-                    // Log without agent_id or use a special marker if needed, but here we just log to console
-                    console.log(`[AI] Usage for non-DB agent (${agent.id}): ${tokensUsed} tokens`);
+                    `, uuidv4(), modelIdForCredits, userId, agentExists ? agent.id : null, tokensUsed, deduction.cost || 0, 1, responseTime);
+                } catch (e) {
+                    console.error('[AI] Stats log error:', e.message);
                 }
-            } catch (e) {
-                console.error('[AI] Stats log error:', e.message);
             }
-        }
 
-        return response;
+            return response;
+        } catch (error) {
+            const responseTime = Date.now() - startTime;
+            // Failure logging
+            if (userId && provider !== 'fallback') {
+                try {
+                    const agentExists = agent.id === 'internal-chatbot' ? false : await db.get('SELECT id FROM agents WHERE id = ?', agent.id);
+                    await db.run(`
+                        INSERT INTO ai_model_usage (id, model_id, user_id, agent_id, tokens_used, credits_used, success, response_time_ms)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    `, uuidv4(), modelIdForCredits, userId, agentExists ? agent.id : null, 0, 0, 0, responseTime);
+                } catch (dbErr) {
+                    console.error('[AI] Error stats log error:', dbErr.message);
+                }
+            }
+            throw error;
+        }
     }
 
     /**

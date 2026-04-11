@@ -4,6 +4,7 @@ import { authenticateAdmin, requirePermission } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 import aiService from '../services/ai.js';
 import { activityLogger } from '../services/activityLogger.js';
+import { geminiCircuitBreaker, openaiCircuitBreaker, openrouterCircuitBreaker } from '../utils/circuitBreaker.js';
 
 const router = Router();
 
@@ -107,7 +108,7 @@ router.get('/models/:id', async (req, res) => {
                 COUNT(*) as requests,
                 SUM(credits_used) as credits
             FROM ai_model_usage
-            WHERE model_id = ? AND created_at >= CURRENT_TIMESTAMP - INTERVAL '30 days'
+            WHERE model_id = ? AND created_at >= CURRENT_TIMESTAMP - INTERVAL '30' DAY
             GROUP BY DATE(created_at)
             ORDER BY date ASC
         `, req.params.id);
@@ -778,6 +779,35 @@ router.post('/reindex', async (req, res) => {
         isReindexing = false;
         console.error('Re-indexing error:', error);
         res.status(500).json({ error: 'Erreur lors de la ré-indexation : ' + error.message });
+    }
+});
+
+// Get real-time health of AI providers (Circuit Breaker states)
+router.get('/health', async (req, res) => {
+    try {
+        res.json({
+            gemini: geminiCircuitBreaker.getState(),
+            openai: openaiCircuitBreaker.getState(),
+            openrouter: openrouterCircuitBreaker.getState()
+        });
+    } catch (error) {
+        console.error('Get AI health error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Reset a circuit breaker
+router.post('/health/:provider/reset', async (req, res) => {
+    try {
+        const { provider } = req.params;
+        if (provider === 'gemini') geminiCircuitBreaker.reset();
+        else if (provider === 'openai') openaiCircuitBreaker.reset();
+        else if (provider === 'openrouter') openrouterCircuitBreaker.reset();
+        else return res.status(400).json({ error: 'Provider inconnu' });
+
+        res.json({ message: `Circuit breaker ${provider} réinitialisé` });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur' });
     }
 });
 
