@@ -39,8 +39,10 @@ class ProactiveAdvisorService {
                 SELECT o.*, c.agent_id, c.customer_context
                 FROM orders o
                 JOIN conversations c ON o.conversation_id = c.id
+                JOIN users u ON o.user_id = u.id
                 WHERE o.status = 'postponed' 
                 AND o.proactive_relance_count = 0
+                AND u.proactive_advisor_enabled = 1
                 AND o.updated_at < ?
                 AND o.updated_at > ?
             `, cutoffStart, cutoffEnd);

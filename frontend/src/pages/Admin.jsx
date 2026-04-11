@@ -2843,7 +2843,8 @@ function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'leads_management', label: 'Module 12 : Gestion des Leads', desc: 'Gestion des prospects, analyse d\'intention et conversion par l\'IA.' },
     { key: 'campaigns', label: 'Module 13 : Campagnes WhatsApp', desc: 'Envoi de messages en masse et planification récurrente.' },
     { key: 'voice_responses', label: 'Module 14 : Réponses vocales (TTS)', desc: 'L\'IA peut répondre par message vocal au lieu de texte.' },
-    { key: 'polls_module', label: 'Module 15 : Sondages WhatsApp', desc: 'Créez des sondages interactifs et collectez les votes en temps réel.' }
+    { key: 'polls_module', label: 'Module 15 : Sondages WhatsApp', desc: 'Créez des sondages interactifs et collectez les votes en temps réel.' },
+    { key: 'proactive_advisor', label: 'Module 16 : Relance IA (Proactive)', desc: 'Relance automatiquement les commandes abandonnées ou reportées.' }
   ]
 
 

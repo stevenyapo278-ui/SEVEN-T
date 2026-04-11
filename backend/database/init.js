@@ -218,6 +218,7 @@ export async function initDatabase() {
             role TEXT DEFAULT 'owner', -- 'owner', 'manager'
             permissions TEXT, -- JSON array of specific permissions
 
+            proactive_advisor_enabled INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1492,6 +1493,14 @@ export async function initDatabase() {
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('orders.proactive_relance_count column migration:', e?.message);
+        }
+    }
+
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS proactive_advisor_enabled INTEGER DEFAULT 0');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.proactive_advisor_enabled column migration:', e?.message);
         }
     }
 
