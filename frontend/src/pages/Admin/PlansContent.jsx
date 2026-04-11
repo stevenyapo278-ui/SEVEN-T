@@ -101,6 +101,8 @@ export default function PlansContent({
                 {plan.features?.leads_management && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-300 rounded">Module 12 : Gestion des Leads</span>}
                 {plan.features?.campaigns && <span className="px-2 py-0.5 text-xs bg-orange-500/20 text-orange-300 rounded">Module 13 : Campagnes</span>}
                 {plan.features?.voice_responses && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Module 14 : Voix (TTS)</span>}
+                {plan.features?.polls_module && <span className="px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-400 rounded">Module 15 : Sondages</span>}
+                {plan.features?.proactive_advisor && <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded">Module 16 : Relance IA (Proactive)</span>}
                 {plan.features?.models?.length > 0 && <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">{plan.features.models.length} modèle(s) IA</span>}
 
               </div>

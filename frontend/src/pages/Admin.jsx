@@ -67,7 +67,8 @@ const PLAN_MODULES = [
   { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads', description: "Gestion des prospects, analyse d'intention et conversion par l'IA." },
   { key: 'campaigns_module_enabled', label: 'Module 13 : Campagnes WhatsApp', description: "Envoi de messages en masse et planification récurrente." },
   { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: "L'IA peut répondre par message vocal au lieu de texte." },
-  { key: 'polls_module_enabled', label: 'Module 15 : Sondages', description: "Création et gestion de sondages WhatsApp." }
+  { key: 'polls_module_enabled', label: 'Module 15 : Sondages', description: "Création et gestion de sondages WhatsApp." },
+  { key: 'proactive_advisor_enabled', label: 'Module 16 : Relance IA (Proactive)', description: "Relance automatiquement les commandes abandonnées ou reportées." }
 ]
 
 export default function Admin() {
