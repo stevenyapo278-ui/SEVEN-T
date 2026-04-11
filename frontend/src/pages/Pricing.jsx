@@ -57,6 +57,7 @@ function PlanFeatureList({ features }) {
   if (parsed.campaigns) items.push('Campagnes WhatsApp')
   if (parsed.voice_responses) items.push('Réponses vocales (TTS)')
   if (parsed.polls_module) items.push('Sondages WhatsApp')
+  if (parsed.proactive_advisor) items.push('Relance IA (Proactive)')
   return (
     <ul className="space-y-2 mt-4">
       {items.map(item => (
