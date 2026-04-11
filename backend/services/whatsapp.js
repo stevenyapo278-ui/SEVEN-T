@@ -1884,6 +1884,10 @@ class WhatsAppManager {
                         // P1.4 — Order cancelled by client
                         messageAnalysis.orderCancelled = true;
                         console.log(`[WhatsApp] Order ${detectedOrder.orderId} cancelled from conversation`);
+                    } else if (detectedOrder?.orderPostponed) {
+                        // P1.5 — Order postponed by client
+                        messageAnalysis.orderPostponed = true;
+                        console.log(`[WhatsApp] Order ${detectedOrder.orderId} postponed from conversation`);
                     } else if (detectedOrder) {
                         // Enrich messageAnalysis for the AI
                         messageAnalysis.orderCreated = true;
@@ -2094,17 +2098,62 @@ class WhatsAppManager {
                 response_time_ms: Date.now() - pipelineStartMs
             });
 
-            // Apply adaptive response delay (simulates natural human typing speed)
+            // Multi-bubble Splitting Logic (Humanization)
+            const splitIntoBubbles = (text) => {
+                if (!text || typeof text !== 'string') return [];
+                // Split by double newlines (paragraphs)
+                // Filter out empty strings and trim whitespace
+                const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
+                
+                // If we only have one paragraph but it's very long (> 280 chars), split by sentences if possible
+                if (paragraphs.length === 1 && paragraphs[0].length > 280) {
+                    const sentences = paragraphs[0].match(/[^.!?]+[.!?]+(?:\s|$)/g);
+                    if (sentences && sentences.length > 1) {
+                        // Group sentences into chunks of ~200 chars
+                        const chunks = [];
+                        let current = '';
+                        for (const s of sentences) {
+                            if (current.length + s.length > 250 && current.length > 0) {
+                                chunks.push(current.trim());
+                                current = s;
+                            } else {
+                                current += s;
+                            }
+                        }
+                        if (current) chunks.push(current.trim());
+                        return chunks;
+                    }
+                }
+                return paragraphs.length > 0 ? paragraphs : [text];
+            };
+
+            const bubbles = aiResponse?.content ? splitIntoBubbles(aiResponse.content) : [aiResponse?.content];
+            
             if (decision.action === 'send') {
-                const configuredDelay = (agent.response_delay || 0) * 1000; // ms
-                const responseLength = aiResponse?.content?.length || 0;
-                // Typing speed: ~25ms per character (more natural/fast), capped at 10s, minimum 300ms
-                const typingDelay = Math.min(Math.max(responseLength * 25, 300), 10000);
-                const totalDelay = Math.min(configuredDelay + typingDelay, 12000); // cap at 12s
-                console.log(`[WhatsApp] Adaptive delay: ${totalDelay}ms (config ${configuredDelay}ms + typing ${typingDelay}ms for ${responseLength} chars)`);
-                await sock.sendPresenceUpdate('composing', replyToJidForSend);
-                await new Promise(resolve => setTimeout(resolve, totalDelay));
-                await sock.sendPresenceUpdate('paused', replyToJidForSend);
+                const configuredDelay = (agent.response_delay || 0) * 1000;
+                // Wait for the initial configured delay
+                if (configuredDelay > 0) {
+                    await new Promise(resolve => setTimeout(resolve, configuredDelay));
+                }
+
+                for (let i = 0; i < bubbles.length; i++) {
+                    const bubble = bubbles[i];
+                    const bubbleLength = bubble?.length || 0;
+                    
+                    // Human typing speed: ~25ms per character
+                    const typingDelay = Math.min(Math.max(bubbleLength * 25, 400), 5000);
+                    
+                    if (i > 0) {
+                        // Pause between bubbles
+                        await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
+                    }
+
+                    await sock.sendPresenceUpdate('composing', replyToJidForSend);
+                    await new Promise(resolve => setTimeout(resolve, typingDelay));
+                    await sock.sendPresenceUpdate('paused', replyToJidForSend);
+
+                    // Skip the actual sending loop here, we will replace the send call below
+                }
             }
 
             if (decision.action === 'send') {
@@ -2124,190 +2173,84 @@ class WhatsAppManager {
                     hypothesisId: 'H1'
                 });
                 // #endregion
-                let sendResult;
-                let sentAsVoice = false;
-                const sentProductImageUrls = [];
-                const toMediaPath = (url) => {
-                    const m = /\/api\/products\/image\/[^/?\s)]+/.exec(url);
-                    return m ? (m[0].startsWith('/') ? m[0] : '/' + m[0]) : url;
-                };
-                const userVoiceRow = await db.get('SELECT plan, voice_responses_enabled FROM users WHERE id = ?', userId);
-                const planHasVoice = await hasFeature(userVoiceRow?.plan || 'free', 'voice_responses');
-                const userFlag = !!(userVoiceRow?.voice_responses_enabled === 1 || userVoiceRow?.voice_responses_enabled === true);
-                const userVoice = planHasVoice || userFlag;
-                if (messageType === 'audio' && userVoice && ttsService.isAvailable()) {
-                    const audioBuffer = await ttsService.generate(aiResponse.content, { lang: messageAnalysis?.language || 'fr' });
-                    if (audioBuffer && audioBuffer.length > 0) {
-                        try {
-                            sendResult = await sock.sendMessage(replyToJidForSend, { audio: audioBuffer, mimetype: 'audio/mpeg' });
-                            sentAsVoice = true;
-                        } catch (e) {
-                            console.warn('[WhatsApp] TTS audio send failed, falling back to text:', e?.message);
-                        }
-                    }
-                }
-                if (!sendResult) {
-                    try {
-                        let textToSend = aiResponse.content;
-                        let contentToSave = aiResponse.content;
+                // Multi-bubble sending loop
+                let totalTokensUsed = aiResponse.tokens || 0;
 
-                        const apiBaseUrl = (process.env.API_BASE_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 3001}`).replace(/\/$/, '');
-                        const sendOneProductImage = async (url) => {
-                            const resolvedUrl = (typeof url === 'string' && url.startsWith('/')) ? (apiBaseUrl + url) : url;
-                            let buf = loadProductImageBuffer(resolvedUrl);
-                            if (buf) {
-                                try {
-                                    const sentRes = await sock.sendMessage(replyToJidForSend, { image: buf });
-                                    console.log('[WhatsApp] Sent product image (disk):', resolvedUrl);
-                                    return { url: resolvedUrl, whatsappId: sentRes?.key?.id };
-                                } catch (sendErr) {
-                                    console.warn('[WhatsApp] Failed to send product image (disk):', resolvedUrl, sendErr?.message);
-                                    return null;
-                                }
-                            }
+                for (let i = 0; i < bubbles.length; i++) {
+                    const bubble = bubbles[i];
+                    let currentSendResult;
+                    let currentSentAsVoice = false;
+                    let currentSentProductImageUrls = [];
+
+                    // 1) Logic for Voice (only for this bubble)
+                    if (messageType === 'audio' && userVoice && ttsService.isAvailable()) {
+                        const audioBuffer = await ttsService.generate(bubble, { lang: messageAnalysis?.language || 'fr' });
+                        if (audioBuffer && audioBuffer.length > 0) {
                             try {
-                                const res = await fetch(resolvedUrl, { signal: AbortSignal.timeout(10000) });
-                                if (res.ok) {
-                                    const arr = await res.arrayBuffer();
-                                    const buf2 = Buffer.from(arr);
-                                    if (buf2.length > 0 && buf2.length < 5 * 1024 * 1024) {
-                                        try {
-                                            const sentRes = await sock.sendMessage(replyToJidForSend, { image: buf2 });
-                                            console.log('[WhatsApp] Sent product image (fetch):', resolvedUrl);
-                                            return { url: resolvedUrl, whatsappId: sentRes?.key?.id };
-                                        } catch (sendErr) {
-                                            console.warn('[WhatsApp] Failed to send product image (fetch):', resolvedUrl, sendErr?.message);
-                                            return null;
-                                        }
-                                    }
-                                }
-                            } catch (imgErr) {
-                                console.warn('[WhatsApp] Failed to fetch/send product image:', resolvedUrl, imgErr?.message);
+                                currentSendResult = await sock.sendMessage(replyToJidForSend, { audio: audioBuffer, mimetype: 'audio/mpeg' });
+                                currentSentAsVoice = true;
+                            } catch (e) {
+                                console.warn('[WhatsApp] TTS audio send failed:', e?.message);
                             }
-                            return null;
-                        };
+                        }
+                    }
 
-                        /** Path utilisable en front (ex: /api/products/image/xxx.png) */
+                    // 2) Logic for text/images
+                    if (!currentSendResult) {
+                        try {
+                            let textToSend = bubble;
+                            let contentToSave = bubble;
 
-                        // 1) Format explicite [ENVOYER_IMAGES:url1,url2,...] (virgules ou retours à la ligne ; accepte espaces/newlines au début)
-                        const imageMatch = /^\s*\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(aiResponse.content);
-                        if (imageMatch && imageMatch[1]) {
-                            const urls = imageMatch[1].split(/[,\n]+/).map((u) => u.trim()).filter(Boolean);
-                            for (let i = 0; i < urls.length; i++) {
-                                if (i > 0) await new Promise((r) => setTimeout(r, 400));
-                                const sent = await sendOneProductImage(urls[i]);
-                                if (sent) {
-                                    sentProductImageUrls.push(sent);
-                                    // Save image message immediately to prevent human takeover race condition
-                                    const mediaPath = toMediaPath(sent.url);
-                                    await db.run(`
-                                        INSERT INTO messages (id, conversation_id, role, content, message_type, media_url, sender_type, whatsapp_id, created_at)
-                                        VALUES (?, ?, 'assistant', '[Image]', 'image', ?, 'ai', ?, ?)
-                                    `, uuidv4(), conversation.id, mediaPath, sent.whatsappId, new Date().toISOString());
+                            // Handle images only in the first bubble or if it contains image tags
+                            const imageMatch = /^\s*\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(bubble);
+                            if (imageMatch) {
+                                const urls = imageMatch[1].split(/[,\n]+/).map((u) => u.trim()).filter(Boolean);
+                                for (let j = 0; j < urls.length; j++) {
+                                    if (j > 0) await new Promise((r) => setTimeout(r, 400));
+                                    const sent = await sendOneProductImage(urls[j]);
+                                    if (sent) currentSentProductImageUrls.push(sent);
                                 }
+                                textToSend = bubble.slice(imageMatch[0].length).trim();
+                                contentToSave = currentSentProductImageUrls.length > 0 ? (textToSend || '📷 Photos envoyées.') : bubble;
                             }
-                            textToSend = aiResponse.content.slice(imageMatch[0].length).trim();
-                            contentToSave = sentProductImageUrls.length > 0 ? (textToSend || '📷 Photos du produit envoyées.') : aiResponse.content;
-                        } else {
-                            // 2) Fallback: l'IA a collé les URLs dans le texte → extraire /api/products/image/ (absolues ou relatives) et envoyer en photos
-                            const productImageUrlRegexFull = /https?:\/\/[^\s)\]']+\/api\/products\/image\/[^\s)\]']+/g;
-                            const productImageUrlRegexRel = /\/api\/products\/image\/[^\s)\]']+/g;
-                            const fullUrls = aiResponse.content.match(productImageUrlRegexFull) || [];
-                            const relUrls = (aiResponse.content.match(productImageUrlRegexRel) || []).filter((r) => !fullUrls.some((f) => f.endsWith(r)));
-                            let productImageUrls = [...new Set(fullUrls), ...relUrls];
-                            // Normaliser: préférer le chemin relatif pour la lecture disque (évite fetch localhost)
-                            productImageUrls = productImageUrls.map((u) => {
-                                const pathMatch = /\/api\/products\/image\/[^/?\s)\]']+/.exec(u);
-                                const pathOnly = pathMatch ? pathMatch[0].replace(/[.,;:!?)]+$/, '') : u.replace(/[.,;:!?)]+$/, '');
-                                return pathOnly.startsWith('/') ? pathOnly : '/' + pathOnly;
-                            });
-                            productImageUrls = [...new Set(productImageUrls)];
-                            if (productImageUrls.length > 0) {
-                                console.log('[WhatsApp] Fallback: sending product image(s) from text:', productImageUrls.length, productImageUrls[0]);
-                                for (let i = 0; i < productImageUrls.length; i++) {
-                                    if (i > 0) await new Promise((r) => setTimeout(r, 400));
-                                    const sent = await sendOneProductImage(productImageUrls[i]);
-                                    if (sent) {
-                                        sentProductImageUrls.push(sent);
-                                        // Save image message immediately to prevent human takeover race condition
-                                        const mediaPath = toMediaPath(sent.url);
-                                        await db.run(`
-                                            INSERT INTO messages (id, conversation_id, role, content, message_type, media_url, sender_type, whatsapp_id, created_at)
-                                            VALUES (?, ?, 'assistant', '[Image]', 'image', ?, 'ai', ?, ?)
-                                        `, uuidv4(), conversation.id, mediaPath, sent.whatsappId, new Date().toISOString());
-                                    }
-                                }
-                                textToSend = aiResponse.content
-                                    .replace(productImageUrlRegexFull, '')
-                                    .replace(productImageUrlRegexRel, '')
-                                    .replace(/,(\s*,)+/g, ',')
-                                    .replace(/^\s*,\s*|\s*,\s*$/g, '')
-                                    .replace(/\s*:\s{2,}/g, '. ')
-                                    .replace(/\s{2,}/g, ' ')
-                                    .replace(/\n\s*\n\s*\n/g, '\n\n')
-                                    .trim();
-                                contentToSave = textToSend || (sentProductImageUrls.length > 0 ? '📷 Photos du produit envoyées.' : aiResponse.content);
+
+                            if (textToSend) {
+                                currentSendResult = await sock.sendMessage(replyToJidForSend, { text: textToSend });
+                            } else if (currentSentProductImageUrls.length > 0) {
+                                currentSendResult = { key: { id: 'imgs-' + uuidv4().slice(0,8) } };
                             }
+                        } catch (sendErr) {
+                            console.error('[WhatsApp] Send bubble error:', sendErr.message);
                         }
-                        if (textToSend) {
-                            sendResult = await sock.sendMessage(replyToJidForSend, { text: textToSend });
-                        } else if (sentProductImageUrls.length > 0) {
-                            sendResult = { key: { id: 'images-sent' } };
-                        }
-                        if (!sendResult && aiResponse.content) {
-                            sendResult = await sock.sendMessage(replyToJidForSend, { text: aiResponse.content });
-                        }
-                        // Utiliser le contenu réellement envoyé pour l'enregistrement en base (cohérence SaaS / téléphone)
-                        if (contentToSave !== aiResponse.content) {
-                            aiResponse.content = contentToSave;
-                        }
-                    } catch (sendErr) {
-                        // #region agent log
-                        debugIngest({
-                            location: 'whatsapp.js:sendError',
-                            message: 'sendMessage threw',
-                            data: { err: sendErr.message },
-                            timestamp: Date.now(),
-                            sessionId: 'debug-session',
-                            hypothesisId: 'H2'
-                        });
-                        // #endregion
-                        throw sendErr;
+                    }
+
+                    // 3) Record each bubble
+                    const whatsappMsgId = currentSendResult?.key?.id;
+                    const outMsgId = uuidv4();
+                    await db.run(`
+                        INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, created_at)
+                        VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?)
+                    `, outMsgId, conversation.id, bubble, i === 0 ? totalTokensUsed : 0, whatsappMsgId, currentSentAsVoice ? 'audio' : null, new Date().toISOString());
+                    
+                    void notifyConversationUpdate(conversation.id, {
+                        id: outMsgId, role: 'assistant', content: bubble,
+                        whatsapp_id: whatsappMsgId, created_at: new Date().toISOString()
+                    });
+
+                    // Pause between bubbles if not the last one
+                    if (i < bubbles.length - 1) {
+                        const nextBubble = bubbles[i+1];
+                        const delay = Math.min(Math.max((nextBubble?.length || 0) * 25, 800), 4000);
+                        await sock.sendPresenceUpdate('composing', replyToJidForSend);
+                        await new Promise(r => setTimeout(r, delay));
+                        await sock.sendPresenceUpdate('paused', replyToJidForSend);
                     }
                 }
-                // #region agent log
-                debugIngest({
-                    location: 'whatsapp.js:afterSend',
-                    message: 'after sendMessage',
-                    data: {
-                        keyId: sendResult?.key?.id,
-                        remoteJid: sendResult?.key?.remoteJid,
-                        hasResult: !!sendResult
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    hypothesisId: 'H4'
-                });
-                // #endregion
-                const whatsappMsgId = sendResult?.key?.id;
-                const outMsgId = uuidv4();
-                await db.run(`
-                    INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, created_at)
-                    VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?)
-                `, outMsgId, conversation.id, aiResponse.content, aiResponse.tokens || 0, whatsappMsgId, sentAsVoice ? 'audio' : null, new Date().toISOString());
-                void notifyConversationUpdate(conversation.id, {
-                    id: outMsgId,
-                    role: 'assistant',
-                    content: aiResponse.content,
-                    whatsapp_id: whatsappMsgId,
-                    message_type: sentAsVoice ? 'audio' : (sentProductImageUrls.length > 0 ? 'image' : 'text'),
-                    media_url: sentProductImageUrls.length > 0 ? toMediaPath(sentProductImageUrls[0].url) : null,
-                    created_at: new Date().toISOString()
-                });
+
                 if (aiResponse.credits_deducted !== undefined) {
-                    console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}. Remaining: ${aiResponse.credits_remaining}`);
+                    console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}.`);
                 }
-                console.log(`[WhatsApp] Replied to ${contactName}`);
+                console.log(`[WhatsApp] Replied with ${bubbles.length} bubbles to ${contactName}`);
             } else {
                 // escalate or fallback: flag and optionally send fallback (do not send on pre_processing_ignore)
                 humanInterventionService.flagConversation(
@@ -4139,6 +4082,35 @@ class WhatsAppManager {
 
         // To delete a status, we send a protocol message with type 'REVOKE'
         return await sock.sendMessage('status@broadcast', { delete: key });
+    }
+    /**
+     * Envoie un message externe (outbound) à partir d'un agent et d'un numéro de téléphone
+     */
+    async sendExternalMessage(agentId, phone, text) {
+        try {
+            const agent = await db.get('SELECT tool_id FROM agents WHERE id = ?', agentId);
+            if (!agent || !agent.tool_id) {
+                throw new Error(`Agent ${agentId} non trouvé ou non lié à un outil WhatsApp`);
+            }
+
+            const sock = this.connections.get(agent.tool_id);
+            if (!sock) {
+                throw new Error(`Socket WhatsApp non trouvé pour l'outil ${agent.tool_id}`);
+            }
+
+            // Normaliser le numéro JID
+            const jid = phone.includes('@s.whatsapp.net') ? phone : `${phone.replace(/\+/g, '').replace(/\s/g, '')}@s.whatsapp.net`;
+            
+            await sock.sendPresenceUpdate('composing', jid);
+            await new Promise(r => setTimeout(r, 2000));
+            await sock.sendMessage(jid, { text });
+            await sock.sendPresenceUpdate('paused', jid);
+
+            return true;
+        } catch (error) {
+            console.error('[WhatsApp] sendExternalMessage error:', error.message);
+            throw error;
+        }
     }
 }
 

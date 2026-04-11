@@ -567,6 +567,7 @@
     "statusRejected": "Rejetée",
     "statusCompleted": "Terminée",
     "statusCancelled": "Annulée",
+    "statusPostponed": "Reportée",
     "paymentOnDelivery": "Paiement à la livraison",
     "paymentOnline": "Paiement en ligne"
   },

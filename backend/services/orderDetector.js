@@ -72,7 +72,16 @@ const REPLACE_SIGNALS = [
 const CANCELLATION_SIGNALS = [
     'annule ma commande', 'annuler ma commande', 'annule la commande',
     'je ne veux plus rien', 'plus besoin', 'laisse tomber la commande',
-    'annule tout', 'stop la commande', 'cancel my order', 'cancel the order'
+    'annule tout', 'stop la commande', 'cancel my order', 'cancel the order',
+    'je me désiste', 'désistement', 'finalement non', 'oublie la commande'
+];
+
+// P1.5 — Postponement signals (wait until later)
+const POSTPONEMENT_SIGNALS = [
+    'on va attendre', 'on attendra', 'plus tard', 'demain', 'après demain',
+    'après-demain', 'prochaine fois', 'une autre fois', 'reviendrai vers vous',
+    'pas maintenant', 'pas aujourd\'hui', 'prochainement', 'on verra demain',
+    'wait until tomorrow', 'maybe tomorrow'
 ];
 
 // P2.1 — Product option extraction patterns
@@ -160,6 +169,15 @@ class OrderDetector {
      */
     isCancellationMessage(lowerMessage) {
         return CANCELLATION_SIGNALS.some(signal => lowerMessage.includes(signal.toLowerCase()));
+    }
+
+    /**
+     * P1.5 — Check if message is a postponement of an existing order
+     * @param {string} lowerMessage
+     * @returns {boolean}
+     */
+    isPostponementMessage(lowerMessage) {
+        return POSTPONEMENT_SIGNALS.some(signal => lowerMessage.includes(signal.toLowerCase()));
     }
 
     /**
@@ -322,19 +340,27 @@ class OrderDetector {
 
         // P1.4 — Check for explicit order cancellation BEFORE intent detection
         const isCancellation = this.isCancellationMessage(lowerMessage);
-        if (isCancellation) {
-            console.log(`[OrderDetector] Cancellation detected: "${message.substring(0, 60)}"`);
+        const isPostponement = this.isPostponementMessage(lowerMessage);
+
+        if (isCancellation || isPostponement) {
+            console.log(`[OrderDetector] ${isCancellation ? 'Cancellation' : 'Postponement'} detected: "${message.substring(0, 60)}"`);
             const pendingOrder = await db.get(
                 `SELECT id FROM orders WHERE conversation_id = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1`,
                 conversation.id
             );
             if (pendingOrder) {
+                const newStatus = isCancellation ? 'cancelled' : 'postponed';
                 await db.run(
-                    `UPDATE orders SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    `UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+                    newStatus,
                     pendingOrder.id
                 );
-                console.log(`[OrderDetector] Cancelled pending order ${pendingOrder.id}`);
-                return { orderCancelled: true, orderId: pendingOrder.id };
+                console.log(`[OrderDetector] Transitioned pending order ${pendingOrder.id} to ${newStatus}`);
+                return { 
+                    orderCancelled: isCancellation, 
+                    orderPostponed: isPostponement, 
+                    orderId: pendingOrder.id 
+                };
             }
             return null;
         }

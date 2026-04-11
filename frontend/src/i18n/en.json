@@ -563,6 +563,7 @@
     "statusRejected": "Rejected",
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled",
+    "statusPostponed": "Postponed",
     "paymentOnDelivery": "Payment on delivery",
     "paymentOnline": "Online payment"
   },

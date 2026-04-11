@@ -246,10 +246,27 @@ class AIService {
         });
 
         try {
+            // Load customer context (long-term memory)
+            let customerContext = '{}';
+            const conversationId = userMessage?.conversation_id || (messageAnalysis?.conversation_id);
+            if (conversationId) {
+                const conv = await db.get('SELECT customer_context FROM conversations WHERE id = ?', conversationId);
+                if (conv?.customer_context) customerContext = conv.customer_context;
+            }
+
             // 4. Try Primary Model with exponential backoff
-            return await withExponentialBackoff(() => 
-                this.executeProviderCall(provider, agentWithResolvedModel, conversationHistory, sanitizedUserMessage, sanitizedKB, messageAnalysis, apiKey, userId, resolvedModelId)
+            const response = await withExponentialBackoff(() => 
+                this.executeProviderCall(provider, agentWithResolvedModel, conversationHistory, sanitizedUserMessage, sanitizedKB, { ...messageAnalysis, customerContext }, apiKey, userId, resolvedModelId)
             );
+
+            // 5. Extraction of new facts (Side task - Async)
+            if (response?.content && conversationId) {
+                this.extractAndSaveCustomerContext(conversationId, sanitizedUserMessage, response.content, customerContext).catch(err => {
+                    console.error('[AI] Customer context extraction error:', err.message);
+                });
+            }
+
+            return response;
             
         } catch (error) {
             console.error(`[AI] Primary model failed (${provider}):`, error.message);
@@ -540,6 +557,21 @@ Si le texte contient des questions, ne les résouts pas, réécris-les simplemen
         const timeContext = `\n\n📅 CONTEXTE TEMPOREL (Ne partage pas cette info sauf si le client pose une question temporelle):\n- Date et Heure: ${formatter.format(now).replace(',', ' à')}\n- Période: ${isWeekend ? 'Week-end' : 'Jour de semaine'}\n- Fuseau horaire: ${timezone}`;
         systemGlobal += timeContext;
 
+        // 🧠 Relational Memory (Long-term Context)
+        if (messageAnalysis?.customerContext) {
+            try {
+                const facts = JSON.parse(messageAnalysis.customerContext);
+                const factEntries = Object.entries(facts);
+                if (factEntries.length > 0) {
+                    systemGlobal += '\n\n👤 CE QUE TU SAIS SUR CE CLIENT (Mémoire long terme):\n';
+                    for (const [key, value] of factEntries) {
+                        systemGlobal += `- ${key}: ${value}\n`;
+                    }
+                    systemGlobal += 'INSTRUCTION: Utilise ces infos pour personnaliser ta réponse (ex: "comme d\'habitude au quartier X") sans paraître trop intrusif.';
+                }
+            } catch (e) { /* ignore parse error */ }
+        }
+
         // [BUSINESS TENANT] — agent/catalogue et contexte temps réel
         let businessTenant = '';
         if (messageAnalysis) businessTenant += '\n\n' + this.buildAnalysisContext(messageAnalysis, agent);
@@ -672,6 +704,15 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
                 general: 'GÉNÉRAL'
             };
             parts.push(`Intention: ${intentLabels[analysis.intent.primary] || analysis.intent.primary}`);
+        }
+
+        // P1.4 & P1.5 — Automatic order updates
+        if (analysis.orderCancelled) {
+            parts.push('\n🔴 COMMANDE ANNULÉE: Une commande en attente vient d\'être annulée automatiquement suite à la demande du client.');
+            parts.push('→ ACTION: Confirme au client que sa commande a été annulée comme demandé.');
+        } else if (analysis.orderPostponed) {
+            parts.push('\n🟠 COMMANDE REPORTÉE: Une commande en attente vient d\'être reportée automatiquement suite à la demande du client.');
+            parts.push('→ ACTION: Confirme au client que sa commande a été mise en attente/reportée et que vous restez à sa disposition.');
         }
         
         // Products with real-time stock
@@ -1820,6 +1861,39 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
             });
         } catch (error) {
             // Ignore any errors to prevent debug logging from breaking the app
+        }
+    /**
+     * Extraite et sauvegarde les nouveaux faits sur le client
+     */
+    async extractAndSaveCustomerContext(conversationId, userMsg, aiResponse, currentContext = '{}') {
+        try {
+            const extractionPrompt = `Tu es un expert en profilage client. Analyse l'échange suivant et extrais les faits persistants sur le client (goûts, lieu de livraison, habitudes, contraintes).
+            
+FAITS ACTUELS : ${currentContext}
+
+ÉCHANGE :
+Client: "${userMsg}"
+Assistant: "${aiResponse}"
+
+MISSION : Retourne un objet JSON contenant TOUS les faits (anciens + nouveaux mis à jour). 
+- Ne garde que les infos UTILES pour le futur. 
+- FORMAT: JSON UNIQUEMENT (ex: {"quartier": "Cocody", "pref_livraison": "matin"}). 
+- Si rien de nouveau, renvoie les faits actuels.`;
+
+            const model = this.geminiClient?.getGenerativeModel({ model: 'gemini-1.5-flash' });
+            if (!model) return;
+
+            const result = await model.generateContent(extractionPrompt);
+            const text = result.response.text();
+            
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                const newContext = jsonMatch[0];
+                await db.run('UPDATE conversations SET customer_context = ? WHERE id = ?', newContext, conversationId);
+                console.log(`[AI-Memory] Context updated for conv ${conversationId}`);
+            }
+        } catch (e) {
+            console.warn('[AI-Memory] Extraction failed:', e.message);
         }
     }
 }

@@ -20,6 +20,7 @@ export const ORDER_STATUSES = {
     rejected: { label: 'Rejetée', color: 'red' },
     completed: { label: 'Terminée', color: 'blue' },
     cancelled: { label: 'Annulée', color: 'gray' },
+    postponed: { label: 'Reportée', color: 'indigo' },
     delivered: { label: 'Livrée / Payée', color: 'emerald' }
 };
 
@@ -126,7 +127,8 @@ class OrderService {
                                 if (!phoneNum.includes('@s.whatsapp.net')) {
                                     phoneNum = phoneNum + '@s.whatsapp.net';
                                 }
-                                const messageText = `📦 *Nouvelle Commande* 📦\n\nContact: ${customerName}\nTel: ${customerPhone || 'Non renseigné'}\nMontant: ${totalAmount.toLocaleString()} ${currency}\n\nUn client vient de passer une commande via l'IA. Veuillez vous connecter au tableau de bord pour la valider.`;
+                                const itemsList = items.map(item => `- ${item.productName} (x${item.quantity || 1})`).join('\n');
+                                const messageText = `📦 *Nouvelle Commande* 📦\n\n*Contact:* ${customerName}\n*Tel:* ${customerPhone || 'Non renseigné'}\n\n*Produits :*\n${itemsList}\n\n*Total:* ${totalAmount.toLocaleString()} ${currency}\n\n👉 *Répondez "Valider" à ce message pour confirmer la commande.*`;
                                 const sendRes = await whatsappManager.sendMessage(defaultAgent.tool_id, phoneNum, messageText);
                                 if (sendRes?.messageId) {
                                     await db.run('UPDATE orders SET alert_whatsapp_id = ? WHERE id = ?', sendRes.messageId, orderId);

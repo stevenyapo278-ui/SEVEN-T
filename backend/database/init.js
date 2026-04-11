@@ -354,6 +354,7 @@ export async function initDatabase() {
             is_business INTEGER DEFAULT 0,
             verified_biz_name TEXT,
             saved_contact_name TEXT,
+            customer_context TEXT DEFAULT '{}',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
         );
@@ -589,6 +590,7 @@ export async function initDatabase() {
             rejection_reason TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            proactive_relance_count INTEGER DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
         ALTER TABLE orders ADD COLUMN IF NOT EXISTS alert_whatsapp_id TEXT;
@@ -1478,10 +1480,18 @@ export async function initDatabase() {
         }
     }
     try {
-        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS unread_messages_count INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE conversations ADD COLUMN IF NOT EXISTS customer_context TEXT DEFAULT \'{}\'');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
-            console.warn('conversations.unread_messages_count column migration:', e?.message);
+            console.warn('conversations.customer_context column migration:', e?.message);
+        }
+    }
+
+    try {
+        await db.run('ALTER TABLE orders ADD COLUMN IF NOT EXISTS proactive_relance_count INTEGER DEFAULT 0');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('orders.proactive_relance_count column migration:', e?.message);
         }
     }
 

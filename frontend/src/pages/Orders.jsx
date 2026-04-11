@@ -89,7 +89,8 @@ const ORDER_STATUSES = {
   delivered: { nameKey: 'orders.statusDelivered', color: 'emerald', icon: CheckCircle },
   rejected: { nameKey: 'orders.statusRejected', color: 'red', icon: XCircle },
   completed: { nameKey: 'orders.statusCompleted', color: 'blue', icon: Check },
-  cancelled: { nameKey: 'orders.statusCancelled', color: 'gray', icon: X }
+  cancelled: { nameKey: 'orders.statusCancelled', color: 'gray', icon: X },
+  postponed: { nameKey: 'orders.statusPostponed', color: 'indigo', icon: History }
 }
 
 const PAYMENT_METHODS = {
@@ -125,7 +126,7 @@ export default function Orders() {
   const [stats, setStats] = useState({ pending: 0, validated: 0, delivered: 0, rejected: 0, totalRevenue: 0 })
   const [statusFilter, setStatusFilter] = useState(() => {
     const s = statusFromUrl || 'all'
-    return ['all', 'pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled'].includes(s) ? s : 'all'
+    return ['all', 'pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled', 'postponed'].includes(s) ? s : 'all'
   })
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
   const [selectedOrderView, setSelectedOrderView] = useState(null)
@@ -157,7 +158,7 @@ export default function Orders() {
   useLockBodyScroll(showNewOrderModal || paymentLinkModal.open)
 
   useEffect(() => {
-    if (statusFromUrl && ['pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled'].includes(statusFromUrl)) {
+    if (statusFromUrl && ['pending', 'validated', 'delivered', 'rejected', 'completed', 'cancelled', 'postponed'].includes(statusFromUrl)) {
       setStatusFilter(statusFromUrl)
     }
   }, [statusFromUrl])
