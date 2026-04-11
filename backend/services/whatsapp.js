@@ -1410,7 +1410,6 @@ class WhatsAppManager {
                 console.log(`[WhatsApp] Audio transcription failed for conversation ${context.conversation.id}, flagged for human`);
                 return;
             }
-            const { payload, context } = result;
             if (payload.messageType !== 'text') {
                 await conversationMessageQueue.flush(toolId, context.conversation.id);
                 await db.run(`
