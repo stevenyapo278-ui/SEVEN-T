@@ -2091,8 +2091,32 @@ function AIModelsContent({
 }) {
   const [showKeys, setShowKeys] = useState({})
   const [trialDaysInput, setTrialDaysInput] = useState(platformSettings.default_trial_days || '7')
+  const [cbHealth, setCbHealth] = useState(null)
+  const [resettingCb, setResettingCb] = useState({})
   const mediaModelValue = platformSettings.default_media_model || 'gemini-1.5-flash'
   const embeddingModelValue = platformSettings.embedding_model || 'gemini-embedding-001'
+
+  const loadCbHealth = async () => {
+    try {
+      const res = await api.get('/admin/ai/health')
+      setCbHealth(res.data)
+    } catch (e) { /* silent */ }
+  }
+
+  const resetCb = async (provider) => {
+    setResettingCb(p => ({ ...p, [provider]: true }))
+    try {
+      await api.post(`/admin/ai/health/${provider}/reset`)
+      toast.success(`Circuit breaker ${provider} réinitialisé ✅`)
+      await loadCbHealth()
+    } catch (e) {
+      toast.error('Erreur lors du reset')
+    } finally {
+      setResettingCb(p => ({ ...p, [provider]: false }))
+    }
+  }
+
+  useEffect(() => { loadCbHealth() }, [])
 
   // Sync input if platformSettings changes externally
   useEffect(() => {
@@ -2267,6 +2291,53 @@ function AIModelsContent({
           ⚡ Valeur actuelle : <span className="text-amber-400 font-semibold">{platformSettings.default_trial_days || 7} jours</span>
         </p>
       </div>
+
+      {/* Circuit Breaker Health Panel */}
+      {cbHealth && (
+        <div className="card p-6 border-amber-500/20 bg-amber-500/5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
+              <span>⚡</span> État des Circuit Breakers
+            </h3>
+            <button onClick={loadCbHealth} className="p-1.5 text-gray-500 hover:text-gray-100 transition-colors">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {['gemini', 'openai', 'openrouter'].map(provider => {
+              const state = cbHealth[provider]
+              const isOpen = state?.state === 'OPEN'
+              const isHalf = state?.state === 'HALF_OPEN'
+              return (
+                <div key={provider} className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                  isOpen ? 'border-red-500/40 bg-red-500/10' : isHalf ? 'border-amber-500/40 bg-amber-500/10' : 'border-emerald-500/30 bg-emerald-500/5'
+                }`}>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-100 capitalize">{provider}</p>
+                    <p className={`text-xs font-mono ${isOpen ? 'text-red-400' : isHalf ? 'text-amber-400' : 'text-emerald-400'}`}>
+                      {state?.state || 'CLOSED'} {state?.failures > 0 && `(${state.failures} erreurs)`}
+                    </p>
+                  </div>
+                  {(isOpen || isHalf) && (
+                    <button
+                      onClick={() => resetCb(provider)}
+                      disabled={resettingCb[provider]}
+                      className="text-xs px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {resettingCb[provider] ? <Loader2 className="w-3 h-3 animate-spin" /> : '↺'} Reset
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          {Object.values(cbHealth).some(v => v?.state === 'OPEN') && (
+            <p className="text-xs text-amber-400 mt-3 flex items-center gap-1">
+              ⚠️ Un circuit OPEN bloque toutes les requêtes IA. Corrigez d'abord la clé/configuration, puis cliquez Reset.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* API Keys Section */}
       <div className="card p-6">
@@ -2533,7 +2604,6 @@ function AIModelModal({ model, onClose, onSave }) {
                 value={formData.provider}
                 onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
                 className="input-dark w-full min-h-[44px]"
-                disabled={!!model}
               >
                 <option value="gemini">Google Gemini</option>
                 <option value="openai">OpenAI</option>
@@ -2564,7 +2634,6 @@ function AIModelModal({ model, onClose, onSave }) {
               className="input-dark w-full font-mono text-sm min-h-[44px]"
               placeholder="models/gemini-2.0-flash"
               required
-              disabled={!!model}
             />
           </div>
 

@@ -183,12 +183,15 @@ router.put('/models/:id', async (req, res) => {
 
         const { 
             name, description, credits_per_use, is_free, is_active,
-            max_tokens, supports_vision, supports_tools, category, sort_order, api_key
+            max_tokens, supports_vision, supports_tools, category, sort_order, api_key,
+            provider, model_id
         } = req.body;
 
         await db.run(`
             UPDATE ai_models SET
                 name = COALESCE(?, name),
+                provider = COALESCE(?, provider),
+                model_id = COALESCE(?, model_id),
                 description = COALESCE(?, description),
                 credits_per_use = COALESCE(?, credits_per_use),
                 is_free = COALESCE(?, is_free),
@@ -202,7 +205,7 @@ router.put('/models/:id', async (req, res) => {
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         `,
-            name, description, credits_per_use, 
+            name, provider || null, model_id || null, description, credits_per_use, 
             is_free !== undefined ? (is_free ? 1 : 0) : null,
             is_active !== undefined ? (is_active ? 1 : 0) : null,
             max_tokens, 
