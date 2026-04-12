@@ -218,13 +218,32 @@ class AIService {
             }
         }
 
-        // 2. Identify Provider based on resolved model
-        const provider = this.getProvider(resolvedModelId);
+        // 2. Identify Provider based on resolved model — prefer what the DB says
+        let provider = this.getProvider(resolvedModelId);
         let finalModelString = resolvedModelId;
+
+        // If the model record has an explicit provider column in DB, always use it
+        try {
+            const modelRecord2 = await db.get(
+                'SELECT provider, model_id FROM ai_models WHERE id = ? OR model_id = ?',
+                agentModelId, agentModelId
+            );
+            if (modelRecord2?.provider) {
+                provider = modelRecord2.provider;
+            }
+        } catch (e) { /* non-blocking */ }
 
         // OpenRouter needs prefix stripping
         if (provider === 'openrouter' && finalModelString.startsWith('openrouter/')) {
             finalModelString = finalModelString.slice('openrouter/'.length);
+        }
+
+        // For OpenRouter, ensure we use the openrouterClient - refresh if API key exists in DB
+        if (provider === 'openrouter' && !this.openrouterClient) {
+            const orKey = await this.getApiKey('openrouter');
+            if (orKey) {
+                this.openrouterClient = new OpenAI({ apiKey: orKey.trim(), baseURL: 'https://openrouter.ai/api/v1' });
+            }
         }
 
         const agentWithResolvedModel = { ...agent, _resolvedModel: finalModelString };
@@ -283,7 +302,8 @@ class AIService {
                 for (const fallbackModel of fallbackModels) {
                     console.log(`[AI] Attempting dynamic fallback to: ${fallbackModel.name} (${fallbackModel.provider})`);
                     try {
-                        const fbProvider = this.getProvider(fallbackModel.model_id);
+                        // Use the DB-stored provider field — never guess from model name
+                        const fbProvider = fallbackModel.provider || this.getProvider(fallbackModel.model_id);
                         let fbModelString = fallbackModel.model_id;
                         if (fbProvider === 'openrouter' && fbModelString.startsWith('openrouter/')) {
                             fbModelString = fbModelString.slice('openrouter/'.length);
