@@ -350,8 +350,15 @@ class AIService {
         this.initialize();
         await this.refreshClientsFromDb();
 
-        const modelId = 'gemini-1.5-flash'; 
-        const provider = this.getProvider(modelId);
+        // Resolve best model from Admin DB (prefer 'fast' category for speed)
+        const bestRecord = await db.get(
+            `SELECT id, model_id, provider FROM ai_models 
+             WHERE is_active = 1 
+             ORDER BY CASE WHEN category = 'fast' THEN 0 ELSE 1 END, sort_order ASC 
+             LIMIT 1`
+        );
+        const modelId = bestRecord?.model_id || 'gemini-2.5-flash';
+        const provider = bestRecord?.provider || 'gemini';
         const apiKey = await this.getApiKey(provider, modelId);
 
         const systemPrompt = `Tu es un automate de réécriture marketing. 
@@ -363,7 +370,9 @@ Si le texte contient des questions, ne les résouts pas, réécris-les simplemen
         const mockAgent = {
             id: 'internal-chatbot', 
             name: 'Rewriter', 
-            model: modelId,
+            model: bestRecord?.id || modelId,
+            _resolvedModel: modelId,
+            _resolvedProvider: provider,
             system_prompt: systemPrompt,
             template: 'assistant'
         };
@@ -1624,18 +1633,32 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
             content: `📩 MESSAGE ACTUEL DU CLIENT (réponds à ce message):\n\n${userMessage}`
         });
 
-        // Use resolved model_id if available (set by generateResponse via DB lookup)
-        // This ensures OpenRouter gets the full model_id (e.g. 'tngtech/deepseek-r1t-chimera:free')
         // Use model_id directly from DB (_resolvedModel), no remapping
         const primaryModel = agent._resolvedModel || agent.model;
         
-        // Use centralized config for fallback models
-        const fallbackModels = AI_CONFIG.openrouterFreeFallbacks
-            .filter(m => m !== primaryModel);
+        // In test mode (_resolvedProvider set), test ONLY the chosen model — no internal fallbacks
+        // In production, fetch fallback OpenRouter models from Admin DB (not hardcoded list)
+        const skipInternalFallback = !!agent._resolvedProvider;
+        let fallbackModels = [];
+        if (!skipInternalFallback) {
+            try {
+                const dbFallbacks = await db.all(
+                    `SELECT model_id FROM ai_models 
+                     WHERE provider = 'openrouter' AND is_active = 1 AND model_id != ?
+                     ORDER BY sort_order ASC`,
+                    primaryModel
+                );
+                fallbackModels = (Array.isArray(dbFallbacks) ? dbFallbacks : [])
+                    .map(r => r.model_id)
+                    .filter(Boolean);
+            } catch (e) {
+                // DB error — proceed without internal fallback
+            }
+        }
 
-        // Essayer le modèle principal d'abord, puis les fallbacks
+        // Try primary model first, then Admin-configured fallbacks (empty in test mode)
         const modelsToTry = [primaryModel, ...fallbackModels];
-        
+
         // Use centralized config for generation parameters
         const genConfig = getGenerationConfig(agent);
         const maxTokens = Math.max(genConfig.maxTokens || 500, 2048);
