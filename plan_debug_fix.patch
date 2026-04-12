@@ -1,0 +1,15 @@
+--- backend/config/plans.js
++++ backend/config/plans.js
+@@ -111,7 +111,8 @@
+  * Use in GET /me etc. so the frontend always sees an active plan.
+  */
+ export async function getEffectivePlanName(planName, user = null) {
+     const dbPlans = await loadPlansFromDB();
+-    let effectiveName = planName;
++    let effectiveName = planName ? planName.toLowerCase() : planName;
+     
+     // Si le plan n'existe pas ou n'est pas actif, utiliser le plan par défaut
+-    if (!dbPlans || !dbPlans[planName]) {
++    if (!dbPlans || !dbPlans[effectiveName]) {
+         effectiveName = await getDefaultPlanName();
+     }

@@ -244,6 +244,18 @@ if (isProduction) {
         
         // Support React Router (SPA) by serving index.html for unknown routes
         // Only fallback to index.html for requests that don't look like files (no dot in the last segment)
+        
+        // Debug Route
+        app.get('/api/debug-plan', async (req, res) => {
+            try {
+                const users = await db.all("SELECT id, name, email, plan, subscription_end_date FROM users");
+                const plans = await db.all("SELECT name, limits FROM subscription_plans");
+                res.json({ users, plans });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+        });
+
         app.get('*', (req, res, next) => {
             // If the request has an extension or starts with /api, pass it through (it's a 404 for a file or an API call)
             if (req.url.startsWith('/api') || req.url.includes('.')) {

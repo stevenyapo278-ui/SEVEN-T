@@ -111,10 +111,11 @@ export async function getDefaultPlanName() {
  */
 export async function getEffectivePlanName(planName, user = null) {
     const dbPlans = await loadPlansFromDB();
-    let effectiveName = planName;
+    const normalizedName = planName ? String(planName).toLowerCase() : planName;
+    let effectiveName = normalizedName;
     
     // Si le plan n'existe pas ou n'est pas actif, utiliser le plan par défaut
-    if (!dbPlans || !dbPlans[planName]) {
+    if (!dbPlans || !dbPlans[normalizedName]) {
         effectiveName = await getDefaultPlanName();
     }
 
@@ -366,11 +367,12 @@ export async function hasModule(planName, moduleKey) {
  */
 export async function getPlan(planName) {
     const dbPlans = await loadPlansFromDB();
-    if (planName === 'free_expired') {
+    const normalizedName = planName ? String(planName).toLowerCase() : planName;
+    if (normalizedName === 'free_expired') {
         return { ...PLANS['free_expired'], features: { ...FEATURES_BASELINE, ...PLANS['free_expired'].features } };
     }
-    if (dbPlans && dbPlans[planName]) {
-        return dbPlans[planName];
+    if (dbPlans && dbPlans[normalizedName]) {
+        return dbPlans[normalizedName];
     }
     // Plan désactivé ou inexistant : appliquer le plan par défaut (ou free), pas la config statique du plan désactivé
     const defaultName = await getDefaultPlanName();
