@@ -769,7 +769,16 @@ export default function Campaigns() {
                    ))}
                 </div>
                 <div className="pt-6 border-t border-white/5">
-                  <h3 className="text-xs font-bold uppercase text-gray-500 mb-4">Ajouter des leads</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <h3 className="text-xs font-bold uppercase text-gray-500">Ajouter des contacts ou leads</h3>
+                    <button 
+                      onClick={() => setImportedPickerOpen(true)} 
+                      className="px-3 py-1.5 bg-space-800 border border-space-700 hover:border-blue-500 hover:bg-space-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-all w-full sm:w-auto"
+                    >
+                      <UserCheck className="w-4 h-4 text-blue-400" />
+                      Carnet WhatsApp
+                    </button>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
                     {leadsList.filter(l => l.phone).map(l => (
                       <label key={l.id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedLeadIds.has(l.id) ? 'bg-gold-400/10 border-gold-400/30' : 'bg-white/5 border-white/10'}`}>
@@ -810,6 +819,16 @@ export default function Campaigns() {
         onConfirm={handleConfirmSend} 
         campaign={campaignToPreview} 
         isSending={!!sendingCampaignId} 
+      />
+      <ImportedContactsPicker
+        open={importedPickerOpen}
+        onClose={() => setImportedPickerOpen(false)}
+        agentId={recipientsCampaign?.campaign?.agent_id || ''}
+        mode="multi"
+        onSelect={(users) => {
+          setImportedPickerOpen(false)
+          handleAddImportedContacts(users)
+        }}
       />
     </div>
   )
