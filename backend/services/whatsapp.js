@@ -3483,7 +3483,8 @@ class WhatsAppManager {
                     if (phoneJid) jid = phoneJid;
                 }
 
-                if (!jid.endsWith('@s.whatsapp.net') && !isGroup) continue;
+                // Allow @s.whatsapp.net, @g.us (for selection if needed) and @lid (modern WhatsApp internal ID)
+                if (!jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@lid') && !isGroup) continue;
 
                 const number = jid.split('@')[0];
                 if (!number && !isGroup) continue;
@@ -3520,6 +3521,7 @@ class WhatsAppManager {
             }
 
             const limitedOut = out.slice(0, safeLimit);
+            console.log(`[WhatsApp] getStoreContacts tool ${toolId}: Found ${out.length} eligible contacts, returning ${limitedOut.length}`);
 
             limitedOut.sort((a, b) => {
                 const an = String(a.name || '').toLowerCase();

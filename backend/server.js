@@ -128,12 +128,16 @@ app.use(cors({
             return callback(null, true);
         }
 
-        // Auto-allow local development domains to prevent common setup issues
-        if (normalizedOrigin.startsWith('http://localhost') || 
-            normalizedOrigin.startsWith('http://127.0.0.1') || 
-            normalizedOrigin.endsWith('.local') ||
-            normalizedOrigin.endsWith('.local:3001')) {
-            return callback(null, true);
+        // Auto-allow local development domains and any subdomain of .local
+        try {
+            const originUrl = new URL(origin);
+            if (originUrl.hostname === 'localhost' || 
+                originUrl.hostname === '127.0.0.1' || 
+                originUrl.hostname.endsWith('.local')) {
+                return callback(null, true);
+            }
+        } catch (e) {
+            // If origin is not a valid URL (rare with real browsers)
         }
 
         console.warn(`🛑 CORS blocked origin: ${origin}`);

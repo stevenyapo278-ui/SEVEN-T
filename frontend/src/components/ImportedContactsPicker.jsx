@@ -222,17 +222,28 @@ export default function ImportedContactsPicker({
                 {title}
               </h2>
               <p className="text-sm text-gray-500 mt-1 truncate">
-                Sélectionnez {mode === 'single' ? 'un contact' : 'des contacts'} depuis vos conversations
+                Sélectionnez {mode === 'single' ? 'un contact' : 'des contacts'} depuis votre répertoire WhatsApp
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
-              aria-label="Fermer"
-            >
-              <XCircle className="w-6 h-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fetchContacts(query)}
+                disabled={loading}
+                className="p-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                title="Actualiser la liste"
+              >
+                <Loader2 className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+                aria-label="Fermer"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
           <div

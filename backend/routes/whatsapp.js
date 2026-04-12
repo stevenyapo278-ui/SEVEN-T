@@ -433,11 +433,17 @@ router.get('/imported-contacts', authenticateToken, async (req, res) => {
             if (!whatsappManager.isConnected(toolId)) continue;
 
             const list = await whatsappManager.getStoreContacts(toolId, { q: search, limit: safeLimit });
+            console.log(`[WhatsApp] Route /imported-contacts: Agent ${a.name} found ${list?.length || 0} contacts in store`);
+            
             for (const c of (list || [])) {
-                const number = String(c.number || '').replace(/\D/g, '');
-                if (!number) continue;
-                if (!merged.has(number)) {
-                    merged.set(number, {
+                // Use digits if available, otherwise use original number (can be LID or Group ID)
+                const numericPart = String(c.number || '').replace(/\D/g, '');
+                const uniqueKey = numericPart || c.jid || c.number;
+                
+                if (!uniqueKey) continue;
+                
+                if (!merged.has(uniqueKey)) {
+                    merged.set(uniqueKey, {
                         agent_id: a.id,
                         agent_name: a.name,
                         contact_number: c.number,

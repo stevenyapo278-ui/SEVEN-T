@@ -364,15 +364,15 @@ export default function Conversations() {
   }
 
   const handleInitiateDiscussion = async (contact) => {
-    if (!contact || !contact.contact_number) return
+    if (!contact || (!contact.contact_number && !contact.jid)) return
     setContactPickerOpen(false)
-    const targetJid = contact.contact_number.includes('@') ? contact.contact_number : `${contact.contact_number}@s.whatsapp.net`
+    const targetJid = contact.jid || (contact.contact_number.includes('@') ? contact.contact_number : `${contact.contact_number}@s.whatsapp.net`)
     try {
       const { data } = await api.post('/conversations/initiate', {
         agent_id: contact.agent_id,
         contact_jid: targetJid,
         contact_name: contact.contact_name,
-        contact_number: contact.contact_number
+        contact_number: contact.contact_number || (targetJid.includes('@') ? targetJid.split('@')[0] : targetJid)
       })
       navigate(`/dashboard/conversations/${data.id}`)
     } catch (error) {
