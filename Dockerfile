@@ -7,16 +7,17 @@
 FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app/frontend
+# Force IPv4 to prevent IPv6 blackhole timeouts in Docker
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 
 # Copy frontend package files
 COPY frontend/package*.json ./
 
 # Install all deps with network resilience
-RUN npm install -g npm@latest && \
-    npm config set fetch-retries 3 && \
+RUN npm config set fetch-retries 3 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000 && \
-    npm install --no-audit --no-fund --legacy-peer-deps
+    npm ci --no-audit --no-fund --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./
@@ -40,15 +41,16 @@ WORKDIR /app
 # Non-root user for security
 RUN addgroup -g 1001 -S nodejs \
     && adduser -S nodejs -u 1001 -G nodejs
+# Force IPv4 to prevent IPv6 blackhole timeouts in Docker
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 
 # Install backend production dependencies
 COPY package*.json ./
 # Install backend production dependencies with network resilience
-RUN npm install -g npm@latest && \
-    npm config set fetch-retries 3 && \
+RUN npm config set fetch-retries 3 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000 && \
-    npm install --omit=dev --no-audit --no-fund --legacy-peer-deps && \
+    npm ci --omit=dev --no-audit --no-fund --legacy-peer-deps && \
     npm cache clean --force
 
 # Copy backend source
