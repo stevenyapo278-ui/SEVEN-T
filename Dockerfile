@@ -12,10 +12,11 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 
 # Install all deps with network resilience
-RUN npm config set fetch-retries 3 && \
+RUN npm install -g npm@latest && \
+    npm config set fetch-retries 3 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000 && \
-    (npm ci --no-audit --no-fund --ignore-scripts || (sleep 5 && npm ci --no-audit --no-fund --ignore-scripts))
+    npm install --no-audit --no-fund --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./
@@ -43,10 +44,11 @@ RUN addgroup -g 1001 -S nodejs \
 # Install backend production dependencies
 COPY package*.json ./
 # Install backend production dependencies with network resilience
-RUN npm config set fetch-retries 3 && \
+RUN npm install -g npm@latest && \
+    npm config set fetch-retries 3 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000 && \
-    (npm ci --omit=dev --no-audit --no-fund --ignore-scripts || (sleep 5 && npm ci --omit=dev --no-audit --no-fund --ignore-scripts)) && \
+    npm install --omit=dev --no-audit --no-fund --legacy-peer-deps && \
     npm cache clean --force
 
 # Copy backend source
