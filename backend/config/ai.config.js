@@ -14,44 +14,13 @@ export const AI_CONFIG = {
         topK: 40
     },
 
-    // Model mappings for different providers
-    models: {
-        gemini: {
-            'gemini-1.5-flash': 'gemini-2.0-flash',  // 1.5 deprecated
-            'gemini-1.5-pro': 'gemini-2.5-flash',     // 1.5 deprecated → upgrade
-            'gemini-pro': 'gemini-2.0-flash',
-            'gemini-2.0-flash': 'gemini-2.0-flash',
-            'gemini-2.5-flash': 'gemini-2.5-flash',                // ← corrected
-            'models/gemini-2.5-flash': 'gemini-2.5-flash',         // ← corrected
-            'models/gemini-2.0-flash': 'gemini-2.0-flash',
-            'models/gemini-2.5-pro': 'gemini-2.5-pro',
-            'gemini-2.5-pro': 'gemini-2.5-pro',
-            'models/gemini-3.1-pro-preview': 'models/gemini-3.1-pro-preview',
-            'models/gemini-3-flash-preview': 'models/gemini-3-flash-preview',
-            'default': 'gemini-2.5-flash'             // ← default to 2.5 now
-        },
-        openai: {
-            'gpt-4o': 'gpt-4o',
-            'gpt-4o-mini': 'gpt-4o-mini',
-            'gpt-4-turbo': 'gpt-4-turbo',
-            'default': 'gpt-4o-mini'
-        },
-        openrouter: {
-            // Mapping des modèles agent -> ID OpenRouter
-            'models/gemini-2.5-flash': 'google/gemini-2.5-flash',
-            'gemini-2.5-flash': 'google/gemini-2.5-flash',
-            'gemini-1.5-flash': 'google/gemini-2.0-flash-exp:free',
-            'gemini-1.5-pro': 'google/gemini-2.0-flash-exp:free',
-            // Free models (fallback order)
-            freeFallbacks: [
-                'meta-llama/llama-3.2-3b-instruct:free',
-                'mistralai/mistral-7b-instruct:free',
-                'google/gemma-2-9b-it:free',
-                'qwen/qwen-2-7b-instruct:free'
-            ],
-            default: 'meta-llama/llama-3.1-8b-instruct:free'
-        }
-    },
+    // OpenRouter free fallback models (used when primary OpenRouter model fails)
+    openrouterFreeFallbacks: [
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'mistralai/mistral-7b-instruct:free',
+        'google/gemma-2-9b-it:free',
+        'qwen/qwen-2-7b-instruct:free'
+    ],
 
     // Conversation history limits
     conversationHistory: {

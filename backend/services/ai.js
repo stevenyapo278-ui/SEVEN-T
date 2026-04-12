@@ -1616,7 +1616,7 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
         const primaryModel = agent._resolvedModel || agent.model;
         
         // Use centralized config for fallback models
-        const fallbackModels = AI_CONFIG.models.openrouter.freeFallbacks
+        const fallbackModels = AI_CONFIG.openrouterFreeFallbacks
             .filter(m => m !== primaryModel);
 
         // Essayer le modèle principal d'abord, puis les fallbacks
