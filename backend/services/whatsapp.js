@@ -111,6 +111,10 @@ class SimpleStore {
             }
         });
 
+        ev.on('contacts.set', ({ contacts }) => {
+            for (const contact of contacts) this.addContact(contact.id, contact);
+        });
+
         ev.on('contacts.upsert', (contacts) => {
             for (const contact of contacts) this.addContact(contact.id, contact);
         });
@@ -3151,50 +3155,16 @@ class WhatsAppManager {
                 }
             }
 
-            // --- PART 2: Import missing chats as conversations ---
-            console.log(`[WhatsApp] Sync part 2: checking ${store.chats.size} chats from store...`);
-            let imported = 0;
-            const existingJids = new Set(existingConvs.map(c => c.contact_jid));
-            
-            for (const [chatId, chat] of store.chats.entries()) {
-                if (chatId.includes('broadcast')) continue;
-                if (chatId.includes('@g.us')) continue; 
-                
-                let resolvedJid = chatId;
-                if (chatId.endsWith('@lid') && lidMap && lidMap.has(chatId)) {
-                    resolvedJid = lidMap.get(chatId);
-                }
-
-                if (!existingJids.has(resolvedJid) && (resolvedJid.endsWith('@s.whatsapp.net') || resolvedJid.endsWith('@lid'))) {
-                    try {
-                        let contact = allContacts[chatId] || allContacts[resolvedJid];
-                        const name = contact?.name || contact?.notify || contact?.verifiedName || chat?.name || resolvedJid.split('@')[0];
-                        
-                        const convId = uuidv4();
-                        const now = new Date().toISOString();
-                        
-                        await db.run(`
-                            INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, last_message_at, created_at, status)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        `, convId, agent.id, resolvedJid, name, resolvedJid.split('@')[0], now, now, 'read');
-                        
-                        existingJids.add(resolvedJid);
-                        imported++;
-                    } catch (importErr) {
-                        console.error(`[WhatsApp] Failed to import chat ${chatId}:`, importErr.message);
-                    }
-                }
-            }
-
             this.lastSyncTime.set(toolId, Date.now());
             this.syncStatuses.set(toolId, { 
                 status: 'completed', 
-                message: `Sync terminée: ${updated} noms mis à jour, ${imported} conversations importées`,
-                progress: 100 
+                message: `${existingConvs.length} conversations, ${updated} noms mis à jour`,
+                progress: 100,
+                lastSync: Date.now()
             });
 
-            console.log(`[WhatsApp] Sync completed for tool ${toolId}: ${updated} updated, ${imported} imported`);
-            return { updated, imported, message: 'Synchronisation terminée' };
+            console.log(`[WhatsApp] Sync completed for tool ${toolId}: ${updated} names updated`);
+            return { conversations: existingConvs.length, updated };
         } catch (error) {
             console.error(`[WhatsApp] Sync error for tool ${toolId}:`, error);
             this.syncStatuses.set(toolId, { status: 'error', message: error.message });
@@ -3518,9 +3488,25 @@ class WhatsAppManager {
                 const isLid = jid.endsWith('@lid');
                 const name = c?.name || c?.notify || c?.verifiedName || c?.pushName || null;
                 
-                if (isLid && !name && !lidMap?.has(rawJid)) {
-                    // console.log(`[WhatsApp] Skipping anonymous LID: ${jid}`);
-                    continue;
+                // If it's a nameless LID, we might want to resolve it.
+                // But to avoid clogging the UI, we only show it if it has a name OR we can map it to a phone.
+                if (isLid && !name) {
+                    const mapped = lidMap?.get(rawJid);
+                    if (mapped) {
+                        jid = mapped;
+                    } else {
+                        // Background resolution for next time
+                        const sock = this.connections.get(toolId);
+                        if (sock && !this.syncStatuses.get(toolId)?.isResolving) {
+                             // We don't await this to keep the API fast
+                             sock.onWhatsApp([rawJid]).then(results => {
+                                 if (results?.[0]?.exists) {
+                                     this.lidToPhoneMap.get(toolId)?.set(rawJid, results[0].jid);
+                                 }
+                             }).catch(() => {});
+                        }
+                        continue; // Skip nameless, unmapped LIDs for now
+                    }
                 }
 
                 if (!jid.endsWith('@s.whatsapp.net') && !isLid && !isGroup) continue;
