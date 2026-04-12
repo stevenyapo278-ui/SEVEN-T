@@ -3151,16 +3151,50 @@ class WhatsAppManager {
                 }
             }
 
+            // --- PART 2: Import missing chats as conversations ---
+            console.log(`[WhatsApp] Sync part 2: checking ${store.chats.size} chats from store...`);
+            let imported = 0;
+            const existingJids = new Set(existingConvs.map(c => c.contact_jid));
+            
+            for (const [chatId, chat] of store.chats.entries()) {
+                if (chatId.includes('broadcast')) continue;
+                if (chatId.includes('@g.us')) continue; 
+                
+                let resolvedJid = chatId;
+                if (chatId.endsWith('@lid') && lidMap && lidMap.has(chatId)) {
+                    resolvedJid = lidMap.get(chatId);
+                }
+
+                if (!existingJids.has(resolvedJid) && (resolvedJid.endsWith('@s.whatsapp.net') || resolvedJid.endsWith('@lid'))) {
+                    try {
+                        let contact = allContacts[chatId] || allContacts[resolvedJid];
+                        const name = contact?.name || contact?.notify || contact?.verifiedName || chat?.name || resolvedJid.split('@')[0];
+                        
+                        const convId = uuidv4();
+                        const now = new Date().toISOString();
+                        
+                        await db.run(`
+                            INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, last_message, last_message_at, created_at, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        `, convId, agent.id, resolvedJid, name, resolvedJid.split('@')[0], 'Chat synchronisé', now, now, 'read');
+                        
+                        existingJids.add(resolvedJid);
+                        imported++;
+                    } catch (importErr) {
+                        console.error(`[WhatsApp] Failed to import chat ${chatId}:`, importErr.message);
+                    }
+                }
+            }
+
             this.lastSyncTime.set(toolId, Date.now());
             this.syncStatuses.set(toolId, { 
                 status: 'completed', 
-                message: `${existingConvs.length} conversations, ${updated} noms mis à jour`,
-                progress: 100,
-                lastSync: Date.now()
+                message: `Sync terminée: ${updated} noms mis à jour, ${imported} conversations importées`,
+                progress: 100 
             });
 
-            console.log(`[WhatsApp] Sync completed for tool ${toolId}: ${updated} names updated`);
-            return { conversations: existingConvs.length, updated };
+            console.log(`[WhatsApp] Sync completed for tool ${toolId}: ${updated} updated, ${imported} imported`);
+            return { updated, imported, message: 'Synchronisation terminée' };
         } catch (error) {
             console.error(`[WhatsApp] Sync error for tool ${toolId}:`, error);
             this.syncStatuses.set(toolId, { status: 'error', message: error.message });
@@ -3478,13 +3512,18 @@ class WhatsAppManager {
                 const isGroup = rawJid.includes('@g.us');
 
                 let jid = rawJid;
-                if (jid.endsWith('@lid') && lidMap) {
-                    const phoneJid = lidMap.get(jid) || lidMap.get(c?.id) || lidMap.get(key);
-                    if (phoneJid) jid = phoneJid;
+                // Filter for personal contacts (@s.whatsapp.net) and groups 
+                // ONLY allow @lid if we have a name or it's mapped to a phone JID. 
+                // Unmapped, nameless LIDs are likely group participants and not useful as "contacts".
+                const isLid = jid.endsWith('@lid');
+                const name = c?.name || c?.notify || c?.verifiedName || c?.pushName || null;
+                
+                if (isLid && !name && !lidMap?.has(rawJid)) {
+                    // console.log(`[WhatsApp] Skipping anonymous LID: ${jid}`);
+                    continue;
                 }
 
-                // Allow @s.whatsapp.net, @g.us (for selection if needed) and @lid (modern WhatsApp internal ID)
-                if (!jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@lid') && !isGroup) continue;
+                if (!jid.endsWith('@s.whatsapp.net') && !isLid && !isGroup) continue;
 
                 const number = jid.split('@')[0];
                 if (!number && !isGroup) continue;
