@@ -713,21 +713,27 @@ router.post('/models/:id/test', async (req, res) => {
             return res.status(404).json({ error: 'Modèle non trouvé' });
         }
 
-        // Simulate an agent using this model
+        // Build a mock agent that directly targets the exact model being tested
+        // _resolvedModel bypasses the UUID→model_id resolution step in generateResponse
         const mockAgent = {
             id: 'admin_test',
             name: 'Admin Test Agent',
-            model: modelRecord.id, // Will be resolved by AI service
+            model: modelRecord.id,
+            _resolvedModel: modelRecord.model_id, // ← use exact model_id from DB
+            _resolvedProvider: modelRecord.provider, // ← use exact provider from DB
             personality: 'You are a helpful assistant for testing.',
             behavior: 'test'
         };
 
-        const response = await aiService.generateResponse(mockAgent, [], message);
+        // skipFallback = true → if THIS model fails, return an error (not a silent fallback)
+        const skipFallback = true;
+        const response = await aiService.generateResponse(mockAgent, [], message, [], null, null, skipFallback);
         
         res.json({
             success: true,
             model: modelRecord.name,
             provider: modelRecord.provider,
+            model_id: modelRecord.model_id,
             response
         });
     } catch (error) {

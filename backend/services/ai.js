@@ -190,6 +190,20 @@ class AIService {
         const agentModelId = agent.model || 'gemini-2.0-flash';
         let resolvedModelId = agentModelId;
 
+        // Fast path: _resolvedModel + _resolvedProvider already set (e.g. from test route)
+        // Skip all DB resolution and call the exact model directly
+        if (agent._resolvedModel && agent._resolvedProvider) {
+            const provider = agent._resolvedProvider;
+            const finalModelString = agent._resolvedModel;
+            const apiKey = await this.getApiKey(provider, finalModelString);
+            console.log(`[AI] Direct | Provider: ${provider} | Model: ${finalModelString}`);
+            try {
+                return await this.executeProviderCall(provider, agent, conversationHistory, sanitizedUserMessage, knowledgeBase || [], messageAnalysis, apiKey, userId, finalModelString);
+            } catch (error) {
+                throw error; // skipFallback from test route
+            }
+        }
+
         // 1. Resolve model ID from DB (handles UI UUID -> actual model string mapping)
         try {
             const modelRecord = await db.get(
