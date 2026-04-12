@@ -906,8 +906,9 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
      * Génère une réponse avec Google Gemini
      */
     async generateGeminiResponse(agent, conversationHistory, userMessage, knowledgeBase = [], messageAnalysis = null, customApiKey = null) {
-        // Use centralized config for model mapping
-        const geminiModel = getModelName('gemini', agent.model);
+        // Use the model_id exactly as configured in Admin — no mapping/override
+        // _resolvedModel is already resolved from DB; agent.model fallback for direct calls
+        const geminiModel = agent._resolvedModel || agent.model;
         console.log(`[AI] Using Gemini model: ${geminiModel}`);
 
         // Get the actual API key to use
@@ -1525,8 +1526,8 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
             content: `📩 MESSAGE ACTUEL DU CLIENT (réponds à ce message):\n\n${userMessage}`
         });
 
-        // Use centralized config for model mapping
-        const openaiModel = getModelName('openai', agent.model);
+        // Use the model_id exactly as configured in Admin — no mapping/override
+        const openaiModel = agent._resolvedModel || agent.model;
 
         // Use centralized config for generation parameters
         const genConfig = getGenerationConfig(agent);
@@ -1611,9 +1612,8 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
 
         // Use resolved model_id if available (set by generateResponse via DB lookup)
         // This ensures OpenRouter gets the full model_id (e.g. 'tngtech/deepseek-r1t-chimera:free')
-        // instead of the short id stored in agent.model (e.g. 'deepseek-r1t-chimera')
-        const primaryModel = agent._resolvedModel
-            || getModelName('openrouter', agent.model || AI_CONFIG.models.openrouter.default);
+        // Use model_id directly from DB (_resolvedModel), no remapping
+        const primaryModel = agent._resolvedModel || agent.model;
         
         // Use centralized config for fallback models
         const fallbackModels = AI_CONFIG.models.openrouter.freeFallbacks

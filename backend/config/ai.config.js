@@ -17,13 +17,18 @@ export const AI_CONFIG = {
     // Model mappings for different providers
     models: {
         gemini: {
-            'gemini-1.5-flash': 'gemini-2.0-flash',  // 1.5-flash no longer available in v1beta → use 2.0
-            'gemini-1.5-pro': 'gemini-1.5-pro',
+            'gemini-1.5-flash': 'gemini-2.0-flash',  // 1.5 deprecated
+            'gemini-1.5-pro': 'gemini-2.5-flash',     // 1.5 deprecated → upgrade
             'gemini-pro': 'gemini-2.0-flash',
             'gemini-2.0-flash': 'gemini-2.0-flash',
-            'gemini-2.5-flash': 'gemini-2.0-flash', // Map to 2.0 as it's the current latest
-            'models/gemini-2.5-flash': 'gemini-2.0-flash',
-            'default': 'gemini-2.0-flash'
+            'gemini-2.5-flash': 'gemini-2.5-flash',                // ← corrected
+            'models/gemini-2.5-flash': 'gemini-2.5-flash',         // ← corrected
+            'models/gemini-2.0-flash': 'gemini-2.0-flash',
+            'models/gemini-2.5-pro': 'gemini-2.5-pro',
+            'gemini-2.5-pro': 'gemini-2.5-pro',
+            'models/gemini-3.1-pro-preview': 'models/gemini-3.1-pro-preview',
+            'models/gemini-3-flash-preview': 'models/gemini-3-flash-preview',
+            'default': 'gemini-2.5-flash'             // ← default to 2.5 now
         },
         openai: {
             'gpt-4o': 'gpt-4o',
