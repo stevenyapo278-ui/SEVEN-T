@@ -49,7 +49,6 @@ export default function Agents() {
   const [agents, setAgents] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const [showCreationWizard, setShowCreationWizard] = useState(false)
   const [selectedAgentForTool, setSelectedAgentForTool] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -122,7 +121,7 @@ export default function Agents() {
     return saved ? JSON.parse(saved) : []
   })
 
-  useLockBodyScroll(showCreateModal || showCreationWizard)
+  useLockBodyScroll(showCreationWizard)
 
   const refreshData = async (isInitial = false) => {
     await Promise.all([
@@ -166,9 +165,7 @@ export default function Agents() {
       )
       return
     }
-    const hasAgents = agents.length > 0
-    if (!hasAgents) setShowCreationWizard(true)
-    else setShowCreateModal(true)
+    setShowCreationWizard(true)
   }
 
   const filteredAgents = agents
