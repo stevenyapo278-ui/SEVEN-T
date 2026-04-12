@@ -46,42 +46,13 @@ class CircuitBreaker {
      * @returns {Promise} Result of the function
      */
     async execute(fn) {
-        // Check if circuit should transition to HALF_OPEN
-        if (this.shouldAttemptReset()) {
-            this.state = 'HALF_OPEN';
-            this.halfOpenAttempts = 0;
-            console.log('[CircuitBreaker] Transitioning to HALF_OPEN state');
-        }
-
-        // Reject immediately if circuit is OPEN
-        if (this.state === 'OPEN') {
-            const error = new Error('Circuit breaker is OPEN');
-            error.circuitBreakerOpen = true;
-            throw error;
-        }
-
-        // Reject if we've exceeded half-open attempts
-        if (this.state === 'HALF_OPEN' && this.halfOpenAttempts >= this.halfOpenRequests) {
-            const error = new Error('Circuit breaker HALF_OPEN: max attempts reached');
-            error.circuitBreakerOpen = true;
-            throw error;
-        }
-
-        if (this.state === 'HALF_OPEN') {
-            this.halfOpenAttempts++;
-        }
-
+        // Circuit breaker tracking (monitoring only — does NOT block)
         try {
-            // Execute with timeout
             const result = await this.executeWithTimeout(fn, this.timeout);
-            
-            // Success
             this.onSuccess();
             return result;
-            
         } catch (error) {
-            // Failure
-            this.onFailure();
+            this.onFailure(error);
             throw error;
         }
     }
@@ -120,21 +91,29 @@ class CircuitBreaker {
     }
 
     /**
-     * Handle failed execution
+     * Handle failed execution - smart error categorization
      */
-    onFailure() {
+    onFailure(error) {
+        // Don't count quota/rate-limit errors (429) as circuit breaker failures
+        // These are transient and don't mean the service is down
+        const errorMsg = error?.message || '';
+        const isQuota = errorMsg.includes('429') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota');
+        if (isQuota) {
+            this.lastFailureTime = Date.now();
+            console.log('[CircuitBreaker] 429 quota error - not counting as circuit failure');
+            return;
+        }
+
         this.failures++;
         this.lastFailureTime = Date.now();
         
         if (this.state === 'HALF_OPEN') {
-            // Failure in HALF_OPEN, go back to OPEN
             this.state = 'OPEN';
             this.successes = 0;
             console.log('[CircuitBreaker] Transitioning back to OPEN state');
             return;
         }
         
-        // Check if we should open the circuit
         if (this.failures >= this.failureThreshold) {
             this.state = 'OPEN';
             console.log(`[CircuitBreaker] Opening circuit after ${this.failures} failures`);
@@ -156,22 +135,22 @@ class CircuitBreaker {
 
 // Create circuit breakers for each AI provider
 export const geminiCircuitBreaker = new CircuitBreaker({
-    failureThreshold: 5,
-    resetTimeout: 60000,
+    failureThreshold: 10,   // increased from 5
+    resetTimeout: 30000,    // recover in 30s instead of 60s
     halfOpenRequests: 1,
     timeout: 120000
 });
 
 export const openaiCircuitBreaker = new CircuitBreaker({
-    failureThreshold: 5,
-    resetTimeout: 60000,
+    failureThreshold: 10,
+    resetTimeout: 30000,
     halfOpenRequests: 1,
     timeout: 120000
 });
 
 export const openrouterCircuitBreaker = new CircuitBreaker({
-    failureThreshold: 5,
-    resetTimeout: 60000,
+    failureThreshold: 10,
+    resetTimeout: 30000,
     halfOpenRequests: 1,
     timeout: 120000
 });
