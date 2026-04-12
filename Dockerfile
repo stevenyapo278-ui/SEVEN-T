@@ -12,10 +12,10 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 
 # Install all deps with network resilience
-RUN npm config set fetch-retries 6 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 600000 && \
-    (npm ci --ignore-scripts || (sleep 15 && npm ci --ignore-scripts) || (sleep 30 && npm ci --ignore-scripts))
+RUN npm config set fetch-retries 3 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retry-maxtimeout 60000 && \
+    (npm ci --no-audit --no-fund --ignore-scripts || (sleep 5 && npm ci --no-audit --no-fund --ignore-scripts))
 
 # Copy frontend source
 COPY frontend/ ./
@@ -43,10 +43,10 @@ RUN addgroup -g 1001 -S nodejs \
 # Install backend production dependencies
 COPY package*.json ./
 # Install backend production dependencies with network resilience
-RUN npm config set fetch-retries 6 && \
-    npm config set fetch-retry-mintimeout 20000 && \
-    npm config set fetch-retry-maxtimeout 600000 && \
-    (npm ci --only=production --ignore-scripts || (sleep 15 && npm ci --only=production --ignore-scripts)) && \
+RUN npm config set fetch-retries 3 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retry-maxtimeout 60000 && \
+    (npm ci --omit=dev --no-audit --no-fund --ignore-scripts || (sleep 5 && npm ci --omit=dev --no-audit --no-fund --ignore-scripts)) && \
     npm cache clean --force
 
 # Copy backend source
