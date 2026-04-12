@@ -108,17 +108,31 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 app.use(cors({
     origin: (origin, callback) => {
-        // In development, allow all origins (useful for local tools)
+        // In development, allow all origins
         if (!isProduction) {
             return callback(null, true);
         }
 
-        // Allow requests with no origin (like direct browser navigation, curl, wget healthchecks, same-origin)
+        // Allow requests with no origin (direct navigation, health checks, etc.)
         if (!origin) {
             return callback(null, true);
         }
 
-        if (allowedOrigins.includes(origin)) {
+        // Normalize origin for comparison
+        const normalizedOrigin = origin.replace(/\/$/, '');
+
+        // Check against allowed origins list
+        const isExplicitlyAllowed = allowedOrigins.some(ao => ao.replace(/\/$/, '') === normalizedOrigin);
+        
+        if (isExplicitlyAllowed) {
+            return callback(null, true);
+        }
+
+        // Auto-allow local development domains to prevent common setup issues
+        if (normalizedOrigin.startsWith('http://localhost') || 
+            normalizedOrigin.startsWith('http://127.0.0.1') || 
+            normalizedOrigin.endsWith('.local') ||
+            normalizedOrigin.endsWith('.local:3001')) {
             return callback(null, true);
         }
 
@@ -127,7 +141,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 // Cookie parsing (for OAuth state)
