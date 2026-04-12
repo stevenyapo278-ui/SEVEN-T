@@ -3174,9 +3174,9 @@ class WhatsAppManager {
                         const now = new Date().toISOString();
                         
                         await db.run(`
-                            INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, last_message, last_message_at, created_at, status)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        `, convId, agent.id, resolvedJid, name, resolvedJid.split('@')[0], 'Chat synchronisé', now, now, 'read');
+                            INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, last_message_at, created_at, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        `, convId, agent.id, resolvedJid, name, resolvedJid.split('@')[0], now, now, 'read');
                         
                         existingJids.add(resolvedJid);
                         imported++;
