@@ -3528,7 +3528,6 @@ class WhatsAppManager {
                 const number = jid.split('@')[0];
                 if (!number && !isGroup) continue;
 
-                const name = c?.name || c?.notify || c?.verifiedName || c?.pushName || null;
                 const displayName = (name && String(name).trim()) ? String(name).trim() : number;
 
                 if (query) {
