@@ -17,7 +17,7 @@ COPY frontend/package*.json ./
 RUN npm config set fetch-retries 3 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000 && \
-    npm ci --no-audit --no-fund --legacy-peer-deps
+    npm install --no-audit --no-fund --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./
@@ -50,7 +50,7 @@ COPY package*.json ./
 RUN npm config set fetch-retries 3 && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000 && \
-    npm ci --omit=dev --no-audit --no-fund --legacy-peer-deps && \
+    npm install --omit=dev --no-audit --no-fund --legacy-peer-deps && \
     npm cache clean --force
 
 # Copy backend source
