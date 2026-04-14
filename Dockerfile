@@ -13,18 +13,14 @@ ENV NODE_OPTIONS="--max-old-space-size=768 --dns-result-order=ipv4first"
 # Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install all deps with network resilience
-RUN npm config set maxsockets 1 && \
-    npm config set fetch-retries 3 && \
-    npm config set fetch-retry-mintimeout 10000 && \
-    npm config set fetch-retry-maxtimeout 60000 && \
-    npm install --no-audit --no-fund --legacy-peer-deps
+# Install all deps using Yarn (much lower memory footprint than NPM)
+RUN yarn install --network-timeout 600000
 
 # Copy frontend source
 COPY frontend/ ./
 
 # Build frontend
-RUN npm run build
+RUN yarn build
 
 # ==========================================
 # Stage 2: Production image
@@ -47,13 +43,9 @@ ENV NODE_OPTIONS="--max-old-space-size=768 --dns-result-order=ipv4first"
 
 # Install backend production dependencies
 COPY package*.json ./
-# Install backend production dependencies with network resilience
-RUN npm config set maxsockets 1 && \
-    npm config set fetch-retries 3 && \
-    npm config set fetch-retry-mintimeout 10000 && \
-    npm config set fetch-retry-maxtimeout 60000 && \
-    npm install --omit=dev --no-audit --no-fund --legacy-peer-deps && \
-    npm cache clean --force
+# Install backend production dependencies using Yarn to avoid OOM
+RUN yarn install --production --network-timeout 600000 && \
+    yarn cache clean
 
 # Copy backend source
 COPY backend/ ./backend/

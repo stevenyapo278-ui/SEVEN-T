@@ -52,6 +52,7 @@ import {
   Crown,
   Radio,
   BarChart2,
+  BellRing,
 } from 'lucide-react'
 import GlobalAIAssistant from '../components/AI/GlobalAIAssistant'
 import GlobalAIAssistantModal from '../components/AI/GlobalAIAssistantModal'
@@ -74,6 +75,7 @@ const navigationGroups = [
     icon: MessageSquare,
     items: [
       { nameKey: 'nav.conversations', title: 'Boîte de réception', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
+      { nameKey: 'nav.relances', title: 'Relances IA', href: '/dashboard/relances', icon: BellRing, tourId: 'nav-relances' },
       { nameKey: 'nav.campaigns', title: 'Lancer une campagne', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
       { nameKey: 'nav.polls', title: 'Sondages WhatsApp', href: '/dashboard/polls', icon: BarChart2, tourId: 'nav-polls' },
       { nameKey: 'nav.templates', title: 'Modèles de messages', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },

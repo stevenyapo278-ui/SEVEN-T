@@ -59,6 +59,7 @@ import serviceRoutes from './routes/services.js';
 import ticketsRoutes from './routes/tickets.js';
 import adminTicketsRoutes from './routes/adminTickets.js';
 import dealRoutes from './routes/deals.js';
+import relancesRoutes from './routes/relances.js';
 
 // Database
 import db, { initDatabase } from './database/init.js';
@@ -228,6 +229,7 @@ app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/landing-chat', landingChatRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/deals', dealRoutes);
+app.use('/api/relances', relancesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

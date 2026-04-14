@@ -1504,6 +1504,14 @@ export async function initDatabase() {
         }
     }
 
+    try {
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS proactive_requires_validation INTEGER DEFAULT 1');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.proactive_requires_validation column migration:', e?.message);
+        }
+    }
+
     // Migration: users.notification_number (Module alertes transfert humain)
     try {
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS notification_number TEXT');
@@ -1519,14 +1527,25 @@ export async function initDatabase() {
             id TEXT PRIMARY KEY,
             conversation_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
+            agent_id TEXT,
             type TEXT NOT NULL,
-            sent_at TIMESTAMP NOT NULL,
+            status TEXT DEFAULT 'sent',
+            message_content TEXT,
+            reason TEXT,
+            sent_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
         CREATE INDEX IF NOT EXISTS idx_proactive_message_log_conv_type ON proactive_message_log(conversation_id, type);
         CREATE INDEX IF NOT EXISTS idx_proactive_message_log_user ON proactive_message_log(user_id);
+
+        -- Add columns if they don't exist (for existing databases)
+        ALTER TABLE proactive_message_log ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'sent';
+        ALTER TABLE proactive_message_log ADD COLUMN IF NOT EXISTS message_content TEXT;
+        ALTER TABLE proactive_message_log ADD COLUMN IF NOT EXISTS reason TEXT;
+        ALTER TABLE proactive_message_log ADD COLUMN IF NOT EXISTS agent_id TEXT;
+        ALTER TABLE proactive_message_log ALTER COLUMN sent_at DROP NOT NULL;
 
         CREATE TABLE IF NOT EXISTS daily_briefing_settings (
             user_id TEXT PRIMARY KEY,

@@ -53,7 +53,8 @@ export default function Settings() {
     media_model: user?.media_model || '',
     notification_number: user?.notification_number || '',
     analytics_module_enabled: user?.analytics_module_enabled === 0 ? false : (user?.analytics_module_enabled === 1 || !!user?.plan_features?.analytics),
-    flows_module_enabled: user?.flows_module_enabled === 0 ? false : (user?.flows_module_enabled === 1 || !!user?.plan_features?.flows)
+    flows_module_enabled: user?.flows_module_enabled === 0 ? false : (user?.flows_module_enabled === 1 || !!user?.plan_features?.flows),
+    proactive_requires_validation: user?.proactive_requires_validation === null || user?.proactive_requires_validation === undefined ? true : Boolean(user?.proactive_requires_validation)
   })
 
 
@@ -72,7 +73,8 @@ export default function Settings() {
         media_model: user.media_model ?? prev.media_model ?? '',
         notification_number: user.notification_number ?? prev.notification_number ?? '',
         analytics_module_enabled: user.analytics_module_enabled === 0 ? false : (user.analytics_module_enabled === 1 || !!user.plan_features?.analytics),
-        flows_module_enabled: user.flows_module_enabled === 0 ? false : (user.flows_module_enabled === 1 || !!user.plan_features?.flows)
+        flows_module_enabled: user.flows_module_enabled === 0 ? false : (user.flows_module_enabled === 1 || !!user.plan_features?.flows),
+        proactive_requires_validation: user.proactive_requires_validation === null || user.proactive_requires_validation === undefined ? true : Boolean(user.proactive_requires_validation)
       }))
     }
   }, [user?.id, user?.name, user?.company, user?.media_model, user?.notification_number, user?.analytics_module_enabled, user?.flows_module_enabled, user?.plan_features])
@@ -650,6 +652,19 @@ export default function Settings() {
                   type="checkbox"
                   checked={uiSidebarCollapsed}
                   onChange={(e) => setUiSidebarCollapsed(e.target.checked)}
+                  className="accent-blue-500"
+                />
+              </label>
+
+              <label className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 cursor-pointer ${isDark ? 'border-space-700/60 bg-space-900/20' : 'border-gray-200 bg-white'}`}>
+                <div className="min-w-0">
+                  <div className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Relances: Validation manuelle</div>
+                  <div className="text-xs text-gray-500 truncate">Vérifier et confirmer les relances (panier, etc.) avant envoi.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.proactive_requires_validation}
+                  onChange={(e) => setFormData({ ...formData, proactive_requires_validation: e.target.checked })}
                   className="accent-blue-500"
                 />
               </label>

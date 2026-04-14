@@ -26,6 +26,7 @@ const Settings = lazy(() => import('./pages/Settings'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Campaigns = lazy(() => import('./pages/Campaigns'))
+const Relances = lazy(() => import('./pages/Relances'))
 const Templates = lazy(() => import('./pages/Templates'))
 const Workflows = lazy(() => import('./pages/Workflows'))
 const Payments = lazy(() => import('./pages/Payments'))
@@ -210,6 +211,7 @@ function App() {
           <Route path="conversations/:id" element={<StandardRoute><Suspense fallback={<PageFallback />}><ConversationDetail /></Suspense></StandardRoute>} />
           <Route path="analytics" element={<StandardRoute><Suspense fallback={<PageFallback />}><Analytics /></Suspense></StandardRoute>} />
           <Route path="campaigns" element={<StandardRoute><Suspense fallback={<PageFallback />}><Campaigns /></Suspense></StandardRoute>} />
+          <Route path="relances" element={<StandardRoute><Suspense fallback={<PageFallback />}><Relances /></Suspense></StandardRoute>} />
           <Route path="templates" element={<StandardRoute><Suspense fallback={<PageFallback />}><Templates /></Suspense></StandardRoute>} />
           <Route path="workflows" element={<StandardRoute><Suspense fallback={<PageFallback />}><Workflows /></Suspense></StandardRoute>} />
           <Route path="payments" element={<StandardRoute><Suspense fallback={<PageFallback />}><Payments /></Suspense></StandardRoute>} />

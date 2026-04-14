@@ -36,7 +36,7 @@ class ProactiveAdvisorService {
             const cutoffEnd = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
             const ordersToRelance = await db.all(`
-                SELECT o.*, c.agent_id, c.customer_context
+                SELECT o.*, c.agent_id, c.customer_context, u.proactive_requires_validation
                 FROM orders o
                 JOIN conversations c ON o.conversation_id = c.id
                 JOIN users u ON o.user_id = u.id
@@ -101,19 +101,41 @@ class ProactiveAdvisorService {
             );
 
             if (response?.content) {
-                console.log(`[ProactiveAdvisor] Envoi relance à ${order.customer_name} (${order.customer_phone})`);
-                
-                // Envoyer via WhatsApp
-                await whatsappManager.sendExternalMessage(order.agent_id, order.customer_phone, response.content);
+                const requiresValidation = order.proactive_requires_validation === 1;
 
-                // Marquer comme relancé
-                await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
-                
-                // Logger le message dans la conversation
-                await db.run(`
-                    INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, created_at)
-                    VALUES (?, ?, 'assistant', ?, 'ai', 'relance', ?)
-                `, uuidv4(), order.conversation_id, response.content, new Date().toISOString());
+                if (requiresValidation) {
+                    console.log(`[ProactiveAdvisor] Relance générée pour ${order.customer_name} (En attente de validation)`);
+                    
+                    // Insérer en attente
+                    await db.run(`
+                        INSERT INTO proactive_message_log (id, conversation_id, user_id, agent_id, type, status, message_content, reason)
+                        VALUES (?, ?, ?, ?, 'postponed_order', 'pending', ?, ?)
+                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, \`Commande reportée: \${order.notes || 'Articles divers'}\`);
+                    
+                    // Marquer comme relancé pour ne pas régénérer (bien qu'il soit pending)
+                    await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
+
+                } else {
+                    console.log(`[ProactiveAdvisor] Envoi relance à ${order.customer_name} (${order.customer_phone})`);
+                    
+                    // Envoyer via WhatsApp
+                    await whatsappManager.sendExternalMessage(order.agent_id, order.customer_phone, response.content);
+
+                    // Insérer en envoyé
+                    await db.run(`
+                        INSERT INTO proactive_message_log (id, conversation_id, user_id, agent_id, type, status, message_content, reason, sent_at)
+                        VALUES (?, ?, ?, ?, 'postponed_order', 'sent', ?, ?, ?)
+                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, \`Commande reportée: \${order.notes || 'Articles divers'}\`, new Date().toISOString());
+
+                    // Marquer comme relancé
+                    await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
+                    
+                    // Logger le message dans la conversation
+                    await db.run(`
+                        INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, created_at)
+                        VALUES (?, ?, 'assistant', ?, 'ai', 'relance', ?)
+                    `, uuidv4(), order.conversation_id, response.content, new Date().toISOString());
+                }
             }
 
         } catch (error) {
