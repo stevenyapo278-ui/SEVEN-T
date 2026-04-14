@@ -241,8 +241,9 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id);
         CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action);
         CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
+    `);
 
-        -- Add columns if they don't exist (for existing databases)
+    // Add columns if they don't exist (for existing databases)
         const columnsToUpdate = [
             { name: 'reset_token', type: 'TEXT' },
             { name: 'reset_token_expires', type: 'TIMESTAMP' },
@@ -286,6 +287,7 @@ export async function initDatabase() {
             }
         }
 
+        await db.exec(`
         -- Set default role for existing users
         UPDATE users SET role = 'owner' WHERE role IS NULL;
         UPDATE users SET campaigns_module_enabled = 1 WHERE campaigns_module_enabled IS NULL; -- All existing users get it enabled
