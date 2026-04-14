@@ -5,6 +5,7 @@
 
 # Stage 1: Build frontend
 FROM node:20-alpine AS frontend-builder
+RUN apk add --no-cache git
 
 WORKDIR /app/frontend
 # Force IPv4 and limit Node memory heavily to prevent OOM kills
@@ -31,6 +32,7 @@ FROM node:20-alpine AS production
 RUN apk add --no-cache \
     ca-certificates \
     wget \
+    git \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /app
