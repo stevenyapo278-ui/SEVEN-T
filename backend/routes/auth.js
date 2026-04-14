@@ -474,8 +474,8 @@ router.get('/me', async (req, res) => {
 
 router.put('/me', authenticateToken, async (req, res) => {
     try {
-        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled FROM users WHERE id = ?', req.user.id);
-        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled } = req.body;
+        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled, proactive_requires_validation FROM users WHERE id = ?', req.user.id);
+        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled, proactive_requires_validation } = req.body;
 
 
         // Build dynamic update query
@@ -546,6 +546,11 @@ router.put('/me', authenticateToken, async (req, res) => {
             updates.push('voice_responses_enabled = ?');
             values.push(valueToSet);
         }
+        
+        if (proactive_requires_validation !== undefined) {
+            updates.push('proactive_requires_validation = ?');
+            values.push(proactive_requires_validation ? 1 : 0);
+        }
 
 
         if (updates.length > 0) {
@@ -555,7 +560,7 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, proactive_requires_validation, notification_number FROM users WHERE id = ?', req.user.id);
         
         // Calculate changes
         const changes = {};
