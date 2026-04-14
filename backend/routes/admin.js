@@ -298,13 +298,13 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
-            polls_module_enabled, proactive_advisor_enabled,
+            polls_module_enabled, proactive_advisor_enabled, proactive_requires_validation,
             subscription_end_date,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             roles
         } = req.body;
 
-        const existing = await db.get('SELECT id, is_admin, plan, name, email, credits, is_active FROM users WHERE id = ?', req.params.id);
+        const existing = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
         if (!existing) {
             return res.status(404).json({ error: 'Utilisateur non trouvé' });
         }
@@ -458,6 +458,10 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             setClauses.push('proactive_advisor_enabled = ?');
             params.push(proactive_advisor_enabled ? 1 : 0);
         }
+        if (proactive_requires_validation !== undefined) {
+            setClauses.push('proactive_requires_validation = ?');
+            params.push(proactive_requires_validation ? 1 : 0);
+        }
         if (can_manage_users !== undefined) {
             setClauses.push('can_manage_users = ?');
             params.push(can_manage_users ? 1 : 0);
@@ -560,7 +564,7 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             'voice_responses_enabled', 'payment_module_enabled', 'analytics_module_enabled', 'reports_module_enabled',
             'availability_hours_enabled', 'next_best_action_enabled', 'conversion_score_enabled', 'daily_briefing_enabled',
             'sentiment_routing_enabled', 'catalog_import_enabled', 'human_handoff_alerts_enabled',
-            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled', 'campaigns_module_enabled', 'polls_module_enabled', 'proactive_advisor_enabled'
+            'flows_module_enabled', 'whatsapp_status_enabled', 'leads_management_enabled', 'campaigns_module_enabled', 'polls_module_enabled', 'proactive_advisor_enabled', 'proactive_requires_validation'
         ];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
@@ -860,7 +864,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
             sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
             flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
-            polls_module_enabled, proactive_advisor_enabled,
+            polls_module_enabled, proactive_advisor_enabled, proactive_requires_validation,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             parent_user_id,
             roles
@@ -908,11 +912,11 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
                 availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled,
                 sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled,
                 flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
-                polls_module_enabled, proactive_advisor_enabled,
+                polls_module_enabled, proactive_advisor_enabled, proactive_requires_validation,
                 can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
                 parent_user_id, role
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, userId, name, email, hashedPassword, company || '', planToUse, credits || 0, is_admin || 0, 
            subscriptionStatus, subscriptionEndDate,
            voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0, reports_module_enabled ? 1 : 0,
@@ -921,6 +925,7 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
            flows_module_enabled ? 1 : 0, whatsapp_status_enabled ? 1 : 0, leads_management_enabled !== undefined ? (leads_management_enabled ? 1 : 0) : 1, campaigns_module_enabled !== undefined ? (campaigns_module_enabled ? 1 : 0) : 1,
            polls_module_enabled !== undefined ? (polls_module_enabled ? 1 : 0) : 0,
            proactive_advisor_enabled ? 1 : 0,
+           proactive_requires_validation !== undefined ? (proactive_requires_validation ? 1 : 0) : 1,
            can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0, can_manage_tickets ? 1 : 0,
            parent_user_id || null, parent_user_id ? 'manager' : 'user'
         );

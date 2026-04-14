@@ -243,26 +243,38 @@ export async function initDatabase() {
         CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at);
 
         -- Add columns if they don't exist (for existing databases)
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_module_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS analytics_module_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS reports_module_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS availability_hours_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS next_best_action_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS conversion_score_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_briefing_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS sentiment_routing_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS catalog_import_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS human_handoff_alerts_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS flows_module_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_status_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS leads_management_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS campaigns_module_enabled INTEGER;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS proactive_advisor_enabled INTEGER DEFAULT 0;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT;
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'owner';
-        ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT;
+        const columnsToUpdate = [
+            { name: 'reset_token', type: 'TEXT' },
+            { name: 'reset_token_expires', type: 'TIMESTAMP' },
+            { name: 'payment_module_enabled', type: 'INTEGER' },
+            { name: 'analytics_module_enabled', type: 'INTEGER' },
+            { name: 'reports_module_enabled', type: 'INTEGER' },
+            { name: 'availability_hours_enabled', type: 'INTEGER' },
+            { name: 'next_best_action_enabled', type: 'INTEGER' },
+            { name: 'conversion_score_enabled', type: 'INTEGER' },
+            { name: 'daily_briefing_enabled', type: 'INTEGER' },
+            { name: 'sentiment_routing_enabled', type: 'INTEGER' },
+            { name: 'catalog_import_enabled', type: 'INTEGER' },
+            { name: 'human_handoff_alerts_enabled', type: 'INTEGER' },
+            { name: 'flows_module_enabled', type: 'INTEGER' },
+            { name: 'whatsapp_status_enabled', type: 'INTEGER' },
+            { name: 'leads_management_enabled', type: 'INTEGER' },
+            { name: 'campaigns_module_enabled', type: 'INTEGER' },
+            { name: 'proactive_advisor_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'proactive_requires_validation', type: 'INTEGER DEFAULT 1' },
+            { name: 'polls_module_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'parent_user_id', type: 'TEXT' },
+            { name: 'role', type: "TEXT DEFAULT 'owner'" },
+            { name: 'permissions', type: 'TEXT' }
+        ];
+
+        for (const col of columnsToUpdate) {
+            try {
+                await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+            } catch (e) {
+                console.warn(`users.${col.name} migration:`, e?.message);
+            }
+        }
 
         -- Set default role for existing users
         UPDATE users SET role = 'owner' WHERE role IS NULL;
