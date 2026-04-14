@@ -270,9 +270,19 @@ export async function initDatabase() {
 
         for (const col of columnsToUpdate) {
             try {
-                await db.run(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+                // PostgreSQL doesn't support "ADD COLUMN IF NOT EXISTS"
+                // Check if column exists first
+                const colCheck = await query(
+                    "SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = ?",
+                    [col.name]
+                );
+                
+                if (colCheck.rowCount === 0) {
+                    console.log(`Adding missing column: users.${col.name}`);
+                    await query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`);
+                }
             } catch (e) {
-                console.warn(`users.${col.name} migration:`, e?.message);
+                console.warn(`users.${col.name} migration error:`, e?.message);
             }
         }
 
