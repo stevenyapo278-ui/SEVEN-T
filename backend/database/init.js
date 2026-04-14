@@ -259,6 +259,7 @@ export async function initDatabase() {
         ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_status_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS leads_management_enabled INTEGER;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS campaigns_module_enabled INTEGER;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS proactive_advisor_enabled INTEGER DEFAULT 0;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_user_id TEXT;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'owner';
         ALTER TABLE users ADD COLUMN IF NOT EXISTS permissions TEXT;
