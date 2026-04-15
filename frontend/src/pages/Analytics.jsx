@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
-import { Reorder, motion, AnimatePresence } from 'framer-motion'
+import { Reorder, motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -142,6 +142,7 @@ export default function Analytics() {
     return saved ? JSON.parse(saved) : DEFAULT_LAYOUT
   })
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('analytics_layout', JSON.stringify(layout))
@@ -376,284 +377,372 @@ export default function Analytics() {
         className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-20"
       >
         {layout.map((widget) => (
-          <Reorder.Item
+          <WidgetWrapper
             key={widget.id}
-            value={widget}
-            dragListener={isEditMode}
-            className={`${widget.size} relative`}
-          >
-            {isEditMode && (
-              <div className="absolute top-2 right-2 z-50 flex items-center gap-2 animate-bounceIn">
-                <div className="p-1 bg-gold-400 text-space-950 rounded-lg cursor-grab active:cursor-grabbing shadow-lg border border-white/20">
-                  <GripVertical className="w-4 h-4" />
-                </div>
-              </div>
-            )}
-            
-            <div className={`h-full transition-transform duration-300 ${isEditMode ? 'ring-2 ring-gold-400/50 scale-[0.99] cursor-default' : ''}`}>
-              {/* Messages Timeline */}
-              {widget.id === 'timeline' && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Messages dans le temps</h3>
-                  <div className="w-full" style={{ height: 320 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={timeline}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
-                        <YAxis stroke="#9CA3AF" fontSize={12} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                          labelStyle={{ color: '#F3F4F6' }}
-                        />
-                        <Area type="monotone" dataKey="incoming" stackId="1" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.5} name="Entrants" />
-                        <Area type="monotone" dataKey="outgoing" stackId="1" stroke="#F5D47A" fill="#F5D47A" fillOpacity={0.5} name="Sortants" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Peak Hours */}
-              {widget.id === 'peakHours' && (
-                <div className="card p-6 h-full">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-display font-semibold text-gray-100">Heures de pointe</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <Clock className="w-4 h-4" />
-                      <span>Pics: {peakHours.peakHours?.join(', ') || 'N/A'}</span>
-                    </div>
-                  </div>
-                  <div className="w-full" style={{ height: 320 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={peakHours.data}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="label" stroke="#9CA3AF" fontSize={10} interval={2} />
-                        <YAxis stroke="#9CA3AF" fontSize={12} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                          labelStyle={{ color: '#F3F4F6' }}
-                        />
-                        <Bar dataKey="count" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Messages" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Adoption Timeline */}
-              {widget.id === 'adoption' && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Adoption des Relances AI</h3>
-                  <div className="w-full" style={{ height: 320 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={relanceROI?.daily_performance || []}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                        <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} />
-                        <YAxis stroke="#9CA3AF" fontSize={10} />
-                        <Tooltip
-                          contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
-                        />
-                        <Area type="monotone" dataKey="generated" stroke="#9CA3AF" fill="#9CA3AF" fillOpacity={0.1} name="Suggérées" />
-                        <Area type="monotone" dataKey="sent" stroke="#F5D47A" fill="#F5D47A" fillOpacity={0.3} name="Confirmées" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Sentiment */}
-              {widget.id === 'sentiment' && (
-                 <div className="card p-6 h-full">
-                    <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Sentiment Client</h3>
-                    <div className="w-full h-[240px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={sentimentStats}
-                                    cx="50%" cy="50%"
-                                    innerRadius={60} outerRadius={80}
-                                    paddingAngle={5}
-                                    dataKey="count" nameKey="sentiment"
-                                >
-                                    {sentimentStats.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.sentiment === 'positive' ? '#22C55E' : entry.sentiment === 'negative' ? '#EF4444' : '#3B82F6'} />
-                                    ))}
-                                </Pie>
-                                <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                    <div className="flex justify-center gap-4 mt-2">
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Positif</div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400"><div className="w-2 h-2 rounded-full bg-blue-500" /> Neutre</div>
-                        <div className="flex items-center gap-1.5 text-xs text-gray-400"><div className="w-2 h-2 rounded-full bg-red-500" /> Négatif</div>
-                    </div>
-                </div>
-              )}
-
-              {/* Agents */}
-              {widget.id === 'agents' && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Performance des agents</h3>
-                  <div className="space-y-4">
-                    {agentPerformance.length === 0 ? (
-                      <p className="text-gray-400 text-center py-8">Aucun agent créé</p>
-                    ) : (
-                      agentPerformance.map((agent) => (
-                        <div key={agent.id} className="flex items-center gap-4 p-4 bg-space-800 rounded-xl">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${agent.whatsapp_connected ? 'bg-emerald-500/20' : 'bg-gray-500/20'}`}>
-                            <Bot className={`w-5 h-5 ${agent.whatsapp_connected ? 'text-emerald-400' : 'text-gray-400'}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-gray-100 truncate">{agent.name}</p>
-                              {agent.is_active ? <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Actif</span> : <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">Inactif</span>}
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
-                              <span>{agent.conversations} conv.</span>
-                              <span>{agent.messages} msgs</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-gold-400">{agent.messages}</p>
-                            <p className="text-xs text-gray-500">messages</p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Funnel */}
-              {widget.id === 'funnel' && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Tunnel de conversion</h3>
-                  <div className="space-y-3">
-                    {funnel.map((stage, index) => {
-                      const maxCount = Math.max(...funnel.map(f => f.count), 1)
-                      const percentage = Math.round((stage.count / maxCount) * 100)
-                      return (
-                        <div key={stage.stage} className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400">{stage.stage}</span>
-                            <span className="font-medium text-gray-100">{stage.count}</span>
-                          </div>
-                          <div className="h-2 bg-space-700 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%`, backgroundColor: COLORS[index % COLORS.length] }} />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Potential */}
-              {widget.id === 'potential' && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Potentiel de Conversion</h3>
-                  <p className="text-xs text-gray-400 mb-6 font-bold uppercase tracking-wider">Messages par score</p>
-                  <div className="w-full h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={conversionStats}>
-                              <XAxis dataKey="bucket" stroke="#9CA3AF" fontSize={10} />
-                              <YAxis stroke="#9CA3AF" fontSize={10} />
-                              <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }} />
-                              <Bar dataKey="count" fill="#F5D47A" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                      </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-
-              {/* Seasonality */}
-              {widget.id === 'seasonality' && (
-                <div className="card p-6 h-full">
-                   <div className="flex items-center justify-between mb-4">
-                      <div>
-                         <h3 className="text-lg font-display font-semibold text-gray-100">Saisonnalité</h3>
-                         <p className="text-xs text-gray-400 uppercase font-black tracking-widest mt-1 opacity-50">Ventes mensuelles</p>
-                      </div>
-                      <Calendar className="w-5 h-5 text-gold-400 opacity-50" />
-                   </div>
-                   {productsSeasonality.data.length > 0 ? (
-                      <div className="w-full h-[300px]">
-                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={productsSeasonality.data}>
-                               <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                               <XAxis dataKey="month" stroke="#9CA3AF" fontSize={10} axisLine={false} tickLine={false} />
-                               <YAxis stroke="#9CA3AF" fontSize={10} axisLine={false} tickLine={false} />
-                               <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '12px' }} />
-                               {productsSeasonality.products.map((name, index) => (
-                                  <Bar key={name} dataKey={name} stackId="a" fill={COLORS[index % COLORS.length]} />
-                               ))}
-                            </BarChart>
-                         </ResponsiveContainer>
-                      </div>
-                   ) : (
-                      <div className="flex items-center justify-center h-[260px] bg-space-800/20 rounded-2xl border border-dashed border-space-700">
-                         <p className="text-gray-500 italic">Données insuffisantes</p>
-                      </div>
-                   )}
-                </div>
-              )}
-
-              {/* Heatmap */}
-              {widget.id === 'heatmap' && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Activité Hebdo</h3>
-                  <p className="text-xs text-gray-400 mb-6 uppercase font-bold tracking-widest opacity-50">Fréquence par heure</p>
-                  <div className="grid grid-cols-1 gap-1">
-                     {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-                        <div key={day} className="flex items-center gap-2">
-                           <span className="text-[10px] text-gray-500 w-6 font-bold uppercase">{day}</span>
-                           <div className="flex-1 flex gap-0.5 sm:gap-1">
-                              {Array.from({ length: 24 }).map((_, h) => {
-                                 const d = heatmapData.find(item => item.day === day && item.hour === h)
-                                 const count = d?.count || 0
-                                 let bgColor = 'bg-space-800'
-                                 if (count > 0) bgColor = 'bg-gold-400/10'; if (count > 5) bgColor = 'bg-gold-400/30'; if (count > 15) bgColor = 'bg-gold-400/60'; if (count > 30) bgColor = 'bg-gold-400'
-                                 return <div key={h} className={`flex-1 h-3 rounded-[2px] transition-all duration-500 ${bgColor}`} title={`${day} ${h}h: ${count} messages`} />
-                              })}
-                           </div>
-                        </div>
-                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Products */}
-              {widget.id === 'products' && topProducts.length > 0 && (
-                <div className="card p-6 h-full">
-                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Top produits ({period === '7d' ? '7j' : period === '30d' ? '30j' : '90j'})</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="text-left text-sm text-gray-400 border-b border-space-700">
-                          <th className="pb-3 font-medium">Produit</th>
-                          <th className="pb-3 font-medium text-right">Vendus</th>
-                          <th className="pb-3 font-medium text-right">Revenus</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {topProducts.slice(0, 10).map((product) => (
-                          <tr key={product.id} className="border-b border-space-800">
-                            <td className="py-3 text-gray-100">{product.name}</td>
-                            <td className="py-3 text-right font-medium text-gold-400">{product.total_sold}</td>
-                            <td className="py-3 text-right font-medium text-emerald-400">{product.revenue?.toLocaleString()} <span className="text-[10px] opacity-70">XOF</span></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          </Reorder.Item>
+            widget={widget}
+            isEditMode={isEditMode}
+            isDragging={isDragging}
+            setIsDragging={setIsDragging}
+            isDark={isDark}
+            // All data props
+            timeline={timeline}
+            peakHours={peakHours}
+            relanceROI={relanceROI}
+            sentimentStats={sentimentStats}
+            agentPerformance={agentPerformance}
+            funnel={funnel}
+            conversionStats={conversionStats}
+            productsSeasonality={productsSeasonality}
+            heatmapData={heatmapData}
+            topProducts={topProducts}
+            period={period}
+          />
         ))}
       </Reorder.Group>
     </div>
+  )
+}
+
+function WidgetWrapper({ 
+  widget, isEditMode, isDragging, setIsDragging, isDark,
+  timeline, peakHours, relanceROI, sentimentStats, agentPerformance, 
+  funnel, conversionStats, productsSeasonality, heatmapData, topProducts, period 
+}) {
+  const controls = useDragControls()
+  const [isThisItemDragging, setIsThisItemDragging] = useState(false)
+
+  const handleDragStart = () => {
+    setIsDragging(true)
+    setIsThisItemDragging(true)
+  }
+
+  const handleDragEnd = () => {
+    setIsDragging(false)
+    setIsThisItemDragging(false)
+  }
+
+  // Map icon to widget ID
+  const getWidgetInfo = (id) => {
+    switch(id) {
+      case 'timeline': return { title: 'Messages dans le temps', icon: MessageSquare, color: 'text-blue-400' }
+      case 'peakHours': return { title: 'Heures de pointe', icon: Clock, color: 'text-gold-400' }
+      case 'adoption': return { title: 'Adoption Relances', icon: Zap, color: 'text-purple-400' }
+      case 'sentiment': return { title: 'Sentiment Client', icon: Heart, color: 'text-emerald-400' }
+      case 'agents': return { title: 'Agents', icon: Bot, color: 'text-blue-400' }
+      case 'funnel': return { title: 'Tunnel de conversion', icon: Target, color: 'text-amber-400' }
+      case 'potential': return { title: 'Potentiel', icon: TrendingUp, color: 'text-gold-400' }
+      case 'seasonality': return { title: 'Saisonnalité', icon: Calendar, color: 'text-gold-400' }
+      case 'heatmap': return { title: 'Activité Hebdo', icon: Layout, color: 'text-purple-400' }
+      case 'products': return { title: 'Top Produits', icon: ShoppingCart, color: 'text-emerald-400' }
+      default: return { title: 'Widget', icon: BarChart3, color: 'text-gray-400' }
+    }
+  }
+
+  const info = getWidgetInfo(widget.id)
+
+  return (
+    <Reorder.Item
+      value={widget}
+      dragListener={false}
+      dragControls={controls}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className={`${widget.size} relative`}
+      initial={false}
+      animate={{
+        scale: isThisItemDragging ? 1.05 : 1,
+        zIndex: isThisItemDragging ? 50 : 1,
+        rotate: isThisItemDragging ? 1 : 0
+      }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+    >
+      {isEditMode && (
+        <div className="absolute top-2 right-2 z-50 flex items-center gap-2 animate-bounceIn">
+          <div 
+            onPointerDown={(e) => controls.start(e)}
+            className="p-1.5 bg-gold-400 text-space-950 rounded-lg cursor-grab active:cursor-grabbing shadow-lg border border-white/20 hover:scale-110 transition-transform"
+          >
+            <GripVertical className="w-4 h-4" />
+          </div>
+        </div>
+      )}
+      
+      <div className={`h-full transition-all duration-300 ${isEditMode ? 'ring-2 ring-gold-400/30 rounded-2xl' : ''} ${isThisItemDragging ? 'shadow-2xl' : ''}`}>
+        {/* If any item is dragging, and this is NOT the one, or if THIS is dragging, show placeholder for performance */}
+        {isDragging ? (
+          <div className="card p-6 h-full flex flex-row items-center gap-4 bg-space-800/40 border-dashed border-2 border-space-700">
+            <div className={`p-3 rounded-xl bg-space-900 ${info.color}`}>
+              <info.icon className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-lg font-display font-semibold text-gray-100">{info.title}</h3>
+              <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Optimisation en cours...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Messages Timeline */}
+            {widget.id === 'timeline' && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Messages dans le temps</h3>
+                <div className="w-full" style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={timeline}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="date" stroke="#9CA3AF" fontSize={12} />
+                      <YAxis stroke="#9CA3AF" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                        labelStyle={{ color: '#F3F4F6' }}
+                      />
+                      <Area type="monotone" dataKey="incoming" stackId="1" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.5} name="Entrants" />
+                      <Area type="monotone" dataKey="outgoing" stackId="1" stroke="#F5D47A" fill="#F5D47A" fillOpacity={0.5} name="Sortants" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Peak Hours */}
+            {widget.id === 'peakHours' && (
+              <div className="card p-6 h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-display font-semibold text-gray-100">Heures de pointe</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    <span>Pics: {peakHours.peakHours?.join(', ') || 'N/A'}</span>
+                  </div>
+                </div>
+                <div className="w-full" style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={peakHours.data}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="label" stroke="#9CA3AF" fontSize={10} interval={2} />
+                      <YAxis stroke="#9CA3AF" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                        labelStyle={{ color: '#F3F4F6' }}
+                      />
+                      <Bar dataKey="count" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Messages" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Adoption Timeline */}
+            {widget.id === 'adoption' && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Adoption des Relances AI</h3>
+                <div className="w-full" style={{ height: 320 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={relanceROI?.daily_performance || []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                      <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} />
+                      <YAxis stroke="#9CA3AF" fontSize={10} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                      />
+                      <Area type="monotone" dataKey="generated" stroke="#9CA3AF" fill="#9CA3AF" fillOpacity={0.1} name="Suggérées" />
+                      <Area type="monotone" dataKey="sent" stroke="#F5D47A" fill="#F5D47A" fillOpacity={0.3} name="Confirmées" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Sentiment */}
+            {widget.id === 'sentiment' && (
+               <div className="card p-6 h-full">
+                  <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Sentiment Client</h3>
+                  <div className="w-full h-[240px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                              <Pie
+                                  data={sentimentStats}
+                                  cx="50%" cy="50%"
+                                  innerRadius={60} outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="count" nameKey="sentiment"
+                              >
+                                  {sentimentStats.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.sentiment === 'positive' ? '#22C55E' : entry.sentiment === 'negative' ? '#EF4444' : '#3B82F6'} />
+                                  ))}
+                              </Pie>
+                              <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }} />
+                          </PieChart>
+                      </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-center gap-4 mt-2">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Positif</div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400"><div className="w-2 h-2 rounded-full bg-blue-500" /> Neutre</div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400"><div className="w-2 h-2 rounded-full bg-red-500" /> Négatif</div>
+                  </div>
+              </div>
+            )}
+
+            {/* Agents */}
+            {widget.id === 'agents' && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Performance des agents</h3>
+                <div className="space-y-4">
+                  {agentPerformance.length === 0 ? (
+                    <p className="text-gray-400 text-center py-8">Aucun agent créé</p>
+                  ) : (
+                    agentPerformance.map((agent) => (
+                      <div key={agent.id} className="flex items-center gap-4 p-4 bg-space-800 rounded-xl">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${agent.whatsapp_connected ? 'bg-emerald-500/20' : 'bg-gray-500/20'}`}>
+                          <Bot className={`w-5 h-5 ${agent.whatsapp_connected ? 'text-emerald-400' : 'text-gray-400'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-100 truncate">{agent.name}</p>
+                            {agent.is_active ? <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Actif</span> : <span className="px-2 py-0.5 text-xs bg-gray-500/20 text-gray-400 rounded">Inactif</span>}
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                            <span>{agent.conversations} conv.</span>
+                            <span>{agent.messages} msgs</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-gold-400">{agent.messages}</p>
+                          <p className="text-xs text-gray-500">messages</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Funnel */}
+            {widget.id === 'funnel' && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Tunnel de conversion</h3>
+                <div className="space-y-3">
+                  {funnel.map((stage, index) => {
+                    const maxCount = Math.max(...funnel.map(f => f.count), 1)
+                    const percentage = Math.round((stage.count / maxCount) * 100)
+                    return (
+                      <div key={stage.stage} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-400">{stage.stage}</span>
+                          <span className="font-medium text-gray-100">{stage.count}</span>
+                        </div>
+                        <div className="h-2 bg-space-700 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%`, backgroundColor: COLORS[index % COLORS.length] }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Potential */}
+            {widget.id === 'potential' && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Potentiel de Conversion</h3>
+                <p className="text-xs text-gray-400 mb-6 font-bold uppercase tracking-wider">Messages par score</p>
+                <div className="w-full h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={conversionStats}>
+                            <XAxis dataKey="bucket" stroke="#9CA3AF" fontSize={10} />
+                            <YAxis stroke="#9CA3AF" fontSize={10} />
+                            <Tooltip contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }} />
+                            <Bar dataKey="count" fill="#F5D47A" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Seasonality */}
+            {widget.id === 'seasonality' && (
+              <div className="card p-6 h-full">
+                 <div className="flex items-center justify-between mb-4">
+                    <div>
+                       <h3 className="text-lg font-display font-semibold text-gray-100">Saisonnalité</h3>
+                       <p className="text-xs text-gray-400 uppercase font-black tracking-widest mt-1 opacity-50">Ventes mensuelles</p>
+                    </div>
+                    <Calendar className="w-5 h-5 text-gold-400 opacity-50" />
+                 </div>
+                 {productsSeasonality.data.length > 0 ? (
+                    <div className="w-full h-[300px]">
+                       <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={productsSeasonality.data}>
+                             <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                             <XAxis dataKey="month" stroke="#9CA3AF" fontSize={10} axisLine={false} tickLine={false} />
+                             <YAxis stroke="#9CA3AF" fontSize={10} axisLine={false} tickLine={false} />
+                             <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '12px' }} />
+                             {productsSeasonality.products.map((name, index) => (
+                                <Bar key={name} dataKey={name} stackId="a" fill={COLORS[index % COLORS.length]} />
+                             ))}
+                          </BarChart>
+                       </ResponsiveContainer>
+                    </div>
+                 ) : (
+                    <div className="flex items-center justify-center h-[260px] bg-space-800/20 rounded-2xl border border-dashed border-space-700">
+                       <p className="text-gray-500 italic">Données insuffisantes</p>
+                    </div>
+                 )}
+              </div>
+            )}
+
+            {/* Heatmap */}
+            {widget.id === 'heatmap' && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Activité Hebdo</h3>
+                <p className="text-xs text-gray-400 mb-6 uppercase font-bold tracking-widest opacity-50">Fréquence par heure</p>
+                <div className="grid grid-cols-1 gap-1">
+                   {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+                      <div key={day} className="flex items-center gap-2">
+                         <span className="text-[10px] text-gray-500 w-6 font-bold uppercase">{day}</span>
+                         <div className="flex-1 flex gap-0.5 sm:gap-1">
+                            {Array.from({ length: 24 }).map((_, h) => {
+                               const d = heatmapData.find(item => item.day === day && item.hour === h)
+                               const count = d?.count || 0
+                               let bgColor = 'bg-space-800'
+                               if (count > 0) bgColor = 'bg-gold-400/10'; if (count > 5) bgColor = 'bg-gold-400/30'; if (count > 15) bgColor = 'bg-gold-400/60'; if (count > 30) bgColor = 'bg-gold-400'
+                               return <div key={h} className={`flex-1 h-3 rounded-[2px] transition-all duration-500 ${bgColor}`} title={`${day} ${h}h: ${count} messages`} />
+                            })}
+                         </div>
+                      </div>
+                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Products */}
+            {widget.id === 'products' && topProducts.length > 0 && (
+              <div className="card p-6 h-full">
+                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Top produits ({period === '7d' ? '7j' : period === '30d' ? '30j' : '90j'})</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left text-sm text-gray-400 border-b border-space-700">
+                        <th className="pb-3 font-medium">Produit</th>
+                        <th className="pb-3 font-medium text-right">Vendus</th>
+                        <th className="pb-3 font-medium text-right">Revenus</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {topProducts.slice(0, 10).map((product) => (
+                        <tr key={product.id} className="border-b border-space-800">
+                          <td className="py-3 text-gray-100">{product.name}</td>
+                          <td className="py-3 text-right font-medium text-gold-400">{product.total_sold}</td>
+                          <td className="py-3 text-right font-medium text-emerald-400">{product.revenue?.toLocaleString()} <span className="text-[10px] opacity-70">XOF</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </Reorder.Item>
   )
 }
 
