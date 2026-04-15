@@ -275,6 +275,13 @@ export default function Analytics() {
                   </button>
                 ))}
               </div>
+              <button
+                onClick={loadAnalytics}
+                disabled={loading}
+                className={`p-2 rounded-xl transition-all duration-200 ${
+                  isDark ? 'bg-space-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-900'
+                }`}
+              >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
               </button>
               
@@ -358,8 +365,6 @@ export default function Analytics() {
               </>
             )}
           </div>
-        </div>
-      </div>
 
       {/* Dynamic Widgets Layout */}
       <Reorder.Group 
@@ -646,7 +651,6 @@ export default function Analytics() {
           </Reorder.Item>
         ))}
       </Reorder.Group>
-      </div>
     </div>
   )
 }
