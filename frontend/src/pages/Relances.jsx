@@ -3,7 +3,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { BellRing, Check, X, Clock, RefreshCw, Send, Loader2, MessageSquare, TrendingUp, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BellRing, Check, X, Clock, RefreshCw, Send, Loader2, MessageSquare, TrendingUp, BarChart3, PieChart as PieChartIcon, ExternalLink, AlertTriangle } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, AreaChart, Area
@@ -79,6 +80,7 @@ export default function Relances() {
       await api.post(`/relances/${id}/ignore`);
       toast.success('Relance ignorée');
       setLogs(logs.filter(log => log.id !== id));
+      fetchStats();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur lors de l’annulation');
     } finally {
@@ -86,12 +88,27 @@ export default function Relances() {
     }
   };
 
-  const getTypeLabel = (type) => {
+  const handleBulkIgnore = async () => {
+    if (!window.confirm('Voulez-vous ignorer TOUTES les relances en attente ?')) return;
+    setLoading(true);
+    try {
+      await api.post('/relances/bulk-ignore');
+      toast.success('Toutes les relances ont été ignorées');
+      await Promise.all([fetchRelances(), fetchStats()]);
+    } catch (err) {
+      toast.error('Erreur lors de l’action groupée');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTypeInfo = (type) => {
     switch (type) {
-      case 'abandoned_cart': return 'Panier Abandonné';
-      case 'cold_relance': return 'Relance Froide';
-      case 'postponed_order': return 'Commande Reportée';
-      default: return type;
+      case 'abandoned_cart': return { label: '🔥 Panier Abandonné', color: 'bg-red-500/10 text-red-500 border-red-500/20' };
+      case 'cold_relance': return { label: '❄️ Relance Froide', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' };
+      case 'postponed_order': return { label: '⏱️ Commande Reportée', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' };
+      case 'price_inquiry': return { label: '💰 Demande de Prix', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' };
+      default: return { label: type, color: 'bg-gray-500/10 text-gray-500' };
     }
   };
 
@@ -255,37 +272,51 @@ export default function Relances() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className={`flex items-center gap-2 p-1 rounded-xl overflow-x-auto whitespace-nowrap hide-scrollbar border ${
-        isDark ? 'bg-space-900/50 border-space-700/50' : 'bg-gray-100/50 border-gray-200'
-      }`}>
-        {[
-          { id: 'pending', label: 'À confirmer', icon: Clock },
-          { id: 'sent', label: 'Historique', icon: Check },
-          { id: 'ignored', label: 'Ignorées', icon: X }
-        ].map(tab => (
+      {/* Tabs & Bulk Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className={`flex items-center gap-2 p-1 rounded-xl overflow-x-auto whitespace-nowrap hide-scrollbar border ${
+          isDark ? 'bg-space-900/50 border-space-700/50' : 'bg-gray-100/50 border-gray-200'
+        }`}>
+          {[
+            { id: 'pending', label: 'À confirmer', icon: Clock },
+            { id: 'sent', label: 'Historique', icon: Check },
+            { id: 'ignored', label: 'Ignorées', icon: X }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex-1 justify-center sm:flex-none sm:justify-start ${
+                activeTab === tab.id
+                  ? isDark 
+                    ? 'bg-space-800 text-white shadow-sm ring-1 ring-space-700' 
+                    : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
+                  : isDark
+                    ? 'text-gray-400 hover:text-gray-200 hover:bg-space-800/50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
+              }`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+              {tab.id === 'pending' && activeTab === 'pending' && logs.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
+                  {logs.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'pending' && logs.length > 0 && (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all flex-1 justify-center sm:flex-none sm:justify-start ${
-              activeTab === tab.id
-                ? isDark 
-                  ? 'bg-space-800 text-white shadow-sm ring-1 ring-space-700' 
-                  : 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200'
-                : isDark
-                  ? 'text-gray-400 hover:text-gray-200 hover:bg-space-800/50'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-white/50'
+            onClick={handleBulkIgnore}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+              isDark ? 'border-red-500/20 text-red-400 hover:bg-red-500/10' : 'border-red-200 text-red-600 hover:bg-red-50'
             }`}
           >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-            {tab.id === 'pending' && activeTab === 'pending' && logs.length > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-xs">
-                {logs.length}
-              </span>
-            )}
+            <AlertTriangle className="w-4 h-4" />
+            Tout ignorer
           </button>
-        ))}
+        )}
       </div>
 
       {/* Content */}
@@ -303,92 +334,110 @@ export default function Relances() {
             </p>
           </div>
         ) : (
-          logs.map(log => (
-            <div key={log.id} className={`rounded-xl border p-5 transition-all ${
-              isDark ? 'border-space-700 bg-space-800/40 hover:bg-space-800/60' : 'border-gray-200 bg-white hover:border-blue-200'
-            }`}>
-              <div className="flex flex-col md:flex-row gap-5">
-                {/* Info & Reason */}
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold">
-                      {(log.contact_name || 'U')[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {log.contact_name || log.contact_number || 'Utilisateur inconnu'}
+          logs.map(log => {
+            const typeInfo = getTypeInfo(log.type);
+            return (
+              <div key={log.id} className={`rounded-xl border p-5 transition-all ${
+                isDark ? 'border-space-700 bg-space-800/40 hover:bg-space-800/60' : 'border-gray-200 bg-white hover:border-blue-200'
+              }`}>
+                <div className="flex flex-col md:flex-row gap-5">
+                  {/* Info & Reason */}
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 font-bold">
+                        {(log.contact_name || 'U')[0].toUpperCase()}
                       </div>
-                      <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {format(new Date(log.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                           <div className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {log.contact_name || log.contact_number || 'Utilisateur inconnu'}
+                          </div>
+                          <Link 
+                            to={`/dashboard/conversations/${log.conversation_id}`}
+                            className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            Voir la discussion
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {format(new Date(log.created_at), "d MMMM yyyy 'à' HH:mm", { locale: fr })}
+                        </div>
                       </div>
                     </div>
-                    <div className="ml-auto flex flex-col items-end gap-1">
-                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400">
-                        {getTypeLabel(log.type)}
-                      </span>
+
+                    <div className="flex items-center gap-2">
+                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${typeInfo.color}`}>
+                          {typeInfo.label}
+                        </span>
+                        {log.agent_name && (
+                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${isDark ? 'bg-space-700 border-space-600 text-gray-400' : 'bg-gray-100 border-gray-200 text-gray-600'}`}>
+                            Agent: {log.agent_name}
+                          </span>
+                        )}
+                    </div>
+
+                    {log.reason && (
+                      <div className={`text-sm py-2 px-3 rounded-lg border-l-2 border-gold-400 ${
+                        isDark ? 'bg-gold-400/5 text-gray-300' : 'bg-gold-50 text-gray-700'
+                      }`}>
+                        <span className="font-semibold text-gold-500">Raison IA :</span> {log.reason}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className={`text-sm font-medium flex items-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <MessageSquare className="w-4 h-4 text-gray-400" /> Message proposé
+                      </label>
+                      <textarea 
+                        value={editingContent[log.id] || ''}
+                        onChange={(e) => setEditingContent({...editingContent, [log.id]: e.target.value})}
+                        disabled={activeTab !== 'pending'}
+                        className={`w-full min-h-[80px] p-3 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-y ${
+                          isDark 
+                            ? 'bg-space-900/50 border-space-600 text-gray-200 placeholder-gray-600' 
+                            : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
+                        }`}
+                        placeholder="Contenu du message..."
+                      />
                     </div>
                   </div>
 
-                  {log.reason && (
-                    <div className={`text-sm py-2 px-3 rounded-lg border-l-2 border-gold-400 ${
-                      isDark ? 'bg-gold-400/5 text-gray-300' : 'bg-gold-50 text-gray-700'
+                  {/* Actions */}
+                  {activeTab === 'pending' && (
+                    <div className={`flex flex-row md:flex-col items-center gap-2 md:pl-5 border-t md:border-t-0 md:border-l pt-4 md:pt-0 ${
+                      isDark ? 'border-space-700' : 'border-gray-200'
                     }`}>
-                      <span className="font-semibold text-gold-500">Raison IA :</span> {log.reason}
+                      <button
+                        onClick={() => handleSend(log.id)}
+                        disabled={processingId === log.id}
+                        className="w-full flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50"
+                      >
+                        {processingId === log.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                        Envoyer
+                      </button>
+                      <button
+                        onClick={() => handleIgnore(log.id)}
+                        disabled={processingId === log.id}
+                        className={`w-full flex-1 flex items-center justify-center gap-2 py-2.5 px-4 font-semibold rounded-xl transition-all ${
+                          isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+                        } disabled:opacity-50`}
+                      >
+                        <X className="w-5 h-5" />
+                        Ignorer
+                      </button>
                     </div>
                   )}
-
-                  <div className="space-y-2">
-                    <label className={`text-sm font-medium flex items-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      <MessageSquare className="w-4 h-4 text-gray-400" /> Message proposé
-                    </label>
-                    <textarea 
-                      value={editingContent[log.id] || ''}
-                      onChange={(e) => setEditingContent({...editingContent, [log.id]: e.target.value})}
-                      disabled={activeTab !== 'pending'}
-                      className={`w-full min-h-[80px] p-3 rounded-xl text-sm border focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-y ${
-                        isDark 
-                          ? 'bg-space-900/50 border-space-600 text-gray-200 placeholder-gray-600' 
-                          : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'
-                      }`}
-                      placeholder="Contenu du message..."
-                    />
-                  </div>
+                  
+                  {activeTab === 'sent' && log.sent_at && (
+                      <div className={`flex items-center gap-2 text-sm md:w-32 md:justify-center font-medium ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                          <Check className="w-4 h-4" /> Envoyé le {format(new Date(log.sent_at), "dd/MM", { locale: fr })}
+                      </div>
+                  )}
                 </div>
-
-                {/* Actions */}
-                {activeTab === 'pending' && (
-                  <div className={`flex flex-row md:flex-col items-center gap-2 md:pl-5 border-t md:border-t-0 md:border-l pt-4 md:pt-0 ${
-                    isDark ? 'border-space-700' : 'border-gray-200'
-                  }`}>
-                    <button
-                      onClick={() => handleSend(log.id)}
-                      disabled={processingId === log.id}
-                      className="w-full flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all shadow-sm shadow-blue-500/20 disabled:opacity-50"
-                    >
-                      {processingId === log.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                      Envoyer
-                    </button>
-                    <button
-                      onClick={() => handleIgnore(log.id)}
-                      disabled={processingId === log.id}
-                      className={`w-full flex-1 flex items-center justify-center gap-2 py-2.5 px-4 font-semibold rounded-xl transition-all ${
-                        isDark ? 'hover:bg-space-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
-                      } disabled:opacity-50`}
-                    >
-                      <X className="w-5 h-5" />
-                      Ignorer
-                    </button>
-                  </div>
-                )}
-                
-                {activeTab === 'sent' && log.sent_at && (
-                    <div className={`flex items-center gap-2 text-sm md:w-32 md:justify-center font-medium ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                        <Check className="w-4 h-4" /> Envoyé le {format(new Date(log.sent_at), "dd/MM", { locale: fr })}
-                    </div>
-                )}
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

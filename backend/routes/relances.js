@@ -143,4 +143,21 @@ router.post('/:id/ignore', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * POST /api/relances/bulk-ignore
+ * Mark all pending relances as ignored
+ */
+router.post('/bulk-ignore', authenticateToken, async (req, res) => {
+    try {
+        await db.run(
+            'UPDATE proactive_message_log SET status = ? WHERE user_id = ? AND status = ?',
+            'ignored', req.user.id, 'pending'
+        );
+        res.json({ success: true, message: 'Toutes les relances ont été ignorées' });
+    } catch (error) {
+        console.error('[Relances API] Bulk ignore error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;
