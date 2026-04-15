@@ -110,7 +110,7 @@ class ProactiveAdvisorService {
                     await db.run(`
                         INSERT INTO proactive_message_log (id, conversation_id, user_id, agent_id, type, status, message_content, reason)
                         VALUES (?, ?, ?, ?, 'postponed_order', 'pending', ?, ?)
-                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, \`Commande reportée: \${order.notes || 'Articles divers'}\`);
+                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, `Commande reportée: ${order.notes || 'Articles divers'}`);
                     
                     // Marquer comme relancé pour ne pas régénérer (bien qu'il soit pending)
                     await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
@@ -125,7 +125,7 @@ class ProactiveAdvisorService {
                     await db.run(`
                         INSERT INTO proactive_message_log (id, conversation_id, user_id, agent_id, type, status, message_content, reason, sent_at)
                         VALUES (?, ?, ?, ?, 'postponed_order', 'sent', ?, ?, ?)
-                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, \`Commande reportée: \${order.notes || 'Articles divers'}\`, new Date().toISOString());
+                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, `Commande reportée: ${order.notes || 'Articles divers'}`, new Date().toISOString());
 
                     // Marquer comme relancé
                     await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
