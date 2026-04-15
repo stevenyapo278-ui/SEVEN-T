@@ -6,10 +6,9 @@
 import fs from 'fs';
 import path from 'path';
 import * as cheerio from 'cheerio';
-import YoutubeTranscriptPkg from 'youtube-transcript';
-const { YoutubeTranscript } = YoutubeTranscriptPkg;
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
+const { YoutubeTranscript } = require('youtube-transcript');
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 
