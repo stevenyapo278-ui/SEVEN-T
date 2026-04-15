@@ -8,7 +8,7 @@
  *   - Sessions auto-expire after 90 days of inactivity
  */
 
-import { proto, initAuthCreds, BufferJSON } from 'baileys';
+import { proto, initAuthCreds, BufferJSON } from '@whiskeysockets/baileys';
 
 /**
  * Create a Baileys auth state backed by Redis.
