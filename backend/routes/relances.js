@@ -1,6 +1,6 @@
 import express from 'express';
 import { db } from '../database/init.js';
-import { requireAuth } from '../middleware/auth.js';
+import { authenticateToken } from '../middleware/auth.js';
 import { whatsappManager } from '../services/whatsapp.js';
 
 const router = express.Router();
@@ -9,7 +9,7 @@ const router = express.Router();
  * GET /api/relances
  * Fetch pending or sent/ignored relances
  */
-router.get('/', requireAuth, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
     try {
         const status = req.query.status || 'pending'; // 'pending', 'sent', 'ignored'
         
@@ -33,7 +33,7 @@ router.get('/', requireAuth, async (req, res) => {
  * POST /api/relances/:id/send
  * Confirm and send a pending relance
  */
-router.post('/:id/send', requireAuth, async (req, res) => {
+router.post('/:id/send', authenticateToken, async (req, res) => {
     try {
         const logId = req.params.id;
         const editedMessage = req.body.message_content; // Optional edited message
@@ -75,7 +75,7 @@ router.post('/:id/send', requireAuth, async (req, res) => {
  * POST /api/relances/:id/ignore
  * Mark a pending relance as ignored
  */
-router.post('/:id/ignore', requireAuth, async (req, res) => {
+router.post('/:id/ignore', authenticateToken, async (req, res) => {
     try {
         const logId = req.params.id;
         
