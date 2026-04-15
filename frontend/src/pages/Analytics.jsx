@@ -365,6 +365,8 @@ export default function Analytics() {
               </>
             )}
           </div>
+        </div>
+      </div>
 
       {/* Dynamic Widgets Layout */}
       <Reorder.Group 
