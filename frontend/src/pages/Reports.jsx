@@ -312,7 +312,6 @@ export default function Reports() {
 
         ${hasRelance ? `
         <div style="page-break-inside: avoid; margin-bottom: 40px;">
-          <h2 style="color: #222; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Performance Proactive AI</h2>
           <table style="width: 100%; border-collapse: separate; border-spacing: 12px 0; margin-bottom: 15px;">
             <tr>
               <td style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 33%;">
