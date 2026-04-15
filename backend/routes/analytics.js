@@ -52,6 +52,16 @@ router.get('/overview', async (req, res) => {
         const r9 = await db.get(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND created_at >= ? AND created_at < ?`, reqUserId, prevStartDateStr, startDateStr);
         const prevOrders = r9?.count ?? 0;
 
+        // Proactive AI (Relances) stats
+        const r10 = await db.get(`SELECT COUNT(*) as count FROM proactive_message_log WHERE user_id = ? AND created_at >= ?`, reqUserId, startDateStr);
+        const currentRelancesGenerated = r10?.count ?? 0;
+
+        const r11 = await db.get(`SELECT COUNT(*) as count FROM proactive_message_log WHERE user_id = ? AND status = 'sent' AND created_at >= ?`, reqUserId, startDateStr);
+        const currentRelancesSent = r11?.count ?? 0;
+
+        const r12 = await db.get(`SELECT COUNT(*) as count FROM proactive_message_log WHERE user_id = ? AND created_at >= ? AND created_at < ?`, reqUserId, prevStartDateStr, startDateStr);
+        const prevRelancesGenerated = r12?.count ?? 0;
+
         // Calculate growth percentages
         const calcGrowth = (current, prev) => {
             if (prev === 0) return current > 0 ? 100 : 0;
@@ -79,6 +89,12 @@ router.get('/overview', async (req, res) => {
                 revenue: {
                     value: currentRevenue,
                     currency: 'XOF'
+                },
+                relances: {
+                    generated: currentRelancesGenerated,
+                    sent: currentRelancesSent,
+                    adoption_rate: currentRelancesGenerated > 0 ? Math.round((currentRelancesSent / currentRelancesGenerated) * 100) : 0,
+                    growth: calcGrowth(currentRelancesGenerated, prevRelancesGenerated)
                 }
             },
             period: period
@@ -457,6 +473,98 @@ router.get('/products-timeline', async (req, res) => {
         });
     } catch (error) {
         console.error('Get products timeline error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// GET /relance-roi
+router.get('/relance-roi', async (req, res) => {
+    try {
+        const reqUserId = req.user.ownerId;
+        const { period = '30d' } = req.query;
+        let daysBack = 30;
+        if (period === '7d') daysBack = 7;
+        if (period === '90d') daysBack = 90;
+
+        const since = new Date();
+        since.setDate(since.getDate() - daysBack);
+
+        // Calculate ROI: Orders created within 24h after a relance was sent
+        const stats = await db.get(`
+            SELECT 
+                COUNT(DISTINCT o.id)::int as attributed_orders,
+                COALESCE(SUM(o.total_amount), 0)::numeric as attributed_revenue
+            FROM orders o
+            JOIN proactive_message_log p ON o.conversation_id = p.conversation_id
+            WHERE p.user_id = ? 
+              AND p.status = 'sent'
+              AND o.status = 'completed'
+              AND o.created_at > p.sent_at 
+              AND o.created_at <= (p.sent_at + interval '24 hours')
+              AND p.created_at >= ?
+        `, reqUserId, since.toISOString());
+
+        // Also get total relances stats for this period for comparison
+        const performance = await db.all(`
+            SELECT 
+                (created_at AT TIME ZONE 'UTC')::date as date,
+                SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END)::int as sent,
+                COUNT(*)::int as generated
+            FROM proactive_message_log
+            WHERE user_id = ? AND created_at >= ?
+            GROUP BY date
+            ORDER BY date ASC
+        `, reqUserId, since.toISOString());
+
+        res.json({
+            attributed_orders: stats.attributed_orders,
+            attributed_revenue: stats.attributed_revenue,
+            daily_performance: performance
+        });
+    } catch (error) {
+        console.error('Get relance ROI error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// GET /sentiment-stats
+router.get('/sentiment-stats', async (req, res) => {
+    try {
+        const stats = await db.all(`
+            SELECT 
+                COALESCE(sentiment, 'neutral') as sentiment,
+                COUNT(*) as count
+            FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE a.user_id = ?
+            GROUP BY sentiment
+        `, req.user.ownerId);
+
+        res.json({ stats });
+    } catch (error) {
+        console.error('Get sentiment stats error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// GET /conversion-stats
+router.get('/conversion-stats', async (req, res) => {
+    try {
+        // Distribution of conversion scores in buckets of 10
+        const stats = await db.all(`
+            SELECT 
+                (FLOOR(COALESCE(conversion_score, 0) / 10) * 10)::int as bucket,
+                COUNT(*) as count
+            FROM conversations c
+            JOIN agents a ON c.agent_id = a.id
+            WHERE a.user_id = ?
+            GROUP BY bucket
+            ORDER BY bucket ASC
+        `, req.user.ownerId);
+
+        res.json({ stats });
+    } catch (error) {
+        console.error('Get conversion stats error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

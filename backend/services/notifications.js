@@ -15,7 +15,8 @@ export const NOTIFICATION_TYPES = {
     lead: { icon: 'user', color: 'violet' },
     whatsapp: { icon: 'message', color: 'green' },
     credit: { icon: 'coins', color: 'gold' },
-    agent: { icon: 'bot', color: 'violet' }
+    agent: { icon: 'bot', color: 'violet' },
+    relance: { icon: 'sparkles', color: 'gold' }
 };
 
 class NotificationService {
@@ -289,6 +290,19 @@ class NotificationService {
             title,
             message,
             metadata
+        });
+    }
+
+    /**
+     * Notify about a new relance suggestion
+     */
+    notifyRelanceGenerated(userId, contactName, conversationId) {
+        return this.create(userId, {
+            type: 'relance',
+            title: 'Relance AI à confirmer',
+            message: `Une nouvelle suggestion de relance est prête pour ${contactName}`,
+            link: `/dashboard/conversations`,
+            metadata: { conversationId, contactName }
         });
     }
 }

@@ -15,7 +15,8 @@ const REPORT_TYPES = {
     activity_report: { name: 'Résumé d\'activité', description: 'Vue d\'ensemble de l\'activité sur la période choisie' },
     agent_performance: { name: 'Performance agents', description: 'Analyse des performances de vos agents' },
     conversion_report: { name: 'Rapport de conversion', description: 'Analyse du tunnel de conversion' },
-    product_report: { name: 'Rapport produits', description: 'Ventes et performances des produits' }
+    product_report: { name: 'Rapport produits', description: 'Ventes et performances des produits' },
+    relance_report: { name: 'Performance Proactive AI', description: 'Analyse des relances automatiques et de leur impact' }
 };
 
 // Get report types
@@ -56,6 +57,9 @@ router.post('/generate', async (req, res) => {
                 break;
             case 'product_report':
                 reportData = await generateProductReport(req.user.ownerId, startDate, endDate);
+                break;
+            case 'relance_report':
+                reportData = await generateRelanceReport(req.user.ownerId, startDate, endDate);
                 break;
         }
 
@@ -346,6 +350,44 @@ async function generateProductReport(userId, startDate, endDate) {
     `).all(startStr, userId);
 
     return { products: products || [] };
+}
+
+async function generateRelanceReport(userId, startDate, endDate) {
+    const startStr = startDate.toISOString();
+    const endStr = endDate.toISOString();
+
+    const stats = await db.prepare(`
+        SELECT 
+            COUNT(*)::int as generated,
+            SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END)::int as sent,
+            SUM(CASE WHEN status = 'ignored' THEN 1 ELSE 0 END)::int as ignored
+        FROM proactive_message_log
+        WHERE user_id = ? AND created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    // Revenue from relances (Orders within 24h after a relance was SENT)
+    const roi = await db.prepare(`
+        SELECT 
+            COUNT(DISTINCT o.id)::int as orders,
+            COALESCE(SUM(o.total_amount), 0)::numeric as revenue
+        FROM orders o
+        JOIN proactive_message_log p ON o.conversation_id = p.conversation_id
+        WHERE p.user_id = ? 
+          AND p.status = 'sent'
+          AND o.status IN ('completed', 'validated', 'delivered')
+          AND o.created_at > p.sent_at 
+          AND o.created_at <= (p.sent_at + interval '24 hours')
+          AND p.created_at BETWEEN ? AND ?
+    `).get(userId, startStr, endStr);
+
+    return {
+        generated: stats?.generated || 0,
+        sent: stats?.sent || 0,
+        ignored: stats?.ignored || 0,
+        adoption_rate: stats?.generated > 0 ? Math.round((stats.sent / stats.generated) * 100) : 0,
+        attributed_orders: roi?.orders || 0,
+        attributed_revenue: roi?.revenue || 0
+    };
 }
 
 export default router;

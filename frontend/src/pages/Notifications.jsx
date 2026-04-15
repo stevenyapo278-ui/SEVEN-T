@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Check, Trash2, RefreshCw, Search, Calendar, X, MessageSquare, UserPlus, AlertTriangle, ShieldCheck, CreditCard, Bot, Info, MoreHorizontal } from 'lucide-react'
+import { Bell, Check, Trash2, RefreshCw, Search, Calendar, X, MessageSquare, UserPlus, AlertTriangle, ShieldCheck, CreditCard, Bot, Info, MoreHorizontal, Sparkles, LayoutDashboard, History } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import api from '../services/api'
@@ -182,6 +182,7 @@ export default function Notifications() {
       whatsapp: 'bg-emerald-500/10 text-emerald-500',
       credit: 'bg-yellow-500/10 text-yellow-500',
       agent: 'bg-indigo-500/10 text-indigo-500',
+      relance: 'bg-gold-400/10 text-gold-400',
       info: 'bg-blue-500/10 text-blue-500'
     }
     return styles[type] || styles.info
@@ -196,6 +197,7 @@ export default function Notifications() {
       case 'success': return <ShieldCheck className="w-4 h-4" />
       case 'credit': return <CreditCard className="w-4 h-4" />
       case 'agent': return <Bot className="w-4 h-4" />
+      case 'relance': return <Sparkles className="w-4 h-4" />
       default: return <Info className="w-4 h-4" />
     }
   }
@@ -232,6 +234,27 @@ export default function Notifications() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20">
+               <div className="grid grid-cols-2 sm:flex gap-3 mr-4">
+                  <div className={`px-4 py-2 rounded-2xl border ${isDark ? 'bg-space-900/40 border-space-700' : 'bg-white border-gray-100'} flex items-center gap-3`}>
+                     <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-emerald-500" />
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase">Lues</p>
+                        <p className={`text-sm font-black ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{notifications.length - unreadCount}</p>
+                     </div>
+                  </div>
+                  <div className={`px-4 py-2 rounded-2xl border ${isDark ? 'bg-space-900/40 border-space-700' : 'bg-white border-gray-100'} flex items-center gap-3`}>
+                     <div className="w-8 h-8 rounded-lg bg-gold-400/10 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-gold-400" />
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase">Total</p>
+                        <p className={`text-sm font-black ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{notifications.length}</p>
+                     </div>
+                  </div>
+               </div>
+
               <button
                 onClick={() => loadNotifications(activeFilter)}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
@@ -406,17 +429,15 @@ export default function Notifications() {
                           </p>
 
                           {notif.metadata && (
-                            <div className={`mt-3 text-[11px] rounded-xl px-3 py-2 border ${
-                              isDark ? 'bg-space-900/40 border-space-700 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-600'
-                            }`}>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div className="mt-4 flex flex-wrap gap-2">
                                 {Object.entries(typeof notif.metadata === 'string' ? JSON.parse(notif.metadata) : notif.metadata).map(([key, value]) => (
-                                  <div key={key} className="flex gap-2 min-w-0">
-                                    <span className="font-bold text-gray-500 shrink-0 capitalize">{key}:</span>
-                                    <span className="truncate">{String(value)}</span>
-                                  </div>
+                                    <div key={key} className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border text-[10px] font-black uppercase tracking-wider ${
+                                        isDark ? 'bg-space-900/60 border-white/5 text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-500'
+                                    }`}>
+                                        <span className="opacity-50">{key}</span>
+                                        <span className={isDark ? 'text-gray-200' : 'text-gray-700'}>{String(value)}</span>
+                                    </div>
                                 ))}
-                              </div>
                             </div>
                           )}
 

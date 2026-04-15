@@ -34,7 +34,8 @@ const REPORT_ICONS = {
   activity_report: BarChart2,
   agent_performance: Users,
   conversion_report: TrendingUp,
-  product_report: ShoppingCart
+  product_report: ShoppingCart,
+  relance_report: Zap
 }
 
 export default function Reports() {
@@ -195,8 +196,9 @@ export default function Reports() {
     const hasAgents = Array.isArray(generatedReport.data.agents) && generatedReport.data.agents.length > 0;
     const hasFunnel = Array.isArray(generatedReport.data.funnel) && generatedReport.data.funnel.length > 0;
     const hasProducts = Array.isArray(generatedReport.data.products) && generatedReport.data.products.length > 0;
+    const hasRelance = !!generatedReport.data.generated;
     
-    const hasAnyData = hasConversations || hasAgents || hasFunnel || hasProducts;
+    const hasAnyData = hasConversations || hasAgents || hasFunnel || hasProducts || hasRelance;
 
     const content = `
       <div style="font-family: Arial, sans-serif; color: #333; padding: 30px; width: 700px; box-sizing: border-box; background: white;">
@@ -303,6 +305,36 @@ export default function Reports() {
               `).join('')}
             </tbody>
           </table>
+        </div>
+        ` : ''}
+
+        ${hasRelance ? `
+        <div style="page-break-inside: avoid; margin-bottom: 40px;">
+          <h2 style="color: #222; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">Performance Proactive AI</h2>
+          <div style="display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px;">
+             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
+                <h3 style="margin: 0; font-size: 20px; color: #111;">${generatedReport.data.generated}</h3>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Relances Suggérées</p>
+             </div>
+             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
+                <h3 style="margin: 0; font-size: 20px; color: #d29922;">${generatedReport.data.sent}</h3>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Relances Envoyées</p>
+             </div>
+             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
+                <h3 style="margin: 0; font-size: 20px; color: #0969da;">${generatedReport.data.adoption_rate}%</h3>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Adoption</p>
+             </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 15px;">
+             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
+                <h3 style="margin: 0; font-size: 20px; color: #111;">${generatedReport.data.attributed_orders}</h3>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Ventes Attribuées</p>
+             </div>
+             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
+                <h3 style="margin: 0; font-size: 20px; color: #1a7f37;">${(generatedReport.data.attributed_revenue || 0).toLocaleString()} XOF</h3>
+                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">CA Attribué</p>
+             </div>
+          </div>
         </div>
         ` : ''}
         
@@ -603,6 +635,37 @@ export default function Reports() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {generatedReport.data?.generated !== undefined && (
+                <div className="lg:col-span-2 space-y-4">
+                  <h4 className="flex items-center gap-2 text-sm font-black text-gray-400 uppercase tracking-[0.2em]">
+                    <Zap className="w-4 h-4" />
+                    Performance Proactive AI
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5 flex flex-col items-center">
+                          <span className="text-3xl font-black text-white">{generatedReport.data.generated}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Suggérés</span>
+                      </div>
+                      <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5 flex flex-col items-center">
+                          <span className="text-3xl font-black text-gold-400">{generatedReport.data.sent}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Confirmés</span>
+                      </div>
+                      <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5 flex flex-col items-center">
+                          <span className="text-3xl font-black text-blue-400">{generatedReport.data.adoption_rate}%</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Adoption</span>
+                      </div>
+                      <div className="p-6 bg-space-800/30 rounded-2xl border border-emerald-500/20 flex flex-col items-center sm:col-span-2">
+                          <span className="text-3xl font-black text-emerald-400">{(generatedReport.data.attributed_revenue || 0).toLocaleString()} XOF</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Chiffre d'Affaire Attribué (ROI)</span>
+                      </div>
+                      <div className="p-6 bg-space-800/30 rounded-2xl border border-blue-500/20 flex flex-col items-center">
+                          <span className="text-3xl font-black text-blue-500">{generatedReport.data.attributed_orders}</span>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Ventes</span>
+                      </div>
                   </div>
                 </div>
               )}

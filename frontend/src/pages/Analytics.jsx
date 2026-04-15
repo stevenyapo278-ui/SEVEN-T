@@ -17,7 +17,10 @@ import {
   RefreshCw,
   Calendar,
   Filter,
-  ChevronDown
+  ChevronDown,
+  Target,
+  Heart,
+  Zap
 } from 'lucide-react'
 import {
   AreaChart,
@@ -74,12 +77,15 @@ export default function Analytics() {
   const [heatmapData, setHeatmapData] = useState([])
   const [selectedAgent, setSelectedAgent] = useState('all')
   const [showAgentFilter, setShowAgentFilter] = useState(false)
+  const [relanceROI, setRelanceROI] = useState(null)
+  const [sentimentStats, setSentimentStats] = useState([])
+  const [conversionStats, setConversionStats] = useState([])
 
   const loadAnalytics = async () => {
     setLoading(true)
     try {
       const agentParam = selectedAgent !== 'all' ? `&agentId=${selectedAgent}` : ''
-      const [overviewRes, timelineRes, agentsRes, peakRes, funnelRes, productsRes, seasonalityRes, heatmapRes] = await Promise.all([
+      const [overviewRes, timelineRes, agentsRes, peakRes, funnelRes, productsRes, seasonalityRes, heatmapRes, roiRes, sentimentRes, conversionRes] = await Promise.all([
         api.get(`/analytics/overview?period=${period}${agentParam}`),
         api.get(`/analytics/messages-timeline?period=${period}${agentParam}`),
         api.get('/analytics/agent-performance'),
@@ -87,7 +93,10 @@ export default function Analytics() {
         api.get('/analytics/conversion-funnel'),
         api.get(`/analytics/top-products?period=${period}${agentParam}`),
         api.get(`/analytics/products-seasonality`),
-        api.get(`/analytics/weekly-heatmap`)
+        api.get(`/analytics/weekly-heatmap`),
+        api.get(`/analytics/relance-roi?period=${period}${agentParam}`),
+        api.get('/analytics/sentiment-stats'),
+        api.get('/analytics/conversion-stats')
       ])
 
       setOverview(overviewRes.data.overview)
@@ -98,6 +107,9 @@ export default function Analytics() {
       setTopProducts(productsRes.data.products)
       setProductsSeasonality(seasonalityRes.data)
       setHeatmapData(heatmapRes.data.data)
+      setRelanceROI(roiRes.data)
+      setSentimentStats(sentimentRes.data.stats)
+      setConversionStats(conversionRes.data.stats)
     } catch (error) {
       console.error('Error loading analytics:', error)
       toast.error('Erreur lors du chargement des analytics')
@@ -276,6 +288,19 @@ export default function Analytics() {
                   icon={ShoppingCart}
                   color="amber"
                 />
+                <StatSmall
+                  title="Relances (Adoption)"
+                  value={`${overview?.relances?.adoption_rate || 0}%`}
+                  growth={overview?.relances?.growth}
+                  icon={Zap}
+                  color="purple"
+                />
+                <StatSmall
+                  title="Revenu Relances"
+                  value={relanceROI?.attributed_revenue ? `${relanceROI.attributed_revenue.toLocaleString()} XOF` : '0 XOF'}
+                  icon={DollarSign}
+                  color="emerald"
+                />
               </>
             )}
           </div>
@@ -344,6 +369,64 @@ export default function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* Relance Adoption Timeline */}
+        <div className="card p-6 lg:col-span-2">
+          <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Adoption des Relances AI</h3>
+          <div className="w-full" style={{ height: 320 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={relanceROI?.daily_performance || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                <XAxis dataKey="date" stroke="#9CA3AF" fontSize={10} />
+                <YAxis stroke="#9CA3AF" fontSize={10} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                />
+                <Area type="monotone" dataKey="generated" stroke="#9CA3AF" fill="#9CA3AF" fillOpacity={0.1} name="Suggérées" />
+                <Area type="monotone" dataKey="sent" stroke="#F5D47A" fill="#F5D47A" fillOpacity={0.3} name="Confirmées" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Sentiment & Conversion row */}
+        <div className="card p-6">
+            <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Sentiment Client</h3>
+            <div className="w-full h-[240px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={sentimentStats}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            paddingAngle={5}
+                            dataKey="count"
+                            nameKey="sentiment"
+                        >
+                            {sentimentStats.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.sentiment === 'positive' ? '#22C55E' : entry.sentiment === 'negative' ? '#EF4444' : '#3B82F6'} />
+                            ))}
+                        </Pie>
+                        <Tooltip 
+                             contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
+            <div className="flex justify-center gap-4 mt-2">
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" /> Positif
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" /> Neutre
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <div className="w-2 h-2 rounded-full bg-red-500" /> Négatif
+                </div>
+            </div>
         </div>
       </div>
 
@@ -450,7 +533,25 @@ export default function Analytics() {
       </div>
 
       {/* Seasonality & Heatmap Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
+         {/* Potential Conversion Distribution */}
+         <div className="card p-6">
+            <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Potentiel de Conversion</h3>
+            <p className="text-xs text-gray-400 mb-6">Volume de conversations par score de potentiel</p>
+            <div className="w-full h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={conversionStats}>
+                        <XAxis dataKey="bucket" stroke="#9CA3AF" fontSize={10} />
+                        <YAxis stroke="#9CA3AF" fontSize={10} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '12px' }}
+                        />
+                        <Bar dataKey="count" fill="#F5D47A" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+         </div>
+
          {/* Yearly Seasonality - Seasonal supply forecasting */}
          <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
@@ -553,7 +654,8 @@ function StatSmall({ title, value, growth, icon: Icon, color = 'blue' }) {
     blue: 'bg-blue-500/10 text-blue-400',
     gold: 'bg-gold-400/10 text-gold-400',
     emerald: 'bg-emerald-500/10 text-emerald-400',
-    amber: 'bg-amber-500/10 text-amber-400'
+    amber: 'bg-amber-500/10 text-amber-400',
+    purple: 'bg-purple-500/10 text-purple-400'
   }
 
   return (
