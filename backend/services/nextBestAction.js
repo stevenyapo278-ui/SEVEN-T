@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { hasModule } from '../config/plans.js';
 import { whatsappManager } from './whatsapp.js';
+import { aiService } from './ai.js';
 
 const ABANDONED_CART_HOURS = 24;
 const ABANDONED_CART_COOLDOWN_HOURS = 48;
@@ -187,16 +188,34 @@ async function runForUser(userId) {
     const abandoned = await getAbandonedCartCandidates(userId);
     for (const { conversation, agent, toolId, userId: uid } of abandoned) {
         try {
+            // Fetch history for AI analysis
+            const history = await db.all(
+                'SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 10',
+                conversation.id
+            );
+            history.reverse();
+
+            const aiRelance = await aiService.generateProactiveMessage(agent, history, uid);
+
+            if (aiRelance.should_skip) {
+                console.log(`[NextBestAction] Skipping abandoned_cart for conv=${conversation.id} (AI decision)`);
+                continue;
+            }
+
+            const messageToSend = aiRelance.message || DEFAULT_ABANDONED_CART_MESSAGE;
+            const type = aiRelance.type || 'abandoned_cart';
+            const reason = aiRelance.reason || 'Panier abandonné (>24h)';
+
             if (requiresValidation) {
-                console.log(`[NextBestAction] abandoned_cart généré pour conv=${conversation.id} (En attente)`);
-                await logProactiveSend(conversation.id, uid, agent.agent_id, 'abandoned_cart', DEFAULT_ABANDONED_CART_MESSAGE, 'Panier abandonné (>24h)', true);
+                console.log(`[NextBestAction] ${type} généré pour conv=${conversation.id} (En attente)`);
+                await logProactiveSend(conversation.id, uid, agent.agent_id, type, messageToSend, reason, true);
             } else {
                 await whatsappManager.sendMessage(
                     toolId,
                     conversation.contact_jid,
-                    DEFAULT_ABANDONED_CART_MESSAGE
+                    messageToSend
                 );
-                await logProactiveSend(conversation.id, uid, agent.agent_id, 'abandoned_cart', DEFAULT_ABANDONED_CART_MESSAGE, 'Panier abandonné (>24h)', false);
+                await logProactiveSend(conversation.id, uid, agent.agent_id, type, messageToSend, reason, false);
             }
             sent++;
         } catch (e) {
@@ -207,16 +226,34 @@ async function runForUser(userId) {
     const cold = await getColdRelanceCandidates(userId);
     for (const { conversation, agent, toolId, userId: uid } of cold) {
         try {
+            // Cold relance is usually less about the specific last message but we still check
+            const history = await db.all(
+                'SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 5',
+                conversation.id
+            );
+            history.reverse();
+
+            const aiRelance = await aiService.generateProactiveMessage(agent, history, uid);
+            
+            if (aiRelance.should_skip) {
+                console.log(`[NextBestAction] Skipping cold_relance for conv=${conversation.id} (AI decision)`);
+                continue;
+            }
+
+            const messageToSend = aiRelance.message || DEFAULT_COLD_RELANCE_MESSAGE;
+            const type = aiRelance.type || 'cold_relance';
+            const reason = aiRelance.reason || 'Client inactif (>7j)';
+
             if (requiresValidation) {
-                console.log(`[NextBestAction] cold_relance généré pour conv=${conversation.id} (En attente)`);
-                await logProactiveSend(conversation.id, uid, agent.agent_id, 'cold_relance', DEFAULT_COLD_RELANCE_MESSAGE, 'Client inactif (>7j)', true);
+                console.log(`[NextBestAction] ${type} généré pour conv=${conversation.id} (En attente)`);
+                await logProactiveSend(conversation.id, uid, agent.agent_id, type, messageToSend, reason, true);
             } else {
                 await whatsappManager.sendMessage(
                     toolId,
                     conversation.contact_jid,
-                    DEFAULT_COLD_RELANCE_MESSAGE
+                    messageToSend
                 );
-                await logProactiveSend(conversation.id, uid, agent.agent_id, 'cold_relance', DEFAULT_COLD_RELANCE_MESSAGE, 'Client inactif (>7j)', false);
+                await logProactiveSend(conversation.id, uid, agent.agent_id, type, messageToSend, reason, false);
             }
             sent++;
         } catch (e) {

@@ -68,39 +68,26 @@ class ProactiveAdvisorService {
     async processRelance(order) {
         try {
             const agent = await db.get('SELECT * FROM agents WHERE id = ?', order.agent_id);
-            if (!agent) return;
-
-            // Préparer le contexte pour l'IA
-            const context = `RELANCE PROACTIVE : Le client avait reporté sa commande hier (Statut: postponed). 
-            Détails de la commande: ${order.notes || 'Non spécifié'}. 
-            Total: ${order.total_amount} ${order.currency}.
-            ID Conversation: ${order.conversation_id}`;
-
-            const relancePrompt = `Tu es une IA qui effectue une relance proactive. 
-            Le client a dit hier qu'il préférait attendre. 
-            Ta mission : Prends de ses nouvelles de manière très courte, naturelle et amicale. 
-            Vérifie s'il est prêt à finaliser sa commande aujourd'hui.
-            COMMANDE EN ATTENTE : ${order.notes || 'Articles divers'}.
-            
-            RÈGLE : Ne sois pas insistant. Max 2 phrases. 
-            FORMAT : {"response": "ton message ici", "need_human": false}`;
-
-            // Simuler l'analyse de message pour injecter le contexte
-            const messageAnalysis = {
-                intent: { primary: 'relance' },
-                customerContext: order.customer_context
-            };
-
-            const response = await aiService.generateResponse(
-                agent, 
-                [], // Pas besoin d'historique complet pour un nouveau "hook"
-                relancePrompt, 
-                [], 
-                messageAnalysis, 
-                order.user_id
+                      // Fetch history for AI analysis
+            const history = await db.all(
+                'SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 10',
+                order.conversation_id
             );
+            history.reverse();
 
-            if (response?.content) {
+            const aiRelance = await aiService.generateProactiveMessage(agent, history, order.user_id);
+            
+            if (aiRelance.should_skip) {
+                console.log(`[ProactiveAdvisor] Skipping relance for order ${order.id} (AI decision)`);
+                // Mark as relanced anyway to avoid infinite retries on this old order
+                await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
+                return;
+            }
+
+            const responseContent = aiRelance.message;
+            const reason = aiRelance.reason || `Commande reportée: ${order.notes || 'Articles divers'}`;
+
+            if (responseContent) {
                 const requiresValidation = order.proactive_requires_validation === 1;
 
                 if (requiresValidation) {
@@ -110,22 +97,22 @@ class ProactiveAdvisorService {
                     await db.run(`
                         INSERT INTO proactive_message_log (id, conversation_id, user_id, agent_id, type, status, message_content, reason)
                         VALUES (?, ?, ?, ?, 'postponed_order', 'pending', ?, ?)
-                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, `Commande reportée: ${order.notes || 'Articles divers'}`);
+                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, responseContent, reason);
                     
-                    // Marquer comme relancé pour ne pas régénérer (bien qu'il soit pending)
+                    // Marquer comme relancé pour ne pas régénérer
                     await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
 
                 } else {
                     console.log(`[ProactiveAdvisor] Envoi relance à ${order.customer_name} (${order.customer_phone})`);
                     
                     // Envoyer via WhatsApp
-                    await whatsappManager.sendExternalMessage(order.agent_id, order.customer_phone, response.content);
+                    await whatsappManager.sendExternalMessage(order.agent_id, order.customer_phone, responseContent);
 
                     // Insérer en envoyé
                     await db.run(`
                         INSERT INTO proactive_message_log (id, conversation_id, user_id, agent_id, type, status, message_content, reason, sent_at)
                         VALUES (?, ?, ?, ?, 'postponed_order', 'sent', ?, ?, ?)
-                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, response.content, `Commande reportée: ${order.notes || 'Articles divers'}`, new Date().toISOString());
+                    `, uuidv4(), order.conversation_id, order.user_id, order.agent_id, responseContent, reason, new Date().toISOString());
 
                     // Marquer comme relancé
                     await db.run('UPDATE orders SET proactive_relance_count = 1, updated_at = ? WHERE id = ?', new Date().toISOString(), order.id);
@@ -134,10 +121,9 @@ class ProactiveAdvisorService {
                     await db.run(`
                         INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, created_at)
                         VALUES (?, ?, 'assistant', ?, 'ai', 'relance', ?)
-                    `, uuidv4(), order.conversation_id, response.content, new Date().toISOString());
+                    `, uuidv4(), order.conversation_id, responseContent, new Date().toISOString());
                 }
             }
-
         } catch (error) {
             console.error(`[ProactiveAdvisor] Erreur relance commande ${order.id}:`, error.message);
         }

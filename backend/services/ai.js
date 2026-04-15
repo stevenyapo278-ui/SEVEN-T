@@ -337,9 +337,69 @@ class AIService {
             } catch (dbErr) {
                 console.error('[AI] Error fetching fallback models:', dbErr.message);
             }
-
             // Ultimate Fallback (Hardcoded polite message)
             return this.fallbackResponse(agent, sanitizedUserMessage);
+        }
+    }
+
+    /**
+     * Specialized method to generate a contextual proactive relance.
+     * Analyzes if a relance is appropriate and returns { type, message, reason, should_skip }.
+     */
+    async generateProactiveMessage(agent, history = [], userId = null) {
+        this.initialize();
+        await this.refreshClientsFromDb();
+
+        const modelId = agent.model || 'gemini-1.5-flash';
+        const provider = this.getProvider(modelId);
+        const apiKey = await this.getApiKey(provider, modelId);
+
+        const systemPrompt = `Tu es un expert en relance commerciale sur WhatsApp. 
+TA MISSION : Analyser l'historique de conversation fourni et décider si une relance est pertinente.
+
+CRITÈRES DE PERTINENCE :
+- OUI si le client a posé une question sur un prix/produit et n'a pas conclu.
+- OUI si un panier/commande était en cours mais s'est arrêté.
+- NON si le client a dit "Merci", "Bonne journée", "C'est noté" ou s'il a clairement décliné.
+- NON si la conversation semble close et satisfaisante.
+
+FORMAT DE RÉPONSE (JSON UNIQUEMENT) :
+{
+  "should_skip": boolean,
+  "type": "price_inquiry" | "abandoned_cart" | "postponed" | "other",
+  "reason": "Brève explication (ex: Demande de prix sans suite)",
+  "message": "Message de relance ultra-court (max 2 phrases), naturel, amical et contextuel."
+}
+
+RÈGLES DE RÉDACTION :
+- Pas de "Bonjour" si déjà dit récemment.
+- Sois très spécifique au sujet abordé (ex: nom du produit).
+- Ne sois pas insistant.`;
+
+        const mockAgent = {
+            ...agent,
+            system_prompt: systemPrompt,
+            template: 'assistant'
+        };
+
+        try {
+            const historyText = history.map(m => `${m.role === 'user' ? 'Client' : 'Agent'}: ${m.content}`).join('\n');
+            const input = `--- HISTORIQUE DE CONVERSATION ---\n${historyText}\n--- FIN HISTORIQUE ---\n\nAnalyse cette conversation et génère la relance si approprié.`;
+            
+            const response = await this.generateResponse(mockAgent, [], input, [], null, userId, false);
+            
+            // Extract JSON from response content (safety)
+            const cleanContent = response.content.replace(/```json|```/g, '').trim();
+            const result = JSON.parse(cleanContent);
+            
+            return {
+                ...result,
+                tokens: response.tokens,
+                provider: response.provider
+            };
+        } catch (error) {
+            console.error('[AI] Proactive generation error:', error.message);
+            return { should_skip: true };
         }
     }
 
