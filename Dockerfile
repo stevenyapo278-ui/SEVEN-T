@@ -14,8 +14,12 @@ ENV NODE_OPTIONS="--max-old-space-size=768 --dns-result-order=ipv4first"
 # Copy frontend package files
 COPY frontend/package*.json ./
 
-# Install all deps using Yarn (much lower memory footprint than NPM)
-RUN yarn install --network-timeout 600000
+# Install all deps using Yarn with retries and limited concurrency to prevent 502/Network errors
+RUN yarn config set registry https://registry.npmjs.org/ && \
+    for i in 1 2 3; do \
+      yarn install --network-timeout 1000000 --network-concurrency 1 && break || \
+      (echo "Retry $i failed, waiting..." && sleep 5); \
+    done
 
 # Copy frontend source
 COPY frontend/ ./
@@ -45,8 +49,12 @@ ENV NODE_OPTIONS="--max-old-space-size=768 --dns-result-order=ipv4first"
 
 # Install backend production dependencies
 COPY package*.json ./
-# Install backend production dependencies using Yarn to avoid OOM
-RUN yarn install --production --network-timeout 600000 && \
+# Install backend production dependencies using Yarn with retries
+RUN yarn config set registry https://registry.npmjs.org/ && \
+    for i in 1 2 3; do \
+      yarn install --production --network-timeout 1000000 --network-concurrency 1 && break || \
+      (echo "Retry $i failed, waiting..." && sleep 5); \
+    done && \
     yarn cache clean
 
 # Copy backend source
