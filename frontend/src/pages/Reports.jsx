@@ -216,24 +216,26 @@ export default function Reports() {
         ` : ''}
 
         ${hasConversations ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 40px; gap: 15px; page-break-inside: avoid;">
-           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-              <h3 style="margin: 0; font-size: 24px; color: #0969da;">${generatedReport.data.conversations?.total || 0}</h3>
-              <p style="margin: 5px 0 0 0; font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase;">Conversations</p>
-           </div>
-           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-              <h3 style="margin: 0; font-size: 24px; color: #d29922;">${generatedReport.data.leads || 0}</h3>
-              <p style="margin: 5px 0 0 0; font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase;">Prospects</p>
-           </div>
-           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-              <h3 style="margin: 0; font-size: 24px; color: #1a7f37;">${(generatedReport.data.revenue || 0).toLocaleString()}</h3>
-              <p style="margin: 5px 0 0 0; font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase;">Revenus (XOF)</p>
-           </div>
-           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-              <h3 style="margin: 0; font-size: 24px; color: #0969da;">${generatedReport.data.messages?.total || 0}</h3>
-              <p style="margin: 5px 0 0 0; font-size: 11px; font-weight: bold; color: #666; text-transform: uppercase;">Messages IA</p>
-           </div>
-        </div>
+        <table style="width: 100%; border-collapse: separate; border-spacing: 12px 0; margin-bottom: 40px; page-break-inside: avoid;">
+          <tr>
+            <td style="background: #f8f9fa; padding: 18px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 25%;">
+               <div style="font-size: 22px; font-weight: bold; color: #0969da; margin-bottom: 4px;">${generatedReport.data.conversations?.total || 0}</div>
+               <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Conversations</div>
+            </td>
+            <td style="background: #f8f9fa; padding: 18px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 25%;">
+               <div style="font-size: 22px; font-weight: bold; color: #d29922; margin-bottom: 4px;">${generatedReport.data.leads || 0}</div>
+               <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Prospects</div>
+            </td>
+            <td style="background: #f8f9fa; padding: 18px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 25%;">
+               <div style="font-size: 22px; font-weight: bold; color: #1a7f37; margin-bottom: 4px;">${(generatedReport.data.revenue || 0).toLocaleString()}</div>
+               <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Revenus (XOF)</div>
+            </td>
+            <td style="background: #f8f9fa; padding: 18px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 25%;">
+               <div style="font-size: 22px; font-weight: bold; color: #0969da; margin-bottom: 4px;">${generatedReport.data.messages?.total || 0}</div>
+               <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Messages IA</div>
+            </td>
+          </tr>
+        </table>
         ` : ''}
 
         ${hasAgents ? `
@@ -310,31 +312,35 @@ export default function Reports() {
 
         ${hasRelance ? `
         <div style="page-break-inside: avoid; margin-bottom: 40px;">
-          <h2 style="color: #222; font-size: 18px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px;">Performance Proactive AI</h2>
-          <div style="display: flex; justify-content: space-between; gap: 15px; margin-bottom: 20px;">
-             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-                <h3 style="margin: 0; font-size: 20px; color: #111;">${generatedReport.data.generated}</h3>
-                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Relances Suggérées</p>
-             </div>
-             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-                <h3 style="margin: 0; font-size: 20px; color: #d29922;">${generatedReport.data.sent}</h3>
-                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Relances Envoyées</p>
-             </div>
-             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-                <h3 style="margin: 0; font-size: 20px; color: #0969da;">${generatedReport.data.adoption_rate}%</h3>
-                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Adoption</p>
-             </div>
-          </div>
-          <div style="display: flex; justify-content: space-between; gap: 15px;">
-             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-                <h3 style="margin: 0; font-size: 20px; color: #111;">${generatedReport.data.attributed_orders}</h3>
-                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">Ventes Attribuées</p>
-             </div>
-             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; flex: 1; text-align: center; border: 1px solid #eee;">
-                <h3 style="margin: 0; font-size: 20px; color: #1a7f37;">${(generatedReport.data.attributed_revenue || 0).toLocaleString()} XOF</h3>
-                <p style="margin: 5px 0 0 0; font-size: 10px; color: #666; text-transform: uppercase;">CA Attribué</p>
-             </div>
-          </div>
+          <h2 style="color: #222; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Performance Proactive AI</h2>
+          <table style="width: 100%; border-collapse: separate; border-spacing: 12px 0; margin-bottom: 15px;">
+            <tr>
+              <td style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 33%;">
+                <div style="font-size: 22px; font-weight: bold; color: #0969da; margin-bottom: 4px;">${generatedReport.data.generated}</div>
+                <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Suggérées</div>
+              </td>
+              <td style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 33%;">
+                <div style="font-size: 22px; font-weight: bold; color: #d29922; margin-bottom: 4px;">${generatedReport.data.sent}</div>
+                <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Confirmées</div>
+              </td>
+              <td style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 33%;">
+                <div style="font-size: 22px; font-weight: bold; color: #0969da; margin-bottom: 4px;">${generatedReport.data.adoption_rate}%</div>
+                <div style="font-size: 9px; font-weight: bold; color: #666; text-transform: uppercase;">Adoption</div>
+              </td>
+            </tr>
+          </table>
+          <table style="width: 100%; border-collapse: separate; border-spacing: 12px 0;">
+            <tr>
+              <td style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #eee; text-align: center; width: 50%;">
+                <div style="font-size: 24px; font-weight: bold; color: #111; margin-bottom: 4px;">${generatedReport.data.attributed_orders}</div>
+                <div style="font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase;">Ventes Attribuées</div>
+              </td>
+              <td style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 2px solid #22c55e30; text-align: center; width: 50%;">
+                <div style="font-size: 24px; font-weight: bold; color: #1a7f37; margin-bottom: 4px;">${(generatedReport.data.attributed_revenue || 0).toLocaleString()} XOF</div>
+                <div style="font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase;">CA Attribué (ROI)</div>
+              </td>
+            </tr>
+          </table>
         </div>
         ` : ''}
         
