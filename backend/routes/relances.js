@@ -6,6 +6,56 @@ import { whatsappManager } from '../services/whatsapp.js';
 const router = express.Router();
 
 /**
+ * GET /api/relances/stats
+ * Aggregated statistics for proactive relances
+ */
+router.get('/stats', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // 1. Status Distribution
+        const statusDist = await db.all(`
+            SELECT status, COUNT(*) as count 
+            FROM proactive_message_log 
+            WHERE user_id = ? 
+            GROUP BY status
+        `, userId);
+        
+        // 2. Type Distribution
+        const typeDist = await db.all(`
+            SELECT type, COUNT(*) as count 
+            FROM proactive_message_log 
+            WHERE user_id = ? 
+            GROUP BY type
+        `, userId);
+        
+        // 3. Daily trends (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        
+        const dailyTrends = await db.all(`
+            SELECT DATE(created_at) as date, COUNT(*) as count,
+                   SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent,
+                   SUM(CASE WHEN status = 'ignored' THEN 1 ELSE 0 END) as ignored
+            FROM proactive_message_log
+            WHERE user_id = ? AND created_at >= ?
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        `, userId, sevenDaysAgo.toISOString());
+
+        res.json({
+            statusDist,
+            typeDist,
+            dailyTrends
+        });
+    } catch (error) {
+        console.error('[Relances API] Stats error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
  * GET /api/relances
  * Fetch pending or sent/ignored relances
  */
