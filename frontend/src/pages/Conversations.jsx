@@ -139,6 +139,7 @@ export default function Conversations() {
   const [newMessageCount, setNewMessageCount] = useState(0)
   const [filterAgent, setFilterAgent] = useState(() => searchParams.get('agent') || '')
   const [filterMode, setFilterMode] = useState(() => searchParams.get('mode') || '') // 'human' | 'ai' | ''
+  const [filterRelances, setFilterRelances] = useState(() => searchParams.get('relances') === 'true')
   const [contactPickerOpen, setContactPickerOpen] = useState(false)
   const navigate = useNavigate()
 
@@ -147,10 +148,12 @@ export default function Conversations() {
     const score = searchParams.get('score')
     const agent = searchParams.get('agent')
     const mode = searchParams.get('mode')
+    const relances = searchParams.get('relances')
     if (q !== null) setSearchQuery(q)
     if (score !== null) setScoreBand(score || '')
     if (agent !== null) setFilterAgent(agent || '')
     if (mode !== null) setFilterMode(mode || '')
+    if (relances !== null) setFilterRelances(relances === 'true')
   }, [searchParams])
 
   const syncFiltersToUrl = useCallback((updates) => {
@@ -210,7 +213,9 @@ export default function Conversations() {
           last_message_at: createdAt,
           // If it's an incoming user message, consider the conversation unread until mark-read is called
           status: isIncomingUser ? 'unread' : current.status,
-          unread_messages_count: isIncomingUser ? Number(current.unread_messages_count || 0) + 1 : current.unread_messages_count
+          unread_messages_count: isIncomingUser ? Number(current.unread_messages_count || 0) + 1 : current.unread_messages_count,
+          last_message_type: message.message_type,
+          pending_relances_count: message.message_type === 'relance_suggested' ? (current.pending_relances_count || 0) + 1 : current.pending_relances_count
         }
         next[idx] = updated
         // Move updated conversation to the top by last_message_at
@@ -348,7 +353,8 @@ export default function Conversations() {
     const matchesAgent = !filterAgent || conv.agent_name === filterAgent
     const isHuman = conv.human_takeover === 1 || conv.human_takeover === true
     const matchesMode = !filterMode || (filterMode === 'human' ? isHuman : !isHuman)
-    return matchesSearch && matchesAgent && matchesMode
+    const matchesRelances = !filterRelances || (conv.pending_relances_count > 0)
+    return matchesSearch && matchesAgent && matchesMode && matchesRelances
   })
 
   const handleToggleTakeover = async (convId, enabled) => {
@@ -524,13 +530,33 @@ export default function Conversations() {
                   </select>
                 </div>
 
+                <div className="flex-1">
+                  <label className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Proactive AI</label>
+                  <button
+                    onClick={() => {
+                      const next = !filterRelances
+                      setFilterRelances(next)
+                      syncFiltersToUrl({ relances: next ? 'true' : undefined })
+                    }}
+                    className={`mt-1 w-full px-3 py-2 rounded-xl border flex items-center justify-center gap-2 transition-all ${
+                      filterRelances 
+                        ? 'bg-gold-400/20 border-gold-400 text-gold-400' 
+                        : isDark ? 'bg-space-900 border-space-700 text-gray-400' : 'bg-white border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <Sparkles className={`w-4 h-4 ${filterRelances ? 'animate-pulse' : ''}`} />
+                    <span>Relances en attente</span>
+                  </button>
+                </div>
+
                 <button
                   onClick={() => {
                     setSearchQuery('')
                     setFilterAgent('')
                     setFilterMode('')
                     setScoreBand('')
-                    syncFiltersToUrl({ q: undefined, agent: undefined, mode: undefined, score: undefined })
+                    setFilterRelances(false)
+                    syncFiltersToUrl({ q: undefined, agent: undefined, mode: undefined, score: undefined, relances: undefined })
                   }}
                   className={`px-4 py-2 rounded-xl border font-medium flex items-center gap-2 ${isDark ? 'bg-space-900 border-space-700 text-gray-300 hover:text-white' : 'bg-white border-gray-200 text-gray-700'}`}
                 >
@@ -631,8 +657,22 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
           <p className={`text-sm truncate flex items-center gap-1 font-medium ${isDark ? 'text-blue-400' : 'text-blue-500'}`}>
             <span className="text-sm">📊</span> Sondage envoyé
           </p>
+        ) : conv.last_message_type === 'relance' ? (
+          <p className="text-sm text-blue-400 truncate flex items-center gap-1 font-medium">
+            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
+            {conv.last_message}
+          </p>
         ) : (
           <p className="text-sm text-gray-400 truncate">{conv.last_message || 'Aucun message'}</p>
+        )}
+        
+        {conv.pending_relances_count > 0 && (
+          <div className="mt-1">
+            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider bg-gold-400/10 text-gold-400 border-gold-400/20`}>
+              <Sparkles className="w-3 h-3 animate-pulse" />
+              Relance à confirmer
+            </span>
+          </div>
         )}
       </div>
       {!bulkMode && unreadCount > 0 && (

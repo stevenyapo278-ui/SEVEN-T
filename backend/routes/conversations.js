@@ -136,7 +136,9 @@ router.get('/', authenticateToken, async (req, res) => {
         const conversations = await db.all(`
             SELECT c.*, a.name as agent_name,
                    (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
-                   (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as message_count
+                   (SELECT message_type FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_type,
+                   (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as message_count,
+                   (SELECT COUNT(*) FROM proactive_message_log WHERE conversation_id = c.id AND status = 'pending') as pending_relances_count
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ?
@@ -291,7 +293,8 @@ router.post('/initiate', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
     try {
         const conversation = await db.get(`
-            SELECT c.*, a.name as agent_name
+            SELECT c.*, a.name as agent_name,
+                   (SELECT COUNT(*) FROM proactive_message_log WHERE conversation_id = c.id AND status = 'pending') as pending_relances_count
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE c.id = ? AND a.user_id = ?
@@ -579,7 +582,9 @@ router.get('/updates/all', authenticateToken, async (req, res) => {
                 a.id as agent_id,
                 a.name as agent_name,
                 (SELECT content FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
-                (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND created_at > ?) as new_message_count
+                (SELECT message_type FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_type,
+                (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND created_at > ?) as new_message_count,
+                (SELECT COUNT(*) FROM proactive_message_log WHERE conversation_id = c.id AND status = 'pending') as pending_relances_count
             FROM conversations c
             JOIN agents a ON c.agent_id = a.id
             WHERE a.user_id = ? AND c.last_message_at > ?
