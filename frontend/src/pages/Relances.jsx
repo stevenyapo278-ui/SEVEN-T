@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
-import { BellRing, Check, X, Clock, RefreshCw, Send, Loader2, MessageSquare, TrendingUp, BarChart3, PieChart as PieChartIcon, ExternalLink, AlertTriangle } from 'lucide-react';
+import { BellRing, Check, X, Clock, RefreshCw, Send, Loader2, MessageSquare, TrendingUp, BarChart3, PieChart as PieChartIcon, ExternalLink, AlertTriangle, Search, Filter, XCircle } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend, AreaChart, Area
@@ -26,6 +26,26 @@ export default function Relances() {
   const [showHelp, setShowHelp] = useState(false);
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [agentFilter, setAgentFilter] = useState('all');
+
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = 
+      (log.contact_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (log.contact_number || '').includes(searchTerm);
+    const matchesType = typeFilter === 'all' || log.type === typeFilter;
+    const matchesAgent = agentFilter === 'all' || log.agent_name === agentFilter;
+    return matchesSearch && matchesType && matchesAgent;
+  });
+
+  const agents = [...new Set(logs.map(l => l.agent_name).filter(Boolean))];
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('all');
+    setAgentFilter('all');
+  };
 
   const fetchStats = async () => {
     try {
@@ -319,22 +339,88 @@ export default function Relances() {
         )}
       </div>
 
+      {/* Search & Filters */}
+      <div className={`p-4 rounded-2xl border flex flex-col md:flex-row items-center gap-4 ${
+        isDark ? 'bg-space-900/30 border-space-700/50' : 'bg-gray-50 border-gray-200'
+      }`}>
+        <div className="relative flex-1 w-full">
+          <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+          <input 
+            type="text"
+            placeholder="Rechercher un client ou numéro..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm border outline-none transition-all ${
+              isDark 
+                ? 'bg-space-800 border-space-700 text-white placeholder-gray-500 focus:border-blue-500/50' 
+                : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-blue-400'
+            }`}
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-2">
+            <Filter className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+            <select 
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className={`md:w-48 px-3 py-2 rounded-xl text-sm border outline-none cursor-pointer appearance-none ${
+                isDark ? 'bg-space-800 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
+              }`}
+            >
+              <option value="all">Tous les types</option>
+              <option value="abandoned_cart">Panier Abandonné</option>
+              <option value="price_inquiry">Demande de Prix</option>
+              <option value="postponed_order">Commande Reportée</option>
+              <option value="cold_relance">Relance Froide</option>
+            </select>
+          </div>
+
+          <select 
+            value={agentFilter}
+            onChange={(e) => setAgentFilter(e.target.value)}
+            className={`md:w-40 px-3 py-2 rounded-xl text-sm border outline-none cursor-pointer appearance-none ${
+              isDark ? 'bg-space-800 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-700'
+            }`}
+          >
+            <option value="all">Agents (Tous)</option>
+            {agents.map(agent => (
+              <option key={agent} value={agent}>{agent}</option>
+            ))}
+          </select>
+
+          {(searchTerm || typeFilter !== 'all' || agentFilter !== 'all') && (
+            <button 
+              onClick={resetFilters}
+              className={`p-2 rounded-xl transition-all flex-shrink-0 ${isDark ? 'hover:bg-space-800 text-red-400' : 'hover:bg-gray-200 text-red-500'}`}
+              title="Réinitialiser"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Content */}
       <div className="space-y-4">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
           </div>
-        ) : logs.length === 0 ? (
+        ) : filteredLogs.length === 0 ? (
           <div className={`text-center py-12 rounded-2xl border ${isDark ? 'border-space-700/50 bg-space-800/20' : 'border-gray-200 bg-white'}`}>
             <BellRing className={`w-12 h-12 mx-auto mb-3 opacity-20 ${isDark ? 'text-white' : 'text-gray-900'}`} />
-            <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Aucune relance {activeTab === 'pending' ? 'en attente' : activeTab === 'sent' ? 'envoyée' : 'ignorée'}</h3>
+            <h3 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+              {searchTerm || typeFilter !== 'all' || agentFilter !== 'all' ? 'Aucun résultat' : `Aucune relance ${activeTab === 'pending' ? 'en attente' : activeTab === 'sent' ? 'envoyée' : 'ignorée'}`}
+            </h3>
             <p className={`text-sm mt-1 max-w-sm mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              L'assistant proactif génère automatiquement des suggestions ici lorsqu'il détecte des paniers abandonnés ou des clients inactifs.
+              {searchTerm || typeFilter !== 'all' || agentFilter !== 'all' 
+                ? 'Essayez de modifier vos critères de recherche ou vos filtres.' 
+                : "L'assistant proactif génère automatiquement des suggestions ici lorsqu'il détecte des paniers abandonnés ou des clients inactifs."}
             </p>
           </div>
         ) : (
-          logs.map(log => {
+          filteredLogs.map(log => {
             const typeInfo = getTypeInfo(log.type);
             return (
               <div key={log.id} className={`rounded-xl border p-5 transition-all ${
