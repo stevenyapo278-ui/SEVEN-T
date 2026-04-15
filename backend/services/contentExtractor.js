@@ -6,9 +6,9 @@
 import fs from 'fs';
 import path from 'path';
 import * as cheerio from 'cheerio';
+import { YoutubeTranscript } from 'youtube-transcript/dist/youtube-transcript.esm.js';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { YoutubeTranscript } = require('youtube-transcript');
 const pdf = require('pdf-parse');
 const mammoth = require('mammoth');
 
