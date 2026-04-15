@@ -133,7 +133,7 @@ export default function Relances() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
       {/* Header */}
       <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 ${
           isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-blue-50 via-white to-blue-50 border-blue-100'
