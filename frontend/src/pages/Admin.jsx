@@ -42,7 +42,8 @@ import {
   Copy,
   Ticket,
   Info,
-  Database
+  Database,
+  Smartphone
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DatePicker from 'react-datepicker'
@@ -66,7 +67,8 @@ import {
   APIKeyModal,
   AIModelTestModal,
   PlanModal,
-  ConfirmActionModal
+  ConfirmActionModal,
+  SystemWhatsApp
 } from './Admin/index.js'
 
 export default function Admin() {
@@ -162,7 +164,7 @@ export default function Admin() {
     }
     if (adminCaps.canManageUsers || adminCaps.isFullAdmin) tabs.push('users')
     if (adminCaps.canManageAI || adminCaps.isFullAdmin) tabs.push('ai-models')
-    if (adminCaps.canManagePlans || adminCaps.isFullAdmin) tabs.push('plans', 'coupons')
+    if (adminCaps.canManagePlans || adminCaps.isFullAdmin) tabs.push('plans', 'coupons', 'system-whatsapp')
     if (adminCaps.canManageTickets || adminCaps.isFullAdmin) tabs.push('tickets')
     return tabs
   }, [adminCaps])
@@ -792,6 +794,19 @@ export default function Admin() {
               <span className="whitespace-nowrap">Dashboard</span>
             </button>
           )}
+          {(adminCaps.canManagePlans || adminCaps.isFullAdmin) && (
+            <button
+              onClick={() => setActiveTab('system-whatsapp')}
+              className={`flex-shrink-0 pb-3 px-3 sm:px-4 border-b-2 transition-colors touch-target flex items-center gap-2 ${
+                activeTab === 'system-whatsapp' 
+                  ? 'border-gold-400 text-gold-400' 
+                  : 'border-transparent text-gray-500 hover:text-gray-300'
+              }`}
+            >
+              <Smartphone className="w-5 h-5 flex-shrink-0" />
+              <span className="whitespace-nowrap">WhatsApp Système</span>
+            </button>
+          )}
           {(adminCaps.canViewStats || adminCaps.isFullAdmin) && (
             <button
               onClick={() => setActiveTab('activity')}
@@ -945,6 +960,11 @@ export default function Admin() {
       {/* Coupons Tab */}
       {activeTab === 'coupons' && (
         <CouponsContent users={users} />
+      )}
+
+      {/* System WhatsApp Tab */}
+      {activeTab === 'system-whatsapp' && (
+        <SystemWhatsApp />
       )}
 
       {activeTab === 'activity' && (

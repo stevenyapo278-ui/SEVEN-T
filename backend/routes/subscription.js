@@ -150,9 +150,10 @@ router.post('/validate-coupon', authenticateToken, async (req, res) => {
 });
 
 /**
- * POST /api/subscription/create-geniuspay-checkout
+ * POST /api/subscription/create-geniuspay-subscription
+ * Create a RECURRING subscription
  */
-router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) => {
+router.post('/create-geniuspay-subscription', authenticateToken, async (req, res) => {
     try {
         const { planId, billingPeriod = 'monthly', couponCode } = req.body;
         if (!planId) return res.status(400).json({ error: 'planId requis' });
@@ -177,52 +178,51 @@ router.post('/create-geniuspay-checkout', authenticateToken, async (req, res) =>
         }
 
         const userId = req.user.id;
-        const userRow = await db.get('SELECT name, email FROM users WHERE id = ?', userId);
-        const id = uuidv4();
+        const userRow = await db.get('SELECT name, email, phone FROM users WHERE id = ?', userId);
+        const subId = uuidv4();
         
-        const returnUrl = `${baseUrl}/`;
+        const returnUrl = `${baseUrl}/dashboard/settings`;
         const callbackUrl = process.env.BASE_URL 
             ? `${process.env.BASE_URL.replace(/\/$/, '')}/api/subscription/webhook/geniuspay` 
             : `${baseUrl}/api/subscription/webhook/geniuspay`;
 
-        // GeniusPay uses platform keys for SaaS subscriptions (not per-user keys)
         const credentials = {
             api_key: process.env.GENIUSPAY_API_KEY,
             api_secret: process.env.GENIUSPAY_API_SECRET
         };
 
-        if (!credentials.api_key || !credentials.api_secret) {
-            return res.status(503).json({ error: 'GeniusPay non configuré sur le serveur' });
-        }
-
-        const result = await geniuspay.createInvoiceWithCredentials(credentials, {
+        const result = await geniuspay.createSubscriptionWithCredentials(credentials, {
+            planId: planRow.name,
             amount,
             currency: planRow.price_currency || 'XOF',
-            description: `Abonnement ${planRow.display_name} (${billingPeriod})` + (couponRes?.coupon?.name ? ` - Coupon: ${couponRes.coupon.name}` : (finalCouponCode ? ` - Coupon: ${finalCouponCode}` : '')),
-            referenceId: id,
+            description: `Abonnement SaaS ${planRow.display_name} (${billingPeriod})`,
             returnUrl,
             callbackUrl,
             customer: {
                 name: userRow.name,
-                email: userRow.email
+                email: userRow.email,
+                phone: userRow.phone
+            },
+            metadata: {
+                user_id: userId,
+                internal_sub_id: subId,
+                coupon_code: finalCouponCode,
+                billing_period: billingPeriod
             }
         });
 
         if (!result) return res.status(500).json({ error: 'Erreur GeniusPay' });
 
+        // Record the invitation/pending subscription
         await db.run(`
-            INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, currency, external_id, coupon_code, discount_amount, original_amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, id, userId, planId, billingPeriod, amount, planRow.price_currency || 'XOF', result.invoiceId, finalCouponCode, discountAmount, originalAmount);
+            INSERT INTO saas_subscriptions (id, user_id, plan_id, geniuspay_sub_id, status, billing_cycle)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, subId, userId, planId, result.subscriptionId, 'pending', billingPeriod);
 
-        res.json({ url: result.paymentUrl });
+        res.json({ url: result.checkoutUrl });
     } catch (err) {
-        console.error('GeniusPay sub error:', err);
-        res.status(500).json({ 
-            error: 'Erreur lors de la création du paiement',
-            message: err.message,
-            code: 'GENIUSPAY_ERROR'
-        });
+        console.error('GeniusPay sub creation error:', err);
+        res.status(500).json({ error: 'Erreur lors de la création de l\'abonnement' });
     }
 });
 
@@ -302,12 +302,12 @@ export async function handleGeniusPaySubscriptionWebhook(req, res) {
         const event = payload?.event;
         const data = payload?.data || {};
 
-        // Optional signature verification
+        // Mandatory signature verification
         const secret = process.env.GENIUSPAY_WEBHOOK_SECRET;
         if (secret) {
             const crypto = await import('crypto');
             const signature = req.headers['x-webhook-signature'];
-            const timestamp = req.headers['x-webhook-timestamp'];
+            const timestamp = req.headers['x-webhook-timestamp'] || '';
             const rawBodyStr = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : (typeof rawBody === 'string' ? rawBody : JSON.stringify(payload));
             const expected = crypto.default.createHmac('sha256', secret).update(timestamp + '.' + rawBodyStr).digest('hex');
             if (signature !== expected) {
@@ -316,14 +316,16 @@ export async function handleGeniusPaySubscriptionWebhook(req, res) {
             }
         }
 
-        if (event !== 'payment.success') {
-            return res.status(200).send('OK');
-        }
+        console.log(`[GeniusPay Webhook] Event: ${event}, ID: ${data.id}`);
 
-        const externalId = String(data.id || data.reference);
-        const payment = await db.get('SELECT * FROM saas_subscription_payments WHERE external_id = ? AND status != ?', externalId, 'paid');
-        
-        if (!payment) {
+        // Handle Legacy One-off Payment Webhook
+        if (event === 'payment.success') {
+            const externalId = String(data.id || data.reference);
+            const payment = await db.get('SELECT * FROM saas_subscription_payments WHERE external_id = ? AND status != ?', externalId, 'paid');
+            if (payment) {
+                await finalizeSubscription(payment, `geniuspay_${payment.id}`);
+                return res.status(200).send('OK');
+            }
             // Check by reference_id in metadata
             const refId = data.metadata?.reference_id;
             if (refId) {
@@ -335,12 +337,72 @@ export async function handleGeniusPaySubscriptionWebhook(req, res) {
             return res.status(200).send('OK');
         }
 
-        await finalizeSubscription(payment, `geniuspay_${payment.id}`);
+        // Handle SaaS Recurring Webhooks
+        const geniuspaySubId = data.subscription_id || data.id;
+        if (!geniuspaySubId) return res.status(200).send('OK');
+
+        const sub = await db.get('SELECT * FROM saas_subscriptions WHERE geniuspay_sub_id = ?', geniuspaySubId);
+        if (!sub) {
+             console.warn(`[GeniusPay Webhook] No internal subscription found for GeniusPay ID: ${geniuspaySubId}`);
+             return res.status(200).send('OK');
+        }
+
+        if (event === 'subscription.payment_success') {
+            // Renewal success
+            const nextBillingDate = data.next_billing_date;
+            await finalizeSaaSSubscription(sub, 'active', nextBillingDate);
+        } else if (event === 'subscription.payment_failed') {
+            // Payment failed: mark as past_due to trigger grace period
+            await db.run("UPDATE saas_subscriptions SET status = 'past_due', updated_at = CURRENT_TIMESTAMP WHERE id = ?", sub.id);
+            await db.run("UPDATE users SET subscription_status = 'past_due' WHERE id = ?", sub.user_id);
+            
+            const user = await db.get('SELECT name, email FROM users WHERE id = ?', sub.user_id);
+            if (user) {
+                await sendPaymentFailedEmail(user, 'Le renouvellement automatique de votre abonnement a échoué.');
+                // Relance WhatsApp J (via sub manager or here)
+                try {
+                    const { sendSystemWhatsApp } = await import('../services/subscriptionManager.js');
+                    await sendSystemWhatsApp(sub.user_id, `Bonjour ${user.name}, le paiement de votre abonnement SEVEN T a échoué. Vous disposez de 3 jours de période de grâce avant la suspension de votre service.`);
+                } catch (e) {}
+            }
+        } else if (event === 'subscription.cancelled' || event === 'subscription.expired') {
+            await db.run("UPDATE saas_subscriptions SET status = 'expired', updated_at = CURRENT_TIMESTAMP WHERE id = ?", sub.id);
+            await removeSubscriptionFromUser(sub.user_id);
+        }
+
         return res.status(200).send('OK');
     } catch (error) {
         console.error('[GeniusPay sub webhook] Error:', error);
         res.status(500).send('Error');
     }
+}
+
+async function finalizeSaaSSubscription(sub, status, nextBillingDate) {
+    const periodEnd = nextBillingDate ? new Date(nextBillingDate) : null;
+    
+    await db.run(`
+        UPDATE saas_subscriptions SET 
+            status = ?, 
+            current_period_end = ?,
+            updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+    `, status, periodEnd, sub.id);
+
+    // Get plan details
+    const plan = await getPlan(sub.plan_id);
+    const credits = plan?.limits?.credits_per_month ?? 100;
+
+    await db.run(`
+        UPDATE users SET 
+            plan = ?, 
+            credits = ?, 
+            subscription_status = 'active',
+            subscription_end_date = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    `, sub.plan_id, credits, periodEnd, sub.user_id);
+
+    console.log(`[SubManager] SaaS Subscription finalized for user ${sub.user_id}. Next billing: ${nextBillingDate}`);
 }
 
 async function finalizeSubscription(payment, externalSubId) {

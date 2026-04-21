@@ -124,8 +124,8 @@ export default function Pricing() {
     setCheckoutLoading(planId)
     setError(null)
     try {
-      const res = await api.post('/subscription/create-geniuspay-checkout', { planId, billingPeriod: billing, couponCode: couponResult?.valid ? couponCode : undefined })
-      if (!res.data?.url) throw new Error('Erreur lors de la création du paiement')
+      const res = await api.post('/subscription/create-geniuspay-subscription', { planId, billingPeriod: billing, couponCode: couponResult?.valid ? couponCode : undefined })
+      if (!res.data?.url) throw new Error('Erreur lors de la création de l\'abonnement')
       window.location.href = res.data.url
     } catch (err) {
       setError(err.response?.data?.error || err.message)

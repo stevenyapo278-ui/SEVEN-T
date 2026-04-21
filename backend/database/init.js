@@ -794,6 +794,23 @@ export async function initDatabase() {
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
 
+        CREATE TABLE IF NOT EXISTS saas_subscriptions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            plan_id TEXT NOT NULL,
+            geniuspay_sub_id TEXT UNIQUE,
+            status TEXT DEFAULT 'active', -- active, past_due, canceled, expired
+            billing_cycle TEXT DEFAULT 'monthly',
+            current_period_start TIMESTAMP,
+            current_period_end TIMESTAMP,
+            cancel_at_period_end INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_saas_subscriptions_user ON saas_subscriptions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_saas_subscriptions_status ON saas_subscriptions(status);
+
         CREATE TABLE IF NOT EXISTS payment_links (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -1210,6 +1227,16 @@ export async function initDatabase() {
             'default_media_model',
             'gemini-1.5-flash'
         );
+    }
+
+    // Seed system WhatsApp settings
+    const systemWaToolSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'system_whatsapp_tool_id');
+    if (!systemWaToolSetting) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?)', 'system_whatsapp_tool_id', '');
+    }
+    const systemWaNumberSetting = await db.get('SELECT 1 FROM platform_settings WHERE key = ?', 'system_whatsapp_number');
+    if (!systemWaNumberSetting) {
+        await db.run('INSERT INTO platform_settings (key, value) VALUES (?, ?)', 'system_whatsapp_number', '');
     }
 
     // Seed subscription plans if needed

@@ -73,6 +73,7 @@ import { runCampaignSchedulerJob } from './services/campaigns.js';
 import { runStatusSchedulerJob } from './services/whatsapp.js';
 import { startWorkflowWorker } from './workers/workflowWorker.js';
 import { proactiveAdvisorService } from './services/proactiveAdvisor.js';
+import { runSubscriptionReviewJob } from './services/subscriptionManager.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -392,6 +393,7 @@ async function start() {
                 runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
                 runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
                 runStatusSchedulerJob().catch(err => console.error('[StatusScheduler] Job error:', err?.message));
+                runSubscriptionReviewJob().catch(err => console.error('[SubscriptionReview] Job error:', err?.message));
             }, 60 * 60 * 1000);
             
             // Frequent check for scheduled campaigns (every 5 minutes)
@@ -406,6 +408,7 @@ async function start() {
                 runNextBestActionJob().catch(err => console.error('[NextBestAction] Job error:', err?.message));
                 runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
                 runStatusSchedulerJob().catch(err => console.error('[StatusScheduler] Job error:', err?.message));
+                runSubscriptionReviewJob().catch(err => console.error('[SubscriptionReview] Job error:', err?.message));
                 
                 // Humanization: Proactive Advisor
                 proactiveAdvisorService.start();

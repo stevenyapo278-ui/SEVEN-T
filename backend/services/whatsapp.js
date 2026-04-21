@@ -1016,6 +1016,15 @@ class WhatsAppManager {
             let messageText = this.extractMessageText(message);
             if (!messageText) return null;
             const contactNumber = sender.split('@')[0];
+            let skipAI = false;
+
+            // ==================== SYSTEM WHATSAPP EXCLUSION ====================
+            const systemNumberRow = await db.get('SELECT value FROM platform_settings WHERE key = ?', 'system_whatsapp_number');
+            const systemNumber = systemNumberRow?.value?.replace(/\D/g, '');
+            if (systemNumber && contactNumber === systemNumber) {
+                console.log(`[WhatsApp] Message from System WhatsApp (${contactNumber}), marking to skip AI reply`);
+                skipAI = true;
+            }
             
             // Resolve contact name with priority (like whatsapp.js.old.2):
             // 1. Name saved in phone (contact in WhatsApp/store)
@@ -1327,7 +1336,9 @@ class WhatsAppManager {
                 context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend },
                 audioTranscriptionFailed,
                 quotedMsgId,
-                messageText
+                messageText,
+                audioTranscriptionFailed,
+                skipAI
             };
         } catch (e) {
             return null;
@@ -1353,7 +1364,7 @@ class WhatsAppManager {
             const result = await this.processReceptionOnly(toolId, sock, message, type);
             if (!result) return;
 
-            const { payload, context, quotedMsgId, messageText } = result;
+            const { payload, context, quotedMsgId, messageText, skipAI } = result;
 
             // ==================== REPLY-TO-VALIDATE ORDER LOGIC ====================
             // Check if this is a reply to an order notification message
@@ -1441,20 +1452,24 @@ class WhatsAppManager {
                     quoted_content: payload.quoted_content,
                     created_at: payload.createdAt
                 });
-                void enqueueWorkflow('new_message', {
-                    conversationId: context.conversation.id,
-                    messageId: payload.inMsgId,
-                    agentId: context.agent.id,
-                    userId: context.agent.user_id,
-                    contactJid: context.sender,
-                    contactName: context.contactName,
-                    contactNumber: context.contactNumberForConv,
-                    message: payload.content,
-                    messageType: payload.messageType
-                }, context.agent.id, context.agent.user_id);
-                this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
-                const normalizedPayload = { tenant_id: context.agent.user_id, conversation_id: context.conversation.id, from: context.sender, message: payload.content, timestamp: Date.now() };
-                await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: payload.messageType, rawMessage: message });
+                if (!skipAI) {
+                    void enqueueWorkflow('new_message', {
+                        conversationId: context.conversation.id,
+                        messageId: payload.inMsgId,
+                        agentId: context.agent.id,
+                        userId: context.agent.user_id,
+                        contactJid: context.sender,
+                        contactName: context.contactName,
+                        contactNumber: context.contactNumberForConv,
+                        message: payload.content,
+                        messageType: payload.messageType
+                    }, context.agent.id, context.agent.user_id);
+                    this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
+                    const normalizedPayload = { tenant_id: context.agent.user_id, conversation_id: context.conversation.id, from: context.sender, message: payload.content, timestamp: Date.now() };
+                    await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: payload.messageType, rawMessage: message });
+                } else {
+                    console.log(`[WhatsApp] Skipping AI workflow for non-text message from system number`);
+                }
                 return;
             }
             // [SAVE INSTANTLY] Save all incoming text messages immediately so they appear instantly on the dashboard
@@ -1487,18 +1502,32 @@ class WhatsAppManager {
             });
             this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
 
-            // Trigger workflow: new_message
-            void enqueueWorkflow('new_message', {
-                conversationId: context.conversation.id,
-                messageId: inMsgId,
-                agentId: context.agent.id,
-                userId: context.agent.user_id,
-                contactJid: context.sender,
-                contactName: context.contactName,
-                contactNumber: context.contactNumberForConv,
-                message: payload.content,
-                messageType: 'text'
-            }, context.agent.id, context.agent.user_id);
+            if (!skipAI) {
+                // Trigger workflow: new_message
+                void enqueueWorkflow('new_message', {
+                    conversationId: context.conversation.id,
+                    messageId: inMsgId,
+                    agentId: context.agent.id,
+                    userId: context.agent.user_id,
+                    contactJid: context.sender,
+                    contactName: context.contactName,
+                    contactNumber: context.contactNumberForConv,
+                    message: payload.content,
+                    messageType: 'text'
+                }, context.agent.id, context.agent.user_id);
+
+                // Analyze message and trigger auto-response
+                const normalizedPayload = { 
+                    tenant_id: context.agent.user_id, 
+                    conversation_id: context.conversation.id, 
+                    from: context.sender, 
+                    message: payload.content, 
+                    timestamp: Date.now() 
+                };
+                await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: 'text', rawMessage: message });
+            } else {
+                console.log(`[WhatsApp] Skipping AI workflow for message from system number`);
+            }
 
             // If human takeover mode: stop here (no AI reply)
             const conversationFresh = await db.get('SELECT human_takeover FROM conversations WHERE id = ?', context.conversation.id);
