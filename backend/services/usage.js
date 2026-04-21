@@ -11,7 +11,7 @@ export async function getUserUsageStats(userId) {
         const agents = await db.get('SELECT COUNT(*)::integer as count FROM agents WHERE user_id = ?', userId);
         
         // 2. WhatsApp accounts count
-        const whatsapp = await db.get('SELECT COUNT(*)::integer as count FROM agents WHERE user_id = ? AND whatsapp_connected = true', userId);
+        const whatsapp = await db.get('SELECT COUNT(*)::integer as count FROM agents WHERE user_id = ? AND whatsapp_connected = 1', userId);
         
         // 3. Knowledge items count
         const knowledge = await db.get(`

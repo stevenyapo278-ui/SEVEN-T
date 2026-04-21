@@ -182,8 +182,11 @@ function StandardRoute({ children }) {
     '/dashboard/flows': { key: 'flows', name: 'Constructeur de Flux', icon: GitBranch, desc: 'Créez des parcours clients automatisés complexes et visuels.' },
     '/dashboard/whatsapp-status': { key: 'whatsappStatus', name: 'Statut WhatsApp', icon: PhoneCall, desc: 'Surveillez l\'état de vos comptes WhatsApp et la qualité de connexion.' },
     '/dashboard/leads': { key: 'leads', name: 'Gestion des Prospects', icon: Users, desc: 'Organisez et qualifiez vos leads entrants automatiquement.' },
+    '/dashboard/products': { key: 'catalogImport', name: 'Catalogue Produits', icon: Layout, desc: 'Importez et gérez votre catalogue de produits pour la vente automatisée.' },
+    '/dashboard/services': { key: 'catalogImport', name: 'Gestion des Services', icon: Layout, desc: 'Importez et gérez vos services pour la prise de rendez-vous automatique.' },
     '/dashboard/campaigns': { key: 'campaigns', name: 'Campagnes Marketing', icon: Send, desc: 'Lancez des campagnes de messages de masse ciblées et performantes.' },
     '/dashboard/deals': { key: 'deals', name: 'Pipeline de Ventes', icon: Trello, desc: 'Suivez vos opportunités commerciales de la prise de contact à la clôture.' },
+    '/dashboard/workflows': { key: 'flows', name: 'Workflows Automatisés', icon: GitBranch, desc: 'Automatisez vos processus métier avec des séquences logiques.' },
   };
 
   const currentPath = location.pathname;
