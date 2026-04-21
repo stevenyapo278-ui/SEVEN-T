@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { useModuleAvailability } from './hooks/useModuleAvailability'
 
 // Public pages (loaded immediately)
 import Landing from './pages/Landing'
@@ -60,6 +61,19 @@ import ErrorBoundary from './components/ErrorBoundary'
 import CookieConsentBanner from './components/CookieConsentBanner'
 import DashboardLayout from './layouts/DashboardLayout'
 import TrialExpiredBanner from './components/TrialExpiredBanner'
+import LockedModuleView from './components/LockedModuleView'
+import { 
+  BarChart3, 
+  CreditCard, 
+  GitBranch, 
+  Users, 
+  MessageSquare, 
+  FileText, 
+  PhoneCall, 
+  Layout, 
+  Send,
+  Trello
+} from 'lucide-react'
 
 function PageFallback() {
   return <div className="min-h-[50vh] w-full" aria-busy="true" />
@@ -141,6 +155,8 @@ function SupportRoute({ children }) {
 // StandardRoute - Blocks influencer-only users from accessing normal dashboard pages
 function StandardRoute({ children }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
+  const { status } = useModuleAvailability()
 
   if (loading) {
     return (
@@ -152,11 +168,29 @@ function StandardRoute({ children }) {
 
   if (!user) return <Navigate to="/login" replace />
 
-  // Influencer-only accounts can only access their dedicated page
-  // Uses the server-computed flag to prevent any bypass
+  // Influencer-only accounts
   if (user.influencer_only) {
     const slug = user.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire'
     return <Navigate to={`/dashboard/${slug}`} replace />
+  }
+
+  // Module lock check
+  const pathMap = {
+    '/dashboard/analytics': { key: 'analytics', name: 'Analyses Avancées', icon: BarChart3, desc: 'Obtenez des informations stratégiques sur vos performances et votre ROI.' },
+    '/dashboard/reports': { key: 'reports', name: 'Rapports Professionnels', icon: FileText, desc: 'Générez des rapports PDF exportables pour vos réunions et bilans.' },
+    '/dashboard/payments': { key: 'payment', name: 'Module de Paiement', icon: CreditCard, desc: 'Enclenchez des paiements directement via WhatsApp et suivez vos revenus.' },
+    '/dashboard/flows': { key: 'flows', name: 'Constructeur de Flux', icon: GitBranch, desc: 'Créez des parcours clients automatisés complexes et visuels.' },
+    '/dashboard/whatsapp-status': { key: 'whatsappStatus', name: 'Statut WhatsApp', icon: PhoneCall, desc: 'Surveillez l\'état de vos comptes WhatsApp et la qualité de connexion.' },
+    '/dashboard/leads': { key: 'leads', name: 'Gestion des Prospects', icon: Users, desc: 'Organisez et qualifiez vos leads entrants automatiquement.' },
+    '/dashboard/campaigns': { key: 'campaigns', name: 'Campagnes Marketing', icon: Send, desc: 'Lancez des campagnes de messages de masse ciblées et performantes.' },
+    '/dashboard/deals': { key: 'deals', name: 'Pipeline de Ventes', icon: Trello, desc: 'Suivez vos opportunités commerciales de la prise de contact à la clôture.' },
+  };
+
+  const currentPath = location.pathname;
+  const modInfo = pathMap[currentPath] || Object.entries(pathMap).find(([path]) => currentPath.startsWith(path))?.[1];
+
+  if (modInfo && status[modInfo.key]?.locked) {
+    return <LockedModuleView moduleName={modInfo.name} description={modInfo.desc} icon={modInfo.icon} />;
   }
 
   return children

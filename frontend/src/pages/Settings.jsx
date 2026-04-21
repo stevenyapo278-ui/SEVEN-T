@@ -8,8 +8,9 @@ import { useFont } from '../contexts/FontContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
-import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2, Mail, MessageCircle, HelpCircle } from 'lucide-react'
+import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2, Mail, MessageCircle, HelpCircle, GitBranch, Users, Database } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useModuleAvailability } from '../hooks/useModuleAvailability'
 
 export default function Settings() {
   const { t, i18n } = useTranslation()
@@ -93,6 +94,8 @@ export default function Settings() {
   useLockBodyScroll(showDeleteAccountModal || !!paymentProviderModal?.provider)
 
   const [quotas, setQuotas] = useState(null)
+  const [usageStats, setUsageStats] = useState(null)
+  const [usageLoading, setUsageLoading] = useState(false)
   const [dailyBriefing, setDailyBriefing] = useState(null)
   const [dailyBriefingLoading, setDailyBriefingLoading] = useState(false)
   const [dailyBriefingSaving, setDailyBriefingSaving] = useState(false)
@@ -124,6 +127,22 @@ export default function Settings() {
       setQuotas(null)
     }
   }
+
+  const loadUsageStats = async () => {
+    setUsageLoading(true)
+    try {
+      const res = await api.get('/users/usage')
+      setUsageStats(res.data)
+    } catch (err) {
+      console.error("Error loading usage stats:", err)
+    } finally {
+      setUsageLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsageStats()
+  }, [])
 
   const loadDailyBriefing = async () => {
     if (!user?.plan_features?.daily_briefing) return
@@ -532,10 +551,10 @@ export default function Settings() {
           </h2>
           <button
             type="button"
-            onClick={() => { refreshUser(); loadQuotas() }}
+            onClick={() => { refreshUser(); loadQuotas(); loadUsageStats(); }}
             className="text-sm text-gray-400 hover:text-gray-200 inline-flex items-center justify-center gap-1.5 transition-colors touch-target flex-shrink-0"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${usageLoading ? 'animate-spin text-blue-400' : ''}`} />
             Actualiser
           </button>
         </div>
@@ -556,7 +575,8 @@ export default function Settings() {
         </div>
         {(() => {
           const limit = quotas?.limits?.credits_per_month ?? currentPlan.limits?.credits_per_month ?? 0
-          const used = quotas?.usage?.credits_used_this_month ?? (limit > 0 ? Math.max(0, limit - (user?.credits ?? 0)) : 0)
+          const used = usageStats?.messages_this_month ?? (limit > 0 ? Math.max(0, limit - (user?.credits ?? 0)) : 0)
+          
           if (limit === -1) {
             return (
               <div className="mb-3">
@@ -567,16 +587,16 @@ export default function Settings() {
           if (limit > 0) {
             const percentUsed = Math.min(100, (used / limit) * 100)
             return (
-              <div className="mb-3">
+              <div className="mb-6">
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-400">Utilisation ce mois</span>
+                  <span className="text-gray-400 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5 text-blue-400" /> Messages IA</span>
                   <span className="text-gray-300 tabular-nums">
-                    {used === 0 ? 'Aucun utilisé' : `${used} utilisés`} / {limit} inclus
+                    {used} / {limit}
                   </span>
                 </div>
-                <div className="w-full bg-space-700 rounded-full h-2">
+                <div className="w-full bg-space-700/50 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className="bg-blue-500 h-2 rounded-full transition-all"
+                    className={`h-full rounded-full transition-all duration-1000 ${percentUsed > 90 ? 'bg-red-500' : percentUsed > 70 ? 'bg-orange-500' : 'bg-blue-500'}`}
                     style={{ width: `${percentUsed}%` }}
                   />
                 </div>
@@ -585,6 +605,41 @@ export default function Settings() {
           }
           return null
         })()}
+
+        {/* Autres quotas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            {/* Agents */}
+            <div>
+                <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-500 flex items-center gap-1.5"><Users className="w-3 h-3" /> Agents</span>
+                    <span className="text-gray-400 font-medium">
+                        {usageStats?.agents ?? 0} / {quotas?.limits?.agents ?? currentPlan.limits?.agents ?? 0}
+                    </span>
+                </div>
+                <div className="w-full bg-space-700/30 rounded-full h-1">
+                    <div 
+                        className="bg-purple-500 h-full rounded-full" 
+                        style={{ width: `${Math.min(100, ((usageStats?.agents ?? 0) / (quotas?.limits?.agents ?? currentPlan.limits?.agents ?? 1)) * 100)}%` }} 
+                    />
+                </div>
+            </div>
+
+            {/* Knowledge */}
+            <div>
+                <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-500 flex items-center gap-1.5"><Database className="w-3 h-3" /> Base de connaissance</span>
+                    <span className="text-gray-400 font-medium">
+                        {usageStats?.knowledge_items ?? 0} / {quotas?.limits?.knowledge_items ?? currentPlan.limits?.knowledge_items ?? 10}
+                    </span>
+                </div>
+                <div className="w-full bg-space-700/30 rounded-full h-1">
+                    <div 
+                        className="bg-emerald-500 h-full rounded-full" 
+                        style={{ width: `${Math.min(100, ((usageStats?.knowledge_items ?? 0) / (quotas?.limits?.knowledge_items ?? currentPlan.limits?.knowledge_items ?? 10)) * 100)}%` }} 
+                    />
+                </div>
+            </div>
+        </div>
         <p className="text-xs text-gray-500">
           {t('settings.creditsHint')}
         </p>

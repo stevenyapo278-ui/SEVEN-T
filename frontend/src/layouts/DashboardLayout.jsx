@@ -58,6 +58,19 @@ import GlobalAIAssistant from '../components/AI/GlobalAIAssistant'
 import GlobalAIAssistantModal from '../components/AI/GlobalAIAssistantModal'
 import AIChatbot from '../components/AI/AIChatbot'
 import { AssistedConfigWizard } from '../components/Onboarding'
+import { AlertCircle, Lock } from 'lucide-react'
+
+const PastDueBanner = ({ isDark }) => (
+  <div className={`w-full px-4 py-2 flex items-center justify-between gap-3 border-b ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-600'}`}>
+    <div className="flex items-center gap-2 text-sm font-medium">
+      <AlertCircle className="w-4 h-4" />
+      <span>Action requise : Échec de paiement. Votre abonnement est en retard. Veuillez régulariser pour éviter la suspension.</span>
+    </div>
+    <Link to="/dashboard/pricing" className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${isDark ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400' : 'bg-red-500 text-white hover:bg-red-600'}`}>
+      Régulariser
+    </Link>
+  </div>
+);
 
 
 const navigationGroups = [
@@ -284,27 +297,37 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
             {({ isActive }) => (
               <>
                 <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
                 {(!collapsed || isMobile) && (
                   <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
-                    <span className="truncate">{item.title || t(item.nameKey)}</span>
-                    {item.href === '/dashboard/notifications' && unreadCount > 0 && (
-                      <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
-                    {item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
-                      <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full leading-none min-w-[18px] text-center">
-                        {unreadConversationsCount > 99 ? '99+' : unreadConversationsCount}
-                      </span>
+                    <span className={`truncate ${item.isLocked ? 'text-gray-500' : ''}`}>{item.title || t(item.nameKey)}</span>
+                    
+                    {item.isLocked ? (
+                      <Lock className="w-3 h-3 text-gold-400/60" />
+                    ) : (
+                      <>
+                        {item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                          <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        )}
+                        {item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                          <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                            {unreadConversationsCount > 99 ? '99+' : unreadConversationsCount}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
-                {collapsed && !isMobile && item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/notifications' && unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
                 )}
-                {collapsed && !isMobile && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
+                )}
+                {collapsed && !isMobile && item.isLocked && (
+                   <span className="absolute top-1 right-1"><Lock className="w-2.5 h-2.5 text-gold-400/50" /></span>
                 )}
               </>
             )}
@@ -353,27 +376,37 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
               {({ isActive }) => (
                 <>
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                  <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
                   {(!collapsed || isMobile) && (
                     <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
-                      <span className="truncate">{item.title || t(item.nameKey)}</span>
-                      {item.href === '/dashboard/notifications' && unreadCount > 0 && (
-                        <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
-                      )}
-                      {item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
-                        <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full leading-none min-w-[18px] text-center">
-                          {unreadConversationsCount > 99 ? '99+' : unreadConversationsCount}
-                        </span>
+                      <span className={`truncate ${item.isLocked ? 'text-gray-500 italic' : ''}`}>{item.title || t(item.nameKey)}</span>
+                      
+                      {item.isLocked ? (
+                        <Lock className="w-3 h-3 text-gold-400/60" />
+                      ) : (
+                        <>
+                          {item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                            <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-blue-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
+                          {item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                            <span className="flex-shrink-0 ml-2 px-1.5 py-0.5 text-[10px] font-bold bg-emerald-500 text-white rounded-full leading-none min-w-[18px] text-center">
+                              {unreadConversationsCount > 99 ? '99+' : unreadConversationsCount}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
-                  {collapsed && !isMobile && item.href === '/dashboard/notifications' && unreadCount > 0 && (
+                  {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/notifications' && unreadCount > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
                   )}
-                  {collapsed && !isMobile && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
+                  {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
                     <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
+                  )}
+                  {collapsed && !isMobile && item.isLocked && (
+                     <span className="absolute top-1 right-1"><Lock className="w-2.5 h-2.5 text-gold-400/50" /></span>
                   )}
                 </>
               )}
@@ -945,17 +978,10 @@ export default function DashboardLayout() {
   const [assistedConfigData, setAssistedConfigData] = useState(null)
 
   const {
-    payment: paymentModuleEnabled,
-    analytics: analyticsModuleEnabled,
-    flows: flowsModuleEnabled,
-    leads: leadsModuleEnabled,
-    whatsappStatus: whatsappStatusModuleEnabled,
-    catalogImport: catalogImportModuleEnabled,
-    knowledgeBase: knowledgeBaseModuleEnabled,
-    campaigns: campaignsModuleEnabled,
-    deals: dealsModuleEnabled,
+    status: modulesStatus,
     isAdmin,
-    isInfluencerOnly
+    isInfluencerOnly,
+    subscriptionStatus
   } = useModuleAvailability();
 
   const fetchUnreadCounts = async () => {
@@ -1143,34 +1169,42 @@ export default function DashboardLayout() {
         }
       ];
     }
+    const navToModule = {
+      '/dashboard/payments': 'payment',
+      '/dashboard/analytics': 'analytics',
+      '/dashboard/reports': 'reports',
+      '/dashboard/flows': 'flows',
+      '/dashboard/workflows': 'flows',
+      '/dashboard/leads': 'leads',
+      '/dashboard/whatsapp-status': 'whatsappStatus',
+      '/dashboard/products': 'catalogImport',
+      '/dashboard/services': 'catalogImport',
+      '/dashboard/campaigns': 'campaigns',
+      '/dashboard/deals': 'deals'
+    };
+
     return navigationGroups.map(g => ({
       ...g,
-      items: g.items.filter(item => {
+      items: g.items.map(item => {
+        const modKey = navToModule[item.href];
+        if (!modKey) return { ...item, isLocked: false };
+        
+        const modStatus = modulesStatus[modKey];
+        const isLocked = modStatus ? modStatus.locked : false;
+        
+        return { ...item, isLocked };
+      }).filter(item => {
         if (item.href === '/dashboard/tickets') return true;
+        const modKey = navToModule[item.href];
+        if (!modKey) return true;
         
-        // Modules mapping
-        if (item.href === '/dashboard/payments') return paymentModuleEnabled;
-
-        if (item.href === '/dashboard/analytics') return analyticsModuleEnabled;
-        if (item.href === '/dashboard/reports') return analyticsModuleEnabled;
-        
-        if (item.href === '/dashboard/flows') return flowsModuleEnabled;
-        if (item.href === '/dashboard/workflows') return flowsModuleEnabled;
-        
-        if (item.href === '/dashboard/leads') return leadsModuleEnabled;
-        
-        if (item.href === '/dashboard/whatsapp-status') return whatsappStatusModuleEnabled;
-        
-        if (item.href === '/dashboard/products') return catalogImportModuleEnabled;
-        if (item.href === '/dashboard/services') return catalogImportModuleEnabled;
-
-        if (item.href === '/dashboard/campaigns') return campaignsModuleEnabled;
-        if (item.href === '/dashboard/deals') return dealsModuleEnabled;
-        if (item.href === '/dashboard/knowledge') return true; // knowledgeBaseModuleEnabled
-        return true;
+        const modStatus = modulesStatus[modKey];
+        // On affiche l'item s'il est activé OU s'il est simplement verrouillé par le plan (pour l'upsell)
+        // Par contre s'il est explicitement désactivé manuellement (enabled: false, locked: false), on le cache.
+        return modStatus ? (modStatus.enabled || modStatus.locked) : true;
       })
     })).filter(g => g.items.length > 0);
-  }, [paymentModuleEnabled, analyticsModuleEnabled, flowsModuleEnabled, leadsModuleEnabled, whatsappStatusModuleEnabled, catalogImportModuleEnabled, knowledgeBaseModuleEnabled, campaignsModuleEnabled, dealsModuleEnabled, isInfluencerOnly, user?.name])
+  }, [modulesStatus, isInfluencerOnly, user?.name])
 
 
   const bottomNav = useMemo(() => {
@@ -1261,6 +1295,7 @@ export default function DashboardLayout() {
 
       {/* ── Main content area ── */}
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${contentPl}`}>
+        {subscriptionStatus === 'past_due' && <PastDueBanner isDark={isDark} />}
 
         {/* ── Mobile header ── */}
         <div className={`sticky top-0 z-40 flex h-14 items-center justify-between border-b backdrop-blur-md px-4 lg:hidden ${isDark ? 'border-space-700/60 bg-space-900/90' : 'border-gray-200 bg-white/95'}`}

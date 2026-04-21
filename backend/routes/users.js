@@ -8,7 +8,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { activityLogger } from '../services/activityLogger.js';
 import { hasModule, MODULE_TO_USER_COLUMN } from '../config/plans.js';
 
+import { getUserUsageStats } from '../services/usage.js';
+
 const router = Router();
+
+// Get usage statistics vs limits
+router.get('/usage', authenticateToken, async (req, res) => {
+    try {
+        const stats = await getUserUsageStats(req.user.id);
+        res.json(stats);
+    } catch (error) {
+        console.error('Get usage stats route error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 
 // Export user data (JSON)
 router.get('/me/export', authenticateToken, async (req, res) => {
