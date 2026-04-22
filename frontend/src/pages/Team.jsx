@@ -346,11 +346,13 @@ export default function Team() {
                     { key: 'reports', label: 'Rapports' },
                     { key: 'flows', label: 'Flows (Flux de travail)' },
                     { key: 'payment_module', label: 'Gestion des Paiements' },
-                    { key: 'availability_hours', label: 'Heures de disponibilité' },
-                    { key: 'voice_responses', label: 'Réponses vocales' },
-                    { key: 'sentiment_routing', label: 'Routage par sentiment' },
-                    { key: 'catalog_import', label: 'Import Catalogue' },
-                    { key: 'human_handoff_alerts', label: 'Alertes Transfert Humain' }
+                    { key: 'campaigns', label: 'Campagnes Marketing' },
+                    { key: 'leads_management', label: 'Gestion des Leads' },
+                    { key: 'deals_management', label: 'Suivi des Deals' },
+                    { key: 'proactive_advisor', label: 'Relance IA Proactive' },
+                    { key: 'polls', label: 'Sondages WhatsApp' },
+                    { key: 'catalog_import', label: 'Catalogue (Prod/Serv)' },
+                    { key: 'whatsapp_status', label: 'Statuts WhatsApp' }
                   ].map(({ key, label }) => {
                     const ownerAllowed = user.plan_features?.[key] === true || user[`${key}_module_enabled`] === 1 || user[`${key}_enabled`] === 1;
                     if (!ownerAllowed) return null;

@@ -126,10 +126,14 @@ router.get('/me/export', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date, payment_module_enabled, analytics_module_enabled, reports_module_enabled, flows_module_enabled FROM users WHERE id = ?', userId);
-
+        const user = await db.get('SELECT * FROM users WHERE id = ?', userId);
         
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        
+        // Remove sensitive fields
+        delete user.password;
+        delete user.reset_token;
+        delete user.reset_token_expires;
         
         const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
         const effectivePlan = await getEffectivePlanName(user.plan, user);
@@ -171,7 +175,8 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, currency, created_at, subscription_end_date FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+        delete user.password;
         res.json({ user });
     } catch (error) {
         console.error('Update user error:', error);
@@ -353,19 +358,24 @@ router.post('/me/team', authenticateToken, async (req, res) => {
         const managerId = uuidv4();
         
         // Owner data for inheritance
-        const owner = await db.get('SELECT company, plan, availability_hours_enabled, voice_responses_enabled, payment_module_enabled, reports_module_enabled, analytics_module_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, flows_module_enabled FROM users WHERE id = ?', req.user.id);
+        const owner = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
 
-        const moduleConfigs = {};
-        const allowedModules = ['availability_hours', 'voice_responses', 'payment_module', 'reports', 'analytics', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows'];
+        const viewModules = ['payment_module', 'reports', 'analytics', 'flows', 'whatsapp_status', 'leads_management', 'deals_management', 'campaigns', 'proactive_advisor', 'polls', 'catalog_import'];
+        const featureModules = ['availability_hours', 'voice_responses', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'human_handoff_alerts'];
         
-        for (const mod of allowedModules) {
+        for (const mod of [...viewModules, ...featureModules]) {
             const col = MODULE_TO_USER_COLUMN[mod];
             const hasByPlan = await hasModule(owner.plan, mod);
             const hasByOverride = owner[col] === 1;
             const ownerAllowed = hasByPlan || hasByOverride;
             
-            // Only enable for manager if owner allowed AND requested in permissions
-            moduleConfigs[col] = (ownerAllowed && permissions && permissions.includes(mod)) ? 1 : 0;
+            if (viewModules.includes(mod)) {
+                // Modules avec vue : On active si l'owner l'a ET que c'est coché
+                moduleConfigs[col] = (ownerAllowed && permissions && permissions.includes(mod)) ? 1 : 0;
+            } else {
+                // Modules de logique (pas des vues) : Toujours activé pour le manager si l'owner l'a
+                moduleConfigs[col] = ownerAllowed ? 1 : 0;
+            }
         }
 
         await db.run(`
@@ -430,17 +440,22 @@ router.put('/me/team/:id', authenticateToken, async (req, res) => {
             values.push(JSON.stringify(permissions)); 
             
             // Sync individual module columns
-            const owner = await db.get('SELECT plan, availability_hours_enabled, voice_responses_enabled, payment_module_enabled, reports_module_enabled, analytics_module_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, flows_module_enabled FROM users WHERE id = ?', req.user.id);
-            const allowedModules = ['availability_hours', 'voice_responses', 'payment_module', 'reports', 'analytics', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows'];
+            const owner = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+            const viewModules = ['payment_module', 'reports', 'analytics', 'flows', 'whatsapp_status', 'leads_management', 'deals_management', 'campaigns', 'proactive_advisor', 'polls', 'catalog_import'];
+            const featureModules = ['availability_hours', 'voice_responses', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'human_handoff_alerts'];
             
-            for (const mod of allowedModules) {
+            for (const mod of [...viewModules, ...featureModules]) {
                 const col = MODULE_TO_USER_COLUMN[mod];
                 const hasByPlan = await hasModule(owner.plan, mod);
                 const hasByOverride = owner[col] === 1;
                 const ownerAllowed = hasByPlan || hasByOverride;
                 
                 updates.push(`${col} = ?`);
-                values.push((ownerAllowed && permissions.includes(mod)) ? 1 : 0);
+                if (viewModules.includes(mod)) {
+                    values.push((ownerAllowed && permissions.includes(mod)) ? 1 : 0);
+                } else {
+                    values.push(ownerAllowed ? 1 : 0);
+                }
             }
         }
 
