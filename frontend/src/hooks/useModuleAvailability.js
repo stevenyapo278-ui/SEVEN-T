@@ -10,20 +10,20 @@ export function useModuleAvailability() {
     // Définition des flags d'override
     const isOverrideTrue = (
       override === 1 || override === '1' || override === true ||
-      user[`${key}_enabled`] === 1 || user[`${key}_enabled`] === true ||
-      user[`${key}_module_enabled`] === 1 || user[`${key}_module_enabled`] === true
+      user[`${key}_enabled`] == 1 || user[`${key}_enabled`] === true ||
+      user[`${key}_module_enabled`] == 1 || user[`${key}_module_enabled`] === true
     );
     const isOverrideFalse = (
-      override === 0 || override === '0' ||
-      user[`${key}_enabled`] === 0 ||
-      user[`${key}_module_enabled`] === 0
+      override === 0 || override === '0' || override === false ||
+      user[`${key}_enabled`] === 0 || user[`${key}_enabled`] === '0' ||
+      user[`${key}_module_enabled`] === 0 || user[`${key}_module_enabled`] === '0'
     );
 
     // 1. Désactivation manuelle explicite (Override False)
     if (isOverrideFalse) return { enabled: false, locked: false };
 
     // 2. Bypass administrateur (si pas désactivé manuellement)
-    if (user.is_admin === 1) return { enabled: true, locked: false };
+    if (user.is_admin == 1 || user.is_admin === true) return { enabled: true, locked: false };
 
     // 3. Activation manuelle explicite (Override True)
     if (isOverrideTrue) return { enabled: true, locked: false };
@@ -68,7 +68,7 @@ export function useModuleAvailability() {
       ...Object.keys(status).reduce((acc, key) => ({ ...acc, [key]: status[key].enabled }), {}),
       status,
       isInfluencerOnly: user?.influencer_only === true,
-      isAdmin: user?.is_admin === 1,
+      isAdmin: user?.is_admin == 1 || user?.is_admin === true,
       subscriptionStatus: user?.subscription_status || 'active'
     };
   }, [user, checkStatus]);

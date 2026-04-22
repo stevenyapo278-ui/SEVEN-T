@@ -813,7 +813,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         )}
 
         {/* Admin */}
-        {!isInfluencerOnly && (user?.is_admin === 1 || user?.can_manage_users === 1 || user?.can_manage_plans === 1 || user?.can_view_stats === 1 || user?.can_manage_ai === 1) && (
+        {!isInfluencerOnly && (user?.is_admin == 1 || user?.is_admin === true || user?.can_manage_users == 1 || user?.can_manage_plans == 1 || user?.can_view_stats == 1 || user?.can_manage_ai == 1) && (
           <div className="space-y-0.5">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Admin</p>
@@ -845,7 +845,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         )}
 
         {/* Support (tickets) */}
-        {!isInfluencerOnly && (user?.permissions?.includes('support.tickets.read') || user?.is_admin === 1) && (
+        {!isInfluencerOnly && (user?.permissions?.includes('support.tickets.read') || user?.is_admin == 1 || user?.is_admin === true) && (
           <div className="space-y-0.5 mt-2">
             {(!collapsed || isMobile) && (
               <p className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-gold-400' : 'text-amber-600'}`}>Support</p>
@@ -954,7 +954,7 @@ export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       if (typeof window === 'undefined') return false
-      return localStorage.getItem('seven-t-sidebar-collapsed') === 'true'
+      return localStorage.getItem('seven-t-sidebar-collapsed') === 'true' || localStorage.getItem('seven-t-sidebar-collapsed') == 1
     } catch {
       return false
     }
