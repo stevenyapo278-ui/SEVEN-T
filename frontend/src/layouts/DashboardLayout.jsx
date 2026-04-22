@@ -1177,8 +1177,6 @@ export default function DashboardLayout() {
       '/dashboard/workflows': 'flows',
       '/dashboard/leads': 'leads',
       '/dashboard/whatsapp-status': 'whatsappStatus',
-      '/dashboard/products': 'catalogImport',
-      '/dashboard/services': 'catalogImport',
       '/dashboard/campaigns': 'campaigns',
       '/dashboard/deals': 'deals',
       '/dashboard/polls': 'polls',

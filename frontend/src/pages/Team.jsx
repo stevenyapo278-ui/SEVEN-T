@@ -351,7 +351,6 @@ export default function Team() {
                     { key: 'deals_management', label: 'Suivi des Deals' },
                     { key: 'proactive_advisor', label: 'Relance IA Proactive' },
                     { key: 'polls', label: 'Sondages WhatsApp' },
-                    { key: 'catalog_import', label: 'Catalogue (Prod/Serv)' },
                     { key: 'whatsapp_status', label: 'Statuts WhatsApp' }
                   ].map(({ key, label }) => {
                     const ownerAllowed = user.plan_features?.[key] === true || user[`${key}_module_enabled`] === 1 || user[`${key}_enabled`] === 1;
