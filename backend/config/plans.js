@@ -32,6 +32,8 @@ const FEATURES_BASELINE = {
     deals_management: true,
     proactive_advisor: false,
     campaigns: false,
+    polls: false,
+    voice_responses: false,
     models: []
 
 };
@@ -325,7 +327,14 @@ export const PLANS = {
     }
 };
 
-export const MODULE_KEYS = ['reports', 'analytics', 'payment_module', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'catalog_import', 'human_handoff_alerts', 'flows', 'whatsapp_status', 'leads_management', 'deals_management', 'campaigns', 'proactive_advisor'];
+export const MODULE_KEYS = [
+    'reports', 'analytics', 'payment_module', 'next_best_action', 
+    'conversion_score', 'daily_briefing', 'sentiment_routing', 
+    'catalog_import', 'human_handoff_alerts', 'flows', 
+    'whatsapp_status', 'leads_management', 'deals_management', 
+    'campaigns', 'proactive_advisor', 'polls', 'voice_responses',
+    'availability_hours'
+];
 
 
 /** Map plan feature key to users table override column */
@@ -346,7 +355,9 @@ export const MODULE_TO_USER_COLUMN = {
     leads_management: 'leads_management_enabled',
     deals_management: 'deals_module_enabled',
     campaigns: 'campaigns_module_enabled',
-    proactive_advisor: 'proactive_advisor_enabled'
+    proactive_advisor: 'proactive_advisor_enabled',
+    polls: 'polls_module_enabled',
+    voice_responses: 'voice_responses_enabled'
 };
 
 /**

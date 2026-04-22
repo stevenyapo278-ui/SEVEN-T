@@ -187,13 +187,18 @@ function StandardRoute({ children }) {
     '/dashboard/campaigns': { key: 'campaigns', name: 'Campagnes Marketing', icon: Send, desc: 'Lancez des campagnes de messages de masse ciblées et performantes.' },
     '/dashboard/deals': { key: 'deals', name: 'Pipeline de Ventes', icon: Trello, desc: 'Suivez vos opportunités commerciales de la prise de contact à la clôture.' },
     '/dashboard/workflows': { key: 'flows', name: 'Workflows Automatisés', icon: GitBranch, desc: 'Automatisez vos processus métier avec des séquences logiques.' },
+    '/dashboard/polls': { key: 'polls', name: 'Sondages WhatsApp', icon: BarChart3, desc: 'Créez et suivez des sondages interactifs sur WhatsApp en temps réel.' },
+    '/dashboard/relances': { key: 'proactiveAdvisor', name: 'Relance IA Proactive', icon: Sparkles, desc: 'L\'IA anticipe les besoins et relance vos prospects au meilleur moment.' },
   };
 
-  const currentPath = location.pathname;
-  const modInfo = pathMap[currentPath] || Object.entries(pathMap).find(([path]) => currentPath.startsWith(path))?.[1];
-
-  if (modInfo && status[modInfo.key]?.locked) {
-    return <LockedModuleView moduleName={modInfo.name} description={modInfo.desc} icon={modInfo.icon} />;
+  if (modInfo) {
+    const modStatus = status[modInfo.key];
+    if (modStatus?.locked) {
+      return <LockedModuleView moduleName={modInfo.name} description={modInfo.desc} icon={modInfo.icon} />;
+    }
+    if (!modStatus?.enabled) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   return children

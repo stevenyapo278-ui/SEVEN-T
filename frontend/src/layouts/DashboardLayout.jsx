@@ -1180,7 +1180,9 @@ export default function DashboardLayout() {
       '/dashboard/products': 'catalogImport',
       '/dashboard/services': 'catalogImport',
       '/dashboard/campaigns': 'campaigns',
-      '/dashboard/deals': 'deals'
+      '/dashboard/deals': 'deals',
+      '/dashboard/polls': 'polls',
+      '/dashboard/relances': 'proactiveAdvisor'
     };
 
     return navigationGroups.map(g => ({
