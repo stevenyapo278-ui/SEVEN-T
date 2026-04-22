@@ -192,6 +192,9 @@ function StandardRoute({ children }) {
     '/dashboard/polls': { key: 'polls', name: 'Sondages WhatsApp', icon: BarChart3, desc: 'Créez et suivez des sondages interactifs sur WhatsApp en temps réel.' },
     '/dashboard/relances': { key: 'proactiveAdvisor', name: 'Relance IA Proactive', icon: Sparkles, desc: 'L\'IA anticipe les besoins et relance vos prospects au meilleur moment.' },
   };
+  
+  const currentPath = location.pathname;
+  const modInfo = pathMap[currentPath] || Object.entries(pathMap).find(([path]) => currentPath.startsWith(path))?.[1];
 
   if (modInfo) {
     const modStatus = status[modInfo.key];
