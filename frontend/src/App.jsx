@@ -72,7 +72,9 @@ import {
   PhoneCall, 
   Layout, 
   Send,
-  Trello
+  Trello,
+  Sparkles,
+  BarChart2
 } from 'lucide-react'
 
 function PageFallback() {
