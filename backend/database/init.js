@@ -218,7 +218,7 @@ export async function initDatabase() {
             role TEXT DEFAULT 'owner', -- 'owner', 'manager'
             permissions TEXT, -- JSON array of specific permissions
 
-            proactive_advisor_enabled INTEGER DEFAULT 0,
+            proactive_advisor_enabled INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -261,9 +261,9 @@ export async function initDatabase() {
             { name: 'whatsapp_status_enabled', type: 'INTEGER' },
             { name: 'leads_management_enabled', type: 'INTEGER' },
             { name: 'campaigns_module_enabled', type: 'INTEGER' },
-            { name: 'proactive_advisor_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'proactive_advisor_enabled', type: 'INTEGER' },
             { name: 'proactive_requires_validation', type: 'INTEGER DEFAULT 1' },
-            { name: 'polls_module_enabled', type: 'INTEGER DEFAULT 0' },
+            { name: 'polls_module_enabled', type: 'INTEGER' },
             { name: 'parent_user_id', type: 'TEXT' },
             { name: 'role', type: "TEXT DEFAULT 'owner'" },
             { name: 'permissions', type: 'TEXT' }
