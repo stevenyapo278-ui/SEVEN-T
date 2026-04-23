@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import anime from 'animejs/lib/anime.es.js'
 import {
   MessageSquare,
   Clock,
@@ -461,6 +462,28 @@ export default function Landing() {
   const [selectedPlanForDetails, setSelectedPlanForDetails] = useState(null)
 
   useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          anime({
+            targets: '.ecosystem-card',
+            translateY: [40, 0],
+            opacity: [0, 1],
+            delay: anime.stagger(60, { start: 200 }),
+            easing: 'spring(1, 80, 15, 0)',
+            duration: 800
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    const section = document.querySelector('#ecosystem');
+    if (section) observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     console.log('SEVEN-T Landing Page Loaded v3');
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -762,7 +785,8 @@ export default function Landing() {
                </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+            {/* Desktop Grid */}
+            <div className="hidden md:grid md:grid-cols-4 gap-6">
                {[
                   { icon: Clock, title: 'Heures de disponibilité', desc: 'Réponses automatiques selon vos horaires.' },
                   { icon: ShoppingCart, title: 'Paiement & Encaissement', desc: 'Vendez et encaissez directement via WhatsApp.' },
@@ -781,7 +805,7 @@ export default function Landing() {
                   { icon: MessageSquare, title: 'Sondages IA', desc: 'Collectez des avis clients via WhatsApp.' },
                   { icon: Zap, title: 'Relance Proactive', desc: 'Recapturez les paniers abandonnés.' },
                ].map((mod, i) => (
-                  <div key={i} className={`group p-6 rounded-2xl border transition-all duration-300 ${bgCard} flex flex-col items-start gap-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5`}>
+                  <div key={i} className={`ecosystem-card group p-6 rounded-2xl border transition-all duration-300 ${bgCard} flex flex-col items-start gap-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5 opacity-0`}>
                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
                         <mod.icon className="w-5 h-5" />
                      </div>
@@ -791,6 +815,60 @@ export default function Landing() {
                      </div>
                   </div>
                ))}
+            </div>
+
+            {/* Mobile Swiper */}
+            <div className="md:hidden">
+               <Swiper
+                 slidesPerView={1.1}
+                 spaceBetween={16}
+                 pagination={{ clickable: true, dynamicBullets: true }}
+                 modules={[Pagination]}
+                 className="!pb-12"
+               >
+                  {[
+                    [
+                      { icon: Clock, title: 'Heures de disponibilité', desc: 'Réponses automatiques selon vos horaires.' },
+                      { icon: ShoppingCart, title: 'Paiement & Encaissement', desc: 'Vendez et encaissez directement via WhatsApp.' },
+                      { icon: Sparkles, title: 'Next Best Action', desc: 'IA qui suggère la meilleure action de vente.' },
+                      { icon: TrendingUp, title: 'Score de conversion', desc: 'Prédisez la probabilité d\'achat des clients.' },
+                    ],
+                    [
+                      { icon: MessageSquare, title: 'Daily Briefing', desc: 'Résumé quotidien de l\'activité sur WhatsApp.' },
+                      { icon: User, title: 'Sentiment Routing', desc: 'Transfert humain selon l\'humeur du client.' },
+                      { icon: Globe, title: 'Import Catalogue', desc: 'Sync de produits via URL ou fichiers.' },
+                      { icon: Megaphone, title: 'Alertes Transfert Humain', desc: 'Alertes instantanées pour reprise en main.' },
+                    ],
+                    [
+                      { icon: BarChart3, title: 'Analytics & Stats', desc: 'Mesurez précisément votre ROI IA.' },
+                      { icon: Zap, title: 'Flows Builder', desc: 'Créez vos propres parcours automatisés.' },
+                      { icon: Sparkles, title: 'Statut WhatsApp', desc: 'Stories automatiques pour booster l\'engagement.' },
+                      { icon: Users, title: 'Gestion des Leads', desc: 'Qualification et suivi intelligent des prospects.' },
+                    ],
+                    [
+                      { icon: Megaphone, title: 'Campagnes Massives', desc: 'Envoi groupé et planification marketing.' },
+                      { icon: Bot, title: 'Réponses Vocales', desc: 'L\'IA qui parle avec la voix de votre marque.' },
+                      { icon: MessageSquare, title: 'Sondages IA', desc: 'Collectez des avis clients via WhatsApp.' },
+                      { icon: Zap, title: 'Relance Proactive', desc: 'Recapturez les paniers abandonnés.' },
+                    ]
+                  ].map((group, groupIdx) => (
+                    <SwiperSlide key={groupIdx}>
+                      <div className="grid grid-cols-1 gap-3">
+                        {group.map((mod, i) => (
+                          <div key={i} className={`p-5 rounded-2xl border ${bgCard} flex items-center gap-4`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                              <mod.icon className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className={`text-sm font-bold mb-0.5 ${text}`}>{mod.title}</h4>
+                              <p className={`text-[10px] opacity-60 ${textMuted}`}>{mod.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </SwiperSlide>
+                  ))}
+               </Swiper>
             </div>
             
             <div className="mt-16 text-center">

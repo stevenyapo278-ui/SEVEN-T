@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@types/three": "^0.183.1",
+    "animejs": "^4.3.6",
     "axios": "^1.7.7",
     "canvas-confetti": "^1.9.4",
     "framer-motion": "^12.35.2",
