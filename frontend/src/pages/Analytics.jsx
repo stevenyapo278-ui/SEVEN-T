@@ -193,7 +193,6 @@ export default function Analytics() {
                 Analysez vos performances et prévoyez vos besoins futurs
               </p>
             </div>
-            </div>
           </div>
 
           {/* Tab Selection */}
