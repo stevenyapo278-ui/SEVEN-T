@@ -43,8 +43,27 @@ async function resolveToolAndAgent(userId, id, { createToolIfMissing = false } =
         return { tool, agent };
     }
 
+    // Special case for System Tools (Admin only)
+    if (id.startsWith('system_')) {
+        // We ensure the tool exists in 'tools' table if createToolIfMissing is true
+        if (createToolIfMissing) {
+            await db.run(`
+                INSERT INTO tools (id, user_id, type, label, status, config, meta)
+                VALUES (?, ?, 'whatsapp', 'WhatsApp Système', 'disconnected', '{}', '{}')
+                ON CONFLICT (id) DO NOTHING
+            `, id, userId);
+            tool = await db.get('SELECT * FROM tools WHERE id = ? AND user_id = ?', id, userId);
+            return { tool, agent: null };
+        }
+    }
+
     agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', id, userId);
     if (!agent) {
+        // Final check: maybe the tool ID was just created but not linked to an agent
+        tool = await db.get('SELECT * FROM tools WHERE id = ? AND user_id = ?', id, userId);
+        if (tool) {
+             return { tool, agent: null };
+        }
         return { error: 'Agent ou outil non trouvé', status: 404 };
     }
 

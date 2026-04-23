@@ -1245,8 +1245,8 @@ export default function DashboardLayout() {
     logout()
   }
 
-  const sidebarW = sidebarCollapsed ? 'lg:w-14' : 'lg:w-56'
-  const contentPl = sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-56'
+  const sidebarW = sidebarCollapsed ? 'lg:w-14' : 'lg:w-64'
+  const contentPl = sidebarCollapsed ? 'lg:pl-14' : 'lg:pl-64'
 
   const pageTitle = pathToTitle(location.pathname)
 
@@ -1260,7 +1260,7 @@ export default function DashboardLayout() {
           className={`fixed inset-0 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${isDark ? 'bg-space-950/80' : 'bg-slate-900/40'}`}
           onClick={() => setSidebarOpen(false)}
         />
-        <div className={`fixed inset-y-0 left-0 w-60 shadow-2xl border-r transition-transform duration-300 flex flex-col min-h-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
+        <div className={`fixed inset-y-0 left-0 w-64 shadow-2xl border-r transition-transform duration-300 flex flex-col min-h-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
           <div className="absolute top-3 right-3">
             <button onClick={() => setSidebarOpen(false)} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
               <X className="w-4 h-4" />

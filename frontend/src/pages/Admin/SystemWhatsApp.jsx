@@ -52,7 +52,7 @@ export default function SystemWhatsApp() {
 
   const loadWhatsAppStatus = async (toolId) => {
     try {
-      const res = await api.get(`/whatsapp/status-check/${toolId}`)
+      const res = await api.get(`/whatsapp/status/${toolId}`)
       setWhatsappInfo(res.data)
     } catch (error) {
       console.error('Error loading WhatsApp status:', error)
@@ -98,7 +98,7 @@ export default function SystemWhatsApp() {
   const pollConnection = (toolId) => {
     const interval = setInterval(async () => {
       try {
-        const res = await api.get(`/whatsapp/status-check/${toolId}`)
+        const res = await api.get(`/whatsapp/status/${toolId}`)
         if (res.data?.connected) {
           clearInterval(interval)
           setQrCode(null)
