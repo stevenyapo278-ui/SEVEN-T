@@ -567,6 +567,7 @@ function KnowledgeModal({ item, onClose, onSaved }) {
   const [activeType, setActiveType] = useState(item?.type || 'text')
   const [title, setTitle] = useState(item?.title || '')
   const [content, setContent] = useState(item?.content || '')
+  const [syncFrequency, setSyncFrequency] = useState(item?.sync_frequency || 'manual')
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef(null)
@@ -587,7 +588,12 @@ function KnowledgeModal({ item, onClose, onSaved }) {
     setLoading(true)
     try {
       if (isEditing) {
-        await api.put(`/knowledge/global/${item.id}`, { title, content, type: activeType })
+        await api.put(`/knowledge/global/${item.id}`, { 
+          title, 
+          content, 
+          type: activeType,
+          sync_frequency: syncFrequency 
+        })
         toast.success('Savoir mis à jour')
       } else {
         await api.post('/knowledge/global', { title, content, type: activeType })
@@ -707,6 +713,37 @@ function KnowledgeModal({ item, onClose, onSaved }) {
                   className="input-dark w-full py-4 px-5 text-base rounded-2xl resize-none min-h-[250px] custom-scrollbar"
                 />
               </div>
+
+              {item?.type !== 'text' && (
+                <div className="space-y-3 p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Fréquence de Mise à Jour IA</label>
+                    <RefreshCw className="w-4 h-4 text-gold-400/50" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'manual', label: 'Manuelle' },
+                      { id: 'daily', label: 'Quotidien' },
+                      { id: 'weekly', label: 'Hebdo' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setSyncFrequency(opt.id)}
+                        className={`py-2 px-3 rounded-xl border text-[10px] font-black uppercase tracking-tighter transition-all ${
+                          syncFrequency === opt.id 
+                            ? 'bg-gold-400 text-black border-gold-400' 
+                            : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-600 italic">L'IA vérifiera automatiquement si le contenu de la source a changé.</p>
+                </div>
+              )}
+
               <div className="p-6 sm:p-8 pt-4 border-t border-white/5 -mx-6 sm:-mx-8 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
                 <button disabled={loading} className="w-full flex items-center justify-center gap-3 bg-white text-black hover:bg-gold-400 py-4 px-6 rounded-2xl font-syne font-black italic transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl disabled:opacity-50">
                   {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Sparkles className="w-5 h-5" />}

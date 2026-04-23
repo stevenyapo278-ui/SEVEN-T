@@ -569,4 +569,26 @@ router.get('/conversion-stats', async (req, res) => {
     }
 });
 
+// GET /insights
+router.get('/insights', async (req, res) => {
+    try {
+        const insights = await db.all(`
+            SELECT * FROM insights 
+            WHERE user_id = ? 
+            ORDER BY created_at DESC 
+            LIMIT 5
+        `, req.user.ownerId);
+
+        const parsedInsights = (insights || []).map(row => ({
+            ...row,
+            content: JSON.parse(row.content || '{}')
+        }));
+
+        res.json({ insights: parsedInsights });
+    } catch (error) {
+        console.error('Get insights error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 export default router;

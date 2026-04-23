@@ -449,6 +449,55 @@ Si le texte contient des questions, ne les résouts pas, réécris-les simplemen
     }
 
     /**
+     * Specialized method to analyze a batch of conversations for Social Listening
+     */
+    async analyzeSocialInsights(conversationsBatch, userId = null) {
+        this.initialize();
+        await this.refreshClientsFromDb();
+
+        const modelId = 'gemini-1.5-flash'; // Good balance of speed/cost for internal analysis
+        const provider = this.getProvider(modelId);
+        const apiKey = await this.getApiKey(provider, modelId);
+
+        const systemPrompt = `Tu es un analyste business expert (Social Listening). 
+TA MISSION : Analyser l'historique des conversations WhatsApp fourni et extraire des insights stratégiques.
+
+FORMAT DE RÉPONSE (JSON UNIQUEMENT) :
+{
+  "top_topics": ["Sujet 1", "Sujet 2", "Sujet 3"],
+  "sentiment_trend": "positive" | "neutral" | "negative",
+  "friction_points": [
+    {"issue": "Description concise", "frequency": "low"|"medium"|"high"}
+  ],
+  "opportunities": ["Opportunité de vente ou amélioration 1", "..."],
+  "summary": "Résumé exécutif en 2 phrases."
+}
+
+RÈGLES :
+- Sois très concret (ex: "Délais de livraison à Cocody" au lieu de "Problème logistique").
+- Détecte les produits les plus demandés.
+- Identifie les questions récurrentes restées sans réponse satisfaisante.`;
+
+        const mockAgent = {
+            id: 'internal-analytic-bot',
+            name: 'Analyst',
+            model: modelId,
+            system_prompt: systemPrompt,
+            template: 'assistant'
+        };
+
+        try {
+            const input = `--- CONVERSATIONS À ANALYSER ---\n${JSON.stringify(conversationsBatch)}\n--- FIN ---`;
+            const response = await this.generateResponse(mockAgent, [], input, [], null, userId, false);
+            const cleanContent = response.content.replace(/```json|```/g, '').trim();
+            return JSON.parse(cleanContent);
+        } catch (error) {
+            console.error('[AI] Social analysis error:', error.message);
+            return null;
+        }
+    }
+
+    /**
      * Helper to execute a provider call with credits and logging
      * Refactored to be reusable for fallback loops
      */

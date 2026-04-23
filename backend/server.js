@@ -74,6 +74,8 @@ import { runStatusSchedulerJob } from './services/whatsapp.js';
 import { startWorkflowWorker } from './workers/workflowWorker.js';
 import { proactiveAdvisorService } from './services/proactiveAdvisor.js';
 import { runSubscriptionReviewJob } from './services/subscriptionManager.js';
+import { knowledgeSyncService } from './services/knowledgeSync.js';
+import { insightsService } from './services/insightsService.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -394,6 +396,7 @@ async function start() {
                 runCampaignSchedulerJob().catch(err => console.error('[CampaignScheduler] Job error:', err?.message));
                 runStatusSchedulerJob().catch(err => console.error('[StatusScheduler] Job error:', err?.message));
                 runSubscriptionReviewJob().catch(err => console.error('[SubscriptionReview] Job error:', err?.message));
+                insightsService.runInsightsJob().catch(err => console.error('[Insights] Job error:', err?.message));
             }, 60 * 60 * 1000);
             
             // Frequent check for scheduled campaigns (every 5 minutes)
@@ -412,6 +415,10 @@ async function start() {
                 
                 // Humanization: Proactive Advisor
                 proactiveAdvisorService.start();
+
+                // New Features: Knowledge Sync and Social Listening
+                knowledgeSyncService.startSyncJob(3600000); // Every hour
+                insightsService.runInsightsJob().catch(err => console.error('[Insights] Initial job error:', err?.message));
             }, 30 * 1000);
         });
     } catch (error) {

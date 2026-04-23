@@ -405,7 +405,7 @@ router.post('/agent/:agentId/extract-url', authenticateToken, async (req, res) =
 // Update knowledge item
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
-        const { title, content, type } = req.body;
+        const { title, content, type, sync_frequency } = req.body;
 
         const item = await db.get(`
             SELECT k.* FROM knowledge_base k
@@ -414,6 +414,25 @@ router.put('/:id', authenticateToken, async (req, res) => {
         `, req.params.id, req.user.ownerId);
 
         if (!item) {
+            // Check global knowledge as well
+            const globalItem = await db.get(`
+                SELECT * FROM global_knowledge 
+                WHERE id = ? AND user_id = ?
+            `, req.params.id, req.user.ownerId);
+            
+            if (globalItem) {
+                await db.run(`
+                    UPDATE global_knowledge SET 
+                        title = COALESCE(?, title),
+                        content = COALESCE(?, content),
+                        type = COALESCE(?, type),
+                        sync_frequency = COALESCE(?, sync_frequency)
+                    WHERE id = ?
+                `, title, content, type, sync_frequency, req.params.id);
+
+                return res.json({ message: 'Global knowledge updated' });
+            }
+
             return res.status(404).json({ error: 'Élément non trouvé' });
         }
 
@@ -421,9 +440,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
             UPDATE knowledge_base SET 
                 title = COALESCE(?, title),
                 content = COALESCE(?, content),
-                type = COALESCE(?, type)
+                type = COALESCE(?, type),
+                sync_frequency = COALESCE(?, sync_frequency)
             WHERE id = ?
-        `, title, content, type, req.params.id);
+        `, title, content, type, sync_frequency, req.params.id);
 
         const updated = await db.get('SELECT * FROM knowledge_base WHERE id = ?', req.params.id);
         let parsedMetadata = {};

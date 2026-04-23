@@ -352,6 +352,8 @@ export async function initDatabase() {
             content TEXT NOT NULL,
             type TEXT DEFAULT 'text',
             metadata TEXT,
+            last_synced_at TIMESTAMP,
+            sync_frequency TEXT DEFAULT 'none',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
         );
@@ -560,6 +562,8 @@ export async function initDatabase() {
             content TEXT NOT NULL,
             type TEXT DEFAULT 'text',
             metadata TEXT,
+            last_synced_at TIMESTAMP,
+            sync_frequency TEXT DEFAULT 'none',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
@@ -1904,10 +1908,41 @@ export async function initDatabase() {
     // Migration: deals_module_enabled per user
     try {
         await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS deals_module_enabled INTEGER DEFAULT 1');
+        await db.run('ALTER TABLE users ADD COLUMN IF NOT EXISTS last_insights_at TIMESTAMP');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
-            console.warn('users.deals_module_enabled migration:', e?.message);
+            console.warn('users updates migration:', e?.message);
         }
+    }
+
+    // Migration: Knowledge Sync
+    try {
+        await db.run('ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP');
+        await db.run('ALTER TABLE knowledge_base ADD COLUMN IF NOT EXISTS sync_frequency TEXT DEFAULT \'none\'');
+        await db.run('ALTER TABLE global_knowledge ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP');
+        await db.run('ALTER TABLE global_knowledge ADD COLUMN IF NOT EXISTS sync_frequency TEXT DEFAULT \'none\'');
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('knowledge sync columns migration:', e?.message);
+        }
+    }
+
+    // Migration: Insights / Social Listening
+    try {
+        await db.exec(`
+            CREATE TABLE IF NOT EXISTS insights (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                type TEXT NOT NULL, -- 'daily', 'weekly', 'topic_map'
+                content TEXT NOT NULL, -- JSON data
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_insights_user ON insights(user_id);
+            CREATE INDEX IF NOT EXISTS idx_insights_type ON insights(type);
+        `);
+    } catch (e) {
+        console.warn('insights table migration error:', e?.message);
     }
 
     console.log('PostgreSQL schema initialized successfully');
