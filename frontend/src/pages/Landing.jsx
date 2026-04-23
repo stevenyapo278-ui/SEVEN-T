@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import anime from 'animejs/lib/anime.es.js'
+import anime from 'animejs'
 import {
   MessageSquare,
   Clock,
