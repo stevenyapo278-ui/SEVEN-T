@@ -31,6 +31,7 @@ import {
   Crown,
   Building2,
   CheckCircle,
+  LayoutGrid,
 } from 'lucide-react'
 import api from '../services/api'
 import PricingDetailsModal from '../components/PricingDetailsModal'
@@ -460,6 +461,7 @@ export default function Landing() {
   const [selectedPlanForDetails, setSelectedPlanForDetails] = useState(null)
 
   useEffect(() => {
+    console.log('SEVEN-T Landing Page Loaded v3');
     const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -558,6 +560,7 @@ export default function Landing() {
             {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-1">
               {[
+                { label: 'Modules', href: '#ecosystem' },
                 { label: 'Fonctionnalités', href: '#features' },
                 { label: 'Démo', href: '#demo' },
                 { label: 'Tarifs', href: '#pricing' },
@@ -601,6 +604,7 @@ export default function Landing() {
         {mobileMenuOpen && (
           <div className={`md:hidden border-t px-5 py-4 space-y-1 animate-fadeIn ${isDark ? 'bg-[#0D1120] border-white/8' : 'bg-white border-gray-200'}`}>
             {[
+              { label: 'Modules', href: '#ecosystem' },
               { label: 'Fonctionnalités', href: '#features' },
               { label: 'Démo', href: '#demo' },
               { label: 'Tarifs', href: '#pricing' },
@@ -713,7 +717,7 @@ export default function Landing() {
           </div>
         </div>
 
-        <a href="#features" className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-colors animate-bounce ${textFaint} hover:${textMuted}`}>
+        <a href="#ecosystem" className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-colors animate-bounce ${textFaint} hover:${textMuted}`}>
           <ChevronDown className="w-6 h-6" />
         </a>
       </section>
@@ -740,8 +744,65 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── SYSTEM MODULES ──────────────────────── */}
+      <section id="ecosystem" className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300 relative overflow-hidden border-y ${isDark ? 'border-amber-400/10' : 'border-amber-400/5'}`}>
+         {isDark && (
+           <div className="absolute inset-0 bg-amber-400/5 pointer-events-none blur-[120px]" />
+         )}
+         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 relative z-10">
+            <div className="text-center max-w-3xl mx-auto mb-20">
+               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
+                  <LayoutGrid className="w-3 h-3" /> Écosystème Modulaire
+               </div>
+               <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${text}`}>
+                  Une plateforme qui <span className="text-amber-500">évolue</span> avec vous
+               </h2>
+               <p className={`text-lg ${textMuted}`}>
+                  Activez les modules dont vous avez besoin. SEVEN-T s'adapte à la taille et aux ambitions de votre entreprise.
+               </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+               {[
+                  { icon: Clock, title: 'Heures de disponibilité', desc: 'Réponses automatiques selon vos horaires.' },
+                  { icon: ShoppingCart, title: 'Paiement & Encaissement', desc: 'Vendez et encaissez directement via WhatsApp.' },
+                  { icon: Sparkles, title: 'Next Best Action', desc: 'IA qui suggère la meilleure action de vente.' },
+                  { icon: TrendingUp, title: 'Score de conversion', desc: 'Prédisez la probabilité d\'achat des clients.' },
+                  { icon: MessageSquare, title: 'Daily Briefing', desc: 'Résumé quotidien de l\'activité sur WhatsApp.' },
+                  { icon: User, title: 'Sentiment Routing', desc: 'Transfert humain selon l\'humeur du client.' },
+                  { icon: Globe, title: 'Import Catalogue', desc: 'Sync de produits via URL ou fichiers.' },
+                  { icon: Megaphone, title: 'Alertes Transfert Humain', desc: 'Alertes instantanées pour reprise en main.' },
+                  { icon: BarChart3, title: 'Analytics & Stats', desc: 'Mesurez précisément votre ROI IA.' },
+                  { icon: Zap, title: 'Flows Builder', desc: 'Créez vos propres parcours automatisés.' },
+                  { icon: Sparkles, title: 'Statut WhatsApp', desc: 'Stories automatiques pour booster l\'engagement.' },
+                  { icon: Users, title: 'Gestion des Leads', desc: 'Qualification et suivi intelligent des prospects.' },
+                  { icon: Megaphone, title: 'Campagnes Massives', desc: 'Envoi groupé et planification marketing.' },
+                  { icon: Bot, title: 'Réponses Vocales', desc: 'L\'IA qui parle avec la voix de votre marque.' },
+                  { icon: MessageSquare, title: 'Sondages IA', desc: 'Collectez des avis clients via WhatsApp.' },
+                  { icon: Zap, title: 'Relance Proactive', desc: 'Recapturez les paniers abandonnés.' },
+               ].map((mod, i) => (
+                  <div key={i} className={`group p-6 rounded-2xl border transition-all duration-300 ${bgCard} flex flex-col items-start gap-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5`}>
+                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+                        <mod.icon className="w-5 h-5" />
+                     </div>
+                     <div>
+                        <h4 className={`text-sm font-bold mb-1 ${text}`}>{mod.title}</h4>
+                        <p className={`text-[11px] leading-relaxed opacity-60 ${textMuted}`}>{mod.desc}</p>
+                     </div>
+                  </div>
+               ))}
+            </div>
+            
+            <div className="mt-16 text-center">
+               <Link to="/register" className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all bg-amber-500 text-black hover:bg-amber-400 shadow-lg shadow-amber-500/20`}>
+                  Découvrir tous les modules <ArrowRight className="w-4 h-4" />
+               </Link>
+            </div>
+         </div>
+      </section>
+
       {/* ── ASSISTED SAAS SHOWCASE ────────────────── */}
-      <section className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300 relative overflow-hidden`}>
+      <section className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300 relative overflow-hidden`}>
          <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
             <div className="grid md:grid-cols-2 gap-16 items-center">
                <div>
@@ -813,7 +874,7 @@ export default function Landing() {
                            </div>
                         </div>
                         <div className="mt-8 flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                           <div className="w-5 h-5 text-gold-400"><Sparkles className="w-full h-full" /></div>
+                           <div className="w-5 h-5 text-amber-400"><Sparkles className="w-full h-full" /></div>
                            <div className="text-xs text-white/30 italic">Que voulez-vous faire ?</div>
                         </div>
                      </div>
@@ -827,62 +888,8 @@ export default function Landing() {
          </div>
       </section>
 
-      {/* ── SYSTEM MODULES ──────────────────────── */}
-      <section className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300 relative overflow-hidden`}>
-         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
-            <div className="text-center max-w-3xl mx-auto mb-20">
-               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6 ${isDark ? 'bg-emerald-400/10 text-emerald-400' : 'bg-emerald-100 text-emerald-600'}`}>
-                  Écosystème Modulaire
-               </div>
-               <h2 className={`text-4xl md:text-5xl font-bold mb-6 ${text}`}>
-                  Une plateforme qui <span className="text-emerald-500">évolue</span> avec vous
-               </h2>
-               <p className={`text-lg ${textMuted}`}>
-                  Activez les modules dont vous avez besoin. SEVEN-T s'adapte à la taille et aux ambitions de votre entreprise.
-               </p>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-               {[
-                  { icon: Clock, title: 'Heures de disponibilité', desc: 'Réponses automatiques selon vos horaires.' },
-                  { icon: ShoppingCart, title: 'Paiement & Encaissement', desc: 'Vendez et encaissez directement via WhatsApp.' },
-                  { icon: Sparkles, title: 'Next Best Action', desc: 'IA qui suggère la meilleure action de vente.' },
-                  { icon: TrendingUp, title: 'Score de conversion', desc: 'Prédisez la probabilité d\'achat des clients.' },
-                  { icon: MessageSquare, title: 'Daily Briefing', desc: 'Résumé quotidien de l\'activité sur WhatsApp.' },
-                  { icon: User, title: 'Sentiment Routing', desc: 'Transfert humain selon l\'humeur du client.' },
-                  { icon: Globe, title: 'Import Catalogue', desc: 'Sync de produits via URL ou fichiers.' },
-                  { icon: Megaphone, title: 'Alertes Transfert Humain', desc: 'Alertes instantanées pour reprise en main.' },
-                  { icon: BarChart3, title: 'Analytics & Stats', desc: 'Mesurez précisément votre ROI IA.' },
-                  { icon: Zap, title: 'Flows Builder', desc: 'Créez vos propres parcours automatisés.' },
-                  { icon: Sparkles, title: 'Statut WhatsApp', desc: 'Stories automatiques pour booster l\'engagement.' },
-                  { icon: Users, title: 'Gestion des Leads', desc: 'Qualification et suivi intelligent des prospects.' },
-                  { icon: Megaphone, title: 'Campagnes Massives', desc: 'Envoi groupé et planification marketing.' },
-                  { icon: Bot, title: 'Réponses Vocales', desc: 'L\'IA qui parle avec la voix de votre marque.' },
-                  { icon: MessageSquare, title: 'Sondages IA', desc: 'Collectez des avis clients via WhatsApp.' },
-                  { icon: Zap, title: 'Relance Proactive', desc: 'Recapturez les paniers abandonnés.' },
-               ].map((mod, i) => (
-                  <div key={i} className={`group p-6 rounded-2xl border transition-all duration-300 ${bgCard} flex flex-col items-start gap-4 hover:scale-[1.02]`}>
-                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12 ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                        <mod.icon className="w-5 h-5" />
-                     </div>
-                     <div>
-                        <h4 className={`text-sm font-bold mb-1 ${text}`}>{mod.title}</h4>
-                        <p className={`text-[11px] leading-relaxed opacity-60 ${textMuted}`}>{mod.desc}</p>
-                     </div>
-                  </div>
-               ))}
-            </div>
-            
-            <div className="mt-16 text-center">
-               <Link to="/register" className={`inline-flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all bg-emerald-500 text-black hover:bg-emerald-400 shadow-lg shadow-emerald-500/20`}>
-                  Découvrir tous les modules <ArrowRight className="w-4 h-4" />
-               </Link>
-            </div>
-         </div>
-      </section>
-
       {/* ── FEATURES ──────────────────────────── */}
-      <section id="features" className={`pt-24 pb-10 md:pt-32 md:pb-12 scroll-mt-20 ${bg} transition-colors duration-300`}>
+      <section id="features" className={`pt-24 pb-10 md:pt-32 md:pb-12 scroll-mt-20 ${bgAlt} transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
           <div className="text-center max-w-2xl mx-auto mb-20">
             <p className="text-amber-500 text-sm font-semibold uppercase tracking-widest mb-4">Fonctionnalités</p>
@@ -1017,7 +1024,7 @@ export default function Landing() {
       </section>
 
       {/* ── DEMO VIDEO ────────────────────────── */}
-      <section id="demo" className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300 relative overflow-hidden`}>
+      <section id="demo" className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300 relative overflow-hidden`}>
         {isDark && (
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-950/15 to-transparent pointer-events-none" />
         )}
@@ -1100,7 +1107,7 @@ export default function Landing() {
       </section>
 
       {/* ── TESTIMONIALS ──────────────────────── */}
-      <section id="testimonials" className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
+      <section id="testimonials" className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300`}>
         <div className="max-w-5xl mx-auto px-5 sm:px-8">
           <div className="text-center mb-16">
             <p className="text-amber-500 text-sm font-semibold uppercase tracking-widest mb-4">Témoignages</p>
@@ -1144,7 +1151,7 @@ export default function Landing() {
       </section>
 
       {/* ── PRICING ───────────────────────────── */}
-      <section id="pricing" className={`py-24 md:py-32 scroll-mt-20 ${bgAlt} transition-colors duration-300`}>
+      <section id="pricing" className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <p className="text-amber-500 text-sm font-semibold uppercase tracking-widest mb-4">Tarification</p>
@@ -1180,7 +1187,7 @@ export default function Landing() {
       </section>
 
       {/* ── FINAL CTA ─────────────────────────── */}
-      <section className={`py-24 md:py-32 px-5 sm:px-8 relative overflow-hidden ${bg} transition-colors duration-300`}>
+      <section className={`py-24 md:py-32 px-5 sm:px-8 relative overflow-hidden ${bgAlt} transition-colors duration-300`}>
         {isDark ? (
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-amber-400/8 rounded-full blur-[120px]" />
@@ -1214,7 +1221,7 @@ export default function Landing() {
                   ? 'border-white/15 text-white hover:bg-white/5'
                   : 'border-gray-300 text-gray-700 hover:bg-gray-100'
               }`}>
-              <Play className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <Play className="w-4 h-4 text-amber-400 fill-amber-400" />
               {t('landing.demo')}
             </button>
           </div>
@@ -1223,7 +1230,7 @@ export default function Landing() {
       </section>
 
       {/* ── FOOTER ────────────────────────────── */}
-      <footer className={`border-t ${borderFaint} py-14 px-5 sm:px-8 ${bgAlt} transition-colors duration-300`}>
+      <footer className={`border-t ${borderFaint} py-14 px-5 sm:px-8 ${bg} transition-colors duration-300`}>
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div className="md:col-span-2">
@@ -1236,6 +1243,7 @@ export default function Landing() {
               <h4 className={`font-semibold mb-4 text-sm ${text}`}>Produit</h4>
               <ul className="space-y-2.5 text-sm">
                 {[
+                  { label: 'Modules', href: '#ecosystem' },
                   { label: 'Fonctionnalités', href: '#features' },
                   { label: 'Tarifs', href: '#pricing' },
                 ].map(l => (
