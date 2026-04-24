@@ -135,10 +135,17 @@ router.get('/me', authenticateToken, async (req, res) => {
         delete user.reset_token;
         delete user.reset_token_expires;
         
-        const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
+        const { getPlan, getEffectivePlanName, MODULE_TO_USER_COLUMN } = await import('../config/plans.js');
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
-        const plan_features = planConfig?.features || {};
+        const plan_features = { ...(planConfig?.features || {}) };
+        
+        // Appliquer les surcharges manuelles de l'utilisateur (overrides)
+        for (const [feature, column] of Object.entries(MODULE_TO_USER_COLUMN)) {
+            if (user[column] !== undefined && user[column] !== null) {
+                plan_features[feature] = user[column] === 1;
+            }
+        }
         
         return res.json({ user: { ...user, plan: effectivePlan, plan_features } });
     } catch (err) {

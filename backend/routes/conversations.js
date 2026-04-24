@@ -4,7 +4,7 @@ import { dirname, join, extname } from 'path';
 import { existsSync } from 'fs';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { getPlan, hasModule } from '../config/plans.js';
+import { getPlan, hasModule, hasModuleForUser } from '../config/plans.js';
 import { 
     validate,
     updateConversationStatusSchema,
@@ -121,9 +121,8 @@ router.get('/agent/:agentId', authenticateToken, async (req, res) => {
 // Get all conversations for user (across all agents)
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const user = await db.get('SELECT id, plan FROM users WHERE id = ?', req.user.ownerId);
-        const planName = user?.plan || 'free';
-        const hasConversionScore = await hasModule(planName, 'conversion_score');
+        const user = await db.get('SELECT * FROM users WHERE id = ?', req.user.ownerId);
+        const hasConversionScore = await hasModuleForUser(user, 'conversion_score');
 
         const score_band = req.query.score_band; // high_potential | at_risk
         let scoreClause = '';

@@ -32,7 +32,7 @@ import { decisionEngine } from './decisionEngine.js';
 import { messageAiLogService } from './messageAiLog.js';
 import { autoQaService } from './autoQa.js';
 import { staticResponses, shortMessagePatterns, pickResponse } from '../config/staticResponses.js';
-import { hasFeature, hasModule } from '../config/plans.js';
+import { hasFeature, hasModule, hasModuleForUser } from '../config/plans.js';
 import { updateConversionScore } from './conversionScore.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { retrieveRelevantChunks } from './knowledgeRetrieval.js';
@@ -2344,8 +2344,8 @@ class WhatsAppManager {
         } finally {
             (async () => {
                 try {
-                    const u = await db.get('SELECT plan FROM users WHERE id = ?', userId);
-                    if (u && await hasModule(u.plan || 'free', 'conversion_score')) {
+                    const u = await db.get('SELECT * FROM users WHERE id = ?', userId);
+                    if (u && await hasModuleForUser(u, 'conversion_score')) {
                         await updateConversionScore(conversation.id);
                     }
                 } catch (e) {

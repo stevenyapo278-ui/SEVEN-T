@@ -372,6 +372,26 @@ export async function hasModule(planName, moduleKey) {
 }
 
 /**
+ * Check if a module is available for a specific user (Plan + Overrides)
+ * @param {Object} user - User row from DB
+ * @param {string} moduleKey
+ * @returns {Promise<boolean>}
+ */
+export async function hasModuleForUser(user, moduleKey) {
+    if (!user) return false;
+    
+    // 1. Check plan first
+    const plan = await getPlan(user.plan);
+    if (plan.features[moduleKey] === true) return true;
+    
+    // 2. Check manual override
+    const column = MODULE_TO_USER_COLUMN[moduleKey];
+    if (column && user[column] === 1) return true;
+    
+    return false;
+}
+
+/**
  * Get plan configuration by name (async)
  * Only active plans from DB are used. If the requested plan is inactive or missing,
  * the default active plan (or free) is returned so users don't keep "pro" benefits when pro is disabled.

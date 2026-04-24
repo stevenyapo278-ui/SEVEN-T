@@ -12,6 +12,7 @@ import db from '../database/init.js';
  * @returns {Promise<{ score: number, factors: Object }>}
  */
 export async function computeConversionScore(conversationId, options = { save: true }) {
+    console.log(`[Score] Computing conversion score for conversation ${conversationId}`);
     const conv = await db.get(`
         SELECT c.id, c.sentiment, c.human_takeover, c.last_message_at, c.needs_human
         FROM conversations c
@@ -66,6 +67,7 @@ export async function computeConversionScore(conversationId, options = { save: t
             conversationId
         );
     }
+    console.log(`[Score] Conversation ${conversationId}: Score = ${score}, Action = ${suggested_action}`);
     return { score, factors };
 }
 
