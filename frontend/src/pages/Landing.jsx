@@ -460,13 +460,14 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
   const [selectedPlanForDetails, setSelectedPlanForDetails] = useState(null)
+  const [activeTab, setActiveTab] = useState('sales')
 
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           anime({
-            targets: '.ecosystem-card',
+            targets: '.ecosystem-card-v2',
             translateY: [40, 0],
             opacity: [0, 1],
             delay: anime.stagger(60, { start: 200 }),
@@ -773,7 +774,7 @@ export default function Landing() {
            <div className="absolute inset-0 bg-amber-400/5 pointer-events-none blur-[120px]" />
          )}
          <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 relative z-10">
-            <div className="text-center max-w-3xl mx-auto mb-20">
+            <div className="text-center max-w-3xl mx-auto mb-16">
                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-100 text-amber-600'}`}>
                   <LayoutGrid className="w-3 h-3" /> Écosystème Modulaire
                </div>
@@ -785,39 +786,90 @@ export default function Landing() {
                </p>
             </div>
 
-            {/* Desktop Grid */}
-            <div className="hidden md:grid md:grid-cols-4 gap-6">
-               {[
-                  { icon: Clock, title: 'Heures de disponibilité', desc: 'Réponses automatiques selon vos horaires.' },
-                  { icon: ShoppingCart, title: 'Paiement & Encaissement', desc: 'Vendez et encaissez directement via WhatsApp.' },
-                  { icon: Sparkles, title: 'Next Best Action', desc: 'IA qui suggère la meilleure action de vente.' },
-                  { icon: TrendingUp, title: 'Score de conversion', desc: 'Prédisez la probabilité d\'achat des clients.' },
-                  { icon: MessageSquare, title: 'Daily Briefing', desc: 'Résumé quotidien de l\'activité sur WhatsApp.' },
-                  { icon: User, title: 'Sentiment Routing', desc: 'Transfert humain selon l\'humeur du client.' },
-                  { icon: Globe, title: 'Import Catalogue', desc: 'Sync de produits via URL ou fichiers.' },
-                  { icon: Megaphone, title: 'Alertes Transfert Humain', desc: 'Alertes instantanées pour reprise en main.' },
-                  { icon: BarChart3, title: 'Analytics & Stats', desc: 'Mesurez précisément votre ROI IA.' },
-                  { icon: Zap, title: 'Flows Builder', desc: 'Créez vos propres parcours automatisés.' },
-                  { icon: Sparkles, title: 'Statut WhatsApp', desc: 'Stories automatiques pour booster l\'engagement.' },
-                  { icon: Users, title: 'Gestion des Leads', desc: 'Qualification et suivi intelligent des prospects.' },
-                  { icon: Megaphone, title: 'Campagnes Massives', desc: 'Envoi groupé et planification marketing.' },
-                  { icon: Bot, title: 'Réponses Vocales', desc: 'L\'IA qui parle avec la voix de votre marque.' },
-                  { icon: MessageSquare, title: 'Sondages IA', desc: 'Collectez des avis clients via WhatsApp.' },
-                  { icon: Zap, title: 'Relance Proactive', desc: 'Recapturez les paniers abandonnés.' },
-               ].map((mod, i) => (
-                  <div key={i} className={`ecosystem-card group p-6 rounded-2xl border transition-all duration-300 ${bgCard} flex flex-col items-start gap-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5 opacity-0`}>
-                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
+            {/* Desktop Tabs UI */}
+            <div className="hidden md:block">
+              {/* Tab Navigation */}
+              <div className="flex justify-center gap-4 mb-12">
+                {[
+                  { id: 'sales', label: 'Ventes & ROI', icon: TrendingUp },
+                  { id: 'automation', label: 'Automation', icon: Zap },
+                  { id: 'intelligence', label: 'Intelligence IA', icon: Bot },
+                  { id: 'management', label: 'Gestion & Data', icon: BarChart3 },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      const prevTab = activeTab;
+                      setActiveTab(tab.id);
+                      // Trigger animation for new cards
+                      setTimeout(() => {
+                        anime({
+                          targets: '.ecosystem-card-v2',
+                          translateY: [20, 0],
+                          opacity: [0, 1],
+                          delay: anime.stagger(50),
+                          easing: 'easeOutExpo',
+                          duration: 600
+                        });
+                      }, 10);
+                    }}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all border ${
+                      activeTab === tab.id
+                        ? 'bg-amber-500 text-black border-amber-500 shadow-lg shadow-amber-500/20'
+                        : `${isDark ? 'bg-white/5 border-white/10 text-gray-400 hover:text-white' : 'bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-900'}`
+                    }`}
+                  >
+                    <tab.icon className="w-4 h-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="grid md:grid-cols-4 gap-6 min-h-[220px]">
+                {(() => {
+                  const categories = {
+                    sales: [
+                      { icon: ShoppingCart, title: 'Paiement & Encaissement', desc: 'Vendez et encaissez directement via WhatsApp.' },
+                      { icon: TrendingUp, title: 'Score de conversion', desc: 'Prédisez la probabilité d\'achat des clients.' },
+                      { icon: Users, title: 'Gestion des Leads', desc: 'Qualification et suivi intelligent des prospects.' },
+                      { icon: Zap, title: 'Relance Proactive', desc: 'Recapturez les paniers abandonnés.' },
+                    ],
+                    automation: [
+                      { icon: Clock, title: 'Heures de disponibilité', desc: 'Réponses automatiques selon vos horaires.' },
+                      { icon: Zap, title: 'Flows Builder', desc: 'Créez vos propres parcours automatisés.' },
+                      { icon: Sparkles, title: 'Statut WhatsApp', desc: 'Stories automatiques pour booster l\'engagement.' },
+                      { icon: Megaphone, title: 'Campagnes Massives', desc: 'Envoi groupé et planification marketing.' },
+                    ],
+                    intelligence: [
+                      { icon: Sparkles, title: 'Next Best Action', desc: 'IA qui suggère la meilleure action de vente.' },
+                      { icon: User, title: 'Sentiment Routing', desc: 'Transfert humain selon l\'humeur du client.' },
+                      { icon: Bot, title: 'Réponses Vocales', desc: 'L\'IA qui parle avec la voix de votre marque.' },
+                      { icon: MessageSquare, title: 'Sondages IA', desc: 'Collectez des avis clients via WhatsApp.' },
+                    ],
+                    management: [
+                      { icon: MessageSquare, title: 'Daily Briefing', desc: 'Résumé quotidien de l\'activité sur WhatsApp.' },
+                      { icon: Globe, title: 'Import Catalogue', desc: 'Sync de produits via URL ou fichiers.' },
+                      { icon: Megaphone, title: 'Alertes Transfert Humain', desc: 'Alertes instantanées pour reprise en main.' },
+                      { icon: BarChart3, title: 'Analytics & Stats', desc: 'Mesurez précisément votre ROI IA.' },
+                    ]
+                  };
+                  return categories[activeTab].map((mod, i) => (
+                    <div key={`${activeTab}-${i}`} className={`ecosystem-card-v2 group p-6 rounded-3xl border transition-all duration-300 ${bgCard} flex flex-col items-start gap-4 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:rotate-12 ${isDark ? 'bg-amber-400/10 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
                         <mod.icon className="w-5 h-5" />
-                     </div>
-                     <div>
+                      </div>
+                      <div>
                         <h4 className={`text-sm font-bold mb-1 ${text}`}>{mod.title}</h4>
                         <p className={`text-[11px] leading-relaxed opacity-60 ${textMuted}`}>{mod.desc}</p>
-                     </div>
-                  </div>
-               ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
             </div>
 
-            {/* Mobile Swiper */}
+            {/* Mobile Swiper (Keep as is, but can be improved if needed) */}
             <div className="md:hidden">
                <Swiper
                  slidesPerView={1.1}
