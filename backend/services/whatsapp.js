@@ -3372,6 +3372,16 @@ class WhatsAppManager {
                 await db.run('UPDATE conversations SET last_message_at = ? WHERE id = ?', lastMsg.created_at, conversationId);
             }
 
+            // Update conversion score if module is enabled
+            try {
+                const u = await db.get('SELECT * FROM users WHERE id = ?', agent.user_id);
+                if (u && await hasModuleForUser(u, 'conversion_score')) {
+                    await updateConversionScore(conversationId);
+                }
+            } catch (scoreErr) {
+                console.warn(`[WhatsApp] Failed to update conversion score during sync: ${scoreErr.message}`);
+            }
+
             console.log(`[WhatsApp] Synced ${synced} messages for conversation ${conversationId}`);
             return { synced, total: messages.length };
         } catch (error) {
