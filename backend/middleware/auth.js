@@ -181,7 +181,7 @@ export function requirePermission(...permissions) {
              legacyPerms.add('*'); // full admin always pass
         } else {
             if (flags.can_manage_users) ['users.read', 'users.write', 'users.credentials.reset', 'users.credits.write', 'users.delete'].forEach(p => legacyPerms.add(p));
-            if (flags.can_manage_plans) ['billing.plans.read', 'billing.plans.write', 'billing.coupons.read', 'billing.coupons.write', 'billing.subscriptions.write'].forEach(p => legacyPerms.add(p));
+            if (flags.can_manage_plans) ['billing.plans.read', 'billing.plans.write', 'billing.coupons.read', 'billing.coupons.write', 'billing.subscriptions.write', 'ai.settings.read', 'ai.settings.write'].forEach(p => legacyPerms.add(p));
             if (flags.can_manage_ai) ['ai.models.read', 'ai.models.write', 'ai.keys.read', 'ai.keys.write', 'ai.settings.write', 'ai.reindex.run'].forEach(p => legacyPerms.add(p));
             if (flags.can_view_stats) ['platform.stats.read', 'audit.read', 'security.anomalies.read', 'platform.activity.read'].forEach(p => legacyPerms.add(p));
             if (flags.can_manage_tickets) ['support.tickets.read', 'support.tickets.reply', 'support.tickets.status', 'support.tickets.assign'].forEach(p => legacyPerms.add(p));

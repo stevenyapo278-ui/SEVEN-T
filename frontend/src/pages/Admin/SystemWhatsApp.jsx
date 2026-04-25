@@ -14,6 +14,7 @@ import {
   Trash2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useWhatsAppSocket } from '../../hooks/useWhatsAppSocket'
 
 export default function SystemWhatsApp() {
   const [loading, setLoading] = useState(true)
@@ -28,7 +29,29 @@ export default function SystemWhatsApp() {
 
   useEffect(() => {
     loadSettings()
+    return () => {
+        if (qrRef.current) clearInterval(qrRef.current)
+    }
   }, [])
+
+  // Subscribe to real-time updates
+  useWhatsAppSocket({
+    onStatus: (payload) => {
+        if (payload.toolId === settings.system_whatsapp_tool_id) {
+            setWhatsappInfo(payload)
+            if (payload.connected) {
+                setQrCode(null)
+                if (qrRef.current) clearInterval(qrRef.current)
+                setSettings(prev => ({ ...prev, system_whatsapp_number: payload.number || prev.system_whatsapp_number }))
+            }
+        }
+    },
+    onQR: (payload) => {
+        if (payload.toolId === settings.system_whatsapp_tool_id) {
+            setQrCode(payload.qr)
+        }
+    }
+  })
 
   const loadSettings = async () => {
     setLoading(true)
@@ -83,10 +106,11 @@ export default function SystemWhatsApp() {
     setQrCode(null)
     try {
       const res = await api.post(`/whatsapp/connect/${toolId}`)
+      // Start polling immediately, the QR might come slightly after
+      pollConnection(toolId)
+      
       if (res.data?.qr) {
         setQrCode(res.data.qr)
-        // Poll for connection
-        pollConnection(toolId)
       }
     } catch (error) {
       toast.error('Erreur lors de l\'initialisation de la connexion')
@@ -96,11 +120,21 @@ export default function SystemWhatsApp() {
   }
 
   const pollConnection = (toolId) => {
-    const interval = setInterval(async () => {
+    // Clear any existing interval
+    if (qrRef.current) clearInterval(qrRef.current)
+    
+    qrRef.current = setInterval(async () => {
       try {
         const res = await api.get(`/whatsapp/status/${toolId}`)
+        
+        // Update QR code if present in status
+        if (res.data?.qr) {
+          setQrCode(res.data.qr)
+        }
+
         if (res.data?.connected) {
-          clearInterval(interval)
+          clearInterval(qrRef.current)
+          qrRef.current = null
           setQrCode(null)
           setWhatsappInfo(res.data)
           setSettings(prev => ({ ...prev, system_whatsapp_number: res.data.number || prev.system_whatsapp_number }))
@@ -109,12 +143,18 @@ export default function SystemWhatsApp() {
           toast.success('WhatsApp système connecté !')
         }
       } catch (e) {
-        clearInterval(interval)
+        clearInterval(qrRef.current)
+        qrRef.current = null
       }
-    }, 5000)
+    }, 3000) // Poll faster (3s) for smoother experience
     
     // Auto clear after 2 minutes
-    setTimeout(() => clearInterval(interval), 120000)
+    setTimeout(() => {
+        if (qrRef.current) {
+            clearInterval(qrRef.current)
+            qrRef.current = null
+        }
+    }, 120000)
   }
 
   const handleDisconnect = async () => {

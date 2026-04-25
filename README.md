@@ -37,99 +37,71 @@ SEVEN-T est une plateforme SaaS de pointe conçue pour transformer la relation c
 
 ---
 
-## 📦 Modules du Système (Activables par Plan)
-SEVEN-T est structuré en modules indépendants qui peuvent être activés selon le niveau d'abonnement :
+## 📦 Modules du Système : Le Détail Technologique
+SEVEN-T est conçu comme un écosystème modulaire où chaque fonctionnalité peut être activée indépendamment. Voici le détail de chaque brique :
 
-1.  **Heures de disponibilité** : Gestion automatique des horaires de réponse des agents.
-2.  **Paiement & Encaissement** : Intégration de passerelles pour vendre directement via WhatsApp.
-3.  **Next Best Action** : Suggestions intelligentes d'actions pour maximiser les ventes.
-4.  **Score de conversion** : Analyse prédictive de la probabilité d'achat de chaque prospect.
-5.  **Daily Briefing** : Résumé quotidien de l'activité envoyé directement sur WhatsApp.
-6.  **Sentiment Routing** : Détection de l'humeur du client et transfert prioritaire si nécessaire.
-7.  **Import Catalogue** : Synchronisation de vos produits via URL ou fichiers.
-8.  **Alertes Transfert Humain** : Notifications instantanées pour une reprise en main manuelle.
-9.  **Analytics & Statistiques** : Tableaux de bord avancés et rapports de performance.
-10. **Flows (Flux de travail)** : Constructeur visuel de parcours clients automatisés.
-11. **Statut WhatsApp** : Publication automatique de contenus sur les statuts WhatsApp.
-12. **Gestion des Leads** : Pipeline complet de suivi et de qualification des prospects.
-13. **Campagnes WhatsApp** : Envoi de messages en masse et planification marketing.
-14. **Réponses vocales (TTS)** : Capacité de l'IA à répondre par message audio.
-15. **Sondages** : Création et analyse de sondages interactifs.
-16. **Relance IA (Proactive)** : Suivi automatique des paniers et commandes abandonnés.
+1.  **🕒 Heures de disponibilité** : Définition de créneaux d'activité par agent. En période d'absence, l'IA bascule en mode "Répondeur intelligent" avec un message personnalisé, évitant les réponses tardives inappropriées.
+2.  **🎙️ Réponses vocales (TTS)** : Intégration de moteurs comme **ElevenLabs** pour transformer les réponses de l'IA en messages audio ultra-réalistes, favorisant la proximité avec le client.
+3.  **🎯 Next Best Action** : Système de recommandation contextuel. L'IA analyse l'historique pour suggérer l'action la plus rentable (ex: "Proposer un code promo", "Demander un appel").
+4.  **📈 Score de conversion** : Algorithme propriétaire calculant un score de 0 à 100% basé sur 6 facteurs (Volume de messages, Sentiment, Intention d'achat, Engagement humain, Récence). Le score est visible sur chaque conversation pour prioriser les leads.
+5.  **📅 Daily Briefing** : Rapport de synthèse généré par IA et envoyé chaque matin à l'administrateur. Il récapitule les opportunités chaudes, les rendez-vous fixés et les statistiques de la veille.
+6.  **🎭 Sentiment Routing** : Analyse sémantique continue. Si un client exprime une frustration critique, le système alerte instantanément un superviseur humain et suspend l'IA pour éviter toute escalade.
+7.  **🗳️ Sondages Interactifs** : Création de questionnaires natifs WhatsApp. Les réponses sont automatiquement analysées et injectées dans le profil du prospect pour une segmentation précise.
+8.  **⚡ Relance IA (Proactive)** : Identifie les conversations inactives depuis 24h/48h ayant un fort potentiel. L'IA suggère un message de relance adapté au contexte précédent pour maximiser le réengagement.
+9.  **🏗️ Flow Builder** : Outil visuel de création de scénarios (Drag & Drop). Permet de structurer des parcours complexes comme des diagnostics, des prises de commande ou des FAQs arborescentes.
+10. **📣 Campagnes & Marketing** : Envoi de messages en masse respectant les limites de WhatsApp, avec support des variables de personnalisation et suivi du taux d'ouverture.
+11. **🛠️ Alertes Transfert Humain** : Notifications Push/Email/WhatsApp dès que l'IA détecte une limite de compétence ou une demande explicite de parler à un humain.
+12. **🗂️ Gestion de Catalogue** : Synchronisation dynamique des stocks et prix. L'IA peut envoyer des photos de produits et générer des liens de paiement directement dans le chat.
 
 ---
 
-## 🛠️ Stack Technologique
+## 🛠️ Stack Technologique Avancée
 
-### Frontend (Interface Utilisateur)
-*   **React 18 + Vite** : Pour une interface ultra-rapide et réactive.
-*   **Tailwind CSS** : Design system moderne, mode sombre natif et responsive.
-*   **Lucide Icons & Framer Motion** : Icônes élégantes et micro-animations fluides.
-*   **Socket.io-client** : Communication bidirectionnelle en temps réel.
-*   **I18next** : Support multilingue complet.
+### 🧠 Intelligence Artificielle
+*   **LLMs** : Google Gemini 1.5 Pro/Flash & OpenAI GPT-4o.
+*   **Vector Database** : pgvector pour le stockage des embeddings de la base de connaissances.
+*   **NLP** : Analyse de sentiment et détection d'intentions via des pipelines de classification personnalisés.
 
-### Backend (Moteur Logiciel)
-*   **Node.js & Express** : Architecture robuste et scalable.
-*   **PostgreSQL** : Base de données relationnelle pour une gestion stricte des données CRM.
-*   **Baileys (WhatsApp Web API)** : Connexion stable et performante aux serveurs WhatsApp.
-*   **BullMQ & Redis** : Gestion des files d'attente pour les campagnes et workflows massifs.
-*   **Zod & Helmet** : Sécurité accrue par validation de schémas et protection des headers.
+### 💻 Infrastructure Backend
+*   **Node.js & Express** : Cœur de l'application.
+*   **PostgreSQL** : Base de données principale (Robuste & ACID).
+*   **Baileys** : Connexion multi-socket aux comptes WhatsApp via Web-Service.
+*   **Redis/BullMQ** : Gestion résiliente des tâches de fond (relances, campagnes).
 
-### Paiements & Intégrations
-*   **GeniusPay & PaymeTrust** : Gateways de paiement locaux et internationaux.
-*   **Stripe** : Gestion des abonnements SaaS.
-*   **Google Calendar & Outlook** : Synchronisation des rendez-vous détectés par l'IA.
+### 🎨 Frontend & Design
+*   **Vite + React** : Pour une expérience SPA (Single Page Application) fluide.
+*   **Tailwind CSS** : Utilisation d'un système de jetons (Design System) pour une cohérence totale.
+*   **Recharts** : Visualisation de données complexes (ROI, Volume, Sentiments).
 
 ---
 
-## 🖼️ Rôles des Vues (Pages)
+## 🖼️ Rôles des Vues (Pages) : Guide de Navigation
 
-| Vue | Rôle & Fonctionnalité |
-| :--- | :--- |
-| **Landing** | Vitrine technologique avec démonstration interactive du chatbot IA. |
-| **Dashboard** | Vue d'ensemble des KPIs, ROI, et activités récentes de tous les agents. |
-| **Agents** | Centre de contrôle pour créer, configurer et connecter vos assistants IA. |
-| **Agent Detail** | Configuration avancée : System Prompt, Base de connaissances, Playground et statut WhatsApp. |
-| **Conversations** | Messagerie unifiée pour superviser les échanges IA/Clients en temps réel. |
-| **Leads & Deals** | Pipeline CRM pour suivre la progression des prospects vers la vente. |
-| **Flow Builder** | Interface visuelle "Drag & Drop" pour créer des parcours automatisés. |
-| **Campaigns** | Planification et envoi massif de messages WhatsApp segmentés. |
-| **Orders & Products** | Gestion du catalogue de produits et suivi des commandes générées par l'IA. |
-| **Payments** | Suivi des transactions, liens de paiement et statuts de règlement. |
-| **Analytics & Reports**| Analyse profonde des performances via des graphiques et exports PDF. |
-| **Team** | Gestion des collaborateurs, rôles (Admin, Manager, Agent) et permissions. |
-| **Admin** | Panel super-administrateur : gestion des plans, clés API globales, logs d'audit et sécurité. |
+| Vue | Rôle Stratégique | Fonctionnalité Clé |
+| :--- | :--- | :--- |
+| **Landing** | Acquisition & Demo | Présentation des modules et chat démo interactif. |
+| **Dashboard** | Pilotage Global | Visualisation du ROI IA, volume de messages et alertes critiques. |
+| **Agents** | Configuration IA | Création de la personnalité, choix du modèle et prompt system. |
+| **Agent Detail** | Hub Technique | Connexion WhatsApp QR, Base de connaissances (PDF/Doc) et Logs. |
+| **Conversations** | Supervision Live | Lecture des échanges, bascule Mode IA/Humain et **Score de Conversion**. |
+| **Leads & Deals** | Conversion CRM | Pipeline Kanban pour transformer les discussions en ventes fermes. |
+| **Flow Builder** | Automatisation | Création graphique de tunnels de vente sans code. |
+| **Campaigns** | Growth Marketing | Diffusion massive de messages segmentés avec planification. |
+| **Polls** | Feedback Client | Création et analyse des données récoltées via les sondages. |
+| **Analytics** | Performance | Analyse du coût par message et efficacité de l'IA (ROI). |
+| **Admin** | Gouvernance | Gestion des plans, sécurité, audits et clés API globales. |
 
 ---
 
-## 🚀 Installation
+## 🚀 Déploiement & Maintenance
 
-### 1. Prérequis
-- Node.js 18+
-- PostgreSQL 15+
-- Redis (pour les files d'attente)
+### Installation Locale
+1. `npm install` (Root & Frontend)
+2. Configuration `.env` (Base de données, Clés API IA)
+3. `npm run dev`
 
-### 2. Setup Rapide
-```bash
-# Installation des dépendances
-npm install
-cd frontend && npm install && cd ..
-
-# Configuration environnement
-cp .env.example .env
-# Remplissez les clés DATABASE_URL, GEMINI_API_KEY, JWT_SECRET, etc.
-
-# Lancement en développement
-npm run dev
-```
+### Production
+Le projet est optimisé pour un déploiement via **Docker** ou **Dokploy**. Il supporte le clustering pour gérer des milliers de sockets WhatsApp simultanément.
 
 ---
-
-## 🛡️ Sécurité & Production
-*   **Protection Brute Force** : Système de bannissement temporaire des IPs suspectes.
-*   **Logs d'Audit** : Traçabilité complète des actions administratives avec option de Rollback.
-*   **Sentry Integration** : Monitoring des erreurs en temps réel.
-*   **Docker Ready** : Déploiement simplifié via `docker-compose.yml`.
-
----
-*© 2026 SEVEN-T - Plateforme d'Intelligence Conversationnelle.*
+*© 2026 SEVEN-T - Pionnier de l'Intelligence Conversationnelle. Designé pour la performance.*

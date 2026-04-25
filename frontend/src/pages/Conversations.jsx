@@ -576,6 +576,7 @@ export default function Conversations() {
                 isSelected={selectedConversations.has(conv.id)}
                 onToggle={() => toggleConversationSelection(conv.id)}
                 onToggleTakeover={handleToggleTakeover}
+                hasConversionScore={hasConversionScore}
               />
             ))}
           </div>
@@ -615,7 +616,7 @@ function StatItem({ icon: Icon, color, value, label, isDark }) {
   )
 }
 
-function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggleTakeover }) {
+function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggleTakeover, hasConversionScore }) {
   const Wrapper = bulkMode ? 'div' : Link
   const isHuman = conv.human_takeover === 1 || conv.human_takeover === true
   const unreadCount = Number(conv.unread_messages_count || 0)
@@ -675,11 +676,18 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
           </div>
         )}
       </div>
-      {!bulkMode && unreadCount > 0 && (
-        <span className="min-w-[28px] h-6 px-2 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200 text-xs font-bold flex items-center justify-center">
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </span>
-      )}
+      <div className="flex items-center gap-2">
+        {hasConversionScore && conv.conversion_score != null && (
+          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold-400/10 text-gold-400 text-[10px] font-bold border border-gold-400/20 whitespace-nowrap">
+            Score: {conv.conversion_score}%
+          </span>
+        )}
+        {!bulkMode && unreadCount > 0 && (
+          <span className="min-w-[28px] h-6 px-2 rounded-full bg-blue-500/15 border border-blue-400/20 text-blue-200 text-xs font-bold flex items-center justify-center">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </div>
       {!bulkMode && (
         <button
           type="button"

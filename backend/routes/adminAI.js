@@ -8,13 +8,12 @@ import { geminiCircuitBreaker, openaiCircuitBreaker, openrouterCircuitBreaker } 
 
 const router = Router();
 
-// All AI admin routes require AI administration permission (or full admin)
-router.use(authenticateAdmin, requirePermission('ai.settings.write'));
+// Middlewares will be applied per route or group
 
 // ==================== AI MODELS MANAGEMENT ====================
 
 // Get all AI models
-router.get('/models', async (req, res) => {
+router.get('/models', authenticateAdmin, requirePermission('ai.models.read'), async (req, res) => {
     try {
         const { provider, category, active } = req.query;
 
@@ -78,7 +77,7 @@ router.get('/models', async (req, res) => {
 });
 
 // Get single AI model
-router.get('/models/:id', async (req, res) => {
+router.get('/models/:id', authenticateAdmin, requirePermission('ai.models.read'), async (req, res) => {
     try {
         const model = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
 
@@ -121,7 +120,7 @@ router.get('/models/:id', async (req, res) => {
 });
 
 // Create new AI model
-router.post('/models', async (req, res) => {
+router.post('/models', authenticateAdmin, requirePermission('ai.models.write'), async (req, res) => {
     try {
         const { 
             name, provider, model_id, description, 
@@ -174,7 +173,7 @@ router.post('/models', async (req, res) => {
 });
 
 // Update AI model
-router.put('/models/:id', async (req, res) => {
+router.put('/models/:id', authenticateAdmin, requirePermission('ai.models.write'), async (req, res) => {
     try {
         const existing = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
         if (!existing) {
@@ -246,7 +245,7 @@ router.put('/models/:id', async (req, res) => {
 });
 
 // Delete AI model
-router.delete('/models/:id', async (req, res) => {
+router.delete('/models/:id', authenticateAdmin, requirePermission('ai.models.write'), async (req, res) => {
     try {
         const model = await db.get('SELECT id, name FROM ai_models WHERE id = ?', req.params.id);
         if (!model) {
@@ -285,7 +284,7 @@ router.delete('/models/:id', async (req, res) => {
 // ==================== PLATFORM SETTINGS ====================
 
 // Get platform settings (e.g. default_media_model for images/voice)
-router.get('/settings', async (req, res) => {
+router.get('/settings', authenticateAdmin, requirePermission('ai.settings.read'), async (req, res) => {
     try {
         const rows = await db.all('SELECT key, value FROM platform_settings');
         const arr = Array.isArray(rows) ? rows : [];
@@ -311,7 +310,7 @@ router.get('/settings', async (req, res) => {
 });
 
 // Update platform settings
-router.put('/settings', async (req, res) => {
+router.put('/settings', authenticateAdmin, requirePermission('ai.settings.write'), async (req, res) => {
     try {
         const { default_media_model, default_trial_days, embedding_model } = req.body;
         if (default_media_model !== undefined) {
@@ -356,7 +355,7 @@ router.put('/settings', async (req, res) => {
 // ==================== API KEYS MANAGEMENT ====================
 
 // Get all API keys (masked)
-router.get('/api-keys', async (req, res) => {
+router.get('/api-keys', authenticateAdmin, requirePermission('ai.keys.read'), async (req, res) => {
     try {
         const keys = await db.all('SELECT * FROM ai_api_keys ORDER BY provider ASC');
         const list = Array.isArray(keys) ? keys : [];
@@ -375,7 +374,7 @@ router.get('/api-keys', async (req, res) => {
 });
 
 // Set/Update API key for provider
-router.put('/api-keys/:provider', async (req, res) => {
+router.put('/api-keys/:provider', authenticateAdmin, requirePermission('ai.keys.write'), async (req, res) => {
     try {
         const { api_key, is_active } = req.body;
         const { provider } = req.params;
@@ -455,7 +454,7 @@ router.put('/api-keys/:provider', async (req, res) => {
 });
 
 // Test API key
-router.post('/api-keys/:provider/test', async (req, res) => {
+router.post('/api-keys/:provider/test', authenticateAdmin, requirePermission('ai.keys.write'), async (req, res) => {
     try {
         const { provider } = req.params;
         
@@ -574,7 +573,7 @@ router.post('/api-keys/:provider/test', async (req, res) => {
 // ==================== USAGE STATISTICS ====================
 
 // Get overall AI usage stats
-router.get('/stats', async (req, res) => {
+router.get('/stats', authenticateAdmin, requirePermission('platform.stats.read'), async (req, res) => {
     try {
         const overall = await db.get(`
             SELECT 
@@ -704,7 +703,7 @@ router.get('/models/:id/users', (req, res) => {
 });
 
 // Test a specific AI model
-router.post('/models/:id/test', async (req, res) => {
+router.post('/models/:id/test', authenticateAdmin, requirePermission('ai.models.write'), async (req, res) => {
     try {
         const { message = 'Hello, this is a test message.' } = req.body;
         const modelRecord = await db.get('SELECT * FROM ai_models WHERE id = ?', req.params.id);
@@ -750,7 +749,7 @@ router.post('/models/:id/test', async (req, res) => {
 
 let isReindexing = false;
 
-router.post('/reindex', async (req, res) => {
+router.post('/reindex', authenticateAdmin, requirePermission('ai.reindex.run'), async (req, res) => {
     if (isReindexing) {
         return res.status(400).json({ error: 'Une ré-indexation est déjà en cours' });
     }
@@ -792,7 +791,7 @@ router.post('/reindex', async (req, res) => {
 });
 
 // Get real-time health of AI providers (Circuit Breaker states)
-router.get('/health', async (req, res) => {
+router.get('/health', authenticateAdmin, requirePermission('platform.stats.read'), async (req, res) => {
     try {
         res.json({
             gemini: geminiCircuitBreaker.getState(),
