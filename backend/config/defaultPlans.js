@@ -40,8 +40,7 @@ export const defaultPlans = [
             human_handoff_alerts: false,
             analytics: false,
             leads_management: false,
-            polls_module: false,
-            proactive_advisor: false
+            polls: false
         })
     },
     {
@@ -79,8 +78,7 @@ export const defaultPlans = [
             human_handoff_alerts: false,
             analytics: false,
             leads_management: true,
-            polls_module: false,
-            proactive_advisor: false
+            polls: false
         })
     },
     {
@@ -119,8 +117,7 @@ export const defaultPlans = [
             human_handoff_alerts: true,
             analytics: true,
             leads_management: true,
-            polls_module: true,
-            proactive_advisor: true
+            polls: true
         })
     },
     {
@@ -159,8 +156,7 @@ export const defaultPlans = [
             human_handoff_alerts: true,
             analytics: true,
             leads_management: true,
-            polls_module: true,
-            proactive_advisor: true
+            polls: true
         })
     },
     {
@@ -199,8 +195,7 @@ export const defaultPlans = [
             human_handoff_alerts: true,
             analytics: true,
             leads_management: true,
-            polls: true,
-            proactive_advisor: true
+            polls: true
         })
     }
 ];

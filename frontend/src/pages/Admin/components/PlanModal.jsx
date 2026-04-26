@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, AlertTriangle } from 'lucide-react'
+import { PLAN_MODULES } from '../constants'
 
 export default function PlanModal({ plan, availableModels, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -96,24 +97,11 @@ export default function PlanModal({ plan, availableModels, onClose, onSave }) {
     { key: 'templates', label: 'Templates', desc: '-1 = illimité' }
   ]
 
-  const featureFields = [
-    { key: 'availability_hours', label: 'Module 1 : Heures de disponibilité', desc: 'Permet de définir les horaires où l\'agent répond automatiquement.' },
-    { key: 'payment_module', label: 'Module 2 : Paiement & Encaissement', desc: 'Intégration des passerelles de paiement pour vendre via l\'IA.' },
-    { key: 'next_best_action', label: 'Module 3 : Next Best Action', desc: 'Relances automatiques intelligentes des prospects inactifs.' },
-    { key: 'conversion_score', label: 'Module 4 : Score de conversion', desc: 'Analyse la probabilité d\'achat de chaque prospect.' },
-    { key: 'daily_briefing', label: 'Module 5 : Daily Briefing', desc: 'Résumé quotidien des activités envoyé sur WhatsApp.' },
-    { key: 'sentiment_routing', label: 'Module 6 : Sentiment routing', desc: 'Transfère à un humain si le client semble frustré.' },
-    { key: 'catalog_import', label: 'Module 7 : Import catalogue', desc: 'L\'IA connaît vos produits via URL ou fichiers.' },
-    { key: 'human_handoff_alerts', label: 'Module 8 : Alertes Transfert Humain', desc: 'Notifications immédiates quand un agent demande de l\'aide.' },
-    { key: 'analytics', label: 'Module 9 : Analytics & Statistiques', desc: 'Accès aux tableaux de bord et rapports détaillés sur les performances.' },
-    { key: 'flows', label: 'Module 10 : Flows (Flux de travail)', desc: 'Créez des scénarios d\'automatisation visuels.' },
-    { key: 'whatsapp_status', label: 'Module 11 : Statut WhatsApp', desc: 'Publication de statuts WhatsApp via l\'IA ou l\'interface.' },
-    { key: 'leads_management', label: 'Module 12 : Gestion des Leads', desc: 'Gestion des prospects, analyse d\'intention et conversion par l\'IA.' },
-    { key: 'campaigns', label: 'Module 13 : Campagnes WhatsApp', desc: 'Envoi de messages en masse et planification récurrente.' },
-    { key: 'voice_responses', label: 'Module 14 : Réponses vocales (TTS)', desc: 'L\'IA peut répondre par message vocal au lieu de texte.' },
-    { key: 'polls_module', label: 'Module 15 : Sondages WhatsApp', desc: 'Créez des sondages interactifs et collectez les votes en temps réel.' },
-    { key: 'proactive_advisor', label: 'Module 16 : Relance IA (Proactive)', desc: 'Relance automatiquement les commandes abandonnées ou reportées.' }
-  ]
+  const featureFields = PLAN_MODULES.map(m => ({
+    key: m.key.replace('_enabled', '').replace('_module', ''),
+    label: m.label,
+    desc: m.description
+  }))
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
