@@ -7,7 +7,7 @@ export const FEATURE_DESCRIPTIONS = {
   models: "Choix de modèles d'intelligence artificielle avancés (GPT-4, Gemini, Claude...) configurables selon vos besoins en performance.",
   availability_hours: "Permet de définir les horaires où l'agent répond automatiquement.",
   payment_module: "Intégration des passerelles de paiement pour vendre via l'IA.",
-  next_best_action: "Relances automatiques intelligentes des prospects inactifs.",
+  next_best_action: "Assistant Proactif : Relances automatiques intelligentes pour les prospects inactifs, paniers abandonnés et commandes reportées.",
   conversion_score: "Analyse la probabilité d'achat de chaque prospect.",
   daily_briefing: "Résumé quotidien des activités envoyé sur WhatsApp.",
   sentiment_routing: "Transfère à un humain si le client semble frustré.",
@@ -20,7 +20,6 @@ export const FEATURE_DESCRIPTIONS = {
   campaigns: "Envoi de messages en masse et planification récurrente.",
   voice_responses: "L'IA peut répondre par message vocal au lieu de texte.",
   polls_module: "Créez des sondages interactifs et collectez les votes en temps réel.",
-  proactive_advisor: "Relance automatiquement les commandes abandonnées ou les clients qui souhaitent attendre demain/après-demain.",
   knowledgeBase: "Le cerveau de votre agent : transmettez des documents PDF, règles et informations pour que l'IA connaisse tout de votre business sur le bout des doigts.",
   prioritySupport: "Assistance technique dédiée et prioritaire avec un accès direct à notre équipe pour résoudre d'éventuels soucis dans l'heure."
 }
@@ -54,7 +53,7 @@ export default function PricingDetailsModal({ plan, isOpen, onClose }) {
     if (feats?.models?.length) items.push({ title: `${feats.models.length} modèle(s) IA`, description: FEATURE_DESCRIPTIONS.models })
     if (feats?.availability_hours) items.push({ title: 'Heures de disponibilité', description: FEATURE_DESCRIPTIONS.availability_hours })
     if (feats?.payment_module) items.push({ title: 'Paiement & Encaissement', description: FEATURE_DESCRIPTIONS.payment_module })
-    if (feats?.next_best_action) items.push({ title: 'Next Best Action', description: FEATURE_DESCRIPTIONS.next_best_action })
+    if (feats?.next_best_action) items.push({ title: 'Assistant Proactif', description: FEATURE_DESCRIPTIONS.next_best_action })
     if (feats?.conversion_score) items.push({ title: 'Score de conversion', description: FEATURE_DESCRIPTIONS.conversion_score })
     if (feats?.daily_briefing) items.push({ title: 'Daily Briefing', description: FEATURE_DESCRIPTIONS.daily_briefing })
     if (feats?.sentiment_routing) items.push({ title: 'Sentiment routing', description: FEATURE_DESCRIPTIONS.sentiment_routing })
@@ -67,7 +66,6 @@ export default function PricingDetailsModal({ plan, isOpen, onClose }) {
     if (feats?.campaigns) items.push({ title: 'Campagnes WhatsApp', description: FEATURE_DESCRIPTIONS.campaigns })
     if (feats?.voice_responses) items.push({ title: 'Réponses vocales (TTS)', description: FEATURE_DESCRIPTIONS.voice_responses })
     if (feats?.polls_module) items.push({ title: 'Sondages WhatsApp', description: FEATURE_DESCRIPTIONS.polls_module })
-    if (feats?.proactive_advisor) items.push({ title: 'Relance IA (Proactive)', description: FEATURE_DESCRIPTIONS.proactive_advisor })
     
     if (items.length <= 2) {
        if (feats?.knowledgeBase) items.push({ title: 'Base de connaissances IA', description: FEATURE_DESCRIPTIONS.knowledgeBase })

@@ -55,6 +55,8 @@ export default function Settings() {
     notification_number: user?.notification_number || '',
     analytics_module_enabled: user?.analytics_module_enabled === 0 ? false : (user?.analytics_module_enabled === 1 || !!user?.plan_features?.analytics),
     flows_module_enabled: user?.flows_module_enabled === 0 ? false : (user?.flows_module_enabled === 1 || !!user?.plan_features?.flows),
+    next_best_action_enabled: user?.next_best_action_enabled === 0 ? false : (user?.next_best_action_enabled === 1 || !!user?.plan_features?.next_best_action),
+    proactive_advisor_enabled: user?.proactive_advisor_enabled === 0 ? false : (user?.proactive_advisor_enabled === 1 || !!user?.plan_features?.proactive_advisor),
     proactive_requires_validation: user?.proactive_requires_validation === null || user?.proactive_requires_validation === undefined ? true : Boolean(user?.proactive_requires_validation)
   })
 
@@ -75,6 +77,8 @@ export default function Settings() {
         notification_number: user.notification_number ?? prev.notification_number ?? '',
         analytics_module_enabled: user.analytics_module_enabled === 0 ? false : (user.analytics_module_enabled === 1 || !!user.plan_features?.analytics),
         flows_module_enabled: user.flows_module_enabled === 0 ? false : (user.flows_module_enabled === 1 || !!user.plan_features?.flows),
+        next_best_action_enabled: user.next_best_action_enabled === 0 ? false : (user.next_best_action_enabled === 1 || !!user.plan_features?.next_best_action),
+        proactive_advisor_enabled: user.proactive_advisor_enabled === 0 ? false : (user.proactive_advisor_enabled === 1 || !!user.plan_features?.proactive_advisor),
         proactive_requires_validation: user.proactive_requires_validation === null || user.proactive_requires_validation === undefined ? true : Boolean(user.proactive_requires_validation)
       }))
     }
@@ -645,7 +649,68 @@ export default function Settings() {
         </p>
       </div>
 
-      {/* Préférences */}
+      {/* Automatisation & Relances */}
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+      }`}>
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+          <BellRing className="w-5 h-5 text-blue-400" />
+          Automatisation & Relances
+        </h2>
+        <p className="text-sm text-gray-400 mb-6">
+          Configurez comment l'IA relance vos prospects et clients inactifs.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Module 3: Assistant Proactif */}
+          <div className={`md:col-span-2 relative p-4 rounded-2xl border transition-all ${
+            isDark ? 'bg-space-900/40 border-space-700/50' : 'bg-gray-50 border-gray-200'
+          } ${!user?.plan_features?.next_best_action && user?.is_admin !== 1 ? 'opacity-50' : ''}`}>
+            <div className="flex items-center justify-between gap-4 mb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Assistant Proactif (Relances IA)</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.next_best_action_enabled}
+                disabled={!user?.plan_features?.next_best_action && user?.is_admin !== 1}
+                onChange={(e) => setFormData({ ...formData, next_best_action_enabled: e.target.checked, proactive_advisor_enabled: e.target.checked })}
+                className="accent-blue-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Relances automatiques pour les paniers abandonnés, les clients inactifs et les commandes reportées.
+            </p>
+            {!user?.plan_features?.next_best_action && user?.is_admin !== 1 && (
+              <div className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-gold-500/80 uppercase">
+                <Lock className="w-3 h-3" /> Module non inclus dans votre plan
+              </div>
+            )}
+          </div>
+
+          {/* Validation toggle */}
+          <div className={`md:col-span-2 p-4 rounded-2xl border transition-all ${
+            isDark ? 'bg-space-900/40 border-space-700/50' : 'bg-gray-50 border-gray-200'
+          }`}>
+            <div className="flex items-center justify-between gap-4 mb-2">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-400" />
+                <span className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Validation manuelle requise</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.proactive_requires_validation}
+                onChange={(e) => setFormData({ ...formData, proactive_requires_validation: e.target.checked })}
+                className="accent-blue-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Si activé, l'IA génère les relances mais attend votre validation dans l'onglet "Relances" avant de les envoyer.
+            </p>
+          </div>
+        </div>
+      </div>
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
       }`}>

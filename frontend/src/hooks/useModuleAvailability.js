@@ -61,7 +61,7 @@ export function useModuleAvailability() {
       reports: checkStatus('reports_module', user?.plan_features?.reports, user?.reports_module_enabled),
       voice: checkStatus('voice_responses', user?.plan_features?.voice_responses, user?.voice_responses_enabled),
       polls: checkStatus('polls', user?.plan_features?.polls, user?.polls_module_enabled),
-      proactiveAdvisor: checkStatus('proactive_advisor', user?.plan_features?.proactive_advisor, user?.proactive_advisor_enabled),
+      proactiveAdvisor: checkStatus('next_best_action', user?.plan_features?.next_best_action, user?.next_best_action_enabled),
     };
 
     return {

@@ -212,7 +212,7 @@ function PlanFeatureList({ features }) {
   if (parsed.payment_module) items.push('Module paiement')
   if (parsed.voice_responses) items.push('Réponses vocales (TTS)')
   if (parsed.flows) items.push('Flows & automatisations')
-  if (parsed.next_best_action) items.push('Next Best Action')
+  if (parsed.next_best_action) items.push('Assistant Proactif (Relance IA)')
   if (parsed.catalog_import) items.push('Import catalogue')
   if (parsed.human_handoff_alerts) items.push('Alertes intervention humaine')
   if (parsed.whatsapp_status) items.push('WhatsApp Status')

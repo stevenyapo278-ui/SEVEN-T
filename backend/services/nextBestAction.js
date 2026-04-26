@@ -4,7 +4,7 @@
  */
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
-import { hasModule } from '../config/plans.js';
+import { hasModule, hasModuleForUser } from '../config/plans.js';
 import { whatsappManager } from './whatsapp.js';
 import { aiService } from './ai.js';
 
@@ -14,14 +14,20 @@ const COLD_RELANCE_DAYS = 7;
 const COLD_RELANCE_COOLDOWN_DAYS = 14;
 
 /**
- * Get user IDs that have the next_best_action module (from plan).
+ * Get user IDs that should have the proactive engine running.
+ * Module 3 (next_best_action) is the engine of Module 16 (proactive_advisor).
  */
-async function getUsersWithNextBestAction() {
-    const users = await db.all('SELECT id, plan FROM users');
+async function getUsersWithEngine() {
+    const users = await db.all(`
+        SELECT id, plan, next_best_action_enabled
+        FROM users 
+        WHERE (next_best_action_enabled = 1 OR next_best_action_enabled IS NULL)
+        AND is_active = 1
+    `);
     const out = [];
     for (const u of users || []) {
-        const planName = u.plan || 'free';
-        if (await hasModule(planName, 'next_best_action')) {
+        const hasM3 = await hasModuleForUser(u, 'next_best_action');
+        if (hasM3) {
             out.push(u.id);
         }
     }
@@ -182,8 +188,16 @@ async function runForUser(userId) {
     let sent = 0;
     
     // Check validation config
-    const userRow = await db.get('SELECT proactive_requires_validation FROM users WHERE id = ?', userId);
-    const requiresValidation = userRow?.proactive_requires_validation === 1;
+    const userRow = await db.get('SELECT plan, next_best_action_enabled, proactive_requires_validation FROM users WHERE id = ?', userId);
+    if (!userRow) return 0;
+
+    const hasModule3 = await hasModuleForUser(userRow, 'next_best_action');
+    if (!hasModule3) {
+        console.log(`[NextBestAction] User ${userId} has engine running but Module 3 (Next Best Action) is disabled. Skipping features.`);
+        return 0;
+    }
+
+    const requiresValidation = userRow.proactive_requires_validation === 1;
 
     const abandoned = await getAbandonedCartCandidates(userId);
     for (const { conversation, agent, toolId, userId: uid } of abandoned) {
@@ -268,7 +282,7 @@ async function runForUser(userId) {
  * Run next-best-action job for all users with the module.
  */
 export async function runNextBestActionJob() {
-    const userIds = await getUsersWithNextBestAction();
+    const userIds = await getUsersWithEngine();
     let totalSent = 0;
     for (const uid of userIds) {
         const sent = await runForUser(uid);

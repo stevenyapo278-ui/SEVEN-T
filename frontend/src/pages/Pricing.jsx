@@ -44,7 +44,7 @@ function PlanFeatureList({ features }) {
   if (parsed.models?.length) items.push(`${parsed.models.length} modèle(s) IA`)
   if (parsed.availability_hours) items.push('Heures de disponibilité')
   if (parsed.payment_module) items.push('Paiement & Encaissement')
-  if (parsed.next_best_action) items.push('Next Best Action')
+  if (parsed.next_best_action) items.push('Assistant Proactif (Relance IA)')
   if (parsed.conversion_score) items.push('Score de conversion')
   if (parsed.daily_briefing) items.push('Daily Briefing')
   if (parsed.sentiment_routing) items.push('Sentiment routing')
@@ -57,7 +57,6 @@ function PlanFeatureList({ features }) {
   if (parsed.campaigns) items.push('Campagnes WhatsApp')
   if (parsed.voice_responses) items.push('Réponses vocales (TTS)')
   if (parsed.polls_module) items.push('Sondages WhatsApp')
-  if (parsed.proactive_advisor) items.push('Relance IA (Proactive)')
   return (
     <ul className="space-y-2 mt-4">
       {items.map(item => (

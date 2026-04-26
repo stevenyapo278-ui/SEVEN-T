@@ -1256,7 +1256,10 @@ function SettingsTab({ agent, onUpdate }) {
     human_transfer_keywords: agent.human_transfer_keywords || t('agents.detail.settings.keywordsHint', 'human,agent,support,speak to someone'),
     human_transfer_message: agent.human_transfer_message || t('agents.detail.settings.transferMessageHint', 'I am transferring you to an advisor. Please wait.'),
     // Rate limiting
-    max_messages_per_day: agent.max_messages_per_day || 0
+    max_messages_per_day: agent.max_messages_per_day || 0,
+    // Vocal & Langues
+    voice_responses_enabled: agent.voice_responses_enabled === 1,
+    dioula_enabled: agent.dioula_enabled === 1
   })
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('general')
@@ -1386,8 +1389,11 @@ function SettingsTab({ agent, onUpdate }) {
         availability_enabled: formData.availability_enabled ? 1 : 0,
         human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0,
         calendar_tool_id: formData.calendar_tool_id || null,
-        outlook_tool_id: formData.outlook_tool_id || null
+        outlook_tool_id: formData.outlook_tool_id || null,
+        voice_responses_enabled: formData.voice_responses_enabled ? 1 : 0,
+        dioula_enabled: formData.dioula_enabled ? 1 : 0
       })
+
       toast.success(t('agents.detail.settings.success', 'Settings saved'))
       onUpdate()
     } catch (error) {
@@ -1403,6 +1409,7 @@ function SettingsTab({ agent, onUpdate }) {
     { id: 'auto_reply', label: t('agents.detail.settings.autoReply', 'Auto Reply') },
     { id: 'availability', label: t('agents.detail.settings.availability', 'Availability') },
     { id: 'transfer', label: t('agents.detail.settings.transfer', 'Human Transfer') },
+    { id: 'vocal', label: t('agents.detail.settings.vocal', 'Vocal & Langues') },
     { id: 'limits', label: t('agents.detail.settings.limits', 'Limits') }
   ]
 
@@ -1422,7 +1429,9 @@ function SettingsTab({ agent, onUpdate }) {
         availability_enabled: formData.availability_enabled ? 1 : 0,
         human_transfer_enabled: formData.human_transfer_enabled ? 1 : 0,
         calendar_tool_id: formData.calendar_tool_id || null,
-        outlook_tool_id: formData.outlook_tool_id || null
+        outlook_tool_id: formData.outlook_tool_id || null,
+        voice_responses_enabled: formData.voice_responses_enabled ? 1 : 0,
+        dioula_enabled: formData.dioula_enabled ? 1 : 0
       })
       toast.success('Paramètres sauvegardés')
       onUpdate()
@@ -1990,6 +1999,78 @@ function SettingsTab({ agent, onUpdate }) {
                   </div>
                 </>
               )}
+            </div>
+        </div>
+        
+        {/* Vocal & Langues Section */}
+        <div id="settings-vocal" className="card p-6 scroll-mt-4 bg-gradient-to-br from-gold-400/5 to-transparent border-gold-400/10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2">
+                <Mic className="w-5 h-5 text-gold-400" />
+                Vocal & Langues Locales
+              </h2>
+              {!(user?.plan_features?.voice_responses || user?.voice_responses_enabled === 1 || user?.is_admin === 1) && (
+                <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-[10px] font-bold text-amber-500 border border-amber-500/20 uppercase tracking-wider">Module 14</span>
+              )}
+            </div>
+            
+            <div className="space-y-6">
+              {!(user?.plan_features?.voice_responses || user?.voice_responses_enabled === 1 || user?.is_admin === 1) && (
+                <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                  <p className="text-xs text-amber-500/80 flex items-center gap-2 font-medium">
+                    <Lock className="w-3 h-3" />
+                    Le Module 14 (Réponses Vocales & Langues) est réservé aux plans supérieurs.
+                  </p>
+                </div>
+              )}
+
+              {/* Vocal Responses */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-gray-300">Réponses Vocales (Vocal-to-Vocal)</label>
+                  </div>
+                  <p className="text-xs text-gray-500">L'IA répondra par une note vocale si elle reçoit un message audio.</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!(user?.plan_features?.voice_responses || user?.voice_responses_enabled === 1 || user?.is_admin === 1)}
+                  onClick={() => setFormData({ ...formData, voice_responses_enabled: !formData.voice_responses_enabled })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    formData.voice_responses_enabled ? 'bg-gold-400' : 'bg-space-700'
+                  } ${!(user?.plan_features?.voice_responses || user?.voice_responses_enabled === 1 || user?.is_admin === 1) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.voice_responses_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Dioula Support */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <label className="block text-sm font-medium text-gray-300">Support du Dioula (Bambara)</label>
+                  </div>
+                  <p className="text-xs text-gray-500">Active la détection et la réponse automatique en langue Dioula.</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={!(user?.plan_features?.voice_responses || user?.voice_responses_enabled === 1 || user?.is_admin === 1)}
+                  onClick={() => setFormData({ ...formData, dioula_enabled: !formData.dioula_enabled })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    formData.dioula_enabled ? 'bg-gold-400' : 'bg-space-700'
+                  } ${!(user?.plan_features?.voice_responses || user?.voice_responses_enabled === 1 || user?.is_admin === 1) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      formData.dioula_enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
         </div>
 

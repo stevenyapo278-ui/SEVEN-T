@@ -835,8 +835,12 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
         
         // Language: force reply in the same language as the client
         if (analysis.language && analysis.language !== 'unknown') {
-            const langLabel = analysis.language === 'fr' ? 'français' : analysis.language === 'en' ? 'anglais' : analysis.language;
-            parts.push(`\n🌐 Langue du message client : ${langLabel}. Réponds UNIQUEMENT dans cette langue.`);
+            const langLabel = analysis.language === 'fr' ? 'français' : analysis.language === 'en' ? 'anglais' : analysis.language === 'dioula' ? 'dioula' : analysis.language;
+            let languageInstruction = `\n🌐 Langue du message client : ${langLabel}. Réponds UNIQUEMENT dans cette langue.`;
+            if (analysis.language === 'dioula' && agent.dioula_enabled) {
+                languageInstruction += "\n💡 Tu maîtrises parfaitement le Dioula. Utilise-le naturellement pour créer une proximité avec le client.";
+            }
+            parts.push(languageInstruction);
         }
 
         // Sentiment routing hint (hesitant → suggest offer or FAQ)

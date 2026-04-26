@@ -1671,7 +1671,8 @@ class WhatsAppManager {
             }
 
             // ==================== SENTIMENT ROUTING (Module 6) ====================
-            const userRow = await db.get('SELECT plan FROM users WHERE id = ?', userId);
+            // ==================== MODULE ENFORCEMENT ====================
+            const userRow = await db.get('SELECT plan, voice_responses_enabled FROM users WHERE id = ?', userId);
             const planName = userRow?.plan || 'free';
             const sentimentRoutingEnabled = await hasModule(planName, 'sentiment_routing');
 
@@ -1843,6 +1844,13 @@ class WhatsAppManager {
             }
 
             const messageAnalysis = { ...baseAnalysis, ...templateAnalysis };
+            
+            // Force language to French if Dioula is detected but module or setting is disabled
+            const voiceModuleEnabled = await hasModuleForUser(userRow, 'voice_responses');
+            if (messageAnalysis.language === 'dioula' && (!voiceModuleEnabled || !agent.dioula_enabled)) {
+                messageAnalysis.language = 'fr';
+            }
+
             if (sentimentRoutingEnabled && sentiment === 'hesitant') {
                 messageAnalysis.sentiment_hint = 'suggest_offer_or_faq';
             }
@@ -2215,7 +2223,8 @@ class WhatsAppManager {
                     let currentSentProductImageUrls = [];
 
                     // 1) Logic for Voice (only for this bubble)
-                    if (messageType === 'audio' && userVoice && ttsService.isAvailable()) {
+                    const voiceModuleEnabled = await hasModuleForUser(userRow, 'voice_responses');
+                    if (messageType === 'audio' && voiceModuleEnabled && agent.voice_responses_enabled && ttsService.isAvailable()) {
                         const audioBuffer = await ttsService.generate(bubble, { lang: messageAnalysis?.language || 'fr' });
                         if (audioBuffer && audioBuffer.length > 0) {
                             try {

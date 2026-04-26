@@ -1,7 +1,7 @@
 export const PLAN_MODULES = [
   { key: 'availability_hours_enabled', label: 'Module 1 : Heures de disponibilité', description: "Permet de définir les horaires où l'agent répond automatiquement." },
   { key: 'payment_module_enabled', label: 'Module 2 : Paiement & Encaissement', description: "Intégration des passerelles de paiement pour vendre via l'IA." },
-  { key: 'next_best_action_enabled', label: 'Module 3 : Next Best Action', description: "Relances automatiques intelligentes des prospects inactifs." },
+  { key: 'next_best_action_enabled', label: 'Module 3 : Assistant Proactif', description: "Relances automatiques intelligentes (paniers abandonnés, clients inactifs et commandes reportées)." },
   { key: 'conversion_score_enabled', label: 'Module 4 : Score de conversion', description: "Analyse la probabilité d'achat de chaque prospect." },
   { key: 'daily_briefing_enabled', label: 'Module 5 : Daily Briefing', description: "Résumé quotidien des activités envoyé sur WhatsApp." },
   { key: 'sentiment_routing_enabled', label: 'Module 6 : Sentiment routing', description: "Transfère à un humain si le client semble frustré." },
@@ -13,8 +13,7 @@ export const PLAN_MODULES = [
   { key: 'leads_management_enabled', label: 'Module 12 : Gestion des Leads', description: "Gestion des prospects, analyse d'intention et conversion par l'IA." },
   { key: 'campaigns_module_enabled', label: 'Module 13 : Campagnes WhatsApp', description: "Envoi de messages en masse et planification récurrente." },
   { key: 'voice_responses_enabled', label: 'Module 14 : Réponses vocales (TTS)', description: "L'IA peut répondre par message vocal au lieu de texte." },
-  { key: 'polls_module_enabled', label: 'Module 15 : Sondages', description: "Création et gestion de sondages WhatsApp." },
-  { key: 'proactive_advisor_enabled', label: 'Module 16 : Relance IA (Proactive)', description: "Relance automatiquement les commandes abandonnées ou reportées." }
+  { key: 'polls_module_enabled', label: 'Module 15 : Sondages', description: "Création et gestion de sondages WhatsApp." }
 ];
 
 export const ACTION_LABELS = {

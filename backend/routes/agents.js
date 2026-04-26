@@ -274,7 +274,9 @@ router.post('/', authenticateToken, async (req, res) => {
             template, // New: template type for quick setup
             tool_id,
             calendar_tool_id,
-            outlook_tool_id
+            outlook_tool_id,
+            voice_responses_enabled,
+            dioula_enabled
         } = req.body;
 
         if (!name) {
@@ -322,9 +324,9 @@ router.post('/', authenticateToken, async (req, res) => {
         const agentId = uuidv4();
 
         await db.run(`
-            INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, template, tool_id, calendar_tool_id, outlook_tool_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, agentId, req.user.ownerId, name, description || promptConfig.description, system_prompt || promptConfig.prompt, finalModel, temperature || promptConfig.temperature, max_tokens || 500, language || 'fr', 10, template || null, tool_id || null, calendar_tool_id || null, outlook_tool_id || null);
+            INSERT INTO agents (id, user_id, name, description, system_prompt, model, temperature, max_tokens, language, response_delay, template, tool_id, calendar_tool_id, outlook_tool_id, voice_responses_enabled, dioula_enabled)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, agentId, req.user.ownerId, name, description || promptConfig.description, system_prompt || promptConfig.prompt, finalModel, temperature || promptConfig.temperature, max_tokens || 500, language || 'fr', 10, template || null, tool_id || null, calendar_tool_id || null, outlook_tool_id || null, voice_responses_enabled || 0, dioula_enabled || 0);
 
         const agent = await db.get('SELECT * FROM agents WHERE id = ?', agentId);
 
@@ -468,7 +470,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
             template,
             tool_id,
             calendar_tool_id,
-            outlook_tool_id
+            outlook_tool_id,
+            voice_responses_enabled,
+            dioula_enabled
         } = req.body;
 
         // Check ownership and current model
@@ -542,6 +546,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
             'human_transfer_message = COALESCE(?, human_transfer_message)',
             'max_messages_per_day = COALESCE(?, max_messages_per_day)',
             'template = ?',
+            'voice_responses_enabled = COALESCE(?, voice_responses_enabled)',
+            'dioula_enabled = COALESCE(?, dioula_enabled)',
             'updated_at = CURRENT_TIMESTAMP'
         ];
         const values = [
@@ -550,7 +556,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
             finalAvailabilityEnabled, availability_start, availability_end, availability_days, availability_timezone, absence_message,
             finalHumanTransferEnabled, human_transfer_keywords, human_transfer_message,
             max_messages_per_day,
-            templateValue
+            templateValue,
+            voice_responses_enabled,
+            dioula_enabled
         ];
         if (toolIdValue !== undefined) {
             updates.push('tool_id = ?');

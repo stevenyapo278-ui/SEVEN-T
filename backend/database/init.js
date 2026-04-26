@@ -264,6 +264,7 @@ export async function initDatabase() {
             { name: 'proactive_advisor_enabled', type: 'INTEGER' },
             { name: 'proactive_requires_validation', type: 'INTEGER DEFAULT 1' },
             { name: 'polls_module_enabled', type: 'INTEGER' },
+            { name: 'voice_responses_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'parent_user_id', type: 'TEXT' },
             { name: 'role', type: "TEXT DEFAULT 'owner'" },
             { name: 'permissions', type: 'TEXT' }
@@ -324,6 +325,8 @@ export async function initDatabase() {
             tool_id TEXT,
             calendar_tool_id TEXT,
             outlook_tool_id TEXT,
+            voice_responses_enabled INTEGER DEFAULT 0,
+            dioula_enabled INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -1629,10 +1632,12 @@ export async function initDatabase() {
         }
     }
 
-    // Migration: agents - calendar_tool_id and outlook_tool_id
+    // Migration: agents - calendar_tool_id, outlook_tool_id, voice_responses_enabled, dioula_enabled
     try {
         await db.run('ALTER TABLE agents ADD COLUMN IF NOT EXISTS calendar_tool_id TEXT');
         await db.run('ALTER TABLE agents ADD COLUMN IF NOT EXISTS outlook_tool_id TEXT');
+        await db.run('ALTER TABLE agents ADD COLUMN IF NOT EXISTS voice_responses_enabled INTEGER DEFAULT 0');
+        await db.run('ALTER TABLE agents ADD COLUMN IF NOT EXISTS dioula_enabled INTEGER DEFAULT 0');
     } catch (e) {
         if (!/already exists/i.test(e?.message || '')) {
             console.warn('agents tools columns migration:', e?.message);

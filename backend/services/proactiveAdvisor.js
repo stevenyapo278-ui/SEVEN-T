@@ -2,6 +2,7 @@ import db from '../database/init.js';
 import { aiService } from './ai.js';
 import { whatsappManager } from './whatsapp.js';
 import { v4 as uuidv4 } from 'uuid';
+import { hasModuleForUser } from '../config/plans.js';
 
 /**
  * Service pour la relance proactive des commandes reportées (postponed)
@@ -35,17 +36,25 @@ class ProactiveAdvisorService {
             const cutoffStart = new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString();
             const cutoffEnd = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-            const ordersToRelance = await db.all(`
-                SELECT o.*, c.agent_id, c.customer_context, u.proactive_requires_validation
+            const ordersToRelanceRaw = await db.all(`
+                SELECT o.*, c.agent_id, c.customer_context, 
+                       u.proactive_requires_validation, u.plan, u.next_best_action_enabled
                 FROM orders o
                 JOIN conversations c ON o.conversation_id = c.id
                 JOIN users u ON o.user_id = u.id
                 WHERE o.status = 'postponed' 
                 AND o.proactive_relance_count = 0
-                AND u.proactive_advisor_enabled = 1
                 AND o.updated_at < ?
                 AND o.updated_at > ?
             `, cutoffStart, cutoffEnd);
+
+            const ordersToRelance = [];
+            for (const order of ordersToRelanceRaw) {
+                const hasModule3 = await hasModuleForUser(order, 'next_best_action');
+                if (hasModule3) {
+                    ordersToRelance.push(order);
+                }
+            }
 
             if (ordersToRelance.length === 0) {
                 console.log('[ProactiveAdvisor] Aucune commande à relancer actuellement.');

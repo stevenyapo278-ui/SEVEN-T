@@ -387,16 +387,19 @@ class MessageAnalyzer {
         // 2.3 Improved language detection with common word patterns
         const frCommonWords = ['je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'elles', 'le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'à', 'et', 'est', 'sont', 'avec', 'pour', 'dans', 'sur', 'bonjour', 'merci', 'oui', 'non', 'comment', 'pourquoi', 'quand', 'où'];
         const enCommonWords = ['i', 'you', 'he', 'she', 'we', 'they', 'the', 'a', 'an', 'and', 'or', 'is', 'are', 'was', 'were', 'with', 'for', 'in', 'on', 'hello', 'thanks', 'yes', 'no', 'how', 'why', 'when', 'where'];
+        const dioulaCommonWords = ['i', 'ni', 'ce', 'an', 'aw', 'be', 'te', 'na', 'ka', 'de', 'le', 'fo', 'don', 'di', 'aywa', 'inche', 'tche', 'mousso', 'kai', 'den', 'sigui', 'na', 'taga'];
         
         const words = lower.split(/\s+/).filter(Boolean);
         
         // Count common words
         let frScore = 0;
         let enScore = 0;
+        let dioulaScore = 0;
         
         for (const word of words) {
             if (frCommonWords.includes(word)) frScore++;
             if (enCommonWords.includes(word)) enScore++;
+            if (dioulaCommonWords.includes(word)) dioulaScore++;
         }
         
         // Check for French accents
@@ -405,13 +408,14 @@ class MessageAnalyzer {
         if (frCount > 0) frScore += frCount * 0.5;
         
         // Decide based on scores
-        if (frScore > enScore) return 'fr';
-        if (enScore > frScore) return 'en';
+        if (dioulaScore > frScore && dioulaScore > enScore) return 'dioula';
+        if (frScore > enScore && frScore > dioulaScore) return 'fr';
+        if (enScore > frScore && enScore > dioulaScore) return 'en';
         
         // Fallback to accent ratio
         if (frCount / trimmed.length > MESSAGE_ANALYZER_CONFIG.LANGUAGE_FR_ACCENT_RATIO) return 'fr';
         
-        return 'en'; // Default to English if unclear
+        return 'fr'; // Default to French given the context
     }
 
     /**

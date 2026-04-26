@@ -474,8 +474,8 @@ router.get('/me', async (req, res) => {
 
 router.put('/me', authenticateToken, async (req, res) => {
     try {
-        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled, proactive_requires_validation FROM users WHERE id = ?', req.user.id);
-        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled, proactive_requires_validation } = req.body;
+        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled, proactive_requires_validation, next_best_action_enabled, proactive_advisor_enabled FROM users WHERE id = ?', req.user.id);
+        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled, proactive_requires_validation, next_best_action_enabled, proactive_advisor_enabled } = req.body;
 
 
         // Build dynamic update query
@@ -546,6 +546,22 @@ router.put('/me', authenticateToken, async (req, res) => {
             updates.push('voice_responses_enabled = ?');
             values.push(valueToSet);
         }
+        if (next_best_action_enabled !== undefined) {
+            let valueToSet = next_best_action_enabled ? 1 : 0;
+            if (valueToSet === 1 && !userPlanFeatures.next_best_action) {
+                valueToSet = 0;
+            }
+            updates.push('next_best_action_enabled = ?');
+            values.push(valueToSet);
+        }
+        if (proactive_advisor_enabled !== undefined) {
+            let valueToSet = proactive_advisor_enabled ? 1 : 0;
+            if (valueToSet === 1 && !userPlanFeatures.proactive_advisor) {
+                valueToSet = 0;
+            }
+            updates.push('proactive_advisor_enabled = ?');
+            values.push(valueToSet);
+        }
         
         if (proactive_requires_validation !== undefined) {
             updates.push('proactive_requires_validation = ?');
@@ -564,7 +580,7 @@ router.put('/me', authenticateToken, async (req, res) => {
         
         // Calculate changes
         const changes = {};
-        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number', 'analytics_module_enabled', 'flows_module_enabled'];
+        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number', 'analytics_module_enabled', 'flows_module_enabled', 'next_best_action_enabled', 'proactive_advisor_enabled'];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
                 changes[field] = { old: existing[field], new: req.body[field] };
