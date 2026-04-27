@@ -1111,7 +1111,7 @@ export default function ConversationDetail() {
                               <MessageImage conversationId={id} messageId={message.id} />
                             ) : null}
                           </div>
-                        ) : message.role === 'assistant' && message.media_url ? (
+                        ) : (message.role === 'assistant' && (message.media_url || message.content?.includes('/api/products/image/'))) ? (
                           <div className="mb-2">
                             {message.message_type === 'audio' ? (
                               <MessageAudio 
@@ -1120,8 +1120,8 @@ export default function ConversationDetail() {
                                 isDark={isDark} 
                                 isAssistant={true} 
                               />
-                            ) : message.message_type === 'image' ? (
-                              <AssistantMessageImage mediaUrl={message.media_url} />
+                            ) : (message.message_type === 'image' || message.content?.includes('/api/products/image/')) ? (
+                              <AssistantMessageImage mediaUrl={message.media_url || message.content?.match(/\/api\/products\/image\/[a-zA-Z0-9-]+\.(jpg|jpeg|png|webp|gif)/)?.[0]} />
                             ) : null}
                           </div>
                         ) : null}

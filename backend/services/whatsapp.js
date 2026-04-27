@@ -187,6 +187,7 @@ class WhatsAppManager {
         this.storeIntervals = new Map(); // toolId -> intervalId
         this.connectingInProgress = new Set(); // toolId -> boolean (prevent simultaneous connects)
         this.processingIncomingIds = new Set(); // whatsapp_id -> boolean (prevent double processing)
+        this.sentByAiIds = new Set(); // whatsapp_id -> boolean (messages we sent, to ignore in handleOutgoingMessage)
         this._queueDrainHandlerSet = false;
         this.redis = createRedisClient();
     }
@@ -2274,6 +2275,10 @@ class WhatsAppManager {
                                 for (let j = 0; j < uniqueUrls.length; j++) {
                                     if (j > 0) await new Promise((r) => setTimeout(r, 400));
                                     const sent = await this.sendOneProductImage(toolId, replyToJidForSend, uniqueUrls[j]);
+                                    if (sent?.key?.id) {
+                                        this.sentByAiIds.add(sent.key.id);
+                                        setTimeout(() => this.sentByAiIds.delete(sent.key.id), 30000);
+                                    }
                                     if (sent) currentSentProductImageUrls.push(sent);
                                 }
                                 
@@ -2287,6 +2292,10 @@ class WhatsAppManager {
 
                             if (textToSend) {
                                 currentSendResult = await sock.sendMessage(replyToJidForSend, { text: textToSend });
+                                if (currentSendResult?.key?.id) {
+                                    this.sentByAiIds.add(currentSendResult.key.id);
+                                    setTimeout(() => this.sentByAiIds.delete(currentSendResult.key.id), 30000);
+                                }
                             } else if (currentSentProductImageUrls.length > 0) {
                                 currentSendResult = { key: { id: 'imgs-' + uuidv4().slice(0,8) } };
                             }
@@ -2298,14 +2307,31 @@ class WhatsAppManager {
                     // 3) Record each bubble
                     const whatsappMsgId = currentSendResult?.key?.id;
                     const outMsgId = uuidv4();
+                    const detectedImageUrl = uniqueUrls.length > 0 ? uniqueUrls[0] : null;
+                    const effectiveMessageType = currentSentAsVoice ? 'audio' : (uniqueUrls.length > 0 ? 'image' : null);
+
                     await db.run(`
-                        INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, created_at)
-                        VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?)
-                    `, outMsgId, conversation.id, bubble, i === 0 ? totalTokensUsed : 0, whatsappMsgId, currentSentAsVoice ? 'audio' : null, new Date().toISOString());
+                        INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, media_url, created_at)
+                        VALUES (?, ?, 'assistant', ?, ?, ?, 'ai', ?, ?, ?)
+                    `, 
+                        outMsgId, 
+                        conversation.id, 
+                        textToSend || contentToSave, 
+                        i === 0 ? totalTokensUsed : 0, 
+                        whatsappMsgId, 
+                        effectiveMessageType,
+                        detectedImageUrl,
+                        new Date().toISOString()
+                    );
                     
                     void notifyConversationUpdate(conversation.id, {
-                        id: outMsgId, role: 'assistant', content: bubble,
-                        whatsapp_id: whatsappMsgId, created_at: new Date().toISOString()
+                        id: outMsgId, 
+                        role: 'assistant', 
+                        content: textToSend || contentToSave,
+                        whatsapp_id: whatsappMsgId, 
+                        message_type: effectiveMessageType,
+                        media_url: detectedImageUrl,
+                        created_at: new Date().toISOString()
                     });
 
                     // Pause between bubbles if not the last one
@@ -2547,9 +2573,12 @@ class WhatsAppManager {
             }
             
             
-            // FIRST: Check if this message was already saved by AI (by whatsapp_id)
-            // This prevents the duplicate issue where AI sends a message and it gets captured here too
+            // FIRST: Check if this message was already sent by AI (memory check) or saved in DB
             if (whatsappMsgId) {
+                if (this.sentByAiIds.has(whatsappMsgId)) {
+                    console.log(`[WhatsApp] Skipping handleOutgoing - message sent by AI (memory hit): ${whatsappMsgId}`);
+                    return;
+                }
                 const existingByWaId = await db.get('SELECT id, sender_type FROM messages WHERE whatsapp_id = ?', whatsappMsgId);
                 if (existingByWaId) {
                     console.log(`[WhatsApp] Skipping - message already exists with whatsapp_id ${whatsappMsgId} (type: ${existingByWaId.sender_type})`);
