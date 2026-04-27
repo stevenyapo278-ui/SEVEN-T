@@ -14,6 +14,25 @@ export const AI_CONFIG = {
         topK: 40
     },
 
+    // Model mappings and defaults
+    models: {
+        gemini: {
+            default: 'gemini-1.5-flash',
+            pro: 'gemini-1.5-pro',
+            fast: 'gemini-1.5-flash'
+        },
+        openai: {
+            default: 'gpt-4o-mini',
+            pro: 'gpt-4o',
+            fast: 'gpt-4o-mini'
+        },
+        openrouter: {
+            default: 'google/gemini-2.0-flash-001',
+            pro: 'anthropic/claude-3.5-sonnet',
+            fast: 'google/gemini-2.0-flash-lite-preview-001:free'
+        }
+    },
+
     // OpenRouter free fallback models (used when primary OpenRouter model fails)
     openrouterFreeFallbacks: [
         'meta-llama/llama-3.2-3b-instruct:free',

@@ -417,7 +417,7 @@ RÈGLES DE RÉDACTION :
              ORDER BY CASE WHEN category = 'fast' THEN 0 ELSE 1 END, sort_order ASC 
              LIMIT 1`
         );
-        const modelId = bestRecord?.model_id || 'gemini-2.5-flash';
+        const modelId = bestRecord?.model_id || 'gemini-1.5-flash';
         const provider = bestRecord?.provider || 'gemini';
         const apiKey = await this.getApiKey(provider, modelId);
 
@@ -490,7 +490,12 @@ RÈGLES :
             const input = `--- CONVERSATIONS À ANALYSER ---\n${JSON.stringify(conversationsBatch)}\n--- FIN ---`;
             const response = await this.generateResponse(mockAgent, [], input, [], null, userId, false);
             const cleanContent = response.content.replace(/```json|```/g, '').trim();
-            return JSON.parse(cleanContent);
+            try {
+                return JSON.parse(cleanContent);
+            } catch (e) {
+                // If it's still not valid JSON, it might be plain text. Try to wrap it.
+                return { summary: response.content, top_topics: [], sentiment_trend: 'neutral', friction_points: [], opportunities: [] };
+            }
         } catch (error) {
             console.error('[AI] Social analysis error:', error.message);
             return null;
@@ -1411,10 +1416,10 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
         if (!raw || typeof raw !== 'string') return 'gemini-2.0-flash';
         const m = raw.toLowerCase();
         if (m.includes('gemini-1.5-pro') || m.includes('gemini-pro')) return 'gemini-1.5-pro';
-        if (m.includes('gemini-2.5') || m.includes('models/gemini-2.5-flash') || m.includes('gemini-2.0')) return 'gemini-2.0-flash';
+        if (m.includes('gemini-2.0') || m.includes('gemini-flash-2.0')) return 'gemini-2.0-flash';
         if (m.includes('gemini-1.5-flash')) return 'gemini-1.5-flash';
-        if (m.includes('gemini')) return 'gemini-2.0-flash';
-        return 'gemini-2.0-flash';
+        if (m.includes('gemini')) return 'gemini-1.5-flash';
+        return 'gemini-1.5-flash';
     }
 
     /**
