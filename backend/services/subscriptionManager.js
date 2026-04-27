@@ -34,14 +34,14 @@ export async function sendSystemWhatsApp(userId, message) {
         return false;
     }
 
-    const user = await db.get('SELECT phone FROM users WHERE id = ?', userId);
-    if (!user?.phone) {
-        console.warn(`[SubManager] No phone number for user ${userId}`);
+    const user = await db.get('SELECT notification_number FROM users WHERE id = ?', userId);
+    if (!user?.notification_number) {
+        console.warn(`[SubManager] No notification number for user ${userId}`);
         return false;
     }
 
     // Prepare JID
-    let jid = user.phone.replace(/\D/g, '');
+    let jid = user.notification_number.replace(/\D/g, '');
     if (!jid.includes('@')) {
         jid = `${jid}@s.whatsapp.net`;
     }
@@ -72,7 +72,7 @@ export async function runSubscriptionReview() {
     const twoDaysFromNowStr = twoDaysFromNow.toISOString().split('T')[0];
 
     const expiringSoon = await db.all(`
-        SELECT s.*, u.email, u.name, u.phone 
+        SELECT s.*, u.email, u.name, u.notification_number 
         FROM saas_subscriptions s
         JOIN users u ON s.user_id = u.id
         WHERE s.status = 'active' 

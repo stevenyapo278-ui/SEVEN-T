@@ -1001,36 +1001,36 @@ export default function Landing() {
                
                <div className="relative">
                   <div className={`relative rounded-3xl border p-2 glass overflow-hidden ${isDark ? 'border-white/10 shadow-2xl shadow-black/50' : 'border-gray-200 shadow-xl shadow-gray-200'}`}>
-                     <div className={`bg-space-950 p-6 rounded-2xl`}>
-                        <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+                     <div className={`${isDark ? 'bg-space-950' : 'bg-white'} p-6 rounded-2xl`}>
+                        <div className={`flex items-center gap-3 mb-6 border-b ${isDark ? 'border-white/5' : 'border-gray-100'} pb-4`}>
                            <div className="w-2 h-2 rounded-full bg-red-400" />
                            <div className="w-2 h-2 rounded-full bg-amber-400" />
                            <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                           <div className="ml-2 px-3 py-1 rounded-lg bg-white/5 text-[10px] text-white/40 font-mono">search_assistant_v2.ai</div>
+                           <div className={`ml-2 px-3 py-1 rounded-lg ${isDark ? 'bg-white/5 text-white/40' : 'bg-gray-100 text-gray-400'} text-[10px] font-mono`}>search_assistant_v2.ai</div>
                         </div>
                         <div className="space-y-4">
                            <div className="flex items-start gap-3">
-                              <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center">
-                                 <Bot className="w-4 h-4 text-amber-400" />
+                              <div className={`w-8 h-8 rounded-full ${isDark ? 'bg-amber-400/20' : 'bg-amber-100'} flex items-center justify-center`}>
+                                 <Bot className="w-4 h-4 text-amber-500" />
                               </div>
-                              <div className="px-4 py-3 rounded-2xl bg-white/5 text-sm text-white/80 max-w-[80%]">
+                              <div className={`px-4 py-3 rounded-2xl ${isDark ? 'bg-white/5 text-white/80' : 'bg-gray-100 text-gray-700'} text-sm max-w-[80%]`}>
                                  Bonjour ! Comment puis-je vous assister aujourd'hui ?
                               </div>
                            </div>
                            <div className="flex items-start gap-3 flex-row-reverse">
-                              <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                 <User className="w-4 h-4 text-blue-400" />
+                              <div className={`w-8 h-8 rounded-full ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'} flex items-center justify-center`}>
+                                 <User className="w-4 h-4 text-blue-500" />
                               </div>
-                              <div className="px-4 py-3 rounded-2xl bg-blue-500/10 text-sm text-white/90 border border-blue-500/20">
+                              <div className={`px-4 py-3 rounded-2xl ${isDark ? 'bg-blue-500/10 text-white/90 border-blue-500/20' : 'bg-blue-50 text-blue-700 border-blue-200'} text-sm border`}>
                                  Crée un nouveau produit "Café Touba" à 1500 FCFA
                               </div>
                            </div>
                            <div className="flex items-start gap-3">
-                               <div className="w-8 h-8 rounded-full bg-amber-400/20 flex items-center justify-center">
-                                 <Bot className="w-4 h-4 text-amber-400" />
+                               <div className={`w-8 h-8 rounded-full ${isDark ? 'bg-amber-400/20' : 'bg-amber-100'} flex items-center justify-center`}>
+                                 <Bot className="w-4 h-4 text-amber-500" />
                               </div>
-                              <div className="px-4 py-3 rounded-2xl bg-white/5 text-sm text-white/80 max-w-[80%] border border-emerald-500/20">
-                                 <div className="flex items-center gap-2 text-emerald-400 font-bold mb-1">
+                              <div className={`px-4 py-3 rounded-2xl ${isDark ? 'bg-white/5 text-white/80 border-emerald-500/20' : 'bg-emerald-50 text-emerald-800 border-emerald-200'} text-sm max-w-[80%] border`}>
+                                 <div className="flex items-center gap-2 text-emerald-500 font-bold mb-1">
                                     <Sparkles className="w-3 h-3" /> Action effectuée !
                                  </div>
                                  Le produit **Café Touba** a été ajouté à votre catalogue avec succès.
@@ -1048,9 +1048,9 @@ export default function Landing() {
                               </div>
                            </div>
                         </div>
-                        <div className="mt-8 flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div className={`mt-8 flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-100'} border`}>
                            <div className="w-5 h-5 text-amber-400"><Sparkles className="w-full h-full" /></div>
-                           <div className="text-xs text-white/30 italic">Que voulez-vous faire ?</div>
+                           <div className={`text-xs italic ${isDark ? 'text-white/30' : 'text-gray-400'}`}>Que voulez-vous faire ?</div>
                         </div>
                      </div>
                   </div>

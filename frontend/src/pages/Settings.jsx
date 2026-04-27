@@ -8,7 +8,7 @@ import { useFont } from '../contexts/FontContext'
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll'
 import { useTranslation } from 'react-i18next'
 import api from '../services/api'
-import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2, Mail, MessageCircle, HelpCircle, GitBranch, Users, Database } from 'lucide-react'
+import { User, Building, Save, Sparkles, Crown, Check, Coins, Loader2, Image, Mic, RefreshCw, Download, CreditCard, Lock, X, Trash2, Mail, MessageCircle, HelpCircle, GitBranch, Users, Database, BellRing } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useModuleAvailability } from '../hooks/useModuleAvailability'
 

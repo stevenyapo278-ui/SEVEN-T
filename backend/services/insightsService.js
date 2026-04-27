@@ -14,7 +14,7 @@ class InsightsService {
             const users = await db.all(`
                 SELECT id FROM users 
                 WHERE is_active = 1 
-                AND (last_insights_at IS NULL OR last_insights_at < date('now', '-1 day'))
+                AND (last_insights_at IS NULL OR last_insights_at < NOW() - INTERVAL '1 day')
             `);
 
             for (const user of users) {
@@ -39,7 +39,7 @@ class InsightsService {
                 JOIN conversations c ON m.conversation_id = c.id
                 JOIN agents a ON c.agent_id = a.id
                 WHERE a.user_id = ? 
-                AND m.created_at >= date('now', '-7 days')
+                AND m.created_at >= NOW() - INTERVAL '7 days'
                 ORDER BY m.created_at DESC
                 LIMIT 200
             `, userId);
