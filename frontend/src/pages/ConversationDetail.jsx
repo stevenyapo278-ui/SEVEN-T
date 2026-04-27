@@ -7,7 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConversationSocket } from '../hooks/useConversationSocket'
 import Breadcrumbs from '../components/Breadcrumbs'
-import { ArrowLeft, User, Bot, Phone, Calendar, Send, RefreshCw, Loader2, Edit2, Check, X, UserCircle, UserCheck, Sparkles, FileDown, Trash2, Square, CheckSquare, ShoppingCart, Package } from 'lucide-react'
+import { ArrowLeft, User, Bot, Phone, Calendar, Send, RefreshCw, Loader2, Edit2, Check, X, UserCircle, UserCheck, Sparkles, FileDown, Trash2, Square, CheckSquare, ShoppingCart, Package, Play, Pause, Volume2, Mic } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 // Cache for profile pictures (shared across all ProfileAvatar instances)
@@ -162,40 +162,136 @@ function AssistantMessageImage({ mediaUrl }) {
   )
 }
 
-// Message audio: fetch with auth and play
-function MessageAudio({ conversationId, messageId }) {
+// Premium Audio Player Component
+function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
   const [src, setSrc] = useState(null)
-  const [error, setError] = useState(false)
-  const blobUrlRef = useRef(null)
+  const [loading, setLoading] = useState(true)
+  const [playing, setPlaying] = useState(false)
+  const [duration, setDuration] = useState(0)
+  const [currentTime, setCurrentTime] = useState(0)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     if (!conversationId || !messageId) return
-    setError(false)
-    setSrc(null)
+    setLoading(true)
     api.get(`/conversations/${conversationId}/messages/${messageId}/media`, { responseType: 'blob' })
       .then((res) => {
-        if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current)
         const url = URL.createObjectURL(res.data)
-        blobUrlRef.current = url
         setSrc(url)
+        setLoading(false)
       })
-      .catch(() => setError(true))
-    return () => {
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current)
-        blobUrlRef.current = null
-      }
-    }
+      .catch(() => setLoading(false))
   }, [conversationId, messageId])
 
-  if (error) return <span className="text-xs text-gray-500">[Audio non disponible]</span>
-  if (!src) return <span className="text-xs text-gray-500">Chargement…</span>
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (playing) audioRef.current.pause()
+      else audioRef.current.play()
+      setPlaying(!playing)
+    }
+  }
+
+  const onLoadedMetadata = () => {
+    if (audioRef.current) setDuration(audioRef.current.duration)
+  }
+
+  const onTimeUpdate = () => {
+    if (audioRef.current) setCurrentTime(audioRef.current.currentTime)
+  }
+
+  const onEnded = () => {
+    setPlaying(false)
+    setCurrentTime(0)
+  }
+
+  const formatTime = (time) => {
+    if (isNaN(time)) return '0:00'
+    const mins = Math.floor(time / 60)
+    const secs = Math.floor(time % 60)
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`
+  }
+
+  if (loading) return (
+    <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/5 animate-pulse min-w-[200px]">
+      <div className="w-8 h-8 rounded-full bg-black/10" />
+      <div className="flex-1 h-1.5 rounded-full bg-black/10" />
+    </div>
+  )
+
+  if (!src) return <span className="text-xs opacity-50 italic">Audio non disponible</span>
+
   return (
-    <audio
-      controls
-      src={src}
-      className="w-full max-w-sm my-1"
-    />
+    <div className={`flex items-center gap-3 px-3 py-2 rounded-2xl transition-all duration-300 min-w-[240px] ${
+      isAssistant 
+        ? isDark ? 'bg-space-950/40' : 'bg-black/5' 
+        : 'bg-white/10'
+    }`}>
+      <audio 
+        ref={audioRef} 
+        src={src} 
+        onLoadedMetadata={onLoadedMetadata} 
+        onTimeUpdate={onTimeUpdate} 
+        onEnded={onEnded}
+      />
+      
+      <button 
+        onClick={togglePlay}
+        className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95 ${
+          isAssistant
+            ? isDark ? 'bg-gold-500 text-space-950' : 'bg-gold-400 text-white'
+            : 'bg-white text-emerald-600'
+        }`}
+      >
+        {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+      </button>
+
+      <div className="flex-1 flex flex-col gap-1">
+        {/* Waveform-like Progress Bar */}
+        <div className="relative h-6 flex items-center gap-[2px]">
+          {[...Array(20)].map((_, i) => {
+            const progress = (currentTime / duration) * 20;
+            const isActive = i < progress;
+            const height = 20 + Math.sin(i * 0.8) * 15; // Random-ish wave
+            return (
+              <div 
+                key={i} 
+                className={`w-1 rounded-full transition-all duration-300 ${
+                  isActive 
+                    ? isAssistant ? 'bg-gold-500' : 'bg-white'
+                    : isAssistant ? 'bg-gold-500/20' : 'bg-white/20'
+                }`}
+                style={{ height: `${height}%` }}
+              />
+            )
+          })}
+          {/* Clickable range for seeking */}
+          <input 
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setCurrentTime(val);
+              if (audioRef.current) audioRef.current.currentTime = val;
+            }}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+        </div>
+        
+        <div className="flex justify-between items-center px-0.5">
+          <span className={`text-[10px] font-bold ${isAssistant ? 'text-gray-500' : 'text-emerald-100/70'}`}>
+            {formatTime(currentTime)}
+          </span>
+          <div className="flex items-center gap-1">
+            <Mic className={`w-3 h-3 ${isAssistant ? 'text-gray-400' : 'text-emerald-100/50'}`} />
+            <span className={`text-[10px] font-bold ${isAssistant ? 'text-gray-500' : 'text-emerald-100/70'}`}>
+              {formatTime(duration)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -1005,14 +1101,28 @@ export default function ConversationDetail() {
                         {message.media_url && message.role === 'user' ? (
                           <div className="mb-2">
                             {message.message_type === 'audio' ? (
-                              <MessageAudio conversationId={id} messageId={message.id} />
+                              <MessageAudio 
+                                conversationId={id} 
+                                messageId={message.id} 
+                                isDark={isDark} 
+                                isAssistant={message.role === 'assistant'} 
+                              />
                             ) : message.message_type === 'image' ? (
                               <MessageImage conversationId={id} messageId={message.id} />
                             ) : null}
                           </div>
-                        ) : message.role === 'assistant' && message.message_type === 'image' && message.media_url ? (
+                        ) : message.role === 'assistant' && message.media_url ? (
                           <div className="mb-2">
-                            <AssistantMessageImage mediaUrl={message.media_url} />
+                            {message.message_type === 'audio' ? (
+                              <MessageAudio 
+                                conversationId={id} 
+                                messageId={message.id} 
+                                isDark={isDark} 
+                                isAssistant={true} 
+                              />
+                            ) : message.message_type === 'image' ? (
+                              <AssistantMessageImage mediaUrl={message.media_url} />
+                            ) : null}
                           </div>
                         ) : null}
 
