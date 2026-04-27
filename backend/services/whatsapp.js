@@ -2248,16 +2248,40 @@ class WhatsAppManager {
                             let textToSend = bubble;
                             let contentToSave = bubble;
 
-                            // Handle images only in the first bubble or if it contains image tags
-                            const imageMatch = /^\s*\[ENVOYER_IMAGES:(.+?)\]\s*[\r\n]*/s.exec(bubble);
-                            if (imageMatch) {
-                                const urls = imageMatch[1].split(/[,\n]+/).map((u) => u.trim()).filter(Boolean);
-                                for (let j = 0; j < urls.length; j++) {
+                            // --- ENHANCED IMAGE DETECTION ---
+                            // 1. Check for explicit [ENVOYER_IMAGES:...] tag anywhere in the bubble
+                            const tagRegex = /\[ENVOYER_IMAGES:(.+?)\]/g;
+                            let match;
+                            let foundUrls = [];
+                            
+                            while ((match = tagRegex.exec(bubble)) !== null) {
+                                const urls = match[1].split(/[,\s]+/).map(u => u.trim()).filter(u => u.startsWith('/api/products/image/'));
+                                foundUrls.push(...urls);
+                            }
+
+                            // 2. Safety Net: Auto-detect raw /api/products/image/... paths if no tags were used or if AI was "lazy"
+                            const pathRegex = /\/api\/products\/image\/[a-zA-Z0-9-]+\.(jpg|jpeg|png|webp|gif)/g;
+                            const rawPaths = bubble.match(pathRegex);
+                            if (rawPaths) {
+                                foundUrls.push(...rawPaths);
+                            }
+
+                            // Remove duplicates
+                            const uniqueUrls = [...new Set(foundUrls)];
+
+                            if (uniqueUrls.length > 0) {
+                                console.log(`[WhatsApp] Detected ${uniqueUrls.length} images to send for bubble`);
+                                for (let j = 0; j < uniqueUrls.length; j++) {
                                     if (j > 0) await new Promise((r) => setTimeout(r, 400));
-                                    const sent = await sendOneProductImage(urls[j]);
+                                    const sent = await sendOneProductImage(uniqueUrls[j]);
                                     if (sent) currentSentProductImageUrls.push(sent);
                                 }
-                                textToSend = bubble.slice(imageMatch[0].length).trim();
+                                
+                                // Clean up the text: remove tags and raw paths to avoid showing technical URLs to the user
+                                textToSend = bubble.replace(tagRegex, '').replace(pathRegex, '').replace(/\s\s+/g, ' ').trim();
+                                // If the resulting text is just ":" or something small, might want to clean it more
+                                if (textToSend === ':' || textToSend === ':-' || textToSend === '-') textToSend = '';
+                                
                                 contentToSave = currentSentProductImageUrls.length > 0 ? (textToSend || '📷 Photos envoyées.') : bubble;
                             }
 

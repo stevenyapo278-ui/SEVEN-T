@@ -7,7 +7,7 @@ const FETCH_TIMEOUT_MS = 15_000;
 export async function getEmbedding(text, modelOverride = null) {
     let apiKey = process.env.GEMINI_API_KEY;
     try {
-        const record = await db.get('SELECT api_key FROM ai_keys WHERE provider = ? AND is_active = 1 LIMIT 1', 'gemini');
+        const record = await db.get('SELECT api_key FROM ai_api_keys WHERE provider = ? AND is_active = 1 LIMIT 1', 'gemini');
         if (record && record.api_key) apiKey = record.api_key;
     } catch (e) {
         // ignore DB error
