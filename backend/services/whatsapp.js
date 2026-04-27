@@ -186,6 +186,7 @@ class WhatsAppManager {
         this.pendingReconnects = new Map(); // toolId -> timeoutId (pour annuler la reconnexion si l'outil est supprimé)
         this.storeIntervals = new Map(); // toolId -> intervalId
         this.connectingInProgress = new Set(); // toolId -> boolean (prevent simultaneous connects)
+        this.processingIncomingIds = new Set(); // whatsapp_id -> boolean (prevent double processing)
         this._queueDrainHandlerSet = false;
         this.redis = createRedisClient();
     }
@@ -1350,6 +1351,18 @@ class WhatsAppManager {
             const agent = await this.getAgentByToolId(toolId);
             if (!agent) return;
 
+            // PREVENT DUPLICATE PROCESSING (Memory Lock)
+            const whatsappId = message.key?.id;
+            if (whatsappId) {
+                if (this.processingIncomingIds.has(whatsappId)) {
+                    console.log(`[WhatsApp] Skipping message ${whatsappId} (already being processed)`);
+                    return;
+                }
+                this.processingIncomingIds.add(whatsappId);
+                // Auto-cleanup after 30 seconds
+                setTimeout(() => this.processingIncomingIds.delete(whatsappId), 30000);
+            }
+
             // Plan & Trial check
             const user = await db.get('SELECT * FROM users WHERE id = ?', agent.user_id);
             const { getPlan, getEffectivePlanName } = await import('../config/plans.js');
@@ -1516,15 +1529,8 @@ class WhatsAppManager {
                     messageType: 'text'
                 }, context.agent.id, context.agent.user_id);
 
-                // Analyze message and trigger auto-response
-                const normalizedPayload = { 
-                    tenant_id: context.agent.user_id, 
-                    conversation_id: context.conversation.id, 
-                    from: context.sender, 
-                    message: payload.content, 
-                    timestamp: Date.now() 
-                };
-                await this.runPipelineAndSend(toolId, sock, context, normalizedPayload, { messageType: 'text', rawMessage: message });
+                // Workflow trigger for history/analytics is enough here
+                // The actual AI response is handled by the queue below
             } else {
                 console.log(`[WhatsApp] Skipping AI workflow for message from system number`);
             }
