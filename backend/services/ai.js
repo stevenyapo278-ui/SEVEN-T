@@ -1440,6 +1440,7 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
      */
     async transcribeAudio(agent, audioBase64, mimeType, userId = null) {
         this.initialize();
+        await this.refreshClientsFromDb();
         if (!this.geminiClient) {
             console.warn('[AI] Audio: Gemini non configuré, transcription impossible');
             return { text: null, provider: 'fallback', model: null };
@@ -1507,6 +1508,7 @@ Si le client mentionne plusieurs adresses ou personnes différentes ("pour mon a
 
     async generateResponseFromImage(agent, conversationHistory, imageBase64, mimeType, caption, knowledgeBase = [], userId = null) {
         this.initialize();
+        await this.refreshClientsFromDb();
         const geminiModel = this.resolveMediaModel(agent);
 
         if (userId) {
