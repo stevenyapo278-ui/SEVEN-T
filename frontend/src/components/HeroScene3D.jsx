@@ -33,8 +33,14 @@ export default function HeroScene3D({ isDark = true }) {
     const accentHex   = isDark ? 0xf59e0b : 0xd97706
     const particleHex = isDark ? 0x93c5fd : 0x60a5fa
 
+    /* ── Mobile Optimization ─────────────────────────── */
+    const isMobile = window.innerWidth < 768
+    const isLowEnd = window.innerWidth < 480
+    
+    if (isLowEnd) return // Disable on very small screens for performance
+
     /* ── Globe de particules ──────────────────────────── */
-    const COUNT = 2400
+    const COUNT = isMobile ? 800 : 2400
     const positArr = new Float32Array(COUNT * 3)
     const colorArr  = new Float32Array(COUNT * 3)
     const pC = new THREE.Color(particleHex)

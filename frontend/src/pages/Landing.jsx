@@ -40,6 +40,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useAuth } from '../contexts/AuthContext'
 import LandingChatbot from '../components/LandingChatbot'
 import HeroScene3D from '../components/HeroScene3D'
+import ROICalculator from '../components/ROICalculator'
 import toast from 'react-hot-toast'
 import AnimatedBackground from '../components/AnimatedBackground'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -176,6 +177,35 @@ const testimonials = [
 const Logo = ({ className = '' }) => (
   <img src="/logo.svg" alt="SEVEN T" className={`h-8 sm:h-9 w-auto object-contain ${className}`} />
 )
+
+const IntegrationsStrip = ({ isDark }) => {
+  const logos = [
+    { name: 'HubSpot', color: '#ff7a59' },
+    { name: 'Salesforce', color: '#00a1e0' },
+    { name: 'Shopify', color: '#95bf47' },
+    { name: 'Wave', color: '#1ea1f2' },
+    { name: 'Orange Money', color: '#ff7900' },
+    { name: 'MTN MoMo', color: '#ffcc00' },
+  ]
+  return (
+    <div className={`py-12 border-b ${isDark ? 'border-white/5' : 'border-gray-200'} opacity-40 grayscale hover:grayscale-0 transition-all duration-700 overflow-hidden`}>
+      <div className="max-w-7xl mx-auto px-5">
+        <p className={`text-center text-[10px] font-bold uppercase tracking-[0.3em] mb-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          S'intègre nativement à votre écosystème
+        </p>
+        <div className="flex flex-wrap justify-center gap-8 md:gap-16 items-center">
+          {logos.map(l => (
+            <div key={l.name} className="flex items-center gap-2">
+               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: l.color }} />
+               <span className={`text-sm md:text-lg font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{l.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
@@ -746,6 +776,10 @@ export default function Landing() {
         </a>
       </section>
 
+      {/* ── INTEGRATIONS ──────────────────────── */}
+      <IntegrationsStrip isDark={isDark} />
+
+
       {/* ── STATS BAR ─────────────────────────── */}
       <section className={`border-y ${borderFaint} ${isDark ? 'bg-white/[0.02]' : 'bg-white'} py-12 transition-colors duration-300 relative`}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8">
@@ -1000,6 +1034,17 @@ export default function Landing() {
                                     <Sparkles className="w-3 h-3" /> Action effectuée !
                                  </div>
                                  Le produit **Café Touba** a été ajouté à votre catalogue avec succès.
+                              </div>
+                           </div>
+                           
+                           {/* Human Handover Alert Visual */}
+                           <div className="flex justify-center pt-4">
+                              <div className="animate-bounce-slow px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-3 shadow-lg shadow-amber-500/5">
+                                 <div className="relative">
+                                    <Users className="w-4 h-4 text-amber-500" />
+                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                                 </div>
+                                 <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Alerte : Intervention humaine suggérée</span>
                               </div>
                            </div>
                         </div>
@@ -1278,6 +1323,13 @@ export default function Landing() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── ROI CALCULATOR ────────────────────── */}
+      <section className={`py-24 md:py-32 scroll-mt-20 ${bg} transition-colors duration-300 relative`}>
+         <div className="max-w-5xl mx-auto px-5 sm:px-8">
+            <ROICalculator isDark={isDark} />
+         </div>
       </section>
 
       {/* ── PRICING ───────────────────────────── */}
