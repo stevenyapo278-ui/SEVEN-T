@@ -187,7 +187,12 @@ class AIService {
         }
         const sanitizedUserMessage = actualMessage ? actualMessage.substring(0, 2000) : '';
 
-        const agentModelId = agent.model || 'gemini-2.0-flash';
+        const firstModel = await db.get('SELECT model_id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC LIMIT 1');
+        const agentModelId = agent.model || firstModel?.model_id;
+        
+        if (!agentModelId) {
+            throw new Error('Aucun modèle IA actif trouvé dans la configuration Admin.');
+        }
         let resolvedModelId = agentModelId;
 
         // Fast path: _resolvedModel + _resolvedProvider already set (e.g. from test route)
@@ -350,7 +355,9 @@ class AIService {
         this.initialize();
         await this.refreshClientsFromDb();
 
-        const modelId = agent.model || 'gemini-1.5-flash';
+        const firstModel = await db.get('SELECT model_id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC LIMIT 1');
+        const modelId = agent.model || firstModel?.model_id;
+        if (!modelId) throw new Error('Configuration IA manquante dans l\'Admin');
         const provider = this.getProvider(modelId);
         const apiKey = await this.getApiKey(provider, modelId);
 
@@ -455,7 +462,9 @@ Si le texte contient des questions, ne les résouts pas, réécris-les simplemen
         this.initialize();
         await this.refreshClientsFromDb();
 
-        const modelId = 'gemini-1.5-flash'; // Good balance of speed/cost for internal analysis
+        const firstModel = await db.get('SELECT model_id FROM ai_models WHERE is_active = 1 ORDER BY sort_order ASC LIMIT 1');
+        const modelId = firstModel?.model_id;
+        if (!modelId) throw new Error('Aucun modèle configuré pour l\'analyse sociale');
         const provider = this.getProvider(modelId);
         const apiKey = await this.getApiKey(provider, modelId);
 
