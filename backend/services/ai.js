@@ -66,10 +66,8 @@ class AIService {
             }
         }
 
-        if (!this.geminiClient && !this.openaiClient && !this.openrouterClient) {
-            console.warn('⚠️ [AI] Aucun service IA configuré - réponses de fallback activées');
-        }
-
+        // The warning will only be shown if after checking both ENV and DB we still have nothing
+        // Since initialize is called before refreshClientsFromDb, we'll let refreshClientsFromDb handle the "actual" status log
         this.initialized = true;
     }
 

@@ -2273,7 +2273,7 @@ class WhatsAppManager {
                                 console.log(`[WhatsApp] Detected ${uniqueUrls.length} images to send for bubble`);
                                 for (let j = 0; j < uniqueUrls.length; j++) {
                                     if (j > 0) await new Promise((r) => setTimeout(r, 400));
-                                    const sent = await sendOneProductImage(uniqueUrls[j]);
+                                    const sent = await this.sendOneProductImage(toolId, replyToJidForSend, uniqueUrls[j]);
                                     if (sent) currentSentProductImageUrls.push(sent);
                                 }
                                 
@@ -2391,6 +2391,31 @@ class WhatsAppManager {
                     console.warn('[WhatsApp] updateConversionScore error', e?.message);
                 }
             })();
+        }
+    }
+    
+    /**
+     * Send a single product image to a contact.
+     * Tries to load the image buffer from disk.
+     */
+    async sendOneProductImage(toolId, jid, imageUrl) {
+        try {
+            const sock = this.connections.get(toolId);
+            if (!sock) return null;
+
+            const buffer = loadProductImageBuffer(imageUrl);
+            if (buffer) {
+                return await sock.sendMessage(jid, { 
+                    image: buffer,
+                    mimetype: 'image/jpeg'
+                });
+            } else {
+                console.warn(`[WhatsApp] Failed to load local image buffer for: ${imageUrl}`);
+                return null;
+            }
+        } catch (err) {
+            console.error(`[WhatsApp] Error sending product image:`, err.message);
+            return null;
         }
     }
 
