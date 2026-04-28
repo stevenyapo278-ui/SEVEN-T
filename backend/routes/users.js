@@ -370,6 +370,8 @@ router.post('/me/team', authenticateToken, async (req, res) => {
         const viewModules = ['payment_module', 'reports', 'analytics', 'flows', 'whatsapp_status', 'leads_management', 'deals_management', 'campaigns', 'proactive_advisor', 'polls', 'catalog_import'];
         const featureModules = ['availability_hours', 'voice_responses', 'next_best_action', 'conversion_score', 'daily_briefing', 'sentiment_routing', 'human_handoff_alerts'];
         
+        const moduleConfigs = {};
+
         for (const mod of [...viewModules, ...featureModules]) {
             const col = MODULE_TO_USER_COLUMN[mod];
             const hasByPlan = await hasModule(owner.plan, mod);

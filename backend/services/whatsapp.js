@@ -2075,6 +2075,19 @@ class WhatsAppManager {
                 };
             }
 
+            // Override AI response if it failed (fallback) BUT we just successfully created an order
+            if (detectedOrder && aiResponse?.provider === 'fallback') {
+                const amountText = detectedOrder.total_amount ? ` pour un total de ${detectedOrder.total_amount} FCFA` : '';
+                const orderFallback = `Excellente nouvelle ! Votre commande est bien enregistrée${amountText}. Notre équipe va la préparer. Avez-vous besoin d'autre chose ?`;
+                
+                aiResponse = {
+                    ...aiResponse,
+                    content: orderFallback,
+                    need_human: false
+                };
+                console.log(`[WhatsApp] AI failed but order was detected. Used order confirmation fallback for order ${detectedOrder.id}`);
+            }
+
             const llmOutput = aiResponse
                 ? { content: aiResponse.content, need_human: messageAnalysis.needsHuman?.needed === true || aiResponse.need_human === true }
                 : null;
