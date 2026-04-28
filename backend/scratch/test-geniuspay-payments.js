@@ -1,0 +1,25 @@
+import dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
+import geniuspay from '../services/geniuspay.js';
+
+async function run() {
+    const credentials = {
+        api_key: process.env.GENIUSPAY_API_KEY,
+        api_secret: process.env.GENIUSPAY_API_SECRET
+    };
+    
+    console.log("Testing GeniusPay API (payments)...");
+    const result = await geniuspay.createInvoiceWithCredentials(credentials, {
+        amount: 10000,
+        currency: 'XOF',
+        description: 'Test Sub',
+        referenceId: 'sub_1234',
+        customer: { name: 'Test User', email: 'test@example.com' },
+        returnUrl: 'http://localhost/return',
+        callbackUrl: 'http://localhost/callback'
+    });
+    
+    console.log("Result:", result);
+}
+
+run();

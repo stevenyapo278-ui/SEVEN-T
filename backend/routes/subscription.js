@@ -191,35 +191,29 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
             api_secret: process.env.GENIUSPAY_API_SECRET
         };
 
-        const result = await geniuspay.createSubscriptionWithCredentials(credentials, {
-            planId: planRow.name,
+        const result = await geniuspay.createInvoiceWithCredentials(credentials, {
             amount,
             currency: planRow.price_currency || 'XOF',
             description: `Abonnement SaaS ${planRow.display_name} (${billingPeriod})`,
+            referenceId: subId,
             returnUrl,
             callbackUrl,
             customer: {
                 name: userRow.name,
                 email: userRow.email,
                 phone: userRow.phone
-            },
-            metadata: {
-                user_id: userId,
-                internal_sub_id: subId,
-                coupon_code: finalCouponCode,
-                billing_period: billingPeriod
             }
         });
 
         if (!result) return res.status(500).json({ error: 'Erreur GeniusPay' });
 
-        // Record the invitation/pending subscription
+        // Record the payment
         await db.run(`
-            INSERT INTO saas_subscriptions (id, user_id, plan_id, geniuspay_sub_id, status, billing_cycle)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `, subId, userId, planId, result.subscriptionId, 'pending', billingPeriod);
+            INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, original_amount, discount_amount, coupon_code, currency, status, external_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, subId, userId, planId, billingPeriod, amount, originalAmount, discountAmount, finalCouponCode, planRow.price_currency || 'XOF', 'pending', result.invoiceId);
 
-        res.json({ url: result.checkoutUrl });
+        res.json({ url: result.paymentUrl });
     } catch (err) {
         console.error('GeniusPay sub creation error:', err);
         res.status(500).json({ error: 'Erreur lors de la création de l\'abonnement' });
