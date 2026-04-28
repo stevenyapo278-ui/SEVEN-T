@@ -213,6 +213,9 @@ export async function initDatabase() {
             flows_module_enabled INTEGER,
             whatsapp_status_enabled INTEGER,
             leads_management_enabled INTEGER,
+            campaigns_module_enabled INTEGER,
+            polls_module_enabled INTEGER,
+            deals_module_enabled INTEGER,
             -- Multi-user / Manager support
             parent_user_id TEXT,
             role TEXT DEFAULT 'owner', -- 'owner', 'manager'
@@ -1948,6 +1951,34 @@ export async function initDatabase() {
         `);
     } catch (e) {
         console.warn('insights table migration error:', e?.message);
+    }
+
+    // Migration: agents.fallback_message (used by whatsapp.js escalation logic)
+    try {
+        await db.run("ALTER TABLE agents ADD COLUMN IF NOT EXISTS fallback_message TEXT");
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('agents.fallback_message migration:', e?.message);
+        }
+    }
+
+    // Migration: knowledge_chunks index on source_id for RAG performance
+    try {
+        await db.run("CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_source ON knowledge_chunks(source_id)");
+        await db.run("CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_agent ON knowledge_chunks(agent_id)");
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('knowledge_chunks index migration:', e?.message);
+        }
+    }
+
+    // Migration: ensure deals_module_enabled is in users table
+    try {
+        await db.run("ALTER TABLE users ADD COLUMN IF NOT EXISTS deals_module_enabled INTEGER DEFAULT 1");
+    } catch (e) {
+        if (!/already exists/i.test(e?.message || '')) {
+            console.warn('users.deals_module_enabled migration:', e?.message);
+        }
     }
 
     console.log('PostgreSQL schema initialized successfully');

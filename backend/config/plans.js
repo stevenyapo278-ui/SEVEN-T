@@ -153,7 +153,7 @@ export const PLANS = {
             templates: 5
         },
         features: {
-            models: ['gemini-1.5-flash'],
+            models: ['gemini-2.5-flash'],
             availability_hours: false,
             voice_responses: false,
             payment_module: false,
@@ -183,7 +183,7 @@ export const PLANS = {
             templates: 0
         },
         features: {
-            models: ['gemini-1.5-flash'],
+            models: ['gemini-2.5-flash'],
             availability_hours: false,
             voice_responses: false,
             payment_module: false,
@@ -213,7 +213,7 @@ export const PLANS = {
             templates: 15
         },
         features: {
-            models: ['gemini-1.5-flash', 'gpt-4o-mini'],
+            models: ['gemini-2.5-flash', 'gpt-4o-mini'],
             availability_hours: true,
             voice_responses: true,
             payment_module: false,
@@ -244,7 +244,7 @@ export const PLANS = {
             templates: 50
         },
         features: {
-            models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
+            models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
             payment_module: true,
@@ -276,7 +276,7 @@ export const PLANS = {
             templates: 200
         },
         features: {
-            models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gpt-4o-mini', 'gpt-4o'],
+            models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gpt-4o-mini', 'gpt-4o'],
             availability_hours: true,
             voice_responses: true,
             payment_module: true,
@@ -330,7 +330,7 @@ export const MODULE_KEYS = [
     'catalog_import', 'human_handoff_alerts', 'flows', 
     'whatsapp_status', 'leads_management', 'deals_management', 
     'campaigns', 'polls', 'voice_responses',
-    'availability_hours'
+    'availability_hours', 'proactive_advisor'
 ];
 
 
@@ -352,7 +352,8 @@ export const MODULE_TO_USER_COLUMN = {
     leads_management: 'leads_management_enabled',
     deals_management: 'deals_module_enabled',
     campaigns: 'campaigns_module_enabled',
-    polls: 'polls_module_enabled'
+    polls: 'polls_module_enabled',
+    proactive_advisor: 'proactive_advisor_enabled'
 };
 
 /**

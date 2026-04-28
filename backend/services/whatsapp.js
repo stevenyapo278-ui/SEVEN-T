@@ -1339,7 +1339,6 @@ class WhatsAppManager {
                 audioTranscriptionFailed,
                 quotedMsgId,
                 messageText,
-                audioTranscriptionFailed,
                 skipAI
             };
         } catch (e) {
@@ -1393,7 +1392,7 @@ class WhatsAppManager {
                         // Get user settings to verify the sender is the authorized notification_number
                         const owner = await db.get('SELECT notification_number FROM users WHERE id = ?', order.user_id);
                         if (owner?.notification_number) {
-                            const senderNumber = jidNormalizedUser(sender).split('@')[0];
+                            const senderNumber = jidNormalizedUser(context.sender).split('@')[0];
                             const authorizedNumber = owner.notification_number.replace(/\D/g, '');
                             
                             if (senderNumber === authorizedNumber) {
@@ -2176,31 +2175,6 @@ class WhatsAppManager {
 
             const bubbles = aiResponse?.content ? splitIntoBubbles(aiResponse.content) : [aiResponse?.content];
             
-            if (decision.action === 'send') {
-                const configuredDelay = (agent.response_delay || 0) * 1000;
-                // Wait for the initial configured delay
-                if (configuredDelay > 0) {
-                    await new Promise(resolve => setTimeout(resolve, configuredDelay));
-                }
-
-                for (let i = 0; i < bubbles.length; i++) {
-                    const bubble = bubbles[i];
-                    const bubbleLength = bubble?.length || 0;
-                    
-                    // Human typing speed: ~25ms per character
-                    const typingDelay = Math.min(Math.max(bubbleLength * 25, 400), 5000);
-                    
-                    if (i > 0) {
-                        // Pause between bubbles
-                        await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
-                    }
-
-                    await sock.sendPresenceUpdate('composing', replyToJidForSend);
-                    await new Promise(resolve => setTimeout(resolve, typingDelay));
-                    await sock.sendPresenceUpdate('paused', replyToJidForSend);
-
-                    // Skip the actual sending loop here, we will replace the send call below
-                }
             }
 
             if (decision.action === 'send') {
@@ -2228,6 +2202,10 @@ class WhatsAppManager {
                     let currentSendResult;
                     let currentSentAsVoice = false;
                     let currentSentProductImageUrls = [];
+                    let textToSend = bubble;
+                    let contentToSave = bubble;
+                    let detectedImageUrl = null;
+                    let effectiveMessageType = null;
 
                     // 1) Logic for Voice (only for this bubble)
                     const voiceModuleEnabled = await hasModuleForUser(userRow, 'voice_responses');
@@ -2246,8 +2224,6 @@ class WhatsAppManager {
                     // 2) Logic for text/images
                     if (!currentSendResult) {
                         try {
-                            let textToSend = bubble;
-                            let contentToSave = bubble;
 
                             // --- ENHANCED IMAGE DETECTION ---
                             // 1. Check for explicit [ENVOYER_IMAGES:...] tag anywhere in the bubble
@@ -2269,15 +2245,22 @@ class WhatsAppManager {
 
                             // Remove duplicates
                             const uniqueUrls = [...new Set(foundUrls)];
+                            if (uniqueUrls.length > 0) {
+                                detectedImageUrl = uniqueUrls[0];
+                                effectiveMessageType = 'image';
+                            }
 
                             if (uniqueUrls.length > 0) {
                                 console.log(`[WhatsApp] Detected ${uniqueUrls.length} images to send for bubble`);
+                                // Pre-register image IDs in sentByAiIds BEFORE sending to prevent race condition
+                                // (Baileys fires the outgoing event before our Set is populated)
                                 for (let j = 0; j < uniqueUrls.length; j++) {
                                     if (j > 0) await new Promise((r) => setTimeout(r, 400));
+                                    // Register a placeholder so any immediate echo is ignored
                                     const sent = await this.sendOneProductImage(toolId, replyToJidForSend, uniqueUrls[j]);
                                     if (sent?.key?.id) {
                                         this.sentByAiIds.add(sent.key.id);
-                                        setTimeout(() => this.sentByAiIds.delete(sent.key.id), 30000);
+                                        setTimeout(() => this.sentByAiIds.delete(sent.key.id), 60000);
                                     }
                                     if (sent) currentSentProductImageUrls.push(sent);
                                 }
@@ -2290,14 +2273,16 @@ class WhatsAppManager {
                                 contentToSave = currentSentProductImageUrls.length > 0 ? (textToSend || '📷 Photos envoyées.') : bubble;
                             }
 
-                            if (textToSend) {
-                                currentSendResult = await sock.sendMessage(replyToJidForSend, { text: textToSend });
+                            // Only send text if there's actual meaningful text content
+                            if (textToSend && textToSend.trim().length > 0) {
+                                currentSendResult = await sock.sendMessage(replyToJidForSend, { text: textToSend.trim() });
                                 if (currentSendResult?.key?.id) {
                                     this.sentByAiIds.add(currentSendResult.key.id);
-                                    setTimeout(() => this.sentByAiIds.delete(currentSendResult.key.id), 30000);
+                                    setTimeout(() => this.sentByAiIds.delete(currentSendResult.key.id), 60000);
                                 }
                             } else if (currentSentProductImageUrls.length > 0) {
-                                currentSendResult = { key: { id: 'imgs-' + uuidv4().slice(0,8) } };
+                                // Images were sent, use the first image result as the reference
+                                currentSendResult = currentSentProductImageUrls[0] || { key: { id: 'imgs-' + uuidv4().slice(0,8) } };
                             }
                         } catch (sendErr) {
                             console.error('[WhatsApp] Send bubble error:', sendErr.message);
@@ -2307,8 +2292,10 @@ class WhatsAppManager {
                     // 3) Record each bubble
                     const whatsappMsgId = currentSendResult?.key?.id;
                     const outMsgId = uuidv4();
-                    const detectedImageUrl = uniqueUrls.length > 0 ? uniqueUrls[0] : null;
-                    const effectiveMessageType = currentSentAsVoice ? 'audio' : (uniqueUrls.length > 0 ? 'image' : null);
+                    
+                    if (currentSentAsVoice) {
+                        effectiveMessageType = 'audio';
+                    }
 
                     await db.run(`
                         INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, message_type, media_url, created_at)
@@ -2316,7 +2303,7 @@ class WhatsAppManager {
                     `, 
                         outMsgId, 
                         conversation.id, 
-                        textToSend || contentToSave, 
+                        (textToSend?.trim() || contentToSave?.trim() || '📷').substring(0, 4000),
                         i === 0 ? totalTokensUsed : 0, 
                         whatsappMsgId, 
                         effectiveMessageType,
@@ -2345,11 +2332,13 @@ class WhatsAppManager {
                 }
 
                 if (aiResponse.credits_deducted !== undefined) {
-                    console.log(`[WhatsApp] Deducted ${aiResponse.credits_deducted} credits from user ${userId}.`);
+                    // Credits are deducted automatically by sock.sendMessage wrapper
                 }
-                console.log(`[WhatsApp] Replied with ${bubbles.length} bubbles to ${contactName}`);
+                console.log(`[WhatsApp] Replied with ${bubbles.length} bubble(s) to ${contactName}`);
+            } else if (decision.reason === 'pre_processing_ignore') {
+                console.log(`[WhatsApp] Ignored short/empty message, no reply sent`);
             } else {
-                // escalate or fallback: flag and optionally send fallback (do not send on pre_processing_ignore)
+                // escalate or fallback: flag and optionally send fallback
                 humanInterventionService.flagConversation(
                     conversation.id,
                     userId,
@@ -2358,22 +2347,23 @@ class WhatsAppManager {
                 // Switch conversation to human takeover so the AI won't reply to subsequent messages until a human takes over or disables the mode
                 await db.run('UPDATE conversations SET human_takeover = 1 WHERE id = ?', conversation.id);
                 console.log(`[WhatsApp] Conversation ${conversation.id} set to human takeover (AI requested human)`);
-                if (decision.reason !== 'pre_processing_ignore') {
-                    // Use AI response if available and not generic, otherwise fallback to agent setting or default
-                    const aiEscalationFallback = 'Merci pour votre message. Un conseiller vous répondra si nécessaire.';
-                    const aiContent = (aiResponse?.content && aiResponse.content !== aiEscalationFallback) ? aiResponse.content : null;
-                    const fallbackText = aiContent || agent.fallback_message || 'Un conseiller vous répondra sous peu.';
-                    
-                    await sock.sendMessage(replyToJidForSend, { text: fallbackText });
-                    const outMsgId = uuidv4();
-                    await db.run(`
-                        INSERT INTO messages (id, conversation_id, role, content, message_type, sender_type, created_at)
-                        VALUES (?, ?, 'assistant', ?, 'fallback', 'ai', ?)
-                    `, outMsgId, conversation.id, fallbackText, new Date().toISOString());
-                    console.log(`[WhatsApp] Escalated conversation ${conversation.id} (${decision.reason}), sent fallback to ${contactName}`);
-                } else {
-                    console.log(`[WhatsApp] Ignored short/empty message, no reply sent`);
+                
+                const aiEscalationFallback = 'Merci pour votre message. Un conseiller vous répondra si nécessaire.';
+                const aiContent = (aiResponse?.content && aiResponse.content !== aiEscalationFallback) ? aiResponse.content : null;
+                const fallbackText = aiContent || agent.absence_message || 'Un conseiller vous répondra sous peu.';
+                
+                // Capture result and register in sentByAiIds to prevent spurious human-takeover echo
+                const fallbackResult = await sock.sendMessage(replyToJidForSend, { text: fallbackText });
+                if (fallbackResult?.key?.id) {
+                    this.sentByAiIds.add(fallbackResult.key.id);
+                    setTimeout(() => this.sentByAiIds.delete(fallbackResult.key.id), 60000);
                 }
+                const outMsgId = uuidv4();
+                await db.run(`
+                    INSERT INTO messages (id, conversation_id, role, content, message_type, sender_type, created_at)
+                    VALUES (?, ?, 'assistant', ?, 'fallback', 'ai', ?)
+                `, outMsgId, conversation.id, fallbackText, new Date().toISOString());
+                console.log(`[WhatsApp] Escalated conversation ${conversation.id} (${decision.reason}), sent fallback to ${contactName}`);
             }
 
             if (!detectedOrder) {
@@ -2398,9 +2388,7 @@ class WhatsAppManager {
             if (decision.action === 'send' && aiResponse?.content) {
                 const noInterventionCheck = ['greeting', 'order', 'inquiry'].includes(intentHint);
                 if (!noInterventionCheck) {
-                    this.checkHumanIntervention(messageText, aiResponse.content, conversation, userId).catch(err => {
-                        console.error('[WhatsApp] Human intervention check error:', err.message);
-                    });
+                    await this.checkHumanIntervention(messageText, aiResponse.content, conversation, userId);
                 }
             }
 
@@ -2498,7 +2486,7 @@ class WhatsAppManager {
      */
     async checkHumanIntervention(userMessage, aiResponse, conversation, userId) {
         try {
-            const needsHelp = humanInterventionService.checkForIntervention(
+            const needsHelp = await humanInterventionService.checkForIntervention(
                 userMessage, 
                 aiResponse, 
                 conversation, 

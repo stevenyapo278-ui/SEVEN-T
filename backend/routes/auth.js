@@ -564,8 +564,12 @@ router.put('/me', authenticateToken, async (req, res) => {
         }
         
         if (proactive_requires_validation !== undefined) {
+            let valueToSet = proactive_requires_validation ? 1 : 0;
+            if (valueToSet === 1 && !userPlanFeatures.proactive_advisor) {
+                valueToSet = 0;
+            }
             updates.push('proactive_requires_validation = ?');
-            values.push(proactive_requires_validation ? 1 : 0);
+            values.push(valueToSet);
         }
 
 

@@ -2,13 +2,10 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
-import { requireModule } from '../middleware/requireModule.js';
 import { whatsappManager } from '../services/whatsapp.js';
 
 const router = Router();
-// All polls routes require authentication + polls module access
 router.use(authenticateToken);
-router.use(requireModule('polls'));
 
 // Bulk delete polls
 router.delete('/bulk/delete', async (req, res) => {

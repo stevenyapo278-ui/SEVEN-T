@@ -2,9 +2,15 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requireModule } from '../middleware/requireModule.js';
 import { workflowExecutor } from '../services/workflowExecutor.js';
 
 const router = Router();
+
+// All workflow routes require authentication + flows module access
+router.use(authenticateToken);
+router.use(requireModule('flows'));
+
 
 // Workflow trigger types
 const TRIGGER_TYPES = {

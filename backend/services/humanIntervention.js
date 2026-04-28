@@ -57,8 +57,13 @@ class HumanInterventionService {
         for (const [category, keywords] of Object.entries(INTERVENTION_TRIGGERS)) {
             for (const keyword of keywords) {
                 if (lowerMessage.includes(keyword)) {
-                    needsIntervention = true;
-                    reasons.push(`${category}: "${keyword}"`);
+                    if (category === 'negotiation') {
+                        // For negotiation, just flag the conversation, don't trigger needsIntervention=true
+                        this.flagConversation(conversation.id, userId, `${category}: "${keyword}"`);
+                    } else {
+                        needsIntervention = true;
+                        reasons.push(`${category}: "${keyword}"`);
+                    }
                     break;
                 }
             }
@@ -99,27 +104,27 @@ class HumanInterventionService {
     async flagConversation(conversationId, userId, reason) {
         try {
             // Check if already flagged
-            const conv = await db.prepare('SELECT needs_human FROM conversations WHERE id = ?').get(conversationId);
+            const conv = await db.get('SELECT needs_human FROM conversations WHERE id = ?', conversationId);
             if (conv?.needs_human === 1) {
                 return; // Already flagged
             }
 
             // Update conversation
-            await db.prepare(`
+            await db.run(`
                 UPDATE conversations SET 
                     needs_human = 1,
                     needs_human_reason = ?,
                     priority = 'high'
                 WHERE id = ?
-            `).run(reason, conversationId);
+            `, reason, conversationId);
 
             // Get conversation details for notification
-            const conversation = await db.prepare(`
+            const conversation = await db.get(`
                 SELECT c.*, a.name as agent_name 
                 FROM conversations c
                 LEFT JOIN agents a ON c.agent_id = a.id
                 WHERE c.id = ?
-            `).get(conversationId);
+            `, conversationId);
 
             // Create notification
             const contactName = conversation?.saved_contact_name || 
