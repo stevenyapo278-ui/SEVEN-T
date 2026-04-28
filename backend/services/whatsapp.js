@@ -2174,8 +2174,6 @@ class WhatsAppManager {
             };
 
             const bubbles = aiResponse?.content ? splitIntoBubbles(aiResponse.content) : [aiResponse?.content];
-            
-            }
 
             if (decision.action === 'send') {
                 // #region agent log
