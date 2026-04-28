@@ -53,18 +53,28 @@ async function createInvoiceWithCredentials(credentials, { amount, currency, des
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) SEVEN-T/1.0',
                 'X-API-Key': apiKey,
                 'X-API-Secret': apiSecret
             },
             body: JSON.stringify(body)
         });
 
-        const data = await res.json();
-
         if (!res.ok) {
-            console.error('[GeniusPay] Create payment error:', res.status, data);
+            const text = await res.text();
+            console.error('[GeniusPay] Create payment error:', res.status, text);
             return null;
         }
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text();
+            console.error('[GeniusPay] Invalid content type:', contentType, text);
+            return null;
+        }
+
+        const data = await res.json();
 
         if (data.success && data.data) {
             return {
@@ -119,18 +129,28 @@ async function createSubscriptionWithCredentials(credentials, { planId, amount, 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) SEVEN-T/1.0',
                 'X-API-Key': apiKey,
                 'X-API-Secret': apiSecret
             },
             body: JSON.stringify(body)
         });
 
-        const data = await res.json();
-
         if (!res.ok) {
-            console.error('[GeniusPay] Create subscription error:', res.status, data);
+            const text = await res.text();
+            console.error('[GeniusPay] Create subscription error:', res.status, text);
             return null;
         }
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await res.text();
+            console.error('[GeniusPay] Invalid subscription content type:', contentType, text);
+            return null;
+        }
+
+        const data = await res.json();
 
         if (data.success && data.data) {
             return {
@@ -159,6 +179,8 @@ async function cancelSubscriptionWithCredentials(credentials, subscriptionId) {
         const res = await fetch(url, {
             method: 'POST',
             headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) SEVEN-T/1.0',
                 'X-API-Key': apiKey,
                 'X-API-Secret': apiSecret
             }
