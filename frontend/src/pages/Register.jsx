@@ -18,6 +18,7 @@ export default function Register() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     company: ''
   })
@@ -134,6 +135,24 @@ export default function Register() {
                 <input
                   id="email" name="email" type="email" required value={formData.email}
                   onChange={handleChange} placeholder="vous@entreprise.com"
+                  className={`w-full pl-12 pr-4 py-3 border rounded-2xl placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm ${
+                    isDark ? 'bg-space-900/50 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="phone" className="block text-xs font-bold uppercase tracking-widest text-gray-500 ml-1">
+                Numéro de téléphone <span className="opacity-50">(Requis pour paiement)</span>
+              </label>
+              <div className="group/input relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within/input:text-gold-400 transition-colors pointer-events-none">
+                  <span className="text-lg font-bold">📱</span>
+                </div>
+                <input
+                  id="phone" name="phone" type="tel" required value={formData.phone}
+                  onChange={handleChange} placeholder="+2250700000000"
                   className={`w-full pl-12 pr-4 py-3 border rounded-2xl placeholder-gray-600 focus:outline-none focus:border-gold-400/50 focus:ring-4 focus:ring-gold-400/10 transition-all font-medium text-sm ${
                     isDark ? 'bg-space-900/50 border-white/10 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
                   }`}

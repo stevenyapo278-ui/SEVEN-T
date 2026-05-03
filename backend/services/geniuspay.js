@@ -97,7 +97,7 @@ async function createInvoiceWithCredentials(credentials, { amount, currency, des
  * @param {Object} params - planId, amount, currency, description, customer, callbackUrl, metadata
  * @returns {Promise<{ subscriptionId: string, checkoutUrl: string }|null>}
  */
-async function createSubscriptionWithCredentials(credentials, { planId, amount, currency, description, customer, returnUrl, callbackUrl, metadata }) {
+async function createSubscriptionWithCredentials(credentials, { planId, billingCycle = 'monthly', amount, currency, description, customer, returnUrl, callbackUrl, metadata }) {
     const apiKey = credentials?.api_key || credentials?.apiKey;
     const apiSecret = credentials?.api_secret || credentials?.apiSecret;
 
@@ -106,8 +106,12 @@ async function createSubscriptionWithCredentials(credentials, { planId, amount, 
         return null;
     }
 
+    // customer.phone is REQUIRED by GeniusPay API — use a fallback if missing
+    const customerPhone = customer?.phone || process.env.GENIUSPAY_DEFAULT_PHONE || '+2250000000000';
+
     const body = {
-        plan_id: planId,
+        plan_name: planId,           // GeniusPay uses plan_name, not plan_id
+        billing_cycle: billingCycle, // 'monthly' or 'yearly' — required by API
         amount: Number(amount),
         currency: currency || 'XOF',
         description: description || `Abonnement ${planId}`,
@@ -115,14 +119,16 @@ async function createSubscriptionWithCredentials(credentials, { planId, amount, 
         error_url: returnUrl,
         callback_url: callbackUrl,
         customer: {
-            name: customer?.name || undefined,
+            name: customer?.name || 'Client',
             email: customer?.email || undefined,
-            phone: customer?.phone || undefined
+            phone: customerPhone  // required
         },
         metadata: metadata || {}
     };
 
     const url = `${GENIUSPAY_BASE_URL.replace(/\/$/, '')}/subscriptions`;
+
+    console.log('[GeniusPay] Creating subscription:', { plan_name: planId, billing_cycle: billingCycle, amount, url });
 
     try {
         const res = await fetch(url, {
@@ -137,28 +143,45 @@ async function createSubscriptionWithCredentials(credentials, { planId, amount, 
             body: JSON.stringify(body)
         });
 
+        const responseText = await res.text();
+
         if (!res.ok) {
-            const text = await res.text();
-            console.error('[GeniusPay] Create subscription error:', res.status, text);
+            console.error('[GeniusPay] Create subscription error:', res.status, responseText);
             return null;
         }
 
         const contentType = res.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-            const text = await res.text();
-            console.error('[GeniusPay] Invalid subscription content type:', contentType, text);
+            console.error('[GeniusPay] Invalid subscription content type:', contentType, responseText);
             return null;
         }
 
-        const data = await res.json();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseErr) {
+            console.error('[GeniusPay] Failed to parse subscription response:', responseText);
+            return null;
+        }
+
+        if (!data.success) {
+            console.error('[GeniusPay] Subscription API returned failure:', JSON.stringify(data));
+            return null;
+        }
 
         if (data.success && data.data) {
+            // GeniusPay recurring subscriptions may not have a checkout URL — use a direct activation URL
+            const checkoutUrl = data.data.checkout_url || data.data.payment_url || data.data.redirect_url || null;
+            console.log('[GeniusPay] Subscription created:', data.data.id, '| status:', data.data.status, '| checkout:', checkoutUrl);
             return {
                 subscriptionId: String(data.data.id || data.data.uuid),
-                checkoutUrl: data.data.payment_url || data.data.checkout_url
+                checkoutUrl,
+                status: data.data.status,     // 'active', 'pending', etc.
+                isActive: data.data.is_active  // boolean
             };
         }
 
+        console.error('[GeniusPay] Invalid subscription response structure:', data);
         return null;
     } catch (err) {
         console.error('[GeniusPay] Subscription request error:', err.message);

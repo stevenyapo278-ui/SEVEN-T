@@ -101,6 +101,10 @@ export const registerSchema = z.object({
         .max(200, 'Nom d\'entreprise trop long')
         .optional()
         .nullable(),
+    phone: z.string()
+        .min(8, 'Le numéro de téléphone est trop court')
+        .max(20, 'Le numéro de téléphone est trop long')
+        .regex(/^\+?[1-9]\d{1,14}$/, 'Format de numéro de téléphone invalide (ex: +2250700000000)'),
 });
 
 export const loginSchema = z.object({
@@ -295,6 +299,7 @@ export const serviceUpdateSchema = serviceCreateSchema.partial().extend({
 /**
  * Create a validation middleware from a Zod schema
  */
+
 export function validate(schema) {
     return (req, res, next) => {
         try {

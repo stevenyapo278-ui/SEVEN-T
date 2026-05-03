@@ -227,7 +227,7 @@ router.get('/google/callback', async (req, res) => {
 // Register with validation
 router.post('/register', validate(registerSchema), async (req, res) => {
     try {
-        const { email, password, name, company } = req.body;
+        const { email, password, name, company, phone } = req.body;
 
         // Check if user exists (case-insensitive)
         const existingUser = await db.get('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', email);
@@ -247,9 +247,9 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         trialEndDate.setDate(trialEndDate.getDate() + trialDays);
 
         await db.run(`
-            INSERT INTO users (id, email, password, name, company, plan, subscription_status, subscription_end_date, credits)
-            VALUES (?, ?, ?, ?, ?, 'free', 'trialing', ?, 500)
-        `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, trialEndDate.toISOString());
+            INSERT INTO users (id, email, password, name, company, notification_number, plan, subscription_status, subscription_end_date, credits)
+            VALUES (?, ?, ?, ?, ?, ?, 'free', 'trialing', ?, 500)
+        `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, phone.trim(), trialEndDate.toISOString());
 
         // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)
         const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, created_at, subscription_end_date FROM users WHERE id = ?', userId);

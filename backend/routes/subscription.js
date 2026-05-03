@@ -178,7 +178,7 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
         }
 
         const userId = req.user.id;
-        const userRow = await db.get('SELECT name, email, phone FROM users WHERE id = ?', userId);
+        const userRow = await db.get('SELECT name, email, notification_number as phone FROM users WHERE id = ?', userId);
         const subId = uuidv4();
         
         const returnUrl = `${baseUrl}/dashboard/settings`;
@@ -193,6 +193,7 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
 
         const result = await geniuspay.createSubscriptionWithCredentials(credentials, {
             planId: planRow.name,
+            billingCycle: billingPeriod,   // 'monthly' | 'yearly' — required by GeniusPay
             amount,
             currency: planRow.price_currency || 'XOF',
             description: `Abonnement SaaS ${planRow.display_name} (${billingPeriod})`,
@@ -201,7 +202,7 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
             customer: {
                 name: userRow.name,
                 email: userRow.email,
-                phone: userRow.phone
+                phone: userRow.phone  // required — fallback handled in service
             },
             metadata: {
                 user_id: userId,
@@ -211,14 +212,47 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
             }
         });
 
-        if (!result) return res.status(500).json({ error: 'Erreur GeniusPay : L\'API a retourné une erreur ou est bloquée.' });
+        if (!result) {
+            return res.status(500).json({
+                error: 'Erreur GeniusPay : impossible de créer l\'abonnement. Vérifiez vos identifiants API et les paramètres du plan.'
+            });
+        }
 
-        // Record the invitation/pending subscription
+        // Determine initial status based on GeniusPay response
+        const initialStatus = (result.isActive || result.status === 'active') ? 'active' : 'pending';
+
+        // Record the subscription
         await db.run(`
             INSERT INTO saas_subscriptions (id, user_id, plan_id, geniuspay_sub_id, status, billing_cycle)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, subId, userId, planId, result.subscriptionId, 'pending', billingPeriod);
+        `, subId, userId, planId, result.subscriptionId, initialStatus, billingPeriod);
 
+        // If GeniusPay activated the subscription immediately (sandbox or direct debit)
+        // activate the plan now without waiting for the webhook
+        if (initialStatus === 'active') {
+            console.log(`[Subscription] GeniusPay subscription immediately active for user ${userId}. Activating plan ${planId}.`);
+            const endDate = new Date();
+            if (billingPeriod === 'yearly') {
+                endDate.setFullYear(endDate.getFullYear() + 1);
+            } else {
+                endDate.setMonth(endDate.getMonth() + 1);
+            }
+            await applySubscriptionToUser(userId, planId, result.subscriptionId, endDate, 0);
+
+            // Apply coupon usage if any
+            if (finalCouponCode && couponRes?.coupon) {
+                await db.run('UPDATE subscription_coupons SET used_count = used_count + 1 WHERE id = ?', couponRes.coupon.id);
+            }
+
+            // Return success with redirect
+            return res.json({
+                url: result.checkoutUrl || returnUrl,
+                activated: true,
+                message: 'Abonnement activé avec succès'
+            });
+        }
+
+        // Otherwise redirect to checkout
         res.json({ url: result.checkoutUrl });
     } catch (err) {
         console.error('GeniusPay sub creation error:', err);
