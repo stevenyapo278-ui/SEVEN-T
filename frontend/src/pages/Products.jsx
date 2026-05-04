@@ -389,24 +389,25 @@ export default function Products() {
         </DetailOverlay>
       )}
 
-      {imageZoom && (
+      {imageZoom && createPortal(
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-sm cursor-zoom-out animate-fadeIn"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md cursor-zoom-out animate-fadeIn"
           onClick={() => setImageZoom(null)}
         >
           <button
             onClick={() => setImageZoom(null)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors"
+            className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all hover:scale-110 active:scale-95"
           >
-            <X className="w-6 h-6" />
+            <X className="w-8 h-8" />
           </button>
           <img
             src={imageZoom}
             alt="Aperçu"
-            className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl ring-1 ring-white/10"
+            className="max-w-[95vw] max-h-[95vh] object-contain rounded-2xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] ring-1 ring-white/20 animate-zoomIn"
             onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
