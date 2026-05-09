@@ -2,22 +2,40 @@
 node_modules/
 frontend/node_modules/
 
-# Environment
+# Environment and Secrets
 .env
+.env.*
+!.env.example
+!.env.production.template
 
-# Database
-data/*.sqlite
-data/*.sqlite-journal
-
-# WhatsApp sessions
+# WhatsApp sessions (VERY SENSITIVE)
 sessions/
+auth_info_baileys/
 
-# Build
+# User Data and Uploads
+uploads/
+data/
+
+# Build and Production
 frontend/dist/
+dist/
 
-# Logs
+# Logs and Debug
 *.log
 logs/
+migration_log.txt
+git_log.txt
+test_output.txt
+status.txt
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary and Scratch files
+tmp/
+scratch/
+test_npm/
+.cache/
 
 # OS
 .DS_Store
@@ -26,3 +44,8 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# SSL / Certbot
+certbot/
