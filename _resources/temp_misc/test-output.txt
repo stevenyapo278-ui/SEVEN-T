@@ -1,0 +1,74 @@
+
+========================================
+TEST: Refusal & Question Detection Logic
+========================================
+
+Test 1: ✅ PASS
+  Message: "Non je veux connaître le stockage de données d'abord"
+  Refusal: ✅ (expected: ✅) ✓
+  Question: ✅ (expected: ✅) ✓
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 2: ✅ PASS
+  Message: "je veux savoir combien coûte le Samsung S21"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ✅ (expected: ✅) ✓
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 3: ✅ PASS
+  Message: "je veux 2 Samsung S21 Ultra"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ❌ (expected: ❌) ✓
+  Should Block Order: ❌ (expected: ❌) ✓
+
+Test 4: ✅ PASS
+  Message: "pas maintenant, je veux réfléchir"
+  Refusal: ✅ (expected: ✅) ✓
+  Question: ❌ (expected: ❌) ✓
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 5: ✅ PASS
+  Message: "le Samsung S21 est disponible?"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ✅ (expected: ✅) ✓
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 6: ✅ PASS
+  Message: "je voudrais avoir plus de détails sur le Samsung"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ✅ (expected: ✅) ✓
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 7: ✅ PASS
+  Message: "je prends le Samsung S21"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ❌ (expected: ❌) ✓
+  Should Block Order: ❌ (expected: ❌) ✓
+
+Test 8: ❌ FAIL
+  Message: "attends je veux vérifier quelque chose"
+  Refusal: ✅ (expected: ✅) ✓
+  Question: ✅ (expected: ❌) ✗
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 9: ✅ PASS
+  Message: "quelles sont les caractéristiques du Samsung S21?"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ✅ (expected: ✅) ✓
+  Should Block Order: ✅ (expected: ✅) ✓
+
+Test 10: ✅ PASS
+  Message: "oui je veux commander le Samsung S21"
+  Refusal: ❌ (expected: ❌) ✓
+  Question: ❌ (expected: ❌) ✓
+  Should Block Order: ❌ (expected: ❌) ✓
+
+========================================
+SUMMARY
+========================================
+Total: 10
+✅ Passed: 9
+❌ Failed: 1
+Success rate: 90%
+========================================
+

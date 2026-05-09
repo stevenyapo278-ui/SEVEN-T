@@ -1,0 +1,12 @@
+﻿id,date,client,téléphone,statut,montant,devise,payé_le
+"073847e0-3409-4567-8361-ada211160a81","Sun Feb 22 2026 18:47:12 GMT+0000 (heure moyenne de Greenwich)","stevenyapo277@gmail.com","22503971806","delivered","950000","XOF",""
+"1fd9b2dd-5398-4deb-8228-3679c473fac6","Sun Feb 22 2026 18:09:36 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","950000","XOF",""
+"1eec31ed-d002-488d-bb98-58b9fb847552","Sat Feb 21 2026 23:45:52 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","4180000","XOF",""
+"fe07e669-6bb7-4c12-a606-6e44a88bd821","Sat Feb 21 2026 13:49:47 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","220000","XOF",""
+"ce519f45-83ad-4506-ac18-ec71d32b040b","Fri Feb 20 2026 15:18:21 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","220000","XOF",""
+"adf242cf-120c-4c39-8a34-542255ef788f","Thu Feb 19 2026 22:01:47 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","230000","XOF",""
+"ac11eef6-f508-4daa-9521-fa97379d6fc6","Thu Feb 19 2026 14:33:41 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","6900000","XOF",""
+"6faa0c67-0984-4a50-95de-dd5aecce1c9d","Fri Feb 13 2026 13:42:53 GMT+0000 (heure moyenne de Greenwich)","+2250758519080","22558519080","validated","690000","XOF",""
+"704c700c-22ef-4147-b432-2305c3c354a1","Thu Feb 12 2026 21:55:05 GMT+0000 (heure moyenne de Greenwich)","OYOKI","22503971806","validated","230000","XOF",""
+"480e79b8-a9a4-4e17-b164-ccc6d69f83a0","Thu Feb 12 2026 21:46:29 GMT+0000 (heure moyenne de Greenwich)","OYOKI","22503971806","validated","230000","XOF",""
+"2e7311d8-f25c-47d5-a339-530cb859f0b1","Tue Feb 10 2026 22:51:06 GMT+0000 (heure moyenne de Greenwich)","styapo","22558519080","validated","2.29","XOF",""

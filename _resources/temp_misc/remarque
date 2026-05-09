@@ -1,0 +1,78 @@
+[45 tools called]
+
+Implemented the prioritized improvements and the supporting pieces from the analysis plan.
+
+Key changes:
+- Docker build fix: frontend stage now installs dev deps so `vite build` works (`Dockerfile`).
+- Debug ingest hardcoding removed: added `debugIngest` helper with `DEBUG_INGEST_URL` + `DEBUG_INGEST_ID` and replaced all direct `127.0.0.1:7242` calls (`backend/utils/debugIngest.js`, `backend/services/whatsapp.js`, `backend/routes/auth.js`, `backend/services/orderDetector.js`, `backend/services/ai.js`). Added env vars to `.env.example`.
+- Global Express error handler added (`backend/server.js`).
+- DB index for message deduplication on `whatsapp_id` added (`backend/database/init.js`).
+- Test setup: Jest installed, `jest.config.js` added, `npm test` script added (`package.json`).
+- Frontend linting: ESLint + plugins installed, `eslint.config.js` added, `npm run lint` script added (`frontend/package.json`).
+- UI resilience: `ErrorBoundary` added and wrapped around routes (`frontend/src/components/ErrorBoundary.jsx`, `frontend/src/App.jsx`).
+- Input validation extended: added Zod schemas for key conversation/tool routes and wired `validate()` in routes (`backend/middleware/security.js`, `backend/routes/conversations.js`, `backend/routes/tools.js`).
+- Documentation cleanup: README name updated to SEVEN T, added required envs + SQLite backup guidance; package names unified (`README.md`, `package.json`, `frontend/package.json`).
+- CI: lint/test steps now fail the pipeline if they fail (`.github/workflows/ci-cd.yml`).
+
+Tests:
+- Not run here.
+
+If you want, I can now:
+- Add OpenAPI/Swagger spec for core endpoints.
+- Add minimal backend linting.
+- Add E2E smoke tests (Playwright/Cypress).
+
+
+
+
+Implémentation de la vectorisation (RAG) pour la base de connaissances : exploration de la structure actuelle, puis implémentation par étapes.
+
+
+[10 tools called]
+
+
+Ajout de la table et du service d'embeddings.
+
+
+[5 tools called]
+
+
+Wiring indexing into the knowledge routes and switching WhatsApp to retrieval with fallback.
+
+
+[18 tools called]
+
+
+Vérifiant les lints et ajoutant un script de backfill pour indexer les connaissances existantes.
+
+
+[6 tools called]
+
+
+Voici ce qui a été fait pour finaliser la vectorisation :
+
+**1. POST `global/extract-url`**  
+Dans `backend/routes/knowledge.js`, après la création de l’item global, appel à `indexGlobalKnowledge(itemId, finalTitle, result.content)` avec un `.catch(...)` pour ne pas faire échouer la requête en cas d’erreur d’indexation.
+
+**2. Pipeline WhatsApp**  
+Dans `backend/services/whatsapp.js` :
+- Import de `retrieveRelevantChunks` depuis `./knowledgeRetrieval.js`.
+- Avant de charger toute la base : appel à `retrieveRelevantChunks(agentId, messageText, 10)`.
+- Si le résultat contient au moins un chunk → utilisation de ces chunks comme knowledge (agent + global).
+- Sinon → fallback sur les deux requêtes SQL actuelles (agent + global).
+- La fusion avec `productKnowledge` reste inchangée : `knowledge = [...globalKnowledge, ...agentKnowledge, ...productKnowledge]`.
+
+**3. Script de backfill**  
+Création de `backend/scripts/backfillKnowledgeEmbeddings.js` qui :
+- Parcourt toutes les entrées de `knowledge_base` et appelle `indexAgentKnowledge` pour chacune.
+- Parcourt toutes les entrées de `global_knowledge` et appelle `indexGlobalKnowledge` pour chacune.
+
+Pour réindexer les connaissances déjà présentes avant le RAG :
+
+```bash
+node backend/scripts/backfillKnowledgeEmbeddings.js
+```
+
+Prérequis : `GEMINI_API_KEY` dans `.env` pour que les embeddings soient calculés.
+
+La vectorisation est en place : indexation à l’ajout/MAJ/suppression, récupération par similarité dans le pipeline WhatsApp avec fallback si pas d’API ou index vide, et script de backfill pour les données existantes.
