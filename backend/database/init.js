@@ -1094,6 +1094,15 @@ export async function initDatabase() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
+        CREATE TABLE IF NOT EXISTS push_tokens (
+            user_id TEXT NOT NULL,
+            token TEXT NOT NULL,
+            platform TEXT DEFAULT 'web',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, token),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens(user_id);
     `);
 
     // AI models, API keys, usage and subscription_plans (public endpoints depend on these)

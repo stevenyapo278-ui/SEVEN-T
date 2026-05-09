@@ -63,8 +63,7 @@ const Landing = () => {
       </Helmet>
 
       {/* Background Elements */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <MouseGlow color="#f59e0b" opacity={0.12} />
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
         <PixelBlast 
           variant="circle"
           pixelSize={4}
@@ -79,13 +78,16 @@ const Landing = () => {
         <LightRays 
           raysOrigin="top-center"
           raysColor="#f59e0b"
-          raysSpeed={0.8}
-          lightSpread={0.8}
-          rayLength={3.0}
+          raysSpeed={1.2}
+          lightSpread={0.9}
+          rayLength={3.5}
           followMouse={true}
-          mouseInfluence={0.2}
+          mouseInfluence={0.4}
+          distortion={0.1}
         />
       </div>
+
+      <MouseGlow color="#f59e0b" opacity={0.3} />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col">

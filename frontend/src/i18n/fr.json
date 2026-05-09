@@ -820,7 +820,10 @@
     "clearFilters": "Effacer",
     "unread": "non lue",
     "unread_plural": "non lues",
-    "markRead": "Marquer comme lu"
+    "markRead": "Marquer comme lu",
+    "enablePushTitle": "Activer les notifications push",
+    "enablePushDesc": "Soyez alerté en temps réel même lorsque vous n'êtes pas sur l'application.",
+    "pushEnabled": "Notifications push actives"
   },
   "legal": {
     "title": "Légal",

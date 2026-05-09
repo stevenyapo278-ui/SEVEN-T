@@ -34,8 +34,6 @@ const WhatsAppSimulator = () => {
 
   return (
     <div className="w-full h-full bg-[#0b141a] overflow-hidden flex flex-col font-sans relative">
-      {/* Notch */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#222] rounded-b-2xl z-20" />
       
       {/* Header */}
       <div className="bg-[#202c33] p-4 pt-10 flex items-center gap-3 border-b border-white/5">

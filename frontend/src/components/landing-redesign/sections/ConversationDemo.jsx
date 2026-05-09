@@ -6,7 +6,7 @@ import { MessageSquare, Zap, Shield, Users, ArrowRight } from "lucide-react";
 
 export const ConversationDemo = () => {
   return (
-    <section className="relative py-32 overflow-hidden bg-transparent">
+    <section id="demo" className="relative py-32 overflow-hidden bg-transparent">
       {/* Background Decor */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[150%] h-[150%] bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.03)_0%,transparent_70%)]" />

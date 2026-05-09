@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { registerLocale } from 'react-datepicker'
@@ -16,6 +17,7 @@ export default function Notifications() {
   const { t, i18n } = useTranslation()
   const { isDark } = useTheme()
   const { showConfirm } = useConfirm()
+  const { permission, isSubscribed, subscribe, unsubscribe } = usePushNotifications()
   
   const FILTERS = [
     { id: 'all', label: t('common.all') },
@@ -288,6 +290,56 @@ export default function Notifications() {
           </div>
         </div>
       </div>
+
+      {/* Push Notifications Setup */}
+      {permission !== 'granted' && (
+        <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
+          isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500 rounded-xl">
+              <Bell className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {t('notifications.enablePushTitle', 'Activer les notifications push')}
+              </h3>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {t('notifications.enablePushDesc', 'Soyez alerté en temps réel même lorsque vous n\'êtes pas sur l\'application.')}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={subscribe}
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-500/25"
+          >
+            {t('common.enable', 'Activer')}
+          </button>
+        </div>
+      )}
+
+      {isSubscribed && (
+         <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+            isDark ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-emerald-50 border-emerald-100'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500 rounded-xl">
+                <ShieldCheck className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className={`text-xs font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                  {t('notifications.pushEnabled', 'Notifications push actives')}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={unsubscribe}
+              className={`text-xs font-medium ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              {t('common.disable', 'Désactiver')}
+            </button>
+          </div>
+      )}
 
       {/* Filters Section */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 ${

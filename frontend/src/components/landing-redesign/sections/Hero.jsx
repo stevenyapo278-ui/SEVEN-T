@@ -81,7 +81,7 @@ export const Hero = () => {
             )}
           >
             <div
-              className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.8)]"
+              className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-zinc-950/40 backdrop-blur-sm shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.8)]"
               style={{ height: `${75 - Math.abs(3 - i) * 10}%` }}
             />
             {i === 3 && (

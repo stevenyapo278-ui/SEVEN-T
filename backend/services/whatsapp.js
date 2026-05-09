@@ -1110,6 +1110,9 @@ class WhatsAppManager {
                 conversation = await db.get('SELECT * FROM conversations WHERE id = ?', convId);
                 console.log(`[WhatsApp] New conversation created for ${contactName}`);
                 
+                // Internal notification
+                notificationService.notifyNewConversation(agent.user_id, contactName, convId);
+
                 // Trigger workflow: new_conversation
                 void enqueueWorkflow('new_conversation', {
                     conversationId: convId,

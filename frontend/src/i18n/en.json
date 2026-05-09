@@ -816,7 +816,10 @@
     "clearFilters": "Clear",
     "unread": "unread",
     "unread_plural": "unread",
-    "markRead": "Mark as read"
+    "markRead": "Mark as read",
+    "enablePushTitle": "Enable Push Notifications",
+    "enablePushDesc": "Get real-time alerts even when you are not on the app.",
+    "pushEnabled": "Push notifications active"
   },
   "legal": {
     "title": "Legal",

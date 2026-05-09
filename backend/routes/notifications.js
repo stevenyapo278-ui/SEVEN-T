@@ -1,8 +1,37 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { notificationService } from '../services/notifications.js';
+import { pushNotificationService } from '../services/pushNotifications.js';
 
 const router = express.Router();
+
+// Register push token
+router.post('/push-token', authenticateToken, async (req, res) => {
+    try {
+        const { token, platform } = req.body;
+        if (!token) {
+            return res.status(400).json({ error: 'Token requis' });
+        }
+        await pushNotificationService.registerToken(req.user.id, token, platform);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur lors de l\'enregistrement du token' });
+    }
+});
+
+// Unregister push token
+router.delete('/push-token', authenticateToken, async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ error: 'Token requis' });
+        }
+        await pushNotificationService.unregisterToken(req.user.id, token);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Erreur lors de la suppression du token' });
+    }
+});
 
 // Get all notifications for user
 router.get('/', authenticateToken, async (req, res) => {

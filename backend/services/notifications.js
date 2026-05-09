@@ -5,6 +5,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
+import { pushNotificationService } from './pushNotifications.js';
 
 // Notification types with their icons/colors
 export const NOTIFICATION_TYPES = {
@@ -44,6 +45,14 @@ class NotificationService {
             );
 
             console.log(`[Notifications] Created: ${type} - ${title} for user ${userId}`);
+            
+            // Send push notification
+            pushNotificationService.sendToUser(userId, {
+                title: title,
+                body: message,
+                url: link,
+                data: metadata
+            }).catch(err => console.error('[Notifications] Push error:', err));
 
             return await this.getById(id);
         } catch (error) {
@@ -301,6 +310,19 @@ class NotificationService {
             type: 'relance',
             title: 'Relance AI à confirmer',
             message: `Une nouvelle suggestion de relance est prête pour ${contactName}`,
+            link: `/dashboard/conversations`,
+            metadata: { conversationId, contactName }
+        });
+    }
+
+    /**
+     * Notify about a new conversation
+     */
+    notifyNewConversation(userId, contactName, conversationId) {
+        return this.create(userId, {
+            type: 'whatsapp',
+            title: 'Nouvelle conversation',
+            message: `Nouvelle conversation démarrée avec ${contactName}`,
             link: `/dashboard/conversations`,
             metadata: { conversationId, contactName }
         });

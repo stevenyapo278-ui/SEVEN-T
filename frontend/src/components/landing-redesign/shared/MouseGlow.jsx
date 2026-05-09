@@ -21,7 +21,7 @@ const MouseGlow = ({ color = '#f59e0b', opacity = 0.15 }) => {
 
   return (
     <motion.div
-      className="pointer-events-none fixed inset-0 z-10"
+      className="pointer-events-none fixed inset-0 z-50"
       style={{
         background: `radial-gradient(800px circle at ${smoothX}px ${smoothY}px, ${color}${Math.round(opacity * 255).toString(16).padStart(2, '0')}, transparent 80%)`,
       }}
