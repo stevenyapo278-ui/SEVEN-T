@@ -12,12 +12,28 @@ import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import api from "../services/api";
 
 const Landing = () => {
   const { user } = useAuth();
+  const [plans, setPlans] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // Fetch plans from backend
+    const fetchPlans = async () => {
+      try {
+        const response = await api.get('/plans');
+        if (response.data) {
+          setPlans(response.data);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des plans:", error);
+      }
+    };
+
+    fetchPlans();
   }, []);
 
   return (
@@ -70,7 +86,8 @@ const Landing = () => {
              <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
           </div>
 
-          <Pricing />
+          <Pricing plans={plans} />
+
           
           {/* Final CTA */}
           <section className="py-32 px-6 text-center relative overflow-hidden">
