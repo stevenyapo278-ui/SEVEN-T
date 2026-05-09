@@ -1,8 +1,0 @@
-Sur la branche master
-Votre branche est à jour avec 'origin/master'.
-
-Fichiers non suivis:
-  (utilisez "git add <fichier>..." pour inclure dans ce qui sera validé)
-	status.txt
-
-aucune modification ajoutée à la validation mais des fichiers non suivis sont présents (utilisez "git add" pour les suivre)

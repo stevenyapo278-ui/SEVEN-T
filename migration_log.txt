@@ -1,7 +1,0 @@
-Initializing database connection...
-message_templates.shortcut column migration: la colonne « shortcut » de la relation « message_templates » existe déjà
-PostgreSQL schema initialized successfully
-Starting column migrations...
-Altered users.credits successfully.
-Altered credit_usage.amount successfully.
-Migration completed successfully!
