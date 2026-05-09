@@ -33,7 +33,7 @@ const WhatsAppSimulator = () => {
   }, [currentIndex]);
 
   return (
-    <div className="w-full max-w-[380px] mx-auto h-[600px] bg-[#0b141a] rounded-[2.5rem] border-[8px] border-[#222] shadow-2xl overflow-hidden flex flex-col font-sans relative">
+    <div className="w-full h-full bg-[#0b141a] overflow-hidden flex flex-col font-sans relative">
       {/* Notch */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-[#222] rounded-b-2xl z-20" />
       

@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import WhatsAppSimulator from "../shared/WhatsAppSimulator";
+import { IPhone17ProMax } from "../shared/IPhone17ProMax";
 import { MessageSquare, Zap, Shield, Users, ArrowRight } from "lucide-react";
 
 export const ConversationDemo = () => {
@@ -70,19 +71,17 @@ export const ConversationDemo = () => {
           </div>
 
           {/* Visual Column (The Phone) */}
-          <div className="lg:col-span-4 flex justify-center perspective-1000">
-            <motion.div
-              initial={{ rotateY: 20, rotateX: 5, opacity: 0 }}
-              whileInView={{ rotateY: 0, rotateX: 0, opacity: 1 }}
-              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="relative"
-            >
+          <div className="lg:col-span-4 flex justify-center scale-75 sm:scale-90 md:scale-100 origin-center">
+            <IPhone17ProMax>
               <WhatsAppSimulator />
-              {/* Floating Badge 1 */}
+            </IPhone17ProMax>
+            
+            {/* Floating Badge 1 - Positioned relative to the mockup container */}
+            <div className="absolute inset-0 pointer-events-none">
               <motion.div 
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -right-12 top-20 bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-30 hidden md:block"
+                className="absolute -right-8 top-20 bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-30 hidden md:block pointer-events-auto"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -99,7 +98,7 @@ export const ConversationDemo = () => {
               <motion.div 
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -left-12 bottom-20 bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-30 hidden md:block"
+                className="absolute -left-8 bottom-32 bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl z-30 hidden md:block pointer-events-auto"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
@@ -111,7 +110,7 @@ export const ConversationDemo = () => {
                   </div>
                 </div>
               </motion.div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Features Column (Right) */}
