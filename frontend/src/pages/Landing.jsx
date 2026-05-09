@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Navbar } from "../components/landing-redesign/layout/Navbar";
 import { Hero } from "../components/landing-redesign/sections/Hero";
 import { Features } from "../components/landing-redesign/sections/Features";
+import { ConversationDemo } from "../components/landing-redesign/sections/ConversationDemo";
 import { GridCards } from "../components/landing-redesign/sections/GridCards";
 import { Testimonials } from "../components/landing-redesign/sections/Testimonials";
 import { Pricing } from "../components/landing-redesign/sections/Pricing";
 import { Footer } from "../components/landing-redesign/layout/Footer";
 import PixelBlast from "../components/landing-redesign/shared/PixelBlast";
 import LightRays from "../components/landing-redesign/shared/LightRays";
+import MouseGlow from "../components/landing-redesign/shared/MouseGlow";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -61,6 +63,7 @@ const Landing = () => {
 
       {/* Background Elements */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <MouseGlow color="#f59e0b" opacity={0.12} />
         <PixelBlast 
           variant="circle"
           pixelSize={4}
@@ -75,9 +78,11 @@ const Landing = () => {
         <LightRays 
           raysOrigin="top-center"
           raysColor="#f59e0b"
-          raysSpeed={0.5}
-          lightSpread={1.2}
-          rayLength={1.5}
+          raysSpeed={0.8}
+          lightSpread={0.8}
+          rayLength={3.0}
+          followMouse={true}
+          mouseInfluence={0.2}
         />
       </div>
 
@@ -93,6 +98,8 @@ const Landing = () => {
              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
              <Features />
           </div>
+
+          <ConversationDemo />
 
           <GridCards />
           
