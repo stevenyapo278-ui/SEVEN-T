@@ -25,8 +25,24 @@ const Landing = () => {
     const fetchPlans = async () => {
       try {
         const response = await api.get('/plans');
-        if (response.data) {
-          setPlans(response.data);
+        // Handle different possible response structures
+        const data = response.data;
+        let plansData = [];
+        
+        if (data?.plans && Array.isArray(data.plans)) {
+          plansData = data.plans;
+        } else if (Array.isArray(data)) {
+          plansData = data;
+        }
+
+        if (plansData.length > 0) {
+          // Double check formatting for frontend
+          const sanitizedPlans = plansData.map(p => ({
+            ...p,
+            // Ensure id is present for registration links
+            id: p.id || p.name?.toLowerCase().replace(/\s+/g, '_') || 'free'
+          }));
+          setPlans(sanitizedPlans);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des plans:", error);
