@@ -3,6 +3,7 @@ import { Navbar } from "../components/landing-redesign/layout/Navbar";
 import { Hero } from "../components/landing-redesign/sections/Hero";
 import { Features } from "../components/landing-redesign/sections/Features";
 import { ConversationDemo } from "../components/landing-redesign/sections/ConversationDemo";
+import { MobileStatsSection } from "../components/landing-redesign/sections/MobileStatsSection";
 import { GridCards } from "../components/landing-redesign/sections/GridCards";
 import { Testimonials } from "../components/landing-redesign/sections/Testimonials";
 import { Pricing } from "../components/landing-redesign/sections/Pricing";
@@ -100,6 +101,8 @@ const Landing = () => {
           </div>
 
           <ConversationDemo />
+          
+          <MobileStatsSection />
 
           <GridCards />
           
