@@ -15,10 +15,20 @@ auth_info_baileys/
 # User Data and Uploads
 uploads/
 data/
+*.db
+*.sqlite*
+
+# Backups
+backups/
+backup/
+*.sql
+*.sql.gz
+*.tar.gz
 
 # Build and Production
 frontend/dist/
 dist/
+build/
 
 # Logs and Debug
 *.log
@@ -36,6 +46,11 @@ tmp/
 scratch/
 test_npm/
 .cache/
+_resources/temp_misc/
+*.csv
+*.tmp
+*.bak
+*.old
 
 # OS
 .DS_Store
