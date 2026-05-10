@@ -1101,6 +1101,7 @@ class WhatsAppManager {
             const verifiedBizName = message.verifiedBizName || null;
             const isBusiness = !!verifiedBizName;
 
+            const isNew = !conversation;
             if (!conversation) {
                 const convId = uuidv4();
                 await db.run(`
@@ -1344,7 +1345,7 @@ class WhatsAppManager {
                     is_status_reply: isStatusReply,
                     quoted_content: quotedContent
                 },
-                context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend },
+                context: { conversation, agent, sender, contactName, contactNumberForConv, replyToJidForSend, isNew },
                 audioTranscriptionFailed,
                 quotedMsgId,
                 messageText,
@@ -1488,6 +1489,12 @@ class WhatsAppManager {
                     quoted_content: payload.quoted_content,
                     created_at: payload.createdAt
                 }, context.agent.user_id);
+
+                if (!context.isNew) {
+                    const typeLabels = { image: '📷 Image', video: '🎥 Vidéo', audio: '🎵 Audio', document: '📄 Document', location: '📍 Localisation' };
+                    const preview = typeLabels[payload.messageType] || `Nouveau message (${payload.messageType})`;
+                    notificationService.notifyNewMessage(context.agent.user_id, context.contactName, preview);
+                }
                 if (!skipAI) {
                     void enqueueWorkflow('new_message', {
                         conversationId: context.conversation.id,
@@ -1536,6 +1543,12 @@ class WhatsAppManager {
                 quoted_content: payload.quoted_content,
                 created_at: payload.createdAt
             }, context.agent.user_id);
+
+            // Push notification for existing conversations
+            if (!context.isNew) {
+                notificationService.notifyNewMessage(context.agent.user_id, context.contactName, payload.content);
+            }
+
             this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
 
             if (!skipAI) {

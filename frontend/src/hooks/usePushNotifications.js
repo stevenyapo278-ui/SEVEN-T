@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-const VAPID_PUBLIC_KEY = 'BDNFr-Q3QLvI-YyRbPhakFq4XvjXS_-KBZf_pLPIreNWexzknC6ehXcFz8lsrozQU6SH7Y69032JE5lpGoUr-OM';
+const VAPID_PUBLIC_KEY = 'BCz37gL7SOa3QpUcYebNAQ3vFV6k6rIGOK_3Lt5HTgK4mbW1i9brXCtZmE4T3I6IQZ15wAMG6EIrtradwfl3k4k';
 
 export const usePushNotifications = () => {
     const [permission, setPermission] = useState(Notification.permission);

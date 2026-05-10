@@ -303,7 +303,7 @@ export default function Notifications() {
       </div>
 
       {/* Push Notifications Setup */}
-      {permission !== 'granted' && (
+      {!isSubscribed && (
         <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
           isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'
         }`}>
