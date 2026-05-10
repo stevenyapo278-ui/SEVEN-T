@@ -31,6 +31,21 @@ const statusUpload = multer({
     limits: { fileSize: 20 * 1024 * 1024 } // 20 MB max
 });
 
+// Configure multer for voice messages
+const voiceUploadDir = join(__dirname, '..', '..', 'uploads', 'voice');
+if (!fs.existsSync(voiceUploadDir)) {
+    fs.mkdirSync(voiceUploadDir, { recursive: true });
+}
+const voiceUpload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, voiceUploadDir),
+        filename: (req, file, cb) => {
+            cb(null, `voice_${Date.now()}_${Math.round(Math.random() * 1E9)}.ogg`);
+        }
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 } // 10 MB max
+});
+
 async function resolveToolAndAgent(userId, id, { createToolIfMissing = false } = {}) {
     let tool = await db.get('SELECT * FROM tools WHERE id = ? AND user_id = ?', id, userId);
     let agent = null;                                                                                                                                                                                                                                                                                                                                                       
@@ -601,6 +616,41 @@ router.post('/send-to-conversation/:agentId/:conversationId', authenticateToken,
     } catch (error) {
         console.error('Send to conversation error:', error);
         res.status(500).json({ error: error.message || "Erreur lors de l'envoi" });
+    }
+});
+
+// Send audio message to a conversation and save
+router.post('/send-audio/:agentId/:conversationId', authenticateToken, voiceUpload.single('audio'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Fichier audio requis' });
+        }
+
+        const agent = await db.get('SELECT * FROM agents WHERE id = ? AND user_id = ?', req.params.agentId, req.user.ownerId);
+        
+        if (!agent) {
+            return res.status(404).json({ error: 'Agent non trouvé' });
+        }
+
+        if (!agent.whatsapp_connected) {
+            return res.status(400).json({ error: 'WhatsApp non connecté' });
+        }
+
+        const toolId = agent.tool_id;
+        if (!toolId) {
+            return res.status(400).json({ error: 'Aucun outil WhatsApp assigné à cet agent' });
+        }
+
+        const result = await whatsappManager.sendVoiceAndSave(
+            toolId, 
+            req.params.conversationId, 
+            req.file.path
+        );
+
+        res.json(result);
+    } catch (error) {
+        console.error('Send audio error:', error);
+        res.status(500).json({ error: error.message || "Erreur lors de l'envoi de l'audio" });
     }
 });
 

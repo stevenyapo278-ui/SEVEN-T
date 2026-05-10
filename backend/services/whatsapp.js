@@ -3818,6 +3818,74 @@ class WhatsAppManager {
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
 
         // Notify frontend
+        notifyConversationUpdate(toolId, conversationId, {
+            id: msgId,
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: text,
+            whatsapp_id: result.key.id,
+            message_type: 'manual',
+            sender_type: 'human',
+            created_at: new Date().toISOString()
+        });
+
+        return { success: true, messageId: msgId, whatsappId: result.key.id };
+    }
+
+    /**
+     * Send a voice message and save to conversation
+     */
+    async sendVoiceAndSave(toolId, conversationId, filePath) {
+        const sock = this.connections.get(toolId);
+        const agent = await this.getAgentByToolId(toolId);
+        if (!sock) {
+            throw new Error('WhatsApp non connecté');
+        }
+        if (!agent) {
+            throw new Error('Aucun agent assigné à cet outil');
+        }
+
+        // Get conversation
+        const conversation = await db.get('SELECT * FROM conversations WHERE id = ? AND agent_id = ?', conversationId, agent.id);
+        if (!conversation) {
+            throw new Error('Conversation non trouvée');
+        }
+
+        const recipientJid = resolveJidForSend(conversation) || resolveConversationJid(conversation);
+        if (!recipientJid) {
+            throw new Error('Contact JID invalide');
+        }
+
+        const audioBuffer = readFileSync(filePath);
+        
+        const result = await sock.sendMessage(recipientJid, { 
+            audio: audioBuffer, 
+            ptt: true,
+            mimetype: 'audio/ogg; codecs=opus'
+        });
+
+        const msgId = uuidv4();
+        await db.run(`
+            INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
+            VALUES (?, ?, 'assistant', '[Audio]', ?, 'audio', 'human', ?)
+        `, msgId, conversationId, result.key.id, new Date().toISOString());
+
+        await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
+
+        // Notify frontend
+        notifyConversationUpdate(toolId, conversationId, {
+            id: msgId,
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: '[Audio]',
+            whatsapp_id: result.key.id,
+            message_type: 'audio',
+            sender_type: 'human',
+            created_at: new Date().toISOString()
+        });
+
+        return { success: true, messageId: msgId, whatsappId: result.key.id };
+    }
         void notifyConversationUpdate(conversationId, {
             id: msgId,
             role: 'assistant',

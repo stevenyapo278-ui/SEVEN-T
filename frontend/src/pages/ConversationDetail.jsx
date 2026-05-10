@@ -170,6 +170,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
   const [playing, setPlaying] = useState(false)
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [playbackRate, setPlaybackRate] = useState(1)
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -189,6 +190,15 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
       if (playing) audioRef.current.pause()
       else audioRef.current.play()
       setPlaying(!playing)
+    }
+  }
+
+  const togglePlaybackRate = () => {
+    const rates = [1, 1.5, 2]
+    const nextRate = rates[(rates.indexOf(playbackRate) + 1) % rates.length]
+    setPlaybackRate(nextRate)
+    if (audioRef.current) {
+      audioRef.current.playbackRate = nextRate
     }
   }
 
@@ -237,7 +247,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
       
       <button 
         onClick={togglePlay}
-        className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95 ${
+        className={`w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95 flex-shrink-0 ${
           isAssistant
             ? isDark ? 'bg-gold-500 text-space-950' : 'bg-gold-400 text-white'
             : 'bg-white text-emerald-600'
@@ -247,12 +257,11 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
       </button>
 
       <div className="flex-1 flex flex-col gap-1">
-        {/* Waveform-like Progress Bar */}
         <div className="relative h-6 flex items-center gap-[2px]">
           {[...Array(20)].map((_, i) => {
             const progress = (currentTime / duration) * 20;
             const isActive = i < progress;
-            const height = 20 + Math.sin(i * 0.8) * 15; // Random-ish wave
+            const height = 20 + Math.sin(i * 0.8) * 15; 
             return (
               <div 
                 key={i} 
@@ -265,7 +274,6 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
               />
             )
           })}
-          {/* Clickable range for seeking */}
           <input 
             type="range"
             min="0"
@@ -292,6 +300,17 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
           </div>
         </div>
       </div>
+
+      <button 
+        onClick={togglePlaybackRate}
+        className={`px-2 py-1 rounded-full text-[10px] font-black tracking-tighter transition-all hover:brightness-110 flex-shrink-0 ${
+          isAssistant
+            ? isDark ? 'bg-space-800 text-gold-400 border border-gold-500/20' : 'bg-white text-gold-500 border border-gold-200 shadow-sm'
+            : 'bg-emerald-500/20 text-white border border-white/20'
+        }`}
+      >
+        {playbackRate}x
+      </button>
     </div>
   )
 }
@@ -446,6 +465,15 @@ export default function ConversationDetail() {
   const [selectedMessageIds, setSelectedMessageIds] = useState(new Set())
   const [deletingMessages, setDeletingMessages] = useState(false)
   const [deletingConversation, setDeletingConversation] = useState(false)
+  
+  // Voice recording states
+  const [isRecording, setIsRecording] = useState(false)
+  const [recordingTime, setRecordingTime] = useState(0)
+  const [isRecordingLoading, setIsRecordingLoading] = useState(false)
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
+  const recordingIntervalRef = useRef(null)
+
   const messagesEndRef = useRef(null)
   const pollIntervalRef = useRef(null)
   const nameInputRef = useRef(null)
@@ -665,6 +693,75 @@ export default function ConversationDetail() {
       toast.error(error.response?.data?.error || "Erreur lors de l'envoi")
     } finally {
       setSending(false)
+    }
+  }
+
+  // Voice Recording Logic
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
+      audioChunksRef.current = []
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data)
+      }
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/ogg; codecs=opus' })
+        if (audioBlob.size > 1000) { // Only send if not too small (avoids accidental clicks)
+          await handleSendVoice(audioBlob)
+        }
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      recorder.start()
+      setIsRecording(true)
+      setRecordingTime(0)
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
+      }, 1000)
+    } catch (err) {
+      console.error('Recording error:', err)
+      toast.error('Impossible d\'accéder au microphone')
+    }
+  }
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      clearInterval(recordingIntervalRef.current)
+      setIsRecording(false)
+    }
+  }
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      audioChunksRef.current = [] // Clear chunks so onstop doesn't send
+      mediaRecorderRef.current.stop()
+      clearInterval(recordingIntervalRef.current)
+      setIsRecording(false)
+      toast.error('Enregistrement annulé')
+    }
+  }
+
+  const handleSendVoice = async (blob) => {
+    if (!conversation) return
+    setIsRecordingLoading(true)
+    const formData = new FormData()
+    formData.append('audio', blob, 'recording.ogg')
+
+    try {
+      const result = await api.post(`/whatsapp/send-audio/${conversation.agent_id}/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      toast.success('Message vocal envoyé')
+      // Incremental update will happen via socket or polling
+    } catch (error) {
+      toast.error('Erreur lors de l\'envoi du vocal')
+    } finally {
+      setIsRecordingLoading(false)
     }
   }
 
@@ -1092,8 +1189,8 @@ export default function ConversationDetail() {
                         message.role === 'user'
                           ? `rounded-2xl rounded-bl-none ${isDark ? 'bg-space-800 text-gray-100' : 'bg-white text-gray-800 shadow-md border border-gray-100'}`
                           : isHumanSender
-                          ? 'rounded-2xl rounded-br-none bg-emerald-600 text-white shadow-[0_4px_12px_rgba(5,150,105,0.2)]'
-                          : `rounded-2xl rounded-br-none ${isDark ? 'bg-gold-500 text-space-950 font-medium shadow-[0_4px_12px_rgba(210,153,34,0.2)]' : 'bg-gold-400 text-white font-medium shadow-md'}`
+                          ? `rounded-2xl rounded-br-none ${isDark ? 'bg-emerald-600 text-white shadow-[0_4px_12px_rgba(5,150,105,0.2)]' : 'bg-emerald-50 text-emerald-900 border border-emerald-100 shadow-sm'}`
+                          : `rounded-2xl rounded-br-none ${isDark ? 'bg-gold-500 text-space-950 font-medium shadow-[0_4px_12px_rgba(210,153,34,0.2)]' : 'bg-[#FFF9E5] text-amber-900 border border-amber-200/50 font-medium shadow-sm'}`
                       } ${message.sending ? 'opacity-70 scale-[0.98]' : 'hover:scale-[1.01]'}`}>
                         
                         {/* Indicator for selection in bubble */}
@@ -1109,7 +1206,9 @@ export default function ConversationDetail() {
                         {/* Sender Label for Bot/Human */}
                         {message.role === 'assistant' && (
                           <div className={`flex items-center gap-1 mb-1 text-[10px] uppercase tracking-widest font-bold opacity-80 ${
-                            isHumanSender ? 'text-emerald-100' : 'text-space-900/60'
+                            isHumanSender 
+                              ? isDark ? 'text-emerald-100' : 'text-emerald-700'
+                              : isDark ? 'text-space-900/60' : 'text-amber-800/80'
                           }`}>
                             {isHumanSender ? (
                               <><UserCheck className="w-3 h-3" /> Humain</>
@@ -1182,7 +1281,11 @@ export default function ConversationDetail() {
                         ) : null}
 
                         <div className={`flex items-center justify-end gap-1.5 mt-1.5 text-[10px] ${
-                          message.role === 'user' ? 'text-gray-500' : isHumanSender ? 'text-emerald-100/70' : 'text-space-900/40'
+                          message.role === 'user' 
+                            ? 'text-gray-500' 
+                            : isHumanSender 
+                            ? isDark ? 'text-emerald-100/70' : 'text-emerald-600/60'
+                            : isDark ? 'text-space-900/40' : 'text-amber-800/40'
                         }`}>
                           <span>{formatTime(message.created_at)}</span>
                           {message.role === 'assistant' && !message.sending && <Check className="w-3 h-3" />}
@@ -1203,35 +1306,103 @@ export default function ConversationDetail() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Message Input - Floating Style */}
-        <div className={`p-3 sm:p-4 border-t ${isDark ? 'bg-space-900 border-space-700/50' : 'bg-white border-gray-100'}`}>
-          <form onSubmit={handleSendMessage} className="flex gap-2 sm:gap-4 items-center max-w-4xl mx-auto">
-            <div className={`flex-1 relative group`}>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Votre message ici..."
-                className={`w-full py-3 sm:py-4 px-6 rounded-2xl text-sm sm:text-base outline-none transition-all duration-300 shadow-sm ${
-                  isDark 
-                    ? 'bg-space-800 text-white placeholder-gray-500 focus:bg-space-700 border border-space-700/50 focus:border-gold-400/50' 
-                    : 'bg-gray-100 text-gray-900 placeholder-gray-400 focus:bg-white border border-transparent focus:border-gold-400/30'
-                }`}
-                disabled={sending}
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={sending || !input.trim()}
-              className={`w-12 h-12 sm:w-14 sm:h-14 flex-shrink-0 bg-gold-400 hover:bg-gold-300 text-space-950 rounded-2xl flex items-center justify-center shadow-lg shadow-gold-400/20 disabled:opacity-50 disabled:grayscale transition-all duration-300 transform active:scale-95`}
-            >
-              {sending ? (
-                <Loader2 className="w-6 h-6 animate-spin" />
+        {/* Message Input - Unified Style */}
+        <div className={`p-4 border-t ${isDark ? 'bg-space-900 border-space-700/50' : 'bg-white border-gray-100'}`}>
+          <form onSubmit={handleSendMessage} className="max-w-4xl mx-auto flex items-end gap-3">
+            <div className="flex-1 relative flex items-center gap-2">
+              {!isRecording ? (
+                <>
+                  <div className="flex-1 relative">
+                    <textarea
+                      rows="1"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          handleSendMessage(e)
+                        }
+                      }}
+                      placeholder="Écrire un message..."
+                      className={`w-full py-3 px-4 pr-12 rounded-2xl border resize-none transition-all focus:ring-2 focus:ring-gold-500/20 max-h-32 scrollbar-hide ${
+                        isDark 
+                          ? 'bg-space-800 border-space-700 text-white placeholder-gray-500' 
+                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className={`absolute right-2 bottom-2 p-2 rounded-xl transition-all hover:scale-110 active:scale-95 ${
+                        isDark ? 'text-gray-400 hover:text-gold-400' : 'text-gray-400 hover:text-gold-500'
+                      }`}
+                      title="Enregistrer un message vocal"
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || sending}
+                    className={`p-3.5 rounded-2xl flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+                      isDark
+                        ? 'bg-gold-500 text-space-950 hover:bg-gold-400 shadow-gold-500/10'
+                        : 'bg-gold-500 text-white hover:bg-gold-600 shadow-gold-500/20'
+                    }`}
+                  >
+                    {sending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
+                  </button>
+                </>
               ) : (
-                <Send className="w-6 h-6 -rotate-12 group-hover:rotate-0 transition-transform" />
+                <div className={`flex-1 flex items-center justify-between gap-4 py-2 px-4 rounded-2xl animate-in slide-in-from-bottom-2 duration-300 ${
+                  isDark ? 'bg-space-800' : 'bg-gray-50'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                      <div className="absolute inset-0 w-3 h-3 rounded-full bg-red-500 animate-ping opacity-75" />
+                    </div>
+                    <span className={`font-mono text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  <div className={`flex-1 mx-4 h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-space-700' : 'bg-gray-200'}`}>
+                    <div className="h-full bg-red-500 animate-pulse" style={{ width: '100%' }} />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={cancelRecording}
+                      className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                      title="Annuler"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className={`p-3 rounded-full flex items-center justify-center shadow-lg transition-all animate-bounce ${
+                        isDark ? 'bg-emerald-500 text-white' : 'bg-emerald-500 text-white'
+                      }`}
+                      title="Envoyer le vocal"
+                    >
+                      {isRecordingLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
           </form>
+          <p className="text-[10px] text-center mt-2 text-gray-500 opacity-70">
+            L'envoi d'un message manuel active automatiquement le mode intervention humaine.
+          </p>
         </div>
       </div>
     </div>
