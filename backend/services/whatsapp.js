@@ -3887,39 +3887,45 @@ class WhatsAppManager {
             throw new Error('Contact JID invalide');
         }
 
-        const audioBuffer = readFileSync(filePath);
-        
+        const msgId = uuidv4();
+        const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
+        if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+
+        const rawBuffer = readFileSync(filePath);
+        const tempRawPath = join(uploadsDir, `raw_${msgId}.tmp`);
+        writeFileSync(tempRawPath, rawBuffer);
+
+        // 1. Convert to proper Ogg/Opus for WhatsApp Mobile
+        const whatsappOggPath = join(uploadsDir, `whatsapp_${msgId}.ogg`);
+        await execPromise(`ffmpeg -i "${tempRawPath}" -c:a libopus -b:a 32k -application voip "${whatsappOggPath}"`);
+        const whatsappBuffer = readFileSync(whatsappOggPath);
+
+        // 2. Send to WhatsApp
         const result = await sock.sendMessage(recipientJid, { 
-            audio: audioBuffer, 
+            audio: whatsappBuffer, 
             ptt: true,
             mimetype: 'audio/ogg; codecs=opus'
         });
 
-        const msgId = uuidv4();
-        const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
-        if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
-        
-        const filename = `${msgId}.mp3`;
-        const destPath = join(uploadsDir, filename);
-        
+        // 3. Convert to MP3 for dashboard
+        const destPath = join(uploadsDir, `${msgId}.mp3`);
         try {
-            // Convert outgoing audio to MP3 with optimized settings
-            const tempSentPath = join(uploadsDir, `${msgId}_sent.ogg`);
-            writeFileSync(tempSentPath, audioBuffer);
-            await execPromise(`ffmpeg -i "${tempSentPath}" -vn -ar 16000 -ac 1 -b:a 64k -codec:a libmp3lame "${destPath}"`);
-            if (existsSync(tempSentPath)) {
-                try { rmSync(tempSentPath); } catch (e) {}
-            }
+            await execPromise(`ffmpeg -i "${tempRawPath}" -vn -ar 16000 -ac 1 -b:a 64k -codec:a libmp3lame "${destPath}"`);
         } catch (e) {
-            console.warn('[WhatsApp] Failed to convert/copy outgoing audio to MP3:', e.message);
-            // Fallback to raw copy if ffmpeg fails
-            writeFileSync(join(uploadsDir, `${msgId}.ogg`), audioBuffer);
+            console.warn('[WhatsApp] Dashboard conversion failed:', e.message);
         }
 
+        // 4. Cleanup
+        try {
+            if (existsSync(tempRawPath)) rmSync(tempRawPath);
+            if (existsSync(whatsappOggPath)) rmSync(whatsappOggPath);
+        } catch (e) {}
+
+        const finalMediaUrl = `${msgId}.mp3`;
         await db.run(`
             INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, sender_type, created_at)
             VALUES (?, ?, 'assistant', '[Audio]', ?, 'audio', ?, 'human', ?)
-        `, msgId, conversationId, result.key.id, filename.endsWith('.mp3') ? filename : `${msgId}.ogg`, new Date().toISOString());
+        `, msgId, conversationId, result.key.id, finalMediaUrl, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
 
@@ -3929,6 +3935,7 @@ class WhatsAppManager {
             conversation_id: conversationId,
             role: 'assistant',
             content: '[Audio]',
+            media_url: finalMediaUrl,
             whatsapp_id: result.key.id,
             message_type: 'audio',
             sender_type: 'human',
