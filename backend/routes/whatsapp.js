@@ -17,8 +17,12 @@ const router = Router();
 
 // Configure multer for status uploads
 const statusUploadDir = join(__dirname, '..', '..', 'uploads', 'status');
-if (!fs.existsSync(statusUploadDir)) {
-    fs.mkdirSync(statusUploadDir, { recursive: true });
+try {
+    if (!fs.existsSync(statusUploadDir)) {
+        fs.mkdirSync(statusUploadDir, { recursive: true });
+    }
+} catch (err) {
+    console.warn('[WhatsApp Route] Could not create status upload directory:', err.message);
 }
 const statusUpload = multer({
     storage: multer.diskStorage({
@@ -33,8 +37,12 @@ const statusUpload = multer({
 
 // Configure multer for voice messages
 const voiceUploadDir = join(__dirname, '..', '..', 'uploads', 'voice');
-if (!fs.existsSync(voiceUploadDir)) {
-    fs.mkdirSync(voiceUploadDir, { recursive: true });
+try {
+    if (!fs.existsSync(voiceUploadDir)) {
+        fs.mkdirSync(voiceUploadDir, { recursive: true });
+    }
+} catch (err) {
+    console.warn('[WhatsApp Route] Could not create voice upload directory:', err.message);
 }
 const voiceUpload = multer({
     storage: multer.diskStorage({

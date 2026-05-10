@@ -64,7 +64,7 @@ COPY backend/ ./backend/
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Create directories for persistence (uploads and whatsapp sessions)
-RUN mkdir -p uploads sessions auth_info_baileys \
+RUN mkdir -p uploads/status uploads/voice uploads/messages uploads/products sessions auth_info_baileys data \
     && chown -R nodejs:nodejs /app
 
 USER nodejs
