@@ -24,6 +24,7 @@ export async function notifyConversationUpdate(conversationId, message = null) {
             conversationId
         );
         if (row?.user_id) {
+            console.log(`[Socket] Emitting conversation:update to room ${row.user_id} for conv ${conversationId}`);
             io.to(String(row.user_id)).emit('conversation:update', { 
                 conversationId,
                 message: message ? {
@@ -31,6 +32,8 @@ export async function notifyConversationUpdate(conversationId, message = null) {
                     conversation_id: conversationId
                 } : null
             });
+        } else {
+            console.warn(`[Socket] Could not find user_id for conversation ${conversationId}`);
         }
     } catch (err) {
         console.error('[socketEmitter] notifyConversationUpdate error:', err?.message || err);

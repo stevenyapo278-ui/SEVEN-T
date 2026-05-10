@@ -1035,6 +1035,19 @@ export default function DashboardLayout() {
   }, []))
 
   useEffect(() => {
+    if (isAuthenticated) {
+      const token = localStorage.getItem('access_token') || localStorage.getItem('token')
+      import('../services/socket').then(({ connectSocket }) => {
+        connectSocket(token)
+      })
+    } else {
+      import('../services/socket').then(({ disconnectSocket }) => {
+        disconnectSocket()
+      })
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
     if (!isAuthenticated) return
     fetchUnreadCounts()
     const interval = setInterval(fetchUnreadCounts, 60000)
