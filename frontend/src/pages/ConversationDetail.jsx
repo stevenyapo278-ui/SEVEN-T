@@ -179,7 +179,9 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
     setLoading(true)
     api.get(`/conversations/${conversationId}/messages/${messageId}/media`, { responseType: 'blob' })
       .then((res) => {
-        const url = URL.createObjectURL(res.data)
+        // Ensure we create the blob with a proper audio mime type
+        const blobType = res.data.type || 'audio/ogg'
+        const url = URL.createObjectURL(new Blob([res.data], { type: blobType }))
         setSrc(url)
         setLoading(false)
         setError(null)

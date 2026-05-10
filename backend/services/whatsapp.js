@@ -3872,10 +3872,23 @@ class WhatsAppManager {
         });
 
         const msgId = uuidv4();
+        const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
+        if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+        
+        const filename = `${msgId}.ogg`;
+        const destPath = join(uploadsDir, filename);
+        
+        try {
+            // Copy the sent audio to the shared messages folder for UI display
+            writeFileSync(destPath, audioBuffer);
+        } catch (e) {
+            console.warn('[WhatsApp] Failed to copy outgoing audio to uploads/messages:', e.message);
+        }
+
         await db.run(`
-            INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, sender_type, created_at)
-            VALUES (?, ?, 'assistant', '[Audio]', ?, 'audio', 'human', ?)
-        `, msgId, conversationId, result.key.id, new Date().toISOString());
+            INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, sender_type, created_at)
+            VALUES (?, ?, 'assistant', '[Audio]', ?, 'audio', ?, 'human', ?)
+        `, msgId, conversationId, result.key.id, filename, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
 
