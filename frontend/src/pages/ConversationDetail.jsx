@@ -213,7 +213,20 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
   }
 
   const onTimeUpdate = () => {
-    if (audioRef.current) setCurrentTime(audioRef.current.currentTime)
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      // Handle the case where duration was Infinity and just became available
+      if (duration === 0 || duration === Infinity) {
+        setDuration(audioRef.current.duration);
+      }
+    }
+  }
+
+  const onDurationChange = () => {
+    if (audioRef.current) {
+      const d = audioRef.current.duration;
+      if (d && d !== Infinity) setDuration(d);
+    }
   }
 
   const onEnded = () => {
@@ -222,7 +235,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
   }
 
   const formatTime = (time) => {
-    if (isNaN(time)) return '0:00'
+    if (isNaN(time) || time === Infinity) return '--:--'
     const mins = Math.floor(time / 60)
     const secs = Math.floor(time % 60)
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`
@@ -253,9 +266,15 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
       <audio 
         ref={audioRef} 
         src={src} 
+        preload="metadata"
         onLoadedMetadata={onLoadedMetadata} 
+        onDurationChange={onDurationChange}
         onTimeUpdate={onTimeUpdate} 
         onEnded={onEnded}
+        onError={(e) => {
+          console.error('Audio element error:', e);
+          setError('Erreur de lecture audio');
+        }}
       />
       
       <button 
