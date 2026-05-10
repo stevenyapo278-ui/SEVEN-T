@@ -1114,7 +1114,10 @@ class WhatsAppManager {
                 notificationService.notifyNewConversation(agent.user_id, contactName, convId);
                 
                 // Emit socket event to update conversation list in real-time
-                void notifyConversationUpdate(convId, null, agent.user_id);
+                void notifyConversationUpdate(convId, null, agent.user_id, {
+                    ...conversation,
+                    agent_name: agent.name
+                });
 
                 // Trigger workflow: new_conversation
                 void enqueueWorkflow('new_conversation', {

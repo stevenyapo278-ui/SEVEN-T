@@ -15,8 +15,9 @@ export function setIO(socketIO) {
  * @param {string} conversationId
  * @param {object|null} message - Optional message object to push instantly to frontend
  * @param {string|null} targetOwnerId - Optional owner ID to skip DB lookup
+ * @param {object|null} metadata - Optional full conversation object (for new conversations)
  */
-export async function notifyConversationUpdate(conversationId, message = null, targetOwnerId = null) {
+export async function notifyConversationUpdate(conversationId, message = null, targetOwnerId = null, metadata = null) {
     if (!io || !conversationId) return;
     try {
         let ownerId = targetOwnerId;
@@ -30,13 +31,14 @@ export async function notifyConversationUpdate(conversationId, message = null, t
         }
 
         if (ownerId) {
-            console.log(`[Socket] Emitting conversation:update to room ${ownerId} for conv ${conversationId}`);
+            console.log(`[Socket] Emitting conversation:update to room ${ownerId} for conv ${conversationId} (metadata: ${!!metadata})`);
             io.to(String(ownerId)).emit('conversation:update', { 
                 conversationId,
                 message: message ? {
                     ...message,
                     conversation_id: conversationId
-                } : null
+                } : null,
+                metadata
             });
         } else {
             console.warn(`[Socket] No owner ID found for conversation ${conversationId}`);

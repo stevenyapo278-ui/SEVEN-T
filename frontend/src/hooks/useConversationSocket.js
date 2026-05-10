@@ -14,7 +14,7 @@ export function useConversationSocket(onUpdate) {
   }, [onUpdate])
 
   const stableOnUpdate = useCallback((payload) => {
-    if (payload?.conversationId) onUpdateRef.current?.(payload.conversationId, payload.message)
+    if (payload?.conversationId) onUpdateRef.current?.(payload.conversationId, payload.message, payload.metadata)
   }, [])
 
   useEffect(() => {

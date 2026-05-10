@@ -204,8 +204,25 @@ export default function Conversations() {
     }
   }, [])
 
-  useConversationSocket((convId, message) => {
+  useConversationSocket((convId, message, metadata) => {
     if (!convId) return
+
+    // If metadata is provided (usually for new conversations), ensure it's in the list
+    if (metadata) {
+      setConversations(prev => {
+        const exists = prev.some(c => c.id === convId)
+        if (exists) return prev
+        // Prepend new conversation to the list
+        const newConv = {
+          ...metadata,
+          last_message: message?.content || '',
+          last_message_at: message?.created_at || new Date().toISOString(),
+          unread_messages_count: message?.role === 'user' ? 1 : 0
+        }
+        return [newConv, ...prev]
+      })
+      return
+    }
 
     // Fast path: update list instantly when we have a message payload
     if (message) {
