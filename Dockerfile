@@ -37,6 +37,7 @@ RUN apk add --no-cache \
     ca-certificates \
     wget \
     git \
+    ffmpeg \
     && rm -rf /var/cache/apk/*
 
 WORKDIR /app

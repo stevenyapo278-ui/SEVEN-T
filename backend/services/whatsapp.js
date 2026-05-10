@@ -23,6 +23,10 @@ import { orderDetector } from './orderDetector.js';
 import { humanInterventionService } from './humanIntervention.js';
 import notificationService from './notifications.js';
 import { adminAnomaliesService } from './adminAnomalies.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execPromise = promisify(exec);
 import { messageAnalyzer } from './messageAnalyzer.js';
 import supportAnalyzer from './supportAnalyzer.js';
 import faqAnalyzer from './faqAnalyzer.js';
@@ -1308,14 +1312,30 @@ class WhatsAppManager {
                     if (buffer && buffer.length > 0) {
                         const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
                         if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
-                        const filename = `${inMsgId}${ext}`;
-                        const fullPath = join(uploadsDir, filename);
-                        writeFileSync(fullPath, buffer);
-                        mediaUrl = filename;
-                        messageType = 'audio';
-                        audioBase64 = buffer.toString('base64');
-                        audioMime = mime;
-                        console.log(`[WhatsApp] Audio saved successfully: ${filename} (${buffer.length} bytes) to ${fullPath}`);
+                        
+                        const tempOggPath = join(uploadsDir, `${inMsgId}.ogg`);
+                        const finalMp3Filename = `${inMsgId}.mp3`;
+                        const finalMp3Path = join(uploadsDir, finalMp3Filename);
+                        
+                        writeFileSync(tempOggPath, buffer);
+                        
+                        try {
+                            // Convert OGG/Opus to MP3 for universal browser support
+                            await execPromise(`ffmpeg -i "${tempOggPath}" -vn -ar 44100 -ac 2 -b:a 128k "${finalMp3Path}"`);
+                            mediaUrl = finalMp3Filename;
+                            messageType = 'audio';
+                            audioBase64 = buffer.toString('base64');
+                            audioMime = 'audio/mpeg';
+                            console.log(`[WhatsApp] Audio converted and saved: ${finalMp3Filename}`);
+                            // Cleanup temp file
+                            if (existsSync(tempOggPath)) rmSync(tempOggPath);
+                        } catch (convErr) {
+                            console.error('[WhatsApp] FFmpeg conversion failed, falling back to raw ogg:', convErr.message);
+                            mediaUrl = `${inMsgId}.ogg`;
+                            messageType = 'audio';
+                            audioBase64 = buffer.toString('base64');
+                            audioMime = mime;
+                        }
                     } else {
                         console.warn('[WhatsApp] Audio download returned empty buffer');
                     }
@@ -3875,20 +3895,25 @@ class WhatsAppManager {
         const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
         if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
         
-        const filename = `${msgId}.ogg`;
+        const filename = `${msgId}.mp3`;
         const destPath = join(uploadsDir, filename);
         
         try {
-            // Copy the sent audio to the shared messages folder for UI display
-            writeFileSync(destPath, audioBuffer);
+            // Convert outgoing audio to MP3 for UI consistency
+            const tempSentPath = join(uploadsDir, `${msgId}_sent.ogg`);
+            writeFileSync(tempSentPath, audioBuffer);
+            await execPromise(`ffmpeg -i "${tempSentPath}" -vn -ar 44100 -ac 2 -b:a 128k "${destPath}"`);
+            if (existsSync(tempSentPath)) rmSync(tempSentPath);
         } catch (e) {
-            console.warn('[WhatsApp] Failed to copy outgoing audio to uploads/messages:', e.message);
+            console.warn('[WhatsApp] Failed to convert/copy outgoing audio to MP3:', e.message);
+            // Fallback to raw copy if ffmpeg fails
+            writeFileSync(join(uploadsDir, `${msgId}.ogg`), audioBuffer);
         }
 
         await db.run(`
             INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, sender_type, created_at)
             VALUES (?, ?, 'assistant', '[Audio]', ?, 'audio', ?, 'human', ?)
-        `, msgId, conversationId, result.key.id, filename, new Date().toISOString());
+        `, msgId, conversationId, result.key.id, filename.endsWith('.mp3') ? filename : `${msgId}.ogg`, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
 

@@ -259,7 +259,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
       {src && (
         <a 
           href={src} 
-          download={`audio_${messageId}.ogg`}
+          download={`audio_${messageId}.mp3`}
           className="text-[10px] text-red-500/50 hover:text-red-500 underline flex items-center gap-1"
         >
           <Download className="w-3 h-3" />
@@ -367,7 +367,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
 
       <a 
         href={src} 
-        download={`audio_${messageId}.ogg`}
+        download={`audio_${messageId}.mp3`}
         className={`w-8 h-8 rounded-full flex items-center justify-center transition-all flex-shrink-0 ${
           isAssistant 
             ? isDark ? 'bg-space-800 text-gold-400 border border-gold-500/20' : 'bg-white text-gold-500 border border-gold-200'
