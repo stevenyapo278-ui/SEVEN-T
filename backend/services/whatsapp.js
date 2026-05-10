@@ -1320,15 +1320,19 @@ class WhatsAppManager {
                         writeFileSync(tempOggPath, buffer);
                         
                         try {
-                            // Convert OGG/Opus to MP3 for universal browser support
-                            await execPromise(`ffmpeg -i "${tempOggPath}" -vn -ar 44100 -ac 2 -b:a 128k "${finalMp3Path}"`);
+                            // Convert OGG/Opus to MP3 with optimized settings (16kHz, mono, 64k)
+                            await execPromise(`ffmpeg -i "${tempOggPath}" -vn -ar 16000 -ac 1 -b:a 64k -codec:a libmp3lame "${finalMp3Path}"`);
                             mediaUrl = finalMp3Filename;
                             messageType = 'audio';
                             audioBase64 = buffer.toString('base64');
                             audioMime = 'audio/mpeg';
-                            console.log(`[WhatsApp] Audio converted and saved: ${finalMp3Filename}`);
-                            // Cleanup temp file
-                            if (existsSync(tempOggPath)) rmSync(tempOggPath);
+                            const stats = existsSync(finalMp3Path) ? { size: (await execPromise(`stat -c%s "${finalMp3Path}"`)).stdout.trim() } : { size: 0 };
+                            console.log(`[WhatsApp] Audio converted and saved: ${finalMp3Filename} (${stats.size} bytes)`);
+                            
+                            // Cleanup temp file asynchronously
+                            if (existsSync(tempOggPath)) {
+                                exec(`rm "${tempOggPath}"`).catch(e => console.error('[WhatsApp] Cleanup error:', e.message));
+                            }
                         } catch (convErr) {
                             console.error('[WhatsApp] FFmpeg conversion failed, falling back to raw ogg:', convErr.message);
                             mediaUrl = `${inMsgId}.ogg`;
@@ -3899,11 +3903,13 @@ class WhatsAppManager {
         const destPath = join(uploadsDir, filename);
         
         try {
-            // Convert outgoing audio to MP3 for UI consistency
+            // Convert outgoing audio to MP3 with optimized settings
             const tempSentPath = join(uploadsDir, `${msgId}_sent.ogg`);
             writeFileSync(tempSentPath, audioBuffer);
-            await execPromise(`ffmpeg -i "${tempSentPath}" -vn -ar 44100 -ac 2 -b:a 128k "${destPath}"`);
-            if (existsSync(tempSentPath)) rmSync(tempSentPath);
+            await execPromise(`ffmpeg -i "${tempSentPath}" -vn -ar 16000 -ac 1 -b:a 64k -codec:a libmp3lame "${destPath}"`);
+            if (existsSync(tempSentPath)) {
+                exec(`rm "${tempSentPath}"`).catch(e => console.error('[WhatsApp] Outgoing cleanup error:', e.message));
+            }
         } catch (e) {
             console.warn('[WhatsApp] Failed to convert/copy outgoing audio to MP3:', e.message);
             // Fallback to raw copy if ffmpeg fails

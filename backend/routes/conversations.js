@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { fileURLToPath } from 'url';
-import { dirname, join, extname } from 'path';
+import { dirname, join, extname, resolve } from 'path';
 import { existsSync } from 'fs';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -197,8 +197,9 @@ router.get('/:convId/messages/:msgId/media', authenticateToken, async (req, res)
         }
         if (contentType) {
             res.setHeader('Content-Type', contentType);
+            res.setHeader('Accept-Ranges', 'bytes');
         }
-        res.sendFile(filepath);
+        res.sendFile(resolve(filepath));
     } catch (error) {
         console.error('Get message media error:', error);
         res.status(500).json({ error: 'Erreur serveur' });

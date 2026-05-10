@@ -176,13 +176,14 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
 
   useEffect(() => {
     if (!conversationId || !messageId) return
+    let objectUrl = null;
     setLoading(true)
     api.get(`/conversations/${conversationId}/messages/${messageId}/media`, { responseType: 'blob' })
       .then((res) => {
-        // Ensure we create the blob with a proper audio mime type
-        const blobType = res.data.type || 'audio/ogg'
-        const url = URL.createObjectURL(new Blob([res.data], { type: blobType }))
-        setSrc(url)
+        // res.data is already a Blob because of responseType: 'blob'
+        console.log(`[Audio] Received blob: type=${res.data.type}, size=${res.data.size}`);
+        objectUrl = URL.createObjectURL(res.data)
+        setSrc(objectUrl)
         setLoading(false)
         setError(null)
       })
@@ -191,6 +192,12 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
         setError(err.response?.status === 404 ? 'Média introuvable' : 'Erreur de chargement')
         setLoading(false)
       })
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    }
   }, [conversationId, messageId])
 
   const togglePlay = () => {
