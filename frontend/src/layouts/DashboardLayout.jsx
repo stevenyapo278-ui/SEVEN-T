@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Outlet, NavLink, useNavigate, Link, useLocation, useNavigationType } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import CurrencyContext from '../contexts/CurrencyContext'
