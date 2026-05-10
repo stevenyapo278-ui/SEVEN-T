@@ -3818,7 +3818,7 @@ class WhatsAppManager {
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
 
         // Notify frontend
-        notifyConversationUpdate(toolId, conversationId, {
+        notifyConversationUpdate(conversationId, {
             id: msgId,
             conversation_id: conversationId,
             role: 'assistant',
@@ -3827,7 +3827,7 @@ class WhatsAppManager {
             message_type: 'manual',
             sender_type: 'human',
             created_at: new Date().toISOString()
-        });
+        }, agent.user_id);
 
         return { success: true, messageId: msgId, whatsappId: result.key.id };
     }
@@ -3873,7 +3873,7 @@ class WhatsAppManager {
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
 
         // Notify frontend
-        notifyConversationUpdate(toolId, conversationId, {
+        notifyConversationUpdate(conversationId, {
             id: msgId,
             conversation_id: conversationId,
             role: 'assistant',
@@ -3882,27 +3882,11 @@ class WhatsAppManager {
             message_type: 'audio',
             sender_type: 'human',
             created_at: new Date().toISOString()
-        });
+        }, agent.user_id);
 
         return { success: true, messageId: msgId, whatsappId: result.key.id };
     }
-        void notifyConversationUpdate(conversationId, {
-            id: msgId,
-            role: 'assistant',
-            content: text,
-            whatsapp_id: result.key.id,
-            message_type: 'manual',
-            created_at: new Date().toISOString()
-        }, agent.user_id);
 
-        console.log(`[WhatsApp] Human message sent from platform to ${conversation.contact_number}: ${text.substring(0, 50)}...`);
-
-        return { 
-            success: true, 
-            messageId: msgId,
-            whatsappId: result.key.id
-        };
-    }
 
     /**
      * Get new messages since a specific timestamp
