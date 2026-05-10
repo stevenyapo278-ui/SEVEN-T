@@ -70,3 +70,13 @@ export async function notifyWhatsAppQR(toolId, qrDataUrl) {
         console.error('[socketEmitter] notifyWhatsAppQR error:', err.message);
     }
 }
+
+/**
+ * Notify a user about a new app notification.
+ * @param {string} userId
+ * @param {object} notification
+ */
+export function notifyNotification(userId, notification) {
+    if (!io || !userId) return;
+    io.to(String(userId)).emit('notification:new', notification);
+}

@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import db from '../database/init.js';
 import { pushNotificationService } from './pushNotifications.js';
+import { notifyNotification } from './socketEmitter.js';
 
 // Notification types with their icons/colors
 export const NOTIFICATION_TYPES = {
@@ -54,7 +55,14 @@ class NotificationService {
                 data: metadata
             }).catch(err => console.error('[Notifications] Push error:', err));
 
-            return await this.getById(id);
+            const notification = await this.getById(id);
+            
+            // Emit real-time socket event
+            if (notification) {
+                notifyNotification(userId, notification);
+            }
+
+            return notification;
         } catch (error) {
             console.error('[Notifications] Create error:', error);
             return null;

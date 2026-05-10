@@ -9,6 +9,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import { useModuleAvailability } from '../hooks/useModuleAvailability'
 import { AnimatePresence, motion } from 'framer-motion'
+import toast from 'react-hot-toast'
 import api from '../services/api'
 import { saveSessionLocation } from '../utils/sessionLocation'
 import {
@@ -59,6 +60,8 @@ import GlobalAIAssistantModal from '../components/AI/GlobalAIAssistantModal'
 import AIChatbot from '../components/AI/AIChatbot'
 import { AssistedConfigWizard } from '../components/Onboarding'
 import { AlertCircle, Lock } from 'lucide-react'
+import { useNotificationSocket } from '../hooks/useNotificationSocket'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const PastDueBanner = ({ isDark }) => (
   <div className={`w-full px-4 py-2 flex items-center justify-between gap-3 border-b ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-600'}`}>
@@ -584,6 +587,15 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  // Real-time updates for dropdown
+  useNotificationSocket(useCallback((newNotif) => {
+    setNotifications(prev => {
+        if (prev.some(n => n.id === newNotif.id)) return prev;
+        return [newNotif, ...prev].slice(0, 20);
+    });
+    setUnreadCountInternal(prev => prev + 1);
+  }, []))
+
   const markAsRead = async (id) => {
     try {
       await api.put(`/notifications/${id}/read`)
@@ -998,6 +1010,19 @@ export default function DashboardLayout() {
       console.error('Error fetching unread counts:', error)
     }
   }
+
+  // Real-time notifications
+  useNotificationSocket(useCallback((newNotif) => {
+    setUnreadCount(prev => prev + 1);
+    
+    // Global toast for new notifications
+    // We only show it if the notification was just created (to avoid re-toasting on reconnects if the server were to re-emit)
+    toast.success(newNotif.title, {
+        icon: '🔔',
+        duration: 6000,
+        position: 'top-right'
+    });
+  }, []))
 
   useEffect(() => {
     if (!isAuthenticated) return

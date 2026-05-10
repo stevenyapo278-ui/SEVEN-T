@@ -7,6 +7,7 @@ import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import { useConfirm } from '../contexts/ConfirmContext'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { useNotificationSocket } from '../hooks/useNotificationSocket'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { registerLocale } from 'react-datepicker'
@@ -18,6 +19,16 @@ export default function Notifications() {
   const { isDark } = useTheme()
   const { showConfirm } = useConfirm()
   const { permission, isSubscribed, subscribe, unsubscribe } = usePushNotifications()
+
+  // Real-time updates
+  useNotificationSocket(useCallback((newNotif) => {
+    setNotifications(prev => {
+        // Prevent duplicates
+        if (prev.some(n => n.id === newNotif.id)) return prev;
+        return [newNotif, ...prev];
+    });
+    setUnreadCount(prev => prev + 1);
+  }, []))
   
   const FILTERS = [
     { id: 'all', label: t('common.all') },
