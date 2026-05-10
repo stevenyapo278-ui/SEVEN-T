@@ -256,21 +256,27 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
         {playing ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
       </button>
 
-      <div className="flex-1 flex flex-col gap-1">
-        <div className="relative h-6 flex items-center gap-[2px]">
-          {[...Array(20)].map((_, i) => {
-            const progress = (currentTime / duration) * 20;
+      <div className="flex-1 flex flex-col gap-1.5">
+        <div className="relative h-7 flex items-center gap-[3px] group/wave">
+          {[...Array(24)].map((_, i) => {
+            const progress = (currentTime / duration) * 24;
             const isActive = i < progress;
-            const height = 20 + Math.sin(i * 0.8) * 15; 
+            // More dynamic wave pattern
+            const height = 25 + Math.sin(i * 0.7 + (playing ? Date.now() * 0.005 : 0)) * 15 + Math.random() * 5; 
             return (
               <div 
                 key={i} 
-                className={`w-1 rounded-full transition-all duration-300 ${
+                className={`w-[3px] rounded-full transition-all duration-300 ${
+                  playing && isActive ? 'animate-pulse' : ''
+                } ${
                   isActive 
-                    ? isAssistant ? 'bg-gold-500' : 'bg-white'
+                    ? isAssistant ? 'bg-gold-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]'
                     : isAssistant ? 'bg-gold-500/20' : 'bg-white/20'
                 }`}
-                style={{ height: `${height}%` }}
+                style={{ 
+                  height: `${height}%`,
+                  transitionDelay: `${i * 20}ms`
+                }}
               />
             )
           })}
@@ -278,13 +284,14 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
             type="range"
             min="0"
             max={duration || 0}
+            step="0.01"
             value={currentTime}
             onChange={(e) => {
               const val = parseFloat(e.target.value);
               setCurrentTime(val);
               if (audioRef.current) audioRef.current.currentTime = val;
             }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
           />
         </div>
         
@@ -1218,7 +1225,7 @@ export default function ConversationDetail() {
                           </div>
                         )}
 
-                        {message.media_url && message.role === 'user' ? (
+                        {(message.media_url || message.message_type === 'audio' || message.message_type === 'image') && message.role === 'user' ? (
                           <div className="mb-2">
                             {message.message_type === 'audio' ? (
                               <MessageAudio 
@@ -1231,7 +1238,7 @@ export default function ConversationDetail() {
                               <MessageImage conversationId={id} messageId={message.id} />
                             ) : null}
                           </div>
-                        ) : (message.role === 'assistant' && (message.media_url || message.content?.includes('/api/products/image/'))) ? (
+                        ) : (message.role === 'assistant' && (message.media_url || message.message_type === 'audio' || message.message_type === 'image' || message.content?.includes('/api/products/image/'))) ? (
                           <div className="mb-2">
                             {message.message_type === 'audio' ? (
                               <MessageAudio 
@@ -1276,7 +1283,7 @@ export default function ConversationDetail() {
                               <p className={`text-xs ${isDark ? 'text-blue-400/70' : 'text-blue-500/80'}`}>{message.content?.replace('📊 ', '').replace('[Sondage] ', '') || 'Sondage'}</p>
                             </div>
                           </div>
-                        ) : (message.content && message.content !== '[Image]' && message.content !== '[Audio]') || (!message.media_url && message.content) ? (
+                        ) : (message.content && message.content !== '[Image]' && message.content !== '[Audio]' && message.message_type !== 'audio' && message.message_type !== 'image') || (!message.media_url && message.content && message.message_type !== 'audio' && message.message_type !== 'image') ? (
                           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
                         ) : null}
 
