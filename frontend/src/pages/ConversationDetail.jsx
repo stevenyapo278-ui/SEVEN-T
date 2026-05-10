@@ -286,6 +286,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
     }`}>
       <audio 
         ref={audioRef} 
+        key={src}
         src={src} 
         preload="metadata"
         onLoadedMetadata={onLoadedMetadata} 
