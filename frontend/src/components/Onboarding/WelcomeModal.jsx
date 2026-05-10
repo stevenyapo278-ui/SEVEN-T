@@ -297,13 +297,5 @@ export default function WelcomeModal({ isOpen, onClose, onComplete, data }) {
     </div>,
     document.body
   )
-}ition-transform relative z-10" />
-              <div className="absolute inset-0 bg-gold-400 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-            </button>
-          </div>
-        </div>
-      </MotionDiv>
-    </div>,
-    document.body
-  )
 }
+
