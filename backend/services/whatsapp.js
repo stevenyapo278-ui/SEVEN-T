@@ -1114,7 +1114,7 @@ class WhatsAppManager {
                 notificationService.notifyNewConversation(agent.user_id, contactName, convId);
                 
                 // Emit socket event to update conversation list in real-time
-                void notifyConversationUpdate(convId);
+                void notifyConversationUpdate(convId, null, agent.user_id);
 
                 // Trigger workflow: new_conversation
                 void enqueueWorkflow('new_conversation', {
@@ -1484,7 +1484,7 @@ class WhatsAppManager {
                     is_status_reply: payload.is_status_reply,
                     quoted_content: payload.quoted_content,
                     created_at: payload.createdAt
-                });
+                }, context.agent.user_id);
                 if (!skipAI) {
                     void enqueueWorkflow('new_message', {
                         conversationId: context.conversation.id,
@@ -1532,7 +1532,7 @@ class WhatsAppManager {
                 is_status_reply: payload.is_status_reply,
                 quoted_content: payload.quoted_content,
                 created_at: payload.createdAt
-            });
+            }, context.agent.user_id);
             this.getProfilePicture(context.agent.id, context.sender).catch(() => {});
 
             if (!skipAI) {
@@ -3190,7 +3190,7 @@ class WhatsAppManager {
             whatsapp_id: whatsappId,
             message_type: messageType,
             created_at: new Date().toISOString()
-        });
+        }, agent.user_id);
 
         return { success: true, messageId: whatsappId, sendResult };
     }
@@ -3237,7 +3237,7 @@ class WhatsAppManager {
             whatsapp_id: whatsappId,
             message_type: messageType,
             created_at: new Date().toISOString()
-        });
+        }, agent.user_id);
 
         return { success: true, messageId: whatsappId, sendResult: result };
     }
@@ -3809,7 +3809,7 @@ class WhatsAppManager {
             whatsapp_id: result.key.id,
             message_type: 'manual',
             created_at: new Date().toISOString()
-        });
+        }, agent.user_id);
 
         console.log(`[WhatsApp] Human message sent from platform to ${conversation.contact_number}: ${text.substring(0, 50)}...`);
 

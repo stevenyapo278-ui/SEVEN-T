@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useConfirm } from '../contexts/ConfirmContext'
+import { useSocketStatus } from '../services/socket'
 import api, { sendToConversation, getNewConversationMessages, syncMessages, getMessagesWithPagination, deleteMessages, markConversationRead } from '../services/api'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
@@ -414,6 +415,7 @@ const isNameJustNumber = (name, number) => {
 }
 
 export default function ConversationDetail() {
+  const isLive = useSocketStatus()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user, refreshUser } = useAuth()
@@ -456,6 +458,7 @@ export default function ConversationDetail() {
   // Real-time: refetch and incrementally update messages when this conversation is updated
   useConversationSocket((convId, message) => {
     if (convId === id) {
+      console.log(`[ConversationDetail] Received socket update for this conversation:`, { message: !!message })
       if (message) {
         setMessages(prev => {
           // Prevent duplicates (already in list or current user sending reply)
@@ -467,11 +470,16 @@ export default function ConversationDetail() {
           return merged
         })
       }
-      // Debounced refetch (metadata: takeover/score). Avoid hammering the API on message floods.
+      // Debounced refetch (metadata: takeover/score).
       if (socketRefetchTimerRef.current) clearTimeout(socketRefetchTimerRef.current)
       socketRefetchTimerRef.current = setTimeout(() => {
-        loadConversationRef.current?.()
-      }, 800)
+        const now = Date.now()
+        // Throttle to 1.5s to avoid UI flicker on metadata refresh
+        if (!lastPollTimeRef.current || now - lastPollTimeRef.current > 1500) {
+          lastPollTimeRef.current = now
+          loadConversationRef.current?.()
+        }
+      }, 1200)
 
       // If user is currently viewing this conversation, auto mark as read (debounced)
       if (markReadDebounceRef.current) clearTimeout(markReadDebounceRef.current)
@@ -879,6 +887,19 @@ export default function ConversationDetail() {
               </button>
               
               <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  onClick={() => loadConversation()}
+                  className={`p-2 rounded-xl transition-all ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                  title="Rafraîchir"
+                >
+                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                {isLive && (
+                  <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
+                  </span>
+                )}
                 <button
                   onClick={handleSync}
                   disabled={syncing}

@@ -12,20 +12,26 @@ export function setIO(socketIO) {
 
 /**
  * Notify a user that a conversation has new messages or was updated.
- * Call this after inserting/updating messages in the DB.
  * @param {string} conversationId
  * @param {object|null} message - Optional message object to push instantly to frontend
+ * @param {string|null} targetOwnerId - Optional owner ID to skip DB lookup
  */
-export async function notifyConversationUpdate(conversationId, message = null) {
+export async function notifyConversationUpdate(conversationId, message = null, targetOwnerId = null) {
     if (!io || !conversationId) return;
     try {
-        const row = await db.get(
-            'SELECT a.user_id FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE c.id = ?',
-            conversationId
-        );
-        if (row?.user_id) {
-            console.log(`[Socket] Emitting conversation:update to room ${row.user_id} for conv ${conversationId}`);
-            io.to(String(row.user_id)).emit('conversation:update', { 
+        let ownerId = targetOwnerId;
+        
+        if (!ownerId) {
+            const row = await db.get(
+                'SELECT a.user_id FROM conversations c JOIN agents a ON c.agent_id = a.id WHERE c.id = ?',
+                conversationId
+            );
+            ownerId = row?.user_id;
+        }
+
+        if (ownerId) {
+            console.log(`[Socket] Emitting conversation:update to room ${ownerId} for conv ${conversationId}`);
+            io.to(String(ownerId)).emit('conversation:update', { 
                 conversationId,
                 message: message ? {
                     ...message,
@@ -33,7 +39,7 @@ export async function notifyConversationUpdate(conversationId, message = null) {
                 } : null
             });
         } else {
-            console.warn(`[Socket] Could not find user_id for conversation ${conversationId}`);
+            console.warn(`[Socket] No owner ID found for conversation ${conversationId}`);
         }
     } catch (err) {
         console.error('[socketEmitter] notifyConversationUpdate error:', err?.message || err);

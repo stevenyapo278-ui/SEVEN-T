@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import api, { getConversationUpdates } from '../services/api'
 import { useOnboardingTour } from '../components/Onboarding'
 import { useConversationSocket } from '../hooks/useConversationSocket'
+import { useSocketStatus } from '../services/socket'
 import { MessageSquare, Search, Clock, Bot, RefreshCw, Bell, Phone, ChevronRight, MessageCircle, Sparkles, Filter, X, CheckSquare, Square, User, Zap, Trash2, Plus, Check, CheckCircle, ShoppingCart } from 'lucide-react'
 import toast from 'react-hot-toast'
 import EmptyState from '../components/EmptyState'
@@ -126,6 +127,7 @@ export default function Conversations() {
   const { startTour, completedTours } = useOnboardingTour()
   const { user: authUser, refreshUser } = useAuth()
   const isDark = theme === 'dark'
+  const isLive = useSocketStatus()
   const hasConversionScore = authUser?.is_admin === 1 || authUser?.plan_features?.conversion_score === true || authUser?.conversion_score_enabled === 1
   
   const [searchParams, setSearchParams] = useSearchParams()
@@ -181,12 +183,24 @@ export default function Conversations() {
   }, [completedTours, startTour])
 
   const lastFetchTimeRef = useRef(0)
+  const refetchTimeoutRef = useRef(null)
+  
   const throttledLoadConversations = useCallback(() => {
     const now = Date.now()
-    // Throttle to avoid freezing on message flood
-    if (now - lastFetchTimeRef.current > 800) {
-      lastFetchTimeRef.current = now
+    const MIN_INTERVAL = 1200 // Minimum time between consecutive fetches
+
+    if (refetchTimeoutRef.current) clearTimeout(refetchTimeoutRef.current)
+
+    const executeFetch = () => {
+      lastFetchTimeRef.current = Date.now()
       loadConversationsRef.current?.()
+    }
+
+    if (now - lastFetchTimeRef.current > MIN_INTERVAL) {
+      executeFetch()
+    } else {
+      // Schedule a trailing-edge fetch to ensure we don't miss the last message
+      refetchTimeoutRef.current = setTimeout(executeFetch, MIN_INTERVAL)
     }
   }, [])
 
@@ -198,6 +212,7 @@ export default function Conversations() {
       setConversations(prev => {
         const idx = prev.findIndex(c => c.id === convId)
         if (idx === -1) {
+          console.log(`[Conversations] Received update for unknown conv ${convId}. Refetching list...`)
           // Conversation might not be in the current 100 results → fallback refetch
           throttledLoadConversations()
           return prev
@@ -401,6 +416,12 @@ export default function Conversations() {
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-gold-400/10 rounded-xl"><MessageSquare className="w-6 h-6 text-gold-400" /></div>
               <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Conversations</h1>
+              {isLive && (
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider animate-pulse border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Live
+                </span>
+              )}
             </div>
             <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
