@@ -5,6 +5,7 @@ self.addEventListener('push', function(event) {
       body: data.body,
       icon: data.icon || '/logo.svg',
       badge: '/logo.svg',
+      vibrate: [100, 50, 100],
       data: {
         url: data.data?.url || '/dashboard/notifications'
       }

@@ -1037,27 +1037,39 @@ export default function DashboardLayout() {
     }
   }
 
+  const playNotificationSound = useCallback(() => {
+    try {
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(e => console.warn('Sound play blocked by browser:', e.message));
+    } catch (e) {
+      console.warn('Audio error:', e);
+    }
+  }, []);
+
   // Real-time notifications
   useNotificationSocket(useCallback((newNotif) => {
     setUnreadCount(prev => prev + 1);
+    playNotificationSound();
     
     // Global toast for new notifications
-    // We only show it if the notification was just created (to avoid re-toasting on reconnects if the server were to re-emit)
     toast.success(newNotif.title, {
         icon: '🔔',
         duration: 6000,
         position: 'top-right'
     });
-  }, []))
+  }, [playNotificationSound]))
 
   // Real-time conversation unread counts
   useConversationSocket(useCallback((convId, message) => {
-    // Only refresh count if it's an incoming message from a user (which increments unread count)
-    // or if it's a message without payload (refetch needed anyway)
+    // Only refresh count if it's an incoming message from a user
     if (!message || message.role === 'user') {
       fetchUnreadCounts()
+      if (message?.role === 'user') {
+        playNotificationSound();
+      }
     }
-  }, []))
+  }, [playNotificationSound]))
 
   useEffect(() => {
     if (isAuthenticated) {
