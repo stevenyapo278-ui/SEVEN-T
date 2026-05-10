@@ -1457,7 +1457,7 @@ class WhatsAppManager {
                     is_status_reply: payload.is_status_reply,
                     quoted_content: payload.quoted_content,
                     created_at: payload.createdAt
-                });
+                }, context.agent.user_id);
 
                 console.log(`[WhatsApp] Audio transcription failed for conversation ${context.conversation.id}, flagged for human`);
                 return;
@@ -1520,7 +1520,7 @@ class WhatsAppManager {
             await db.run(`
                 INSERT INTO messages (id, conversation_id, role, content, whatsapp_id, message_type, media_url, is_status_reply, quoted_content, created_at)
                 VALUES (?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)
-            `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, 'text', payload.mediaUrl || null, payload.is_status_reply, payload.quoted_content, payload.createdAt);
+            `, inMsgId, context.conversation.id, payload.content, payload.whatsapp_id, payload.messageType, payload.mediaUrl || null, payload.is_status_reply, payload.quoted_content, payload.createdAt);
             await db.run(
                 `UPDATE conversations
                  SET last_message_at = ?,
@@ -1537,7 +1537,7 @@ class WhatsAppManager {
                 role: 'user',
                 content: payload.content,
                 whatsapp_id: payload.whatsapp_id,
-                message_type: 'text',
+                message_type: payload.messageType,
                 media_url: payload.mediaUrl || null,
                 is_status_reply: payload.is_status_reply,
                 quoted_content: payload.quoted_content,

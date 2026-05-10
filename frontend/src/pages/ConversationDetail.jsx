@@ -1225,9 +1225,9 @@ export default function ConversationDetail() {
                           </div>
                         )}
 
-                        {(message.media_url || message.message_type === 'audio' || message.message_type === 'image') && message.role === 'user' ? (
+                        {(message.media_url || message.message_type === 'audio' || message.message_type === 'image' || message.content === '[Audio]' || message.content === '[Image]') && message.role === 'user' ? (
                           <div className="mb-2">
-                            {message.message_type === 'audio' ? (
+                            {(message.message_type === 'audio' || message.content === '[Audio]') ? (
                               <MessageAudio 
                                 conversationId={id} 
                                 messageId={message.id} 
@@ -1238,9 +1238,9 @@ export default function ConversationDetail() {
                               <MessageImage conversationId={id} messageId={message.id} />
                             ) : null}
                           </div>
-                        ) : (message.role === 'assistant' && (message.media_url || message.message_type === 'audio' || message.message_type === 'image' || message.content?.includes('/api/products/image/'))) ? (
+                        ) : (message.role === 'assistant' && (message.media_url || message.message_type === 'audio' || message.message_type === 'image' || message.content?.includes('/api/products/image/') || message.content === '[Audio]' || message.content === '[Image]')) ? (
                           <div className="mb-2">
-                            {message.message_type === 'audio' ? (
+                            {(message.message_type === 'audio' || message.content === '[Audio]') ? (
                               <MessageAudio 
                                 conversationId={id} 
                                 messageId={message.id} 
@@ -1283,7 +1283,7 @@ export default function ConversationDetail() {
                               <p className={`text-xs ${isDark ? 'text-blue-400/70' : 'text-blue-500/80'}`}>{message.content?.replace('📊 ', '').replace('[Sondage] ', '') || 'Sondage'}</p>
                             </div>
                           </div>
-                        ) : (message.content && message.content !== '[Image]' && message.content !== '[Audio]' && message.message_type !== 'audio' && message.message_type !== 'image') || (!message.media_url && message.content && message.message_type !== 'audio' && message.message_type !== 'image') ? (
+                        ) : (message.content && message.content !== '[Image]' && message.content !== '[Audio]' && message.message_type !== 'audio' && message.message_type !== 'image') && (!message.media_url || message.message_type === 'text') ? (
                           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
                         ) : null}
 
