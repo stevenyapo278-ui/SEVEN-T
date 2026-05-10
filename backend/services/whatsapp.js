@@ -1304,16 +1304,23 @@ class WhatsAppManager {
                     const buffer = await downloadMediaMessage(message, 'buffer', {});
                     const mime = message.message.audioMessage?.mimetype || 'audio/ogg';
                     const ext = mime === 'audio/mpeg' ? '.mp3' : '.ogg';
-                    const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
-                    if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
-                    const filename = `${inMsgId}${ext}`;
-                    writeFileSync(join(uploadsDir, filename), buffer);
-                    mediaUrl = filename;
-                    messageType = 'audio';
-                    audioBase64 = buffer.toString('base64');
-                    audioMime = mime;
+                    
+                    if (buffer && buffer.length > 0) {
+                        const uploadsDir = join(__dirname, '..', '..', 'uploads', 'messages');
+                        if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
+                        const filename = `${inMsgId}${ext}`;
+                        const fullPath = join(uploadsDir, filename);
+                        writeFileSync(fullPath, buffer);
+                        mediaUrl = filename;
+                        messageType = 'audio';
+                        audioBase64 = buffer.toString('base64');
+                        audioMime = mime;
+                        console.log(`[WhatsApp] Audio saved successfully: ${filename} (${buffer.length} bytes) to ${fullPath}`);
+                    } else {
+                        console.warn('[WhatsApp] Audio download returned empty buffer');
+                    }
                 } catch (e) {
-                    console.warn('[WhatsApp] Failed to save audio for conversation:', e.message);
+                    console.error('[WhatsApp] Failed to save audio for conversation:', e);
                 }
             }
 

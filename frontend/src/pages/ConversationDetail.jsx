@@ -171,6 +171,7 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1)
+  const [error, setError] = useState(null)
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -181,8 +182,13 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
         const url = URL.createObjectURL(res.data)
         setSrc(url)
         setLoading(false)
+        setError(null)
       })
-      .catch(() => setLoading(false))
+      .catch((err) => {
+        console.error('Error fetching audio:', err)
+        setError(err.response?.status === 404 ? 'Média introuvable' : 'Erreur de chargement')
+        setLoading(false)
+      })
   }, [conversationId, messageId])
 
   const togglePlay = () => {
@@ -226,6 +232,13 @@ function MessageAudio({ conversationId, messageId, isDark, isAssistant }) {
     <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-black/5 animate-pulse min-w-[200px]">
       <div className="w-8 h-8 rounded-full bg-black/10" />
       <div className="flex-1 h-1.5 rounded-full bg-black/10" />
+    </div>
+  )
+
+  if (error) return (
+    <div className="p-3 text-xs text-red-500/70 italic flex items-center gap-2 bg-red-500/5 rounded-xl border border-red-500/10">
+      <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
+      {error}
     </div>
   )
 
