@@ -97,7 +97,7 @@ export const registerSchema = z.object({
     name: z.string()
         .min(2, 'Le nom doit contenir au moins 2 caractères')
         .max(100, 'Nom trop long')
-        .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, 'Nom invalide'),
+        .regex(/^[a-zA-ZÀ-ÿ0-9\s'-]+$/, 'Nom invalide'),
     company: z.string()
         .max(200, 'Nom d\'entreprise trop long')
         .optional()

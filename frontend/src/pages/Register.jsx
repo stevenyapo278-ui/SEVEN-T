@@ -66,7 +66,11 @@ export default function Register() {
         navigate('/dashboard')
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Erreur lors de l\'inscription')
+      const errorData = error.response?.data
+      const message = errorData?.details 
+        ? errorData.details.map(d => d.message).join(', ')
+        : (errorData?.error || 'Erreur lors de l\'inscription')
+      toast.error(message)
     } finally {
       setLoading(false)
     }
