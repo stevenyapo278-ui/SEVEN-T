@@ -333,6 +333,7 @@ io.use(async (socket, next) => {
         jwt.verify(token, JWT_SECRET, (err, decoded) => {
             if (err) return next(new Error('Token invalide'));
             socket.userId = String(decoded.id);
+            socket.ownerId = String(decoded.parent_user_id || decoded.id);
             next();
         });
     } catch (e) {
@@ -340,7 +341,15 @@ io.use(async (socket, next) => {
     }
 });
 io.on('connection', (socket) => {
+    // Join private room (for specific notifications)
     socket.join(socket.userId);
+    
+    // Join owner room (for shared conversation/agent updates)
+    if (socket.ownerId) {
+        socket.join(socket.ownerId);
+        console.log(`[Socket] User ${socket.userId} joined owner room ${socket.ownerId}`);
+    }
+    
     socket.on('disconnect', () => {});
 });
 setIO(io);

@@ -1112,6 +1112,9 @@ class WhatsAppManager {
                 
                 // Internal notification
                 notificationService.notifyNewConversation(agent.user_id, contactName, convId);
+                
+                // Emit socket event to update conversation list in real-time
+                void notifyConversationUpdate(convId);
 
                 // Trigger workflow: new_conversation
                 void enqueueWorkflow('new_conversation', {
@@ -1438,6 +1441,20 @@ class WhatsAppManager {
                     context.conversation.id
                 );
                 humanInterventionService.flagConversation(context.conversation.id, context.agent.user_id, 'audio_transcription_failed');
+                
+                // Notify frontend
+                void notifyConversationUpdate(context.conversation.id, {
+                    id: payload.inMsgId,
+                    role: 'user',
+                    content: payload.content,
+                    whatsapp_id: payload.whatsapp_id,
+                    message_type: payload.messageType,
+                    media_url: payload.mediaUrl,
+                    is_status_reply: payload.is_status_reply,
+                    quoted_content: payload.quoted_content,
+                    created_at: payload.createdAt
+                });
+
                 console.log(`[WhatsApp] Audio transcription failed for conversation ${context.conversation.id}, flagged for human`);
                 return;
             }
@@ -1632,6 +1649,12 @@ class WhatsAppManager {
                             INSERT INTO messages (id, conversation_id, role, content, message_type, created_at)
                             VALUES (?, ?, 'assistant', ?, 'absence', ?)
                         `, outMsgId, conversation.id, absenceMessage, new Date().toISOString());
+                        
+                        // Notify frontend
+                        void notifyConversationUpdate(conversation.id, {
+                            id: outMsgId, role: 'assistant', content: absenceMessage,
+                            message_type: 'absence', created_at: new Date().toISOString()
+                        });
                     }
                     return;
                 }
@@ -2034,6 +2057,13 @@ class WhatsAppManager {
                     INSERT INTO messages (id, conversation_id, role, content, tokens_used, whatsapp_id, sender_type, created_at)
                     VALUES (?, ?, 'assistant', ?, 0, ?, 'ai', ?)
                 `, outMsgId, conversation.id, staticText, whatsappMsgId, new Date().toISOString());
+
+                // Notify frontend
+                void notifyConversationUpdate(conversation.id, {
+                    id: outMsgId, role: 'assistant', content: staticText,
+                    whatsapp_id: whatsappMsgId, message_type: 'text', created_at: new Date().toISOString()
+                });
+
                 console.log(`[WhatsApp] Sent static response for intent "${intentHint}" to ${contactName}`);
                 return;
             }
@@ -2377,6 +2407,13 @@ class WhatsAppManager {
                     INSERT INTO messages (id, conversation_id, role, content, message_type, sender_type, created_at)
                     VALUES (?, ?, 'assistant', ?, 'fallback', 'ai', ?)
                 `, outMsgId, conversation.id, fallbackText, new Date().toISOString());
+
+                // Notify frontend
+                void notifyConversationUpdate(conversation.id, {
+                    id: outMsgId, role: 'assistant', content: fallbackText,
+                    message_type: 'fallback', created_at: new Date().toISOString()
+                });
+
                 console.log(`[WhatsApp] Escalated conversation ${conversation.id} (${decision.reason}), sent fallback to ${contactName}`);
             }
 
@@ -2701,6 +2738,12 @@ class WhatsAppManager {
             `, messageId, conversationId, messageText, sendResult?.key?.id, new Date().toISOString());
 
             await db.run('UPDATE conversations SET human_takeover = 1 WHERE id = ?', conversationId);
+            
+            // Notify frontend
+            void notifyConversationUpdate(conversationId, {
+                id: messageId, role: 'assistant', content: messageText,
+                whatsapp_id: sendResult?.key?.id, created_at: new Date().toISOString()
+            });
 
             console.log(`[WhatsApp] Human message sent to ${conversation.contact_number}: ${messageText.substring(0, 50)}...`);
 
@@ -3132,15 +3175,16 @@ class WhatsAppManager {
             conversation = await db.get('SELECT * FROM conversations WHERE id = ?', conversationId);
         }
 
+        const msgId = uuidv4();
         await db.run(`
             INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, whatsapp_id, created_at)
             VALUES (?, ?, 'assistant', ?, 'ai', ?, ?, ?)
-        `, uuidv4(), conversation.id, text, messageType, whatsappId, new Date().toISOString());
+        `, msgId, conversation.id, text, messageType, whatsappId, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', conversation.id);
 
         void notifyConversationUpdate(conversation.id, {
-            id: uuidv4(),
+            id: msgId,
             role: 'assistant',
             content: text,
             whatsapp_id: whatsappId,
@@ -3178,15 +3222,16 @@ class WhatsAppManager {
         const result = await sock.sendMessage(recipientJid, { text });
         const whatsappId = result?.key?.id || null;
 
+        const msgId = uuidv4();
         await db.run(`
             INSERT INTO messages (id, conversation_id, role, content, sender_type, message_type, whatsapp_id, created_at)
             VALUES (?, ?, 'assistant', ?, 'ai', ?, ?, ?)
-        `, uuidv4(), conversationId, text, messageType, whatsappId, new Date().toISOString());
+        `, msgId, conversationId, text, messageType, whatsappId, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP WHERE id = ?', conversationId);
 
         void notifyConversationUpdate(conversationId, {
-            id: uuidv4(),
+            id: msgId,
             role: 'assistant',
             content: text,
             whatsapp_id: whatsappId,
@@ -3755,6 +3800,16 @@ class WhatsAppManager {
         `, msgId, conversationId, text, result.key.id, new Date().toISOString());
 
         await db.run('UPDATE conversations SET last_message_at = CURRENT_TIMESTAMP, human_takeover = 1 WHERE id = ?', conversationId);
+
+        // Notify frontend
+        void notifyConversationUpdate(conversationId, {
+            id: msgId,
+            role: 'assistant',
+            content: text,
+            whatsapp_id: result.key.id,
+            message_type: 'manual',
+            created_at: new Date().toISOString()
+        });
 
         console.log(`[WhatsApp] Human message sent from platform to ${conversation.contact_number}: ${text.substring(0, 50)}...`);
 

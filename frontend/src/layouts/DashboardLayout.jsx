@@ -61,6 +61,7 @@ import AIChatbot from '../components/AI/AIChatbot'
 import { AssistedConfigWizard } from '../components/Onboarding'
 import { AlertCircle, Lock } from 'lucide-react'
 import { useNotificationSocket } from '../hooks/useNotificationSocket'
+import { useConversationSocket } from '../hooks/useConversationSocket'
 import { usePushNotifications } from '../hooks/usePushNotifications'
 
 const PastDueBanner = ({ isDark }) => (
@@ -1022,6 +1023,15 @@ export default function DashboardLayout() {
         duration: 6000,
         position: 'top-right'
     });
+  }, []))
+
+  // Real-time conversation unread counts
+  useConversationSocket(useCallback((convId, message) => {
+    // Only refresh count if it's an incoming message from a user (which increments unread count)
+    // or if it's a message without payload (refetch needed anyway)
+    if (!message || message.role === 'user') {
+      fetchUnreadCounts()
+    }
   }, []))
 
   useEffect(() => {
