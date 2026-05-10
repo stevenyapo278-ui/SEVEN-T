@@ -45,26 +45,12 @@ import toast from 'react-hot-toast'
 
 const COLORS = ['#F5D47A', '#8B5CF6', '#22C55E', '#3B82F6', '#EF4444']
 
+
 export default function Analytics() {
   const { user } = useAuth()
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
-  const isModuleEnabled = (() => {
-    const feat = user?.plan_features?.analytics
-    const override = user?.analytics_module_enabled
-    const isOverrideTrue = override === 1 || override === '1' || override === true
-    const isOverrideFalse = override === 0 || override === '0'
-    if (!user?.parent_user_id || user?.role === 'owner') {
-      if (isOverrideFalse) return false
-      return !!feat || isOverrideTrue
-    }
-    return isOverrideTrue
-  })()
-
-  if (!isModuleEnabled) {
-    return <Navigate to="/dashboard" replace />
-  }
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState('7d')
   const [activeTab, setActiveTab] = useState('overview') // 'overview' or 'social'
@@ -82,6 +68,18 @@ export default function Analytics() {
   const [relanceROI, setRelanceROI] = useState(null)
   const [sentimentStats, setSentimentStats] = useState([])
   const [conversionStats, setConversionStats] = useState([])
+
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.analytics
+    const override = user?.analytics_module_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
 
   const loadAnalytics = async () => {
     setLoading(true)
@@ -125,49 +123,14 @@ export default function Analytics() {
   }
 
   useEffect(() => {
-    loadAnalytics()
-  }, [period, selectedAgent])
-
-  const StatCard = ({ title, value, growth, icon: Icon, color = 'gold' }) => {
-    const isPositive = growth >= 0
-    const colorStyles = {
-      gold: {
-        gradient: 'from-gold-400/20 to-gold-400/5 border-gold-400/30',
-        iconBg: 'bg-gold-400/20',
-        iconText: 'text-gold-400'
-      },
-      blue: {
-        gradient: 'from-blue-400/20 to-blue-400/5 border-blue-400/30',
-        iconBg: 'bg-blue-400/20',
-        iconText: 'text-blue-400'
-      },
-      emerald: {
-        gradient: 'from-emerald-400/20 to-emerald-400/5 border-emerald-400/30',
-        iconBg: 'bg-emerald-400/20',
-        iconText: 'text-emerald-400'
-      }
+    if (isModuleEnabled) {
+      loadAnalytics()
     }
-    const styles = colorStyles[color] || colorStyles.gold
+  }, [period, selectedAgent, isModuleEnabled])
 
-    return (
-      <div className={`card p-4 sm:p-6 bg-gradient-to-br ${styles.gradient} border`}>
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center ${styles.iconBg}`}>
-            <Icon className={`w-4 h-4 sm:w-6 sm:h-6 ${styles.iconText}`} />
-          </div>
-          {growth !== undefined && (
-            <div className={`flex items-center gap-0.5 sm:gap-1 text-[10px] sm:text-sm font-medium ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isPositive ? <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" /> : <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4" />}
-              <span>{Math.abs(growth)}%</span>
-            </div>
-          )}
-        </div>
-        <p className="text-xl sm:text-3xl font-display font-bold text-gray-100">{value?.toLocaleString() || 0}</p>
-        <p className="text-[10px] sm:text-sm text-gray-400 mt-1 uppercase tracking-wider font-medium">{title}</p>
-      </div>
-    )
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
   }
-
 
   return (
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
@@ -185,7 +148,7 @@ export default function Analytics() {
             <div className="min-w-0">
               <div className="flex items-center gap-3 mb-2 min-w-0">
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
-                  <BarChart3 className="w-6 h-6 text-gold-400" />
+                  <BarChart3 className="size-6 text-gold-400" />
                 </div>
                 <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Tableau de Bord</h1>
               </div>
@@ -225,11 +188,11 @@ export default function Analytics() {
                       isDark ? 'bg-space-800 border-space-700 text-gray-300 hover:border-gold-400/50' : 'bg-white border-gray-300 text-gray-700 hover:border-gold-400'
                     }`}
                   >
-                    <Bot className="w-4 h-4" />
+                    <Bot className="size-4" />
                     <span className="max-w-[120px] truncate">
                       {selectedAgent === 'all' ? 'Tous les agents' : agentPerformance.find(a => a.id === selectedAgent)?.name || 'Agent'}
                     </span>
-                    <ChevronDown className="w-4 h-4 opacity-50" />
+                    <ChevronDown className="size-4 opacity-50" />
                   </button>
                   {showAgentFilter && (
                     <>
@@ -278,7 +241,7 @@ export default function Analytics() {
                 isDark ? 'bg-space-800 text-gray-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-900'
               }`}
             >
-              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`size-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
 
@@ -332,7 +295,7 @@ export default function Analytics() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Messages Timeline */}
             <div className="card p-6">
-              <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Messages dans le temps</h3>
+              <h3 className="text-lg font-display font-semibold text-zinc-100 mb-4">Messages dans le temps</h3>
               <div className="w-full" style={{ width: '100%', minWidth: 200, height: 320, minHeight: 200 }}>
                 <ResponsiveContainer width="100%" height={320} minWidth={200} minHeight={200}>
                   <AreaChart data={timeline}>
@@ -369,9 +332,9 @@ export default function Analytics() {
             {/* Peak Hours */}
             <div className="card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-display font-semibold text-gray-100">Heures de pointe</h3>
+                <h3 className="text-lg font-display font-semibold text-zinc-100">Heures de pointe</h3>
                 <div className="flex items-center gap-2 text-sm text-gray-400">
-                  <Clock className="w-4 h-4" />
+                  <Clock className="size-4" />
                   <span>Pics: {peakHours.peakHours?.join(', ') || 'N/A'}</span>
                 </div>
               </div>
@@ -393,7 +356,7 @@ export default function Analytics() {
 
             {/* Relance Adoption Timeline */}
             <div className="card p-6 lg:col-span-2">
-              <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Adoption des Relances AI</h3>
+              <h3 className="text-lg font-display font-semibold text-zinc-100 mb-4">Adoption des Relances AI</h3>
               <div className="w-full" style={{ height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={relanceROI?.daily_performance || []}>
@@ -412,7 +375,7 @@ export default function Analytics() {
 
             {/* Sentiment & Conversion row */}
             <div className="card p-6">
-                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Sentiment Client</h3>
+                <h3 className="text-lg font-display font-semibold text-zinc-100 mb-4">Sentiment Client</h3>
                 <div className="w-full h-[240px]">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
@@ -438,13 +401,13 @@ export default function Analytics() {
                 </div>
                 <div className="flex justify-center gap-4 mt-2">
                     <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" /> Positif
+                        <div className="size-2 rounded-full bg-emerald-500" /> Positif
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" /> Neutre
+                        <div className="size-2 rounded-full bg-blue-500" /> Neutre
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <div className="w-2 h-2 rounded-full bg-red-500" /> Négatif
+                        <div className="size-2 rounded-full bg-red-500" /> Négatif
                     </div>
                 </div>
             </div>
@@ -454,21 +417,21 @@ export default function Analytics() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Agent Performance */}
             <div className="card p-6 lg:col-span-2">
-              <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Performance des agents</h3>
+              <h3 className="text-lg font-display font-semibold text-zinc-100 mb-4">Performance des agents</h3>
               <div className="space-y-4">
                 {agentPerformance.length === 0 ? (
                   <p className="text-gray-400 text-center py-8">Aucun agent créé</p>
                 ) : (
                   agentPerformance.map((agent) => (
                     <div key={agent.id} className="flex items-center gap-4 p-4 bg-space-800 rounded-xl">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className={`size-10 rounded-lg flex items-center justify-center ${
                         agent.whatsapp_connected ? 'bg-emerald-500/20' : 'bg-gray-500/20'
                       }`}>
-                        <Bot className={`w-5 h-5 ${agent.whatsapp_connected ? 'text-emerald-400' : 'text-gray-400'}`} />
+                        <Bot className={`size-5 ${agent.whatsapp_connected ? 'text-emerald-400' : 'text-gray-400'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-100 truncate">{agent.name}</p>
+                          <p className="font-medium text-zinc-100 truncate">{agent.name}</p>
                           {agent.is_active ? (
                             <span className="px-2 py-0.5 text-xs bg-emerald-500/20 text-emerald-400 rounded">Actif</span>
                           ) : (
@@ -493,7 +456,7 @@ export default function Analytics() {
 
             {/* Conversion Funnel */}
             <div className="card p-6">
-              <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Tunnel de conversion</h3>
+              <h3 className="text-lg font-display font-semibold text-zinc-100 mb-4">Tunnel de conversion</h3>
               <div className="space-y-3">
                 {funnel.map((stage, index) => {
                   const maxCount = Math.max(...funnel.map(f => f.count), 1)
@@ -503,7 +466,7 @@ export default function Analytics() {
                     <div key={stage.stage} className="space-y-1">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-400">{stage.stage}</span>
-                        <span className="font-medium text-gray-100">{stage.count}</span>
+                        <span className="font-medium text-zinc-100">{stage.count}</span>
                       </div>
                       <div className="h-2 bg-space-700 rounded-full overflow-hidden">
                         <div
@@ -525,7 +488,7 @@ export default function Analytics() {
           <div className="pb-8">
             {topProducts.length > 0 && (
               <div className="card p-6">
-                <h3 className="text-lg font-display font-semibold text-gray-100 mb-4">Top produits ({period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : '90 derniers jours'})</h3>
+                <h3 className="text-lg font-display font-semibold text-zinc-100 mb-4">Top produits ({period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : '90 derniers jours'})</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -538,7 +501,7 @@ export default function Analytics() {
                     <tbody>
                       {topProducts.slice(0, 10).map((product) => (
                         <tr key={product.id} className="border-b border-space-800">
-                          <td className="py-3 text-gray-100">{product.name}</td>
+                          <td className="py-3 text-zinc-100">{product.name}</td>
                           <td className="py-3 text-right font-medium text-gold-400">{product.total_sold}</td>
                           <td className="py-3 text-right font-medium text-emerald-400">
                             {product.revenue?.toLocaleString()} <span className="text-[10px] opacity-70">XOF</span>
@@ -556,7 +519,7 @@ export default function Analytics() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-12">
              {/* Potential Conversion Distribution */}
              <div className="card p-6">
-                <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Potentiel de Conversion</h3>
+                <h3 className="text-lg font-display font-semibold text-zinc-100 mb-1">Potentiel de Conversion</h3>
                 <p className="text-xs text-gray-400 mb-6">Volume de conversations par score de potentiel</p>
                 <div className="w-full h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -576,10 +539,10 @@ export default function Analytics() {
              <div className="card p-6">
                 <div className="flex items-center justify-between mb-4">
                    <div>
-                      <h3 className="text-lg font-display font-semibold text-gray-100">Saisonnalité Annuelle</h3>
+                      <h3 className="text-lg font-display font-semibold text-zinc-100">Saisonnalité Annuelle</h3>
                       <p className="text-xs text-gray-400">Ventes mensuelles pour prévoir vos stocks</p>
                    </div>
-                   <Calendar className="w-5 h-5 text-gold-400 opacity-50" />
+                   <Calendar className="size-5 text-gold-400 opacity-50" />
                 </div>
                 {productsSeasonality.data.length > 0 ? (
                    <div className="w-full h-[300px]">
@@ -613,7 +576,7 @@ export default function Analytics() {
 
              {/* Weekly Heatmap */}
              <div className="card p-6">
-                <h3 className="text-lg font-display font-semibold text-gray-100 mb-1">Pics d'Heures & Jours</h3>
+                <h3 className="text-lg font-display font-semibold text-zinc-100 mb-1">Pics d'Heures & Jours</h3>
                 <p className="text-xs text-gray-400 mb-6">Activité des clients sur les 30 derniers jours</p>
                 
                 <div className="grid grid-cols-1 gap-1">
@@ -653,9 +616,9 @@ export default function Analytics() {
                 <div className="mt-6 flex items-center justify-end gap-3">
                    <span className="text-[10px] text-gray-500">Calme</span>
                    <div className="flex gap-1">
-                      <div className="w-3 h-3 rounded-[2px] bg-space-800" />
-                      <div className="w-3 h-3 rounded-[2px] bg-gold-400/30" />
-                      <div className="w-3 h-3 rounded-[2px] bg-gold-400" />
+                      <div className="size-3 rounded-[2px] bg-space-800" />
+                      <div className="size-3 rounded-[2px] bg-gold-400/30" />
+                      <div className="size-3 rounded-[2px] bg-gold-400" />
                    </div>
                    <span className="text-[10px] text-gray-500">Intense</span>
                 </div>
@@ -669,7 +632,7 @@ export default function Analytics() {
               <div key={insight.id} className="space-y-6 border-b border-white/5 pb-12 last:border-0">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-display font-bold text-white flex items-center gap-3">
-                    <Bot className="w-5 h-5 text-gold-400" />
+                    <Bot className="size-5 text-gold-400" />
                     Rapport du {new Date(insight.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                     {idx === 0 && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30 font-bold ml-2">Dernière analyse</span>}
                   </h2>
@@ -678,13 +641,13 @@ export default function Analytics() {
                 {/* Summary Hero */}
                 <div className="card p-8 bg-gradient-to-br from-gold-400/10 via-space-900 to-space-900 border-gold-400/20 relative overflow-hidden group">
                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                      <Zap className="w-32 h-32 text-gold-400" />
+                      <Zap className="size-32 text-gold-400" />
                    </div>
                    <div className="relative z-10">
                       <h3 className="text-gold-400 font-display font-bold uppercase tracking-widest text-xs mb-3 flex items-center gap-2">
-                        <Bot className="w-4 h-4" /> Analyse SEVEN-T Intelligence
+                        <Bot className="size-4" /> Analyse SEVEN-T Intelligence
                       </h3>
-                      <p className="text-xl sm:text-2xl text-gray-100 leading-relaxed max-w-4xl font-display font-medium">
+                      <p className="text-xl sm:text-2xl text-zinc-100 leading-relaxed max-w-4xl font-display font-medium">
                         "{insight.content.summary}"
                       </p>
                    </div>
@@ -694,7 +657,7 @@ export default function Analytics() {
                    {/* Topics */}
                    <div className="card p-6 bg-space-900/50 border-blue-400/10">
                       <h3 className="text-sm font-display font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                         <Target className="w-4 h-4 text-blue-400" />
+                         <Target className="size-4 text-blue-400" />
                          Points d'Intérêt Clients
                       </h3>
                       <div className="flex flex-wrap gap-2">
@@ -709,18 +672,18 @@ export default function Analytics() {
                    {/* Sentiment Trend */}
                    <div className="card p-6 bg-space-900/50 border-white/5">
                       <h3 className="text-sm font-display font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                         <Heart className={`w-4 h-4 ${insight.content.sentiment_trend === 'positive' ? 'text-emerald-400' : insight.content.sentiment_trend === 'negative' ? 'text-red-400' : 'text-gray-400'}`} />
+                         <Heart className={`size-4 ${insight.content.sentiment_trend === 'positive' ? 'text-emerald-400' : insight.content.sentiment_trend === 'negative' ? 'text-red-400' : 'text-gray-400'}`} />
                          Tonalité Globale
                       </h3>
                       <div className="flex items-center gap-4">
-                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                         <div className={`size-14 rounded-2xl flex items-center justify-center ${
                             insight.content.sentiment_trend === 'positive' ? 'bg-emerald-500/20 text-emerald-400' : 
                             insight.content.sentiment_trend === 'negative' ? 'bg-red-500/20 text-red-400' : 
                             'bg-gray-500/20 text-gray-400'
                          }`}>
-                            {insight.content.sentiment_trend === 'positive' ? <TrendingUp className="w-8 h-8" /> : 
-                             insight.content.sentiment_trend === 'negative' ? <TrendingDown className="w-8 h-8" /> : 
-                             <RefreshCw className="w-8 h-8" />}
+                            {insight.content.sentiment_trend === 'positive' ? <TrendingUp className="size-8" /> : 
+                             insight.content.sentiment_trend === 'negative' ? <TrendingDown className="size-8" /> : 
+                             <RefreshCw className="size-8" />}
                          </div>
                          <div>
                             <p className="text-2xl font-display font-bold text-white capitalize">{insight.content.sentiment_trend === 'positive' ? 'Positive' : insight.content.sentiment_trend === 'negative' ? 'Négative' : 'Neutre'}</p>
@@ -732,7 +695,7 @@ export default function Analytics() {
                    {/* Friction Points */}
                    <div className="card p-6 bg-space-900/50 border-red-500/10">
                       <h3 className="text-sm font-display font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                         <Filter className="w-4 h-4 text-red-400" />
+                         <Filter className="size-4 text-red-400" />
                          Alertes & Frictions
                       </h3>
                       <div className="space-y-3">
@@ -753,19 +716,19 @@ export default function Analytics() {
                 {/* Opportunities List */}
                 <div className="card p-8 border-gold-400/20 bg-gold-400/5 relative overflow-hidden group">
                    <div className="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                      <ArrowUpRight className="w-64 h-64 text-gold-400" />
+                      <ArrowUpRight className="size-64 text-gold-400" />
                    </div>
                    <h3 className="text-lg font-display font-bold text-white mb-6 flex items-center gap-3">
                       <div className="p-2 bg-gold-400/20 rounded-lg">
-                        <Zap className="w-5 h-5 text-gold-400 animate-pulse" />
+                        <Zap className="size-5 text-gold-400 animate-pulse" />
                       </div>
                       Recommandations de Croissance
                    </h3>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                       {insight.content.opportunities?.map((opp, i) => (
                          <div key={i} className="flex gap-5 p-5 bg-space-800/80 backdrop-blur-xl rounded-2xl border border-white/5 hover:border-gold-400/50 transition-all group/item shadow-2xl">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-400/30 to-transparent flex items-center justify-center flex-shrink-0 group-hover/item:scale-110 transition-transform shadow-inner">
-                               <ArrowUpRight className="w-6 h-6 text-gold-400" />
+                            <div className="size-12 rounded-xl bg-gradient-to-br from-gold-400/30 to-transparent flex items-center justify-center flex-shrink-0 group-hover/item:scale-110 transition-transform shadow-inner">
+                               <ArrowUpRight className="size-6 text-gold-400" />
                             </div>
                             <div className="flex-1">
                                <p className="text-base text-gray-200 font-medium leading-tight group-hover/item:text-white transition-colors">{opp}</p>
@@ -780,8 +743,8 @@ export default function Analytics() {
             <div className="card p-20 text-center flex flex-col items-center gap-6 border-dashed border-2 border-space-700 bg-space-900/20">
                <div className="relative">
                   <div className="absolute inset-0 bg-gold-400/20 blur-3xl animate-pulse" />
-                  <div className="w-24 h-24 bg-space-800 rounded-[2.5rem] flex items-center justify-center relative rotate-12 hover:rotate-0 transition-transform duration-500 border border-space-700 shadow-2xl">
-                     <Bot className="w-12 h-12 text-gold-400" />
+                  <div className="size-24 bg-space-800 rounded-[2.5rem] flex items-center justify-center relative rotate-12 hover:rotate-0 transition-transform duration-500 border border-space-700 shadow-2xl">
+                     <Bot className="size-12 text-gold-400" />
                   </div>
                </div>
                <div className="max-w-md">
@@ -792,7 +755,7 @@ export default function Analytics() {
                   </p>
                </div>
                <div className="flex gap-2">
-                 {[1,2,3].map(i => <div key={i} className="w-2 h-2 rounded-full bg-gold-400 animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />)}
+                 {[1,2,3].map(i => <div key={i} className="size-2 rounded-full bg-gold-400 animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />)}
                </div>
             </div>
           )}
@@ -819,7 +782,7 @@ function StatSmall({ title, value, growth, icon: Icon, color = 'blue' }) {
     <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
       <div className="flex items-center justify-between mb-3">
         <div className={`p-2 rounded-lg flex-shrink-0 ${colorClasses[color]}`}>
-          <Icon className="w-5 h-5" />
+          <Icon className="size-5" />
         </div>
         {growth !== undefined && (
           <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>

@@ -167,7 +167,7 @@ export default function Tickets() {
             <input
               value={q}
               onChange={(e) => { const v = e.target.value; setQ(v); syncToUrl({ q: v || undefined }); }}
-              placeholder="Rechercher…"
+              placeholder="Rechercher..."
               className={`bg-transparent outline-none text-sm w-full sm:w-56 ${isDark ? 'text-gray-200 placeholder:text-gray-600' : 'text-gray-900 placeholder:text-gray-400'}`}
             />
           </div>
@@ -175,7 +175,7 @@ export default function Tickets() {
 
         <div className="mt-4 divide-y" style={{ borderColor: 'var(--border-color)' }}>
           {loading ? (
-            <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Chargement…</div>
+            <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Chargement...</div>
           ) : tickets.length === 0 ? (
             <div className="py-10 text-center">
               <LifeBuoy className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
@@ -250,7 +250,7 @@ export default function Tickets() {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   className={`mt-1 w-full px-3 py-2 rounded-xl border text-sm ${isDark ? 'bg-space-950 border-space-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'}`}
-                  placeholder="Décris le problème et les étapes pour le reproduire…"
+                  placeholder="Décris le problème et les étapes pour le reproduire..."
                 />
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -271,7 +271,7 @@ export default function Tickets() {
                   }`}
                 >
                   <Plus className="w-4 h-4" />
-                  {creating ? 'Création…' : 'Créer'}
+                  {creating ? 'Création...' : 'Créer'}
                 </button>
               </div>
             </form>

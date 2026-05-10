@@ -93,7 +93,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
               setLocalQ(v)
               onChangeFilters?.({ ...filters, q: v })
             }}
-            placeholder="Rechercher (titre, message, user, agent, type, metadata)…"
+            placeholder="Rechercher (titre, message, user, agent, type, metadata)..."
             className="w-full bg-transparent outline-none text-sm text-gray-200 placeholder:text-gray-600"
           />
         </div>
@@ -228,7 +228,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
                     )}
                     <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                       <span title={new Date(anomaly.created_at).toLocaleString('fr-FR', { dateStyle: 'full', timeStyle: 'medium' })}>{formatAnomalyDate(anomaly.created_at)}</span>
-                      <span className="font-mono text-gray-600" title={`ID anomalie: ${anomaly.id}`}>#{anomaly.id?.slice(0, 8)}…</span>
+                      <span className="font-mono text-gray-600" title={`ID anomalie: ${anomaly.id}`}>#{anomaly.id?.slice(0, 8)}...</span>
                     </div>
                   </div>
                   <button onClick={() => onResolve(anomaly.id)} className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors shrink-0" title="Marquer comme résolu">

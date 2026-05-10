@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -20,8 +20,7 @@ async function copyToClipboard(text) {
   }
   const el = document.createElement('textarea')
   el.value = text
-  el.style.position = 'fixed'
-  el.style.left = '-999999px'
+  Object.assign(el.style, { position: 'fixed', left: '-999999px' })
   document.body.appendChild(el)
   el.focus()
   el.select()
@@ -191,20 +190,24 @@ async function executeAction(action, navigate, onClose) {
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
-function renderMarkdown(text) {
+const MarkdownLine = ({ line, index }) => {
+  const parts = line.split(/\*\*(.+?)\*\*/g)
+  return (
+    <p className={index > 0 ? 'mt-1' : ''}>
+      {parts.map((part, j) =>
+        j % 2 === 1
+          ? <strong key={`part-${j}`} className="font-bold text-white">{part}</strong>
+          : part
+      )}
+    </p>
+  )
+}
+
+const MarkdownRenderer = ({ text }) => {
   if (!text) return null
-  return text.split('\n').map((line, i) => {
-    const parts = line.split(/\*\*(.+?)\*\*/g)
-    return (
-      <p key={i} className={i > 0 ? 'mt-1' : ''}>
-        {parts.map((part, j) =>
-          j % 2 === 1
-            ? <strong key={j} className="font-bold text-white">{part}</strong>
-            : part
-        )}
-      </p>
-    )
-  })
+  return text.split('\n').map((line, i) => (
+    <MarkdownLine key={`line-${i}-${line.substring(0, 10)}`} line={line} index={i} />
+  ))
 }
 
 // ─── Data table renderers ─────────────────────────────────────────────────────
@@ -217,23 +220,23 @@ const STATUS_LABELS = {
 
 const STATUS_COLORS = {
   pending: 'text-amber-400', validated: 'text-green-400', delivered: 'text-emerald-400',
-  rejected: 'text-red-400', completed: 'text-blue-400', cancelled: 'text-gray-400',
+  rejected: 'text-red-400', completed: 'text-blue-400', cancelled: 'text-zinc-400',
   new: 'text-blue-400', active: 'text-emerald-400', paid: 'text-emerald-400'
 }
 
 function OrdersTable({ orders }) {
-  if (!orders?.length) return <p className="text-xs text-gray-500 italic">Aucune commande trouvée</p>
+  if (!orders?.length) return <p className="text-xs text-zinc-500 italic">Aucune commande trouvée</p>
   return (
     <div className="space-y-1.5 mt-2">
       {orders.map(o => (
         <div key={o.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white/5 rounded-lg border border-white/5">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-gray-100 truncate">{o.customer_name}</p>
-            <p className="text-[10px] text-gray-500">{o.customer_phone || '—'}</p>
+            <p className="text-xs font-semibold text-zinc-100 truncate">{o.customer_name}</p>
+            <p className="text-[10px] text-zinc-500">{o.customer_phone || '—'}</p>
           </div>
           <div className="flex-shrink-0 text-right">
-            <p className={`text-[10px] font-bold ${STATUS_COLORS[o.status] || 'text-gray-400'}`}>{STATUS_LABELS[o.status] || o.status}</p>
-            <p className="text-[10px] text-gray-500 font-mono">{Number(o.total_amount || 0).toLocaleString()} {o.currency}</p>
+            <p className={`text-[10px] font-bold ${STATUS_COLORS[o.status] || 'text-zinc-400'}`}>{STATUS_LABELS[o.status] || o.status}</p>
+            <p className="text-[10px] text-zinc-500 font-mono">{Number(o.total_amount || 0).toLocaleString()} {o.currency}</p>
           </div>
         </div>
       ))}
@@ -242,16 +245,16 @@ function OrdersTable({ orders }) {
 }
 
 function LeadsTable({ leads }) {
-  if (!leads?.length) return <p className="text-xs text-gray-500 italic">Aucun contact trouvé</p>
+  if (!leads?.length) return <p className="text-xs text-zinc-500 italic">Aucun contact trouvé</p>
   return (
     <div className="space-y-1.5 mt-2">
       {leads.map(l => (
         <div key={l.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white/5 rounded-lg border border-white/5">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-gray-100 truncate">{l.name}</p>
-            <p className="text-[10px] text-gray-500">{l.phone || '—'}</p>
+            <p className="text-xs font-semibold text-zinc-100 truncate">{l.name}</p>
+            <p className="text-[10px] text-zinc-500">{l.phone || '—'}</p>
           </div>
-          <span className={`text-[10px] font-bold flex-shrink-0 ${STATUS_COLORS[l.status] || 'text-gray-400'}`}>{STATUS_LABELS[l.status] || l.status}</span>
+          <span className={`text-[10px] font-bold flex-shrink-0 ${STATUS_COLORS[l.status] || 'text-zinc-400'}`}>{STATUS_LABELS[l.status] || l.status}</span>
         </div>
       ))}
     </div>
@@ -259,14 +262,14 @@ function LeadsTable({ leads }) {
 }
 
 function ProductsTable({ products }) {
-  if (!products?.length) return <p className="text-xs text-gray-500 italic">Aucun produit trouvé</p>
+  if (!products?.length) return <p className="text-xs text-zinc-500 italic">Aucun produit trouvé</p>
   return (
     <div className="space-y-1.5 mt-2">
       {products.map(p => (
         <div key={p.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white/5 rounded-lg border border-white/5">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-gray-100 truncate">{p.name}</p>
-            <p className="text-[10px] text-gray-500 font-mono">{Number(p.price || 0).toLocaleString()} XOF</p>
+            <p className="text-xs font-semibold text-zinc-100 truncate">{p.name}</p>
+            <p className="text-[10px] text-zinc-500 font-mono">{Number(p.price || 0).toLocaleString()} XOF</p>
           </div>
           <div className="flex-shrink-0 text-right">
             <p className={`text-[10px] font-bold ${p.stock_quantity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>Stock: {p.stock_quantity ?? '—'}</p>
@@ -278,18 +281,18 @@ function ProductsTable({ products }) {
 }
 
 function PaymentsTable({ payments }) {
-  if (!payments?.length) return <p className="text-xs text-gray-500 italic">Aucun lien trouvé</p>
+  if (!payments?.length) return <p className="text-xs text-zinc-500 italic">Aucun lien trouvé</p>
   return (
     <div className="space-y-1.5 mt-2">
       {payments.map(p => (
         <div key={p.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white/5 rounded-lg border border-white/5">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-gray-100 truncate">{p.description || 'Lien de paiement'}</p>
-            <p className="text-[10px] text-gray-500 font-mono truncate">{p.payment_url}</p>
+            <p className="text-xs font-semibold text-zinc-100 truncate">{p.description || 'Lien de paiement'}</p>
+            <p className="text-[10px] text-zinc-500 font-mono truncate">{p.payment_url}</p>
           </div>
           <div className="flex-shrink-0 text-right">
             <p className="text-[10px] font-bold text-gold-400 font-mono">{Number(p.amount).toLocaleString()} {p.currency}</p>
-            <p className={`text-[10px] ${STATUS_COLORS[p.status] || 'text-gray-400'}`}>{STATUS_LABELS[p.status] || p.status}</p>
+            <p className={`text-[10px] ${STATUS_COLORS[p.status] || 'text-zinc-400'}`}>{STATUS_LABELS[p.status] || p.status}</p>
           </div>
         </div>
       ))}
@@ -310,7 +313,7 @@ function PaymentCard({ payment }) {
           Copier le lien
         </button>
       </div>
-      <p className="text-[10px] text-gray-400 font-mono truncate">{payment.payment_url}</p>
+      <p className="text-[10px] text-zinc-400 font-mono truncate">{payment.payment_url}</p>
     </div>
   )
 }
@@ -325,7 +328,7 @@ function BotBubble({ msg, navigate, isDark }) {
     blue:    { border: 'border-blue-500/30',    bg: 'bg-blue-500/10',    icon: 'text-blue-400' },
     gold:    { border: 'border-gold-400/30',    bg: 'bg-gold-400/10',    icon: 'text-gold-400' },
     red:     { border: 'border-red-500/30',     bg: 'bg-red-500/10',     icon: 'text-red-400' },
-    default: { border: 'border-white/10',       bg: 'bg-white/5',        icon: 'text-gray-400' },
+    default: { border: 'border-white/10',       bg: 'bg-white/5',        icon: 'text-zinc-400' },
   }
 
   const color = isError ? colorMap.red : (actionResult?.color ? colorMap[actionResult.color] : colorMap.default)
@@ -334,14 +337,14 @@ function BotBubble({ msg, navigate, isDark }) {
   return (
     <div className="flex justify-start">
       <div className="flex gap-2.5 max-w-[92%]">
-        <div className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5 ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
-          <Bot className="w-4 h-4 text-gold-400" />
+        <div className={`flex-shrink-0 size-7 rounded-lg flex items-center justify-center mt-0.5 ${isDark ? 'bg-space-700' : 'bg-zinc-100'}`}>
+          <Bot className="size-4 text-gold-400" />
         </div>
         <div className={`flex-1 rounded-2xl rounded-tl-sm border px-4 py-3 ${color.bg} ${color.border}`}>
           {/* Action badge */}
           {actionResult?.label && (
             <div className={`flex items-center gap-1.5 mb-2 ${color.icon}`}>
-              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <CheckCircle2 className="size-3.5 flex-shrink-0" />
               <span className="text-xs font-bold">{actionResult.label}</span>
             </div>
           )}
@@ -355,9 +358,9 @@ function BotBubble({ msg, navigate, isDark }) {
                 { label: 'Messages', value: actionResult.stats.messages?.total ?? 0 },
                 { label: 'Crédits', value: actionResult.stats.credits ?? 0 },
               ].map(item => (
-                <div key={item.label} className={`rounded-lg px-2 py-1.5 border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider">{item.label}</p>
-                  <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.value}</p>
+                <div key={item.label} className={`rounded-lg px-2 py-1.5 border ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-zinc-200'}`}>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{item.label}</p>
+                  <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>{item.value}</p>
                 </div>
               ))}
             </div>
@@ -371,8 +374,8 @@ function BotBubble({ msg, navigate, isDark }) {
           {actionResult?.payment && <PaymentCard payment={actionResult.payment} />}
 
           {/* Text response */}
-          <div className={`text-sm text-gray-400 leading-relaxed ${actionResult?.orders || actionResult?.leads || actionResult?.products || actionResult?.payments || actionResult?.payment ? 'mt-2' : ''}`}>
-            {renderMarkdown(text)}
+          <div className={`text-sm text-zinc-400 leading-relaxed ${actionResult?.orders || actionResult?.leads || actionResult?.products || actionResult?.payments || actionResult?.payment ? 'mt-2' : ''}`}>
+            <MarkdownRenderer text={text} />
           </div>
 
           {/* CTA link */}
@@ -381,7 +384,7 @@ function BotBubble({ msg, navigate, isDark }) {
               onClick={() => navigate(actionResult.to)}
               className="mt-2.5 flex items-center gap-1 text-xs font-bold text-gold-400 hover:text-gold-300 transition-colors"
             >
-              Voir <ArrowRight className="w-3 h-3" />
+              Voir <ArrowRight className="size-3" />
             </button>
           )}
         </div>
@@ -436,9 +439,11 @@ export default function AIChatbot({ isOpen, onClose }) {
   const historyRef = useRef([])
 
   useEffect(() => {
+    let timeoutId;
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150)
+      timeoutId = setTimeout(() => inputRef.current?.focus(), 150)
     }
+    return () => clearTimeout(timeoutId)
   }, [isOpen])
 
   useEffect(() => {
@@ -522,7 +527,7 @@ export default function AIChatbot({ isOpen, onClose }) {
 
   return createPortal(
     <div className="fixed inset-0 z-[998] pointer-events-none">
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -530,7 +535,7 @@ export default function AIChatbot({ isOpen, onClose }) {
         onClick={onClose}
       />
 
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -544,22 +549,22 @@ export default function AIChatbot({ isOpen, onClose }) {
           rounded-2xl shadow-2xl border overflow-hidden
           ${isDark
             ? 'bg-space-900 border-space-700 shadow-black/60'
-            : 'bg-white border-gray-200 shadow-gray-400/20'
+            : 'bg-white border-zinc-200 shadow-gray-400/20'
           }
         `}
-        style={{ maxHeight: 'min(640px, calc(100vh - 80px))', zIndex: 999 }}
+        style={{ maxHeight: 'min(640px, calc(100vh - 80px))', zIndex: 50 }}
       >
         {/* Header */}
         <div className={`flex items-center justify-between px-4 py-3 border-b flex-shrink-0 ${isDark ? 'border-space-700 bg-space-800/50' : 'border-gray-100 bg-gray-50'}`}>
           <div className="flex items-center gap-2.5">
             <div className="relative">
-              <div className="w-8 h-8 rounded-xl bg-gold-400/20 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-gold-400" />
+              <div className="size-8 rounded-xl bg-gold-400/20 flex items-center justify-center">
+                <Bot className="size-4 text-gold-400" />
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-space-900" />
+              <span className="absolute -bottom-0.5 -right-0.5 size-2.5 bg-emerald-400 rounded-full border-2 border-space-900" />
             </div>
             <div>
-              <p className={`text-sm font-bold leading-none ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <p className={`text-sm font-bold leading-none ${isDark ? 'text-white' : 'text-zinc-900'}`}>
                 Assistant IA
               </p>
               <p className="text-[10px] text-emerald-400 font-medium mt-0.5">● En ligne · Alimenté par vos modèles IA</p>
@@ -567,9 +572,9 @@ export default function AIChatbot({ isOpen, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-700 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}
           >
-            <X className="w-4 h-4" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -577,7 +582,7 @@ export default function AIChatbot({ isOpen, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar" style={{ minHeight: 0 }}>
           <AnimatePresence initial={false}>
             {messages.map(msg => (
-              <motion.div
+              <m.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -587,32 +592,38 @@ export default function AIChatbot({ isOpen, onClose }) {
                   ? <UserBubble text={msg.text} />
                   : <BotBubble msg={msg} navigate={navigate} isDark={isDark} />
                 }
-              </motion.div>
+              </m.div>
             ))}
 
             {loading && (
-              <motion.div
+              <m.div
                 key="typing"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 className="flex items-center gap-2.5"
               >
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isDark ? 'bg-space-700' : 'bg-gray-100'}`}>
-                  <Bot className="w-4 h-4 text-gold-400" />
+                <div className={`size-7 rounded-lg flex items-center justify-center ${isDark ? 'bg-space-700' : 'bg-zinc-100'}`}>
+                  <Bot className="size-4 text-gold-400" />
                 </div>
-                <div className={`px-4 py-3 rounded-2xl rounded-tl-sm border ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-gray-50'}`}>
+                <div className={`px-4 py-3 rounded-2xl rounded-tl-sm border ${isDark ? 'border-space-700 bg-space-800' : 'border-zinc-200 bg-gray-50'}`}>
                   <div className="flex items-center gap-1.5">
                     {[0, 150, 300].map(delay => (
-                      <div
+                      <m.div
                         key={delay}
-                        className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-bounce"
-                        style={{ animationDelay: `${delay}ms` }}
+                        animate={{ y: [0, -6, 0] }}
+                        transition={{ 
+                          duration: 0.8, 
+                          repeat: Infinity, 
+                          delay: delay / 1000, 
+                          ease: [0.16, 1, 0.3, 1] 
+                        }}
+                        className="size-1.5 rounded-full bg-gold-400"
                       />
                     ))}
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
           <div ref={bottomRef} />
@@ -627,8 +638,8 @@ export default function AIChatbot({ isOpen, onClose }) {
                 onClick={() => handleSuggestion(suggestion)}
                 className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
                   isDark
-                    ? 'border-space-700 text-gray-400 hover:border-gold-400/40 hover:text-white'
-                    : 'border-gray-200 text-gray-500 hover:border-gold-400/60 hover:text-gray-900'
+                    ? 'border-space-700 text-zinc-400 hover:border-gold-400/40 hover:text-white'
+                    : 'border-zinc-200 text-zinc-500 hover:border-gold-400/60 hover:text-zinc-900'
                 }`}
               >
                 {suggestion}
@@ -639,8 +650,8 @@ export default function AIChatbot({ isOpen, onClose }) {
 
         {/* Input */}
         <div className={`flex-shrink-0 px-3 py-3 border-t ${isDark ? 'border-space-700 bg-space-800/30' : 'border-gray-100 bg-gray-50/50'}`}>
-          <div className={`flex items-end gap-2 rounded-xl border px-3 py-2 ${isDark ? 'border-space-700 bg-space-800' : 'border-gray-200 bg-white'}`}>
-            <Sparkles className="w-4 h-4 text-gold-400 flex-shrink-0 mb-1" />
+          <div className={`flex items-end gap-2 rounded-xl border px-3 py-2 ${isDark ? 'border-space-700 bg-space-800' : 'border-zinc-200 bg-white'}`}>
+            <Sparkles className="size-4 text-gold-400 flex-shrink-0 mb-1" />
             <textarea
               ref={inputRef}
               value={input}
@@ -649,25 +660,25 @@ export default function AIChatbot({ isOpen, onClose }) {
               placeholder="Que voulez-vous faire ?"
               rows={1}
               disabled={loading}
-              className={`flex-1 resize-none bg-transparent text-sm outline-none leading-relaxed max-h-24 ${isDark ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'}`}
+              className={`flex-1 resize-none bg-transparent text-sm outline-none leading-relaxed max-h-24 ${isDark ? 'text-white placeholder-gray-500' : 'text-zinc-900 placeholder-gray-400'}`}
               style={{ scrollbarWidth: 'none' }}
             />
             <button
               onClick={() => send()}
               disabled={!input.trim() || loading}
-              className="flex-shrink-0 w-7 h-7 rounded-lg bg-gold-400 flex items-center justify-center transition-all hover:bg-gold-300 disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
+              className="flex-shrink-0 size-7 rounded-lg bg-gold-400 flex items-center justify-center transition-all hover:bg-gold-300 disabled:opacity-40 disabled:cursor-not-allowed mb-0.5"
             >
               {loading
-                ? <Loader2 className="w-3.5 h-3.5 text-black animate-spin" />
-                : <Send className="w-3.5 h-3.5 text-black" />
+                ? <Loader2 className="size-3.5 text-black animate-spin" />
+                : <Send className="size-3.5 text-black" />
               }
             </button>
           </div>
-          <p className={`text-[10px] text-center mt-1.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+          <p className={`text-[10px] text-center mt-1.5 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>
             Entrée pour envoyer · Shift+Entrée pour nouvelle ligne
           </p>
         </div>
-      </motion.div>
+      </m.div>
     </div>,
     document.body
   )

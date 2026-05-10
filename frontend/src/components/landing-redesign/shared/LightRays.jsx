@@ -92,17 +92,21 @@ const LightRays = ({
   useEffect(() => {
     if (!isVisible || !containerRef.current) return;
 
+    let canceled = false;
     if (cleanupFunctionRef.current) {
       cleanupFunctionRef.current();
       cleanupFunctionRef.current = null;
     }
 
+    let timerId;
     const initializeWebGL = async () => {
       if (!containerRef.current) return;
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => {
+        timerId = setTimeout(resolve, 10);
+      });
 
-      if (!containerRef.current) return;
+      if (!containerRef.current || canceled) return;
 
       const renderer = new Renderer({
         dpr: Math.min(window.devicePixelRatio, 2),
@@ -111,8 +115,7 @@ const LightRays = ({
       rendererRef.current = renderer;
 
       const gl = renderer.gl;
-      gl.canvas.style.width = "100%";
-      gl.canvas.style.height = "100%";
+      Object.assign(gl.canvas.style, { width: "100%", height: "100%" });
 
       while (containerRef.current.firstChild) {
         containerRef.current.removeChild(containerRef.current.firstChild);
@@ -340,6 +343,8 @@ void main() {
     initializeWebGL();
 
     return () => {
+      canceled = true;
+      if (timerId) clearTimeout(timerId);
       if (cleanupFunctionRef.current) {
         cleanupFunctionRef.current();
         cleanupFunctionRef.current = null;

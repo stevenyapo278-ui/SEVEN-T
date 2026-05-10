@@ -31,6 +31,13 @@ export default function Flows() {
   const isDark = theme === 'dark'
   const { showConfirm } = useConfirm()
 
+  const [flows, setFlows] = useState([])
+  const [templates, setTemplates] = useState([])
+  const [agents, setAgents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
   const isModuleEnabled = (() => {
     const feat = user?.plan_features?.flows
     const override = user?.flows_module_enabled
@@ -43,19 +50,15 @@ export default function Flows() {
     return isOverrideTrue
   })()
 
+  useEffect(() => {
+    if (isModuleEnabled) {
+      loadData()
+    }
+  }, [isModuleEnabled])
+
   if (!isModuleEnabled) {
     return <Navigate to="/dashboard" replace />
   }
-  const [flows, setFlows] = useState([])
-  const [templates, setTemplates] = useState([])
-  const [agents, setAgents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    loadData()
-  }, [])
 
   const loadData = async () => {
     try {
@@ -124,7 +127,7 @@ export default function Flows() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+        <div className="animate-spin rounded-full size-12 border-b-2 border-gold-400"></div>
       </div>
     )
   }
@@ -133,7 +136,7 @@ export default function Flows() {
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0 pb-12">
       {/* Header Hero */}
       <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
-        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-zinc-200'
       }`}>
         <div
           className="absolute inset-0 opacity-50"
@@ -145,11 +148,11 @@ export default function Flows() {
             <div className="min-w-0">
               <div className="flex items-center gap-3 mb-2 min-w-0">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <GitBranch className="w-6 h-6 text-blue-400" />
+                  <GitBranch className="size-6 text-blue-400" />
                 </div>
-                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>Flow Builder</h1>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-zinc-900'}`}>Flow Builder</h1>
               </div>
-              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-zinc-400' : 'text-zinc-700'}`}>
                 Créez des parcours conversationnels visuels
               </p>
             </div>
@@ -158,17 +161,17 @@ export default function Flows() {
                 type="button"
                 onClick={() => loadData()}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
-                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-gray-200'
                 }`}
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Actualiser</span>
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="btn-primary flex items-center gap-2 min-h-[44px]"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="size-5" />
                 <span>Nouveau flow</span>
               </button>
             </div>
@@ -179,44 +182,44 @@ export default function Flows() {
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <GitBranch className="w-5 h-5 text-blue-400" />
+                  <GitBranch className="size-5 text-blue-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{flows.length}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Total flows</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{flows.length}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Total flows</p>
                 </div>
               </div>
             </div>
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
-                  <Play className="w-5 h-5 text-emerald-400" />
+                  <Play className="size-5 text-emerald-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{activeFlows}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Actifs</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{activeFlows}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Actifs</p>
                 </div>
               </div>
             </div>
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <Zap className="w-5 h-5 text-blue-400" />
+                  <Zap className="size-5 text-blue-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{flows.reduce((sum, f) => sum + (f.nodes?.length || 0), 0)}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Noeuds total</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{flows.reduce((sum, f) => sum + (f.nodes?.length || 0), 0)}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Noeuds total</p>
                 </div>
               </div>
             </div>
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
-                  <LayoutTemplate className="w-5 h-5 text-gold-400" />
+                  <LayoutTemplate className="size-5 text-gold-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{templates.length}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Templates</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{templates.length}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Templates</p>
                 </div>
               </div>
             </div>
@@ -226,15 +229,15 @@ export default function Flows() {
 
       {/* Search */}
       <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 max-w-md ${
-        isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+        isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-zinc-200 focus-within:border-gray-300 shadow-sm'
       }`}>
-        <Search className="w-5 h-5 text-gray-400" />
+        <Search className="size-5 text-zinc-400" />
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Rechercher un flow..."
-          className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
+          className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-zinc-500"
         />
       </div>
 
@@ -242,13 +245,13 @@ export default function Flows() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredFlows.length === 0 ? (
           <div className={`col-span-full text-center py-12 rounded-xl border ${
-            isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'
+            isDark ? 'bg-space-800 border-space-700' : 'bg-white border-zinc-200'
           }`}>
-            <GitBranch className="w-12 h-12 mx-auto mb-4 text-icon" />
-            <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <GitBranch className="size-12 mx-auto mb-4 text-icon" />
+            <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-zinc-700'}`}>
               Aucun flow
             </h3>
-            <p className={isDark ? 'text-gray-500' : 'text-gray-600'}>
+            <p className={isDark ? 'text-zinc-500' : 'text-zinc-600'}>
               Créez votre premier flow pour guider vos conversations
             </p>
           </div>
@@ -257,24 +260,24 @@ export default function Flows() {
             <div
               key={flow.id}
               className={`p-4 rounded-xl border cursor-pointer transition-all hover:shadow-lg animate-fadeIn ${
-                isDark ? 'bg-space-800 border-space-700 hover:border-space-600' : 'bg-white border-gray-200 hover:border-gray-300'
+                isDark ? 'bg-space-800 border-space-700 hover:border-space-600' : 'bg-white border-zinc-200 hover:border-gray-300'
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <div className={`size-10 rounded-xl flex items-center justify-center ${
                     flow.is_active
                       ? 'bg-emerald-500/20 text-emerald-400'
-                      : isDark ? 'bg-space-700 text-gray-500' : 'bg-gray-100 text-gray-400'
+                      : isDark ? 'bg-space-700 text-zinc-500' : 'bg-zinc-100 text-zinc-400'
                   }`}>
-                    <GitBranch className="w-5 h-5" />
+                    <GitBranch className="size-5" />
                   </div>
                   <div>
-                    <h3 className={`font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+                    <h3 className={`font-medium ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>
                       {flow.name}
                     </h3>
-                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                    <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                       {flow.nodes?.length || 0} noeuds
                     </span>
                   </div>
@@ -282,14 +285,14 @@ export default function Flows() {
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                   flow.is_active
                     ? 'bg-emerald-500/20 text-emerald-400'
-                    : 'bg-gray-500/20 text-gray-400'
+                    : 'bg-gray-500/20 text-zinc-400'
                 }`}>
                   {flow.is_active ? 'Actif' : 'Inactif'}
                 </span>
               </div>
 
               {flow.description && (
-                <p className={`text-sm mb-3 line-clamp-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`text-sm mb-3 line-clamp-2 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>
                   {flow.description}
                 </p>
               )}
@@ -302,7 +305,7 @@ export default function Flows() {
                   {(flow.nodes || []).slice(0, 5).map((node, i) => (
                     <div
                       key={i}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs ${
+                      className={`size-8 rounded-lg flex items-center justify-center text-xs ${
                         isDark ? 'bg-space-800' : 'bg-white border'
                       }`}
                       title={node.data?.label}
@@ -314,7 +317,7 @@ export default function Flows() {
                     </div>
                   ))}
                   {(flow.nodes?.length || 0) > 5 && (
-                    <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>
                       +{(flow.nodes?.length || 0) - 5}
                     </span>
                   )}
@@ -322,7 +325,7 @@ export default function Flows() {
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={`text-xs truncate min-w-0 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <span className={`text-xs truncate min-w-0 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>
                   {flow.agent_name || 'Tous les agents'}
                 </span>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -331,28 +334,28 @@ export default function Flows() {
                     className={`p-1.5 rounded-lg transition-colors ${
                       flow.is_active
                         ? 'bg-emerald-500/20 text-emerald-400'
-                        : isDark ? 'bg-space-700 text-gray-400' : 'bg-gray-100 text-gray-600'
+                        : isDark ? 'bg-space-700 text-zinc-400' : 'bg-zinc-100 text-zinc-600'
                     }`}
                   >
-                    {flow.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                    {flow.is_active ? <Pause className="size-4" /> : <Play className="size-4" />}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/flows/${flow.id}`); }}
-                    className={`p-1.5 rounded-lg text-icon ${isDark ? 'hover:bg-space-700' : 'hover:bg-gray-100'}`}
+                    className={`p-1.5 rounded-lg text-icon ${isDark ? 'hover:bg-space-700' : 'hover:bg-zinc-100'}`}
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="size-4" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDuplicate(flow.id); }}
-                    className={`p-1.5 rounded-lg text-icon ${isDark ? 'hover:bg-space-700' : 'hover:bg-gray-100'}`}
+                    className={`p-1.5 rounded-lg text-icon ${isDark ? 'hover:bg-space-700' : 'hover:bg-zinc-100'}`}
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="size-4" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDelete(flow.id); }}
                     className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
               </div>
@@ -416,60 +419,71 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
       <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} aria-hidden />
       
       <div className={`relative z-10 w-full max-w-lg rounded-t-3xl sm:rounded-3xl border shadow-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col animate-fadeIn overflow-hidden max-sm:rounded-b-none ${
-        isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
+        isDark ? 'bg-space-900 border-space-700' : 'bg-white border-zinc-200'
       }`}>
         <div className={`flex-shrink-0 p-5 sm:p-6 border-b flex items-center justify-between ${
-          isDark ? 'border-space-700' : 'border-gray-200'
+          isDark ? 'border-space-700' : 'border-zinc-200'
         }`} style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}>
-          <h2 className={`text-xl font-display font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
+          <h2 className={`text-xl font-display font-bold ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>
             Nouveau flow
           </h2>
-          <button onClick={onClose} className="p-2 -m-2 text-gray-500 hover:text-gray-300 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-space-800 transition-colors" aria-label="Fermer">
-            <X className="w-6 h-6" />
+          <button onClick={onClose} className="p-2 -m-2 text-zinc-500 hover:text-zinc-300 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-space-800 transition-colors" aria-label="Fermer">
+            <X className="size-6" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 space-y-5 custom-scrollbar overscroll-contain">
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Nom du flow
+          <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6 space-y-5 custom-scrollbar overscroll-contain">            <div className="space-y-1">
+              <label htmlFor="flow-name" className={`block text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
+                Nom du flow *
               </label>
               <input
+                id="flow-name"
                 type="text"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(prev => ({ ...prev, name: val }));
+                }}
                 className={`w-full px-4 py-2 rounded-lg border min-h-[44px] touch-target ${
-                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
+                  isDark ? 'bg-space-800 border-space-700 text-zinc-100' : 'bg-white border-zinc-200'
                 }`}
                 placeholder="Ex: Accueil et qualification"
                 required
               />
             </div>
 
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <div className="space-y-1">
+              <label htmlFor="flow-desc" className={`block text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                 Description (optionnel)
               </label>
               <textarea
+                id="flow-desc"
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(prev => ({ ...prev, description: val }));
+                }}
                 className={`w-full px-4 py-2 rounded-xl border h-24 resize-none ${
-                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
+                  isDark ? 'bg-space-800 border-space-700 text-zinc-100' : 'bg-white border-zinc-200'
                 }`}
                 placeholder="Décrivez le but de ce flow..."
               />
             </div>
 
-            <div>
-              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <div className="space-y-1">
+              <label htmlFor="flow-agent" className={`block text-sm font-medium ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                 Agent (optionnel)
               </label>
               <select
+                id="flow-agent"
                 value={form.agent_id}
-                onChange={(e) => setForm({ ...form, agent_id: e.target.value })}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm(prev => ({ ...prev, agent_id: val }));
+                }}
                 className={`w-full px-4 py-2 rounded-lg border min-h-[44px] touch-target ${
-                  isDark ? 'bg-space-800 border-space-700 text-gray-100' : 'bg-white border-gray-200'
+                  isDark ? 'bg-space-800 border-space-700 text-zinc-100' : 'bg-white border-zinc-200'
                 }`}
               >
                 <option value="">Tous les agents</option>
@@ -480,38 +494,38 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
             </div>
 
             <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              <span className={`block text-sm font-medium mb-2 ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>
                 Commencer avec un template
-              </label>
+              </span>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, template: null })}
+                  onClick={() => setForm(prev => ({ ...prev, template: null }))}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
                     form.template === null
                       ? 'border-gold-400 bg-gold-400/10'
-                      : isDark ? 'border-space-700 hover:border-space-600' : 'border-gray-200 hover:border-gray-300'
+                      : isDark ? 'border-space-700 hover:border-space-600' : 'border-zinc-200 hover:border-gray-300'
                   }`}
                 >
-                  <Zap className={`w-5 h-5 mb-1 ${form.template === null ? 'text-gold-400' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                  <Zap className={`size-5 mb-1 ${form.template === null ? 'text-gold-400' : isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
                   <p className={`text-sm font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Vide</p>
-                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Partir de zéro</p>
+                  <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Partir de zéro</p>
                 </button>
                 
                 {templates.map(template => (
                   <button
                     key={template.id}
                     type="button"
-                    onClick={() => setForm({ ...form, template: template.id })}
+                    onClick={() => setForm(prev => ({ ...prev, template: template.id }))}
                     className={`p-3 rounded-xl border-2 text-left transition-all ${
                       form.template === template.id
                         ? 'border-gold-400 bg-gold-400/10'
-                        : isDark ? 'border-space-700 hover:border-space-600' : 'border-gray-200 hover:border-gray-300'
+                        : isDark ? 'border-space-700 hover:border-space-600' : 'border-zinc-200 hover:border-gray-300'
                     }`}
                   >
-                    <LayoutTemplate className={`w-5 h-5 mb-1 ${form.template === template.id ? 'text-gold-400' : isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <LayoutTemplate className={`size-5 mb-1 ${form.template === template.id ? 'text-gold-400' : isDark ? 'text-zinc-500' : 'text-zinc-400'}`} />
                     <p className={`text-sm font-bold truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{template.name}</p>
-                    <p className={`text-xs line-clamp-1 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{template.description}</p>
+                    <p className={`text-xs line-clamp-1 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{template.description}</p>
                   </button>
                 ))}
               </div>
@@ -519,7 +533,7 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
           </div>
 
           <div className={`flex-shrink-0 p-5 sm:p-6 border-t flex flex-col sm:flex-row gap-3 ${
-            isDark ? 'bg-space-900/50 border-space-700' : 'bg-gray-50 border-gray-200'
+            isDark ? 'bg-space-900/50 border-space-700' : 'bg-gray-50 border-zinc-200'
           }`} style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}>
             <button
               type="button"
@@ -533,7 +547,7 @@ function CreateFlowModal({ agents, templates, onClose, onSuccess, isDark }) {
               disabled={saving}
               className="btn-primary flex-1 min-h-[48px] touch-target inline-flex items-center justify-center gap-2"
             >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving && <Loader2 className="size-4 animate-spin" />}
               Créer le flow
             </button>
           </div>

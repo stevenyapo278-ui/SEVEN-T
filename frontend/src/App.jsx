@@ -57,6 +57,7 @@ const PartnerDashboard = lazy(() => import('./pages/Partner/PartnerDashboard'))
 const PartnerLayout = lazy(() => import('./layouts/PartnerLayout'))
 import { PartnerAuthProvider } from './contexts/PartnerAuthContext'
 
+import { LazyMotion, domAnimation } from 'framer-motion'
 import ErrorBoundary from './components/ErrorBoundary'
 import CookieConsentBanner from './components/CookieConsentBanner'
 import DashboardLayout from './layouts/DashboardLayout'
@@ -213,7 +214,8 @@ function App() {
   const { user } = useAuth()
   return (
     <ErrorBoundary>
-      <PartnerAuthProvider>
+      <LazyMotion features={domAnimation} strict>
+        <PartnerAuthProvider>
         <OnboardingTourProvider userId={user?.id}>
           <CookieConsentBanner />
           <TrialExpiredBanner />
@@ -299,8 +301,9 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </OnboardingTourProvider>
-      </PartnerAuthProvider>
-    </ErrorBoundary>
+    </PartnerAuthProvider>
+      </LazyMotion>
+  </ErrorBoundary>
   )
 }
 

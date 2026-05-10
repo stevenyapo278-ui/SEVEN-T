@@ -8,7 +8,7 @@ import { usePageTitle } from '../hooks/usePageTitle'
 import { useTheme } from '../contexts/ThemeContext'
 import { useOnboardingTour } from '../components/Onboarding'
 import { useModuleAvailability } from '../hooks/useModuleAvailability'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, m } from 'framer-motion'
 import toast from 'react-hot-toast'
 import api from '../services/api'
 import { saveSessionLocation } from '../utils/sessionLocation'
@@ -67,7 +67,7 @@ import { usePushNotifications } from '../hooks/usePushNotifications'
 const PastDueBanner = ({ isDark }) => (
   <div className={`w-full px-4 py-2 flex items-center justify-between gap-3 border-b ${isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-600'}`}>
     <div className="flex items-center gap-2 text-sm font-medium">
-      <AlertCircle className="w-4 h-4" />
+      <AlertCircle className="size-4" />
       <span>Action requise : Échec de paiement. Votre abonnement est en retard. Veuillez régulariser pour éviter la suspension.</span>
     </div>
     <Link to="/dashboard/pricing" className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${isDark ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400' : 'bg-red-500 text-white hover:bg-red-600'}`}>
@@ -237,12 +237,12 @@ const prefetchRouteData = (href, isAuthenticated) => {
 // ─── Theme Toggle ────────────────────────────────────────────────────────────
 const ThemeToggle = ({ className = '', size = 'md' }) => {
   const { theme, toggleTheme } = useTheme()
-  const sizeClass = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9'
-  const iconSize = size === 'sm' ? 'w-4 h-4' : 'w-4 h-4'
+  const sizeClass = size === 'sm' ? 'size-8' : 'size-9'
+  const iconSize = size === 'sm' ? 'size-4' : 'size-4'
   return (
     <button
       onClick={toggleTheme}
-      className={`relative flex items-center justify-center ${sizeClass} rounded-lg transition-all duration-300 ${theme === 'dark' ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
+      className={`relative flex items-center justify-center ${sizeClass} rounded-lg transition-all duration-300 ${theme === 'dark' ? 'hover:bg-space-800 text-zinc-400 hover:text-gray-200' : 'hover:bg-zinc-100 text-zinc-500 hover:text-gray-800'
         } ${className}`}
       title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
     >
@@ -262,16 +262,19 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
   const location = useLocation()
   const isGroupActive = group.items.some(item => location.pathname === item.href || location.pathname.startsWith(item.href + '/'))
   const [isExpanded, setIsExpanded] = useState(isGroupActive)
-  const isFirstGroup = group.nameKey === 'nav.main'
-
-  // Sync expansion with active state on route changes
-  useEffect(() => {
+  
+  // Reset expansion when route changes to a new active group
+  const [lastActive, setLastActive] = useState(isGroupActive)
+  if (isGroupActive !== lastActive) {
+    setLastActive(isGroupActive)
     if (isGroupActive) setIsExpanded(true)
-  }, [isGroupActive])
+  }
 
   useEffect(() => {
     if (forceExpand && isMobile) setIsExpanded(true)
   }, [forceExpand, isMobile])
+
+  const isFirstGroup = group.nameKey === 'nav.main'
 
   const shouldBeOpen = isFirstGroup || forceExpand || isExpanded
 
@@ -293,21 +296,21 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                   ? 'bg-blue-500/15 text-blue-400'
                   : 'bg-blue-50 text-blue-600'
                 : isDark
-                  ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100'
+                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
               } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
             }
           >
             {({ isActive }) => (
               <>
                 <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
+                <item.icon className={`flex-shrink-0 size-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
                 {(!collapsed || isMobile) && (
                   <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
-                    <span className={`truncate ${item.isLocked ? 'text-gray-500' : ''}`}>{item.title || t(item.nameKey)}</span>
+                    <span className={`truncate ${item.isLocked ? 'text-zinc-500' : ''}`}>{item.title || t(item.nameKey)}</span>
                     
                     {item.isLocked ? (
-                      <Lock className="w-3 h-3 text-gold-400/60" />
+                      <Lock className="size-3 text-gold-400/60" />
                     ) : (
                       <>
                         {item.href === '/dashboard/notifications' && unreadCount > 0 && (
@@ -325,13 +328,13 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                   </div>
                 )}
                 {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/notifications' && unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
+                  <span className="absolute top-1 right-1 size-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
                 )}
                 {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
+                  <span className="absolute top-1 right-1 size-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
                 )}
                 {collapsed && !isMobile && item.isLocked && (
-                   <span className="absolute top-1 right-1"><Lock className="w-2.5 h-2.5 text-gold-400/50" /></span>
+                   <span className="absolute top-1 right-1"><Lock className="size-2.5 text-gold-400/50" /></span>
                 )}
               </>
             )}
@@ -349,14 +352,14 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
           onClick={() => setIsExpanded(!isExpanded)}
           className={`w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 ${isGroupActive
               ? isDark ? 'text-blue-400' : 'text-blue-600'
-              : isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'
-            } ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
+              : isDark ? 'text-zinc-400 hover:text-gray-200' : 'text-zinc-600 hover:text-zinc-900'
+            } ${isDark ? 'hover:bg-white/5' : 'hover:bg-zinc-100'}`}
         >
           <span className="flex items-center gap-2.5 min-w-0">
-            {group.icon && <group.icon className={`w-4 h-4 flex-shrink-0 ${isGroupActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400'}`} />}
+            {group.icon && <group.icon className={`size-4 flex-shrink-0 ${isGroupActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400'}`} />}
             <span className="truncate text-sm font-medium">{group.title || t(group.nameKey)}</span>
           </span>
-          <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${shouldBeOpen ? 'rotate-90' : ''}`} />
+          <ChevronRight className={`size-3 transition-transform duration-200 ${shouldBeOpen ? 'rotate-90' : ''}`} />
         </button>
       )}
 
@@ -373,20 +376,20 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
               className={({ isActive }) =>
                 `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
                   ? isDark ? 'bg-blue-500/15 text-blue-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
-                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  : isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
                 } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
               {({ isActive }) => (
                 <>
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                  <item.icon className={`flex-shrink-0 w-4 h-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
+                  <item.icon className={`flex-shrink-0 size-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
                   {(!collapsed || isMobile) && (
                     <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
-                      <span className={`truncate ${item.isLocked ? 'text-gray-500 italic' : ''}`}>{item.title || t(item.nameKey)}</span>
+                      <span className={`truncate ${item.isLocked ? 'text-zinc-500 italic' : ''}`}>{item.title || t(item.nameKey)}</span>
                       
                       {item.isLocked ? (
-                        <Lock className="w-3 h-3 text-gold-400/60" />
+                        <Lock className="size-3 text-gold-400/60" />
                       ) : (
                         <>
                           {item.href === '/dashboard/notifications' && unreadCount > 0 && (
@@ -404,13 +407,13 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                     </div>
                   )}
                   {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/notifications' && unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
+                    <span className="absolute top-1 right-1 size-2 bg-blue-500 rounded-full border border-white dark:border-space-900" />
                   )}
                   {collapsed && !isMobile && !item.isLocked && item.href === '/dashboard/conversations' && unreadConversationsCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
+                    <span className="absolute top-1 right-1 size-2 bg-emerald-500 rounded-full border border-white dark:border-space-900" />
                   )}
                   {collapsed && !isMobile && item.isLocked && (
-                     <span className="absolute top-1 right-1"><Lock className="w-2.5 h-2.5 text-gold-400/50" /></span>
+                     <span className="absolute top-1 right-1"><Lock className="size-2.5 text-gold-400/50" /></span>
                   )}
                 </>
               )}
@@ -461,42 +464,42 @@ const UserMenu = ({ user, onLogout }) => {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}
+        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-zinc-100'}`}
       >
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+        <div className={`size-7 rounded-full flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
           {user?.is_admin
-            ? <Shield className="w-3.5 h-3.5 text-white" />
+            ? <Shield className="size-3.5 text-white" />
             : <span className="text-white font-bold text-xs">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
           }
         </div>
         <div className="hidden md:block text-left min-w-0 max-w-[120px]">
           <p className={`text-xs font-medium truncate leading-tight ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{user?.name?.split(' ')[0]}</p>
         </div>
-        <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`size-3.5 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+        <div className={`absolute right-0 top-full mt-2 w-72 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-zinc-200'}`}>
           {/* User Info */}
           <div className={`p-4 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
-                {user?.is_admin ? <Shield className="w-5 h-5 text-white" /> : <span className="text-white font-bold">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>}
+              <div className={`size-10 rounded-xl flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+                {user?.is_admin ? <Shield className="size-5 text-white" /> : <span className="text-white font-bold">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className={`font-medium truncate text-sm ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{user?.name}</p>
+                  <p className={`font-medium truncate text-sm ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>{user?.name}</p>
                   {user?.is_admin === 1 && <span className="px-1.5 py-0.5 text-[10px] font-medium bg-gold-400/20 text-gold-400 rounded">Admin</span>}
                 </div>
-                <p className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{user?.email}</p>
+                <p className={`text-xs truncate ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{user?.email}</p>
               </div>
             </div>
             {/* Credits - Hidden for influencers */}
             {user?.influencer_only !== true && (
               <div className={`mt-3 flex items-center justify-between px-3 py-2 rounded-lg ${isDark ? 'bg-space-900' : 'bg-gray-50'}`}>
                 <div className="flex items-center gap-2">
-                  <Zap className="w-3.5 h-3.5 text-gold-400" />
-                  <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Crédits</span>
+                  <Zap className="size-3.5 text-gold-400" />
+                  <span className={`text-xs ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Crédits</span>
                 </div>
                 <span className="font-bold text-sm text-gold-400">{user?.credits || 0}</span>
               </div>
@@ -514,8 +517,8 @@ const UserMenu = ({ user, onLogout }) => {
               ]
             ).map(({ to, icon: Icon, label }) => (
               <Link key={label} to={to} onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm ${isDark ? 'text-gray-300 hover:bg-space-700' : 'text-gray-700 hover:bg-gray-100'}`}>
-                <Icon className="w-4 h-4 text-gray-400" />
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm ${isDark ? 'text-gray-300 hover:bg-space-700' : 'text-zinc-700 hover:bg-zinc-100'}`}>
+                <Icon className="size-4 text-zinc-400" />
                 {label}
               </Link>
             ))}
@@ -523,7 +526,7 @@ const UserMenu = ({ user, onLogout }) => {
           <div className={`p-1.5 border-t ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
             <button onClick={() => { setIsOpen(false); onLogout() }}
               className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg transition-colors text-sm ${isDark ? 'text-red-400 hover:bg-red-500/10' : 'text-red-500 hover:bg-red-50'}`}>
-              <LogOut className="w-4 h-4" />
+              <LogOut className="size-4" />
               Déconnexion
             </button>
           </div>
@@ -631,9 +634,9 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'}`}
+        className={`relative flex items-center justify-center size-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-zinc-400 hover:text-gray-200' : 'hover:bg-zinc-100 text-zinc-500 hover:text-gray-800'}`}
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="size-4" />
         {unreadCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -642,41 +645,50 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-gray-200'}`}>
+        <div className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-zinc-200'}`}>
           <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
-            <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Notifications</h3>
+            <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>Notifications</h3>
             {unreadCount > 0 && <button onClick={markAllAsRead} className="text-xs text-blue-400 hover:text-blue-300">Tout lire</button>}
           </div>
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="py-10 text-center">
-                <Bell className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Aucune notification</p>
+                <Bell className={`size-8 mx-auto mb-2 ${isDark ? 'text-zinc-600' : 'text-gray-300'}`} />
+                <p className={`text-sm ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Aucune notification</p>
               </div>
             ) : notifications.map((notif) => (
               <div
                 key={notif.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    if (!notif.is_read) markAsRead(notif.id)
+                  }
+                }}
                 onClick={() => !notif.is_read && markAsRead(notif.id)}
                 className={`group relative px-4 py-3 cursor-pointer transition-colors border-b ${isDark ? 'border-space-700 last:border-0' : 'border-gray-50 last:border-0'} ${isDark ? (notif.is_read ? 'hover:bg-space-700' : 'bg-blue-500/5 hover:bg-space-700') : (notif.is_read ? 'hover:bg-gray-50' : 'bg-blue-50/50 hover:bg-gray-50')}`}
+                aria-label={`Notification: ${notif.title}`}
               >
-                <button onClick={(e) => deleteNotification(notif.id, e)} className={`absolute top-2.5 right-2.5 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? 'hover:bg-space-600 text-gray-500' : 'hover:bg-gray-200 text-gray-400'}`}>
-                  <X className="w-3 h-3" />
+                <button onClick={(e) => deleteNotification(notif.id, e)} className={`absolute top-2.5 right-2.5 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${isDark ? 'hover:bg-space-600 text-zinc-500' : 'hover:bg-gray-200 text-zinc-400'}`}>
+                  <X className="size-3" />
                 </button>
                 <div className="flex items-start gap-2.5 pr-5">
-                  <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${typeColor[notif.type] || 'bg-blue-400'}`} />
+                  <div className={`mt-1.5 size-2 rounded-full flex-shrink-0 ${typeColor[notif.type] || 'bg-blue-400'}`} />
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{notif.title}</p>
-                    <p className={`text-xs mt-0.5 line-clamp-2 ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>{notif.message}</p>
-                    <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{formatRelativeTime(notif.created_at)}</p>
+                    <p className={`text-xs mt-0.5 line-clamp-2 ${isDark ? 'text-zinc-500' : 'text-zinc-600'}`}>{notif.message}</p>
+                    <p className={`text-[10px] mt-1 ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>{formatRelativeTime(notif.created_at)}</p>
                   </div>
-                  {!notif.is_read && <div className="w-1.5 h-1.5 bg-blue-400 rounded-full flex-shrink-0 mt-2" />}
+                  {!notif.is_read && <div className="size-1.5 bg-blue-400 rounded-full flex-shrink-0 mt-2" />}
                 </div>
               </div>
             ))}
           </div>
           <Link to="/dashboard/notifications" onClick={() => setIsOpen(false)}
             className={`flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-t ${isDark ? 'border-space-700 text-blue-400 hover:bg-space-700' : 'border-gray-100 text-blue-600 hover:bg-gray-50'}`}>
-            Voir toutes les notifications <ChevronRight className="w-3 h-3" />
+            Voir toutes les notifications <ChevronRight className="size-3" />
           </Link>
         </div>
       )}
@@ -702,7 +714,7 @@ const TrialBadge = ({ user, isDark }) => {
 
   return (
     <Link to="/dashboard/settings" className={`hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium border whitespace-nowrap ${isDark ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' : 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100'}`}>
-      <Zap className="w-3 h-3" />
+      <Zap className="size-3" />
       Essai · {text}
     </Link>
   )
@@ -719,10 +731,10 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className={`flex h-14 flex-shrink-0 items-center gap-2.5 px-4 border-b ${isDark ? 'border-space-700/60' : 'border-gray-200'}`}>
+      <div className={`flex h-14 flex-shrink-0 items-center gap-2.5 px-4 border-b ${isDark ? 'border-space-700/60' : 'border-zinc-200'}`}>
         <Logo className="flex-shrink-0" />
         {(!collapsed || isMobile) && (
-          <span className={`font-semibold text-sm truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('landing.title')}</span>
+          <span className={`font-semibold text-sm truncate ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>{t('landing.title')}</span>
         )}
       </div>
 
@@ -731,7 +743,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
         <SidebarNavGroups navGroups={navGroups} onItemClick={onItemClick} isMobile={isMobile} collapsed={collapsed} unreadCount={unreadCount} unreadConversationsCount={unreadConversationsCount} />
 
         {/* Divider */}
-        {!isInfluencerOnly && <div className={`pt-2 mt-2 border-t ${isDark ? 'border-space-700/60' : 'border-gray-200'}`} />}
+        {!isInfluencerOnly && <div className={`pt-2 mt-2 border-t ${isDark ? 'border-space-700/60' : 'border-zinc-200'}`} />}
 
         {/* Team (Owners only) */}
         {!isInfluencerOnly && user?.role === 'owner' && (
@@ -749,14 +761,14 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 className={({ isActive }) =>
                   `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
                     ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
-                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    : isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
                   } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                    <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    <item.icon className={`flex-shrink-0 size-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'}`} />
                     {(!collapsed || isMobile) && <span className="truncate">{item.title || t(item.nameKey)}</span>}
                   </>
                 )}
@@ -779,14 +791,14 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 className={({ isActive }) =>
                   `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${isActive
                     ? isDark ? 'bg-blue-500/15 text-blue-400' : 'bg-blue-50 text-blue-600'
-                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    : isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
                   } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                    <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    <item.icon className={`flex-shrink-0 size-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'}`} />
                     {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
                   </>
                 )}
@@ -810,14 +822,14 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
               className={({ isActive }) =>
                 `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
                   ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-blue-50 text-blue-600 font-medium'
-                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  : isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
                 } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
               {({ isActive }) => (
                 <>
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
-                  <Gift className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  <Gift className={`flex-shrink-0 size-4 ${isActive ? 'text-gold-400' : 'text-zinc-400 group-hover:text-zinc-600'}`} />
                   {(!collapsed || isMobile) && <span className="truncate">Statistiques Partenaire</span>}
                 </>
               )}
@@ -841,14 +853,14 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 className={({ isActive }) =>
                   `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
                     ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
-                    : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    : isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
                   } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
-                    <item.icon className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                    <item.icon className={`flex-shrink-0 size-4 ${isActive ? 'text-gold-400' : 'text-zinc-400 group-hover:text-zinc-600'}`} />
                     {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
                   </>
                 )}
@@ -871,14 +883,14 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
               className={({ isActive }) =>
                 `nav-item group relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all duration-150 ${isActive
                   ? isDark ? 'bg-gold-400/15 text-gold-400 font-medium' : 'bg-amber-50 text-amber-600 font-medium'
-                  : isDark ? 'text-gray-400 hover:bg-white/5 hover:text-gray-100' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  : isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-gray-100' : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
                 } ${collapsed && !isMobile ? 'justify-center px-2' : ''}`
               }
             >
               {({ isActive }) => (
                 <>
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-gold-400 opacity-100' : 'opacity-0'}`} />
-                  <LifeBuoy className={`flex-shrink-0 w-4 h-4 ${isActive ? 'text-gold-400' : 'text-gray-400 group-hover:text-gray-600'}`} />
+                  <LifeBuoy className={`flex-shrink-0 size-4 ${isActive ? 'text-gold-400' : 'text-zinc-400 group-hover:text-zinc-600'}`} />
                   {(!collapsed || isMobile) && <span className="truncate">{t('nav.support', 'Support')}</span>}
                 </>
               )}
@@ -888,11 +900,11 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
       </nav>
 
       {/* User footer */}
-      <div className={`flex-shrink-0 sticky bottom-0 px-3 py-3 border-t ${isDark ? 'border-space-700/60 bg-space-900' : 'border-gray-200 bg-white'}`}>
+      <div className={`flex-shrink-0 sticky bottom-0 px-3 py-3 border-t ${isDark ? 'border-space-700/60 bg-space-900' : 'border-zinc-200 bg-white'}`}>
         <div className={`flex items-center gap-2.5 ${collapsed && !isMobile ? 'justify-center' : ''}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+          <div className={`size-8 rounded-full flex items-center justify-center flex-shrink-0 ${user?.is_admin ? 'bg-gradient-to-br from-gold-400 to-blue-500' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
             {user?.is_admin
-              ? <Shield className="w-4 h-4 text-white" />
+              ? <Shield className="size-4 text-white" />
               : <span className="text-white font-bold text-xs">{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
             }
           </div>
@@ -901,7 +913,7 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
               <p className={`text-xs font-semibold truncate leading-tight ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{user?.name}</p>
               {!isInfluencerOnly && (
                 <div className="flex items-center gap-1 mt-0.5">
-                  <Zap className="w-2.5 h-2.5 text-gold-400 flex-shrink-0" />
+                  <Zap className="size-2.5 text-gold-400 flex-shrink-0" />
                   <span className={`text-[10px] font-medium text-gold-400`}>{user?.credits ?? 0} crédits</span>
                 </div>
               )}
@@ -910,9 +922,9 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
           <button
             onClick={onLogout}
             title="Déconnexion"
-            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-gray-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+            className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10' : 'text-zinc-400 hover:text-red-500 hover:bg-red-50'}`}
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="size-3.5" />
           </button>
         </div>
       </div>
@@ -967,7 +979,8 @@ export default function DashboardLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       if (typeof window === 'undefined') return false
-      return localStorage.getItem('seven-t-sidebar-collapsed') === 'true' || localStorage.getItem('seven-t-sidebar-collapsed') == 1
+      const saved = localStorage.getItem('seven-t-sidebar-collapsed')
+      return saved === 'true' || saved === '1'
     } catch {
       return false
     }
@@ -985,10 +998,22 @@ export default function DashboardLayout() {
   const [unreadConversationsCount, setUnreadConversationsCount] = useState(0)
 
   // Global UI States
-  const [isGlobalAIOpen, setIsGlobalAIOpen] = useState(false)
-  const [isChatbotOpen, setIsChatbotOpen] = useState(false)
-  const [isAssistedConfigOpen, setIsAssistedConfigOpen] = useState(false)
-  const [assistedConfigData, setAssistedConfigData] = useState(null)
+  // Global UI States via Reducer
+  const [uiState, uiDispatch] = useReducer((state, action) => {
+    switch (action.type) {
+      case 'SET_GLOBAL_AI': return { ...state, isGlobalAIOpen: action.value }
+      case 'TOGGLE_CHATBOT': return { ...state, isChatbotOpen: !state.isChatbotOpen }
+      case 'SET_CHATBOT': return { ...state, isChatbotOpen: action.value }
+      case 'OPEN_CONFIG': return { ...state, isAssistedConfigOpen: true, assistedConfigData: action.data }
+      case 'CLOSE_CONFIG': return { ...state, isAssistedConfigOpen: false, assistedConfigData: null }
+      default: return state
+    }
+  }, {
+    isGlobalAIOpen: false,
+    isChatbotOpen: false,
+    isAssistedConfigOpen: false,
+    assistedConfigData: null
+  })
 
   const {
     status: modulesStatus,
@@ -1060,7 +1085,7 @@ export default function DashboardLayout() {
       const slug = user?.name ? user.name.toLowerCase().trim().replace(/\s+/g, '-') : 'partenaire';
       navigate(`/dashboard/${slug}`, { replace: true });
     }
-  }, [isInfluencerOnly, location.pathname, navigate, user?.name]);
+  }, [isInfluencerOnly, location, navigate, user?.name]);
 
   const systemPrefersReducedMotion = useMemo(() =>
     typeof window !== 'undefined' &&
@@ -1114,12 +1139,9 @@ export default function DashboardLayout() {
       }
     }
 
-    const onOpenGlobalAI = () => setIsGlobalAIOpen(true)
-    const onOpenChatbot = () => setIsChatbotOpen(prev => !prev)
-    const onOpenAssistedConfig = (e) => {
-      if (e.detail?.initialData) setAssistedConfigData(e.detail.initialData)
-      setIsAssistedConfigOpen(true)
-    }
+    const onOpenGlobalAI = () => uiDispatch({ type: 'SET_GLOBAL_AI', value: true })
+    const onOpenChatbot = () => uiDispatch({ type: 'TOGGLE_CHATBOT' })
+    const onOpenAssistedConfig = (e) => uiDispatch({ type: 'OPEN_CONFIG', data: e.detail?.initialData })
 
     window.addEventListener('keydown', handleGlobalKeyDown)
     window.addEventListener('seven-t:open-global-ai', onOpenGlobalAI)
@@ -1175,7 +1197,7 @@ export default function DashboardLayout() {
 
     setTransition({ direction: dir, axis })
     prevPathRef.current = location.pathname
-  }, [location.pathname, navigationType])
+  }, [location, navigationType])
 
   // ── Variants Framer Motion ─────────────────────────────────────────────────
   const variants = prefersReducedMotion
@@ -1233,24 +1255,18 @@ export default function DashboardLayout() {
 
     return navigationGroups.map(g => ({
       ...g,
-      items: g.items.map(item => {
+      items: g.items.reduce((acc, item) => {
         const modKey = navToModule[item.href];
-        if (!modKey) return { ...item, isLocked: false };
-        
-        const modStatus = modulesStatus[modKey];
+        const modStatus = modKey ? modulesStatus[modKey] : null;
         const isLocked = modStatus ? modStatus.locked : false;
         
-        return { ...item, isLocked };
-      }).filter(item => {
-        if (item.href === '/dashboard/tickets') return true;
-        const modKey = navToModule[item.href];
-        if (!modKey) return true;
+        const shouldShow = (item.href === '/dashboard/tickets') || !modKey || (modStatus ? (modStatus.enabled || modStatus.locked) : true);
         
-        const modStatus = modulesStatus[modKey];
-        // On affiche l'item s'il est activé OU s'il est simplement verrouillé par le plan (pour l'upsell)
-        // Par contre s'il est explicitement désactivé manuellement (enabled: false, locked: false), on le cache.
-        return modStatus ? (modStatus.enabled || modStatus.locked) : true;
-      })
+        if (shouldShow) {
+          acc.push({ ...item, isLocked });
+        }
+        return acc;
+      }, [])
     })).filter(g => g.items.length > 0);
   }, [modulesStatus, isInfluencerOnly, user?.name])
 
@@ -1280,10 +1296,10 @@ export default function DashboardLayout() {
 
   // Sauvegarder la page actuelle à chaque changement (pour restauration après reconnexion)
   useEffect(() => {
-    if (isAuthenticated && user?.id && location.pathname.startsWith('/dashboard')) {
-      saveSessionLocation(user.id, location.pathname, location.search)
+    if (isAuthenticated && user?.id) {
+        saveSessionLocation(user.id, location.pathname, location.search)
     }
-  }, [isAuthenticated, user?.id, location.pathname, location.search])
+  }, [isAuthenticated, user?.id, location]);
 
   const handleLogout = () => {
     // On sauvegarde simplement la page courante pour l'utilisateur courant
@@ -1307,11 +1323,19 @@ export default function DashboardLayout() {
         <div
           className={`fixed inset-0 backdrop-blur-sm transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} ${isDark ? 'bg-space-950/80' : 'bg-slate-900/40'}`}
           onClick={() => setSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+              setSidebarOpen(false)
+            }
+          }}
+          role="button"
+          tabIndex={sidebarOpen ? 0 : -1}
+          aria-label="Fermer le menu"
         />
-        <div className={`fixed inset-y-0 left-0 w-64 shadow-2xl border-r transition-transform duration-300 flex flex-col min-h-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'}`}>
+        <div className={`fixed inset-y-0 left-0 w-64 shadow-2xl border-r transition-transform duration-300 flex flex-col min-h-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${isDark ? 'bg-space-900 border-space-700' : 'bg-white border-zinc-200'}`}>
           <div className="absolute top-3 right-3">
-            <button onClick={() => setSidebarOpen(false)} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
-              <X className="w-4 h-4" />
+            <button onClick={() => setSidebarOpen(false)} className={`p-1.5 rounded-lg ${isDark ? 'hover:bg-space-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}>
+              <X className="size-4" />
             </button>
           </div>
           <SidebarContent
@@ -1328,7 +1352,7 @@ export default function DashboardLayout() {
 
       {/* ── Desktop sidebar ── */}
       <div className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ${sidebarW}`}>
-        <div className={`flex flex-col flex-grow min-h-0 border-r ${isDark ? 'bg-space-900 border-space-700/60' : 'bg-white border-gray-200'}`}>
+        <div className={`flex flex-col flex-grow min-h-0 border-r ${isDark ? 'bg-space-900 border-space-700/60' : 'bg-white border-zinc-200'}`}>
           <SidebarContent
             navGroups={navGroups}
             bottomNav={bottomNav}
@@ -1346,11 +1370,11 @@ export default function DashboardLayout() {
         {subscriptionStatus === 'past_due' && <PastDueBanner isDark={isDark} />}
 
         {/* ── Mobile header ── */}
-        <div className={`sticky top-0 z-40 flex h-14 items-center justify-between border-b backdrop-blur-md px-4 lg:hidden ${isDark ? 'border-space-700/60 bg-space-900/90' : 'border-gray-200 bg-white/95'}`}
+        <div className={`sticky top-0 z-40 flex h-14 items-center justify-between border-b backdrop-blur-md px-4 lg:hidden ${isDark ? 'border-space-700/60 bg-space-900/90' : 'border-zinc-200 bg-white/95'}`}
           style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
           <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className={`touch-target flex items-center justify-center w-8 h-8 rounded-lg ${isDark ? 'hover:bg-space-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
-              <Menu className="w-5 h-5" />
+            <button onClick={() => setSidebarOpen(true)} className={`touch-target flex items-center justify-center size-8 rounded-lg ${isDark ? 'hover:bg-space-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}>
+              <Menu className="size-5" />
             </button>
             <Logo />
           </div>
@@ -1359,8 +1383,8 @@ export default function DashboardLayout() {
             <ThemeToggle size="sm" />
             {!isInfluencerOnly && (
               <Link to="/dashboard/conversations" title="Conversations non lues"
-                className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'}`}>
-                <MessageSquare className="w-4 h-4" />
+                className={`relative flex items-center justify-center size-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-zinc-400 hover:text-gray-200' : 'hover:bg-zinc-100 text-zinc-500 hover:text-gray-800'}`}>
+                <MessageSquare className="size-4" />
                 {unreadConversationsCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
                     {unreadConversationsCount > 9 ? '9+' : unreadConversationsCount}
@@ -1374,18 +1398,18 @@ export default function DashboardLayout() {
         </div>
 
         {/* ── Desktop top bar ── */}
-        <div className={`hidden lg:flex sticky top-0 z-40 h-14 items-center justify-between border-b px-5 ${isDark ? 'border-space-700/60 bg-space-900/95 backdrop-blur-md' : 'border-gray-200 bg-white/95 backdrop-blur-md'}`}>
+        <div className={`hidden lg:flex sticky top-0 z-40 h-14 items-center justify-between border-b px-5 ${isDark ? 'border-space-700/60 bg-space-900/95 backdrop-blur-md' : 'border-zinc-200 bg-white/95 backdrop-blur-md'}`}>
           {/* Left: collapse toggle + page title */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               title={sidebarCollapsed ? 'Développer la sidebar' : 'Réduire la sidebar'}
-              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center justify-center size-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-zinc-400 hover:text-gray-200' : 'hover:bg-zinc-100 text-zinc-500 hover:text-zinc-700'}`}
             >
-              <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+              <ChevronLeft className={`size-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
             </button>
             <div className={`w-px h-4 ${isDark ? 'bg-space-700' : 'bg-gray-200'}`} />
-            <h1 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{pageTitle}</h1>
+            <h1 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>{pageTitle}</h1>
           </div>
 
           {/* Right: actions */}
@@ -1395,17 +1419,17 @@ export default function DashboardLayout() {
             {/* Credits pill */}
             {!isInfluencerOnly && (
               <Link to="/dashboard/settings" title="Crédits et abonnement"
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}>
-                <Zap className="w-3.5 h-3.5 text-gold-400" />
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-zinc-100'}`}>
+                <Zap className="size-3.5 text-gold-400" />
                 <span className="text-xs font-semibold text-gold-400 tabular-nums">{user?.credits ?? 0}</span>
-                <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>crédits</span>
+                <span className={`text-xs ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>crédits</span>
               </Link>
             )}
             <ThemeToggle size="sm" />
             {!isInfluencerOnly && (
               <Link to="/dashboard/conversations" title="Conversations non lues"
-                className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-gray-400 hover:text-gray-200' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'}`}>
-                <MessageSquare className="w-4 h-4" />
+                className={`relative flex items-center justify-center size-8 rounded-lg transition-colors ${isDark ? 'hover:bg-space-800 text-zinc-400 hover:text-gray-200' : 'hover:bg-zinc-100 text-zinc-500 hover:text-gray-800'}`}>
+                <MessageSquare className="size-4" />
                 {unreadConversationsCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-emerald-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-0.5">
                     {unreadConversationsCount > 9 ? '9+' : unreadConversationsCount}
@@ -1422,45 +1446,42 @@ export default function DashboardLayout() {
         {/* ── Page content ── */}
         <main className="flex-1 min-w-0 relative bg-inherit overflow-hidden">
           <AnimatePresence mode="popLayout" initial={false} custom={transition}>
-            <motion.div
+            <m.div
               key={location.pathname}
               custom={transition}
               variants={variants}
               initial="initial"
               animate="animate"
               exit="exit"
-              style={{ willChange: prefersReducedMotion ? 'auto' : 'transform, opacity' }}
+              style={{ willChange: 'auto' }}
               className="w-full p-4 sm:p-5 lg:p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
             >
               <Outlet />
-            </motion.div>
+            </m.div>
           </AnimatePresence>
         </main>
       </div>
 
       {/* Global AI Search & Assistants */}
       <AnimatePresence>
-        {isChatbotOpen && (
+        {uiState.isChatbotOpen && (
           <AIChatbot
-            isOpen={isChatbotOpen}
-            onClose={() => setIsChatbotOpen(false)}
+            isOpen={uiState.isChatbotOpen}
+            onClose={() => uiDispatch({ type: 'SET_CHATBOT', value: false })}
           />
         )}
       </AnimatePresence>
 
       <GlobalAIAssistant />
       <GlobalAIAssistantModal
-        isOpen={isGlobalAIOpen}
-        onClose={() => setIsGlobalAIOpen(false)}
+        isOpen={uiState.isGlobalAIOpen}
+        onClose={() => uiDispatch({ type: 'SET_GLOBAL_AI', value: false })}
       />
 
       <AssistedConfigWizard
-        isOpen={isAssistedConfigOpen}
-        onClose={() => {
-          setIsAssistedConfigOpen(false)
-          setAssistedConfigData(null)
-        }}
-        initialData={assistedConfigData}
+        isOpen={uiState.isAssistedConfigOpen}
+        onClose={() => uiDispatch({ type: 'CLOSE_CONFIG' })}
+        initialData={uiState.assistedConfigData}
       />
     </div>
   )

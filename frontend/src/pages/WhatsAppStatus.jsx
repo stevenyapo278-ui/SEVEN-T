@@ -69,7 +69,7 @@ function PhonePreview({ type, text, backgroundColor, font, mediaUrl, caption, is
             className="text-white text-center px-4 text-sm font-medium leading-relaxed"
             style={{ fontFamily, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}
           >
-            {text || 'Votre texte apparaîtra ici…'}
+            {text || 'Votre texte apparaîtra ici...'}
           </p>
         )}
 
@@ -485,7 +485,7 @@ export default function WhatsAppStatus() {
             </label>
             {loadingAgents ? (
               <div className="flex items-center gap-2 text-gray-500 text-sm">
-                <Loader2 className="w-4 h-4 animate-spin" /> Chargement…
+                <Loader2 className="w-4 h-4 animate-spin" /> Chargement...
               </div>
             ) : (
               <select
@@ -536,7 +536,7 @@ export default function WhatsAppStatus() {
                   maxLength={700}
                   rows={4}
                   className="input-dark w-full py-3 px-4 rounded-xl text-sm resize-none"
-                  placeholder="Saisissez votre message de statut…"
+                  placeholder="Saisissez votre message de statut..."
                 />
                 <p className={`text-right text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{text.length}/700</p>
               </div>
@@ -664,7 +664,7 @@ export default function WhatsAppStatus() {
                   onChange={e => setCaption(e.target.value)}
                   maxLength={200}
                   className="input-dark w-full py-3 px-4 rounded-xl text-sm"
-                  placeholder="Ajoutez une description…"
+                  placeholder="Ajoutez une description..."
                 />
               </div>
             </div>
@@ -858,7 +858,7 @@ export default function WhatsAppStatus() {
             {sending ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                {isScheduled ? 'Programmation en cours…' : 'Publication en cours…'}
+                {isScheduled ? 'Programmation en cours...' : 'Publication en cours...'}
               </>
             ) : (
               <>

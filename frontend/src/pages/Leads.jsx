@@ -68,6 +68,24 @@ const LEAD_SOURCES = [
 export default function Leads() {
   const { user } = useAuth()
   const { t } = useTranslation()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  const { showConfirm } = useConfirm()
+
+  const [leads, setLeads] = useState([])
+  const [suggestedLeads, setSuggestedLeads] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'all')
+  const [sourceFilter, setSourceFilter] = useState(() => searchParams.get('source') || 'all')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [editingLead, setEditingLead] = useState(null)
+  const [showSuggested, setShowSuggested] = useState(true)
+  const [selectedLeadView, setSelectedLeadView] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
 
   const isModuleEnabled = (() => {
     const feat = user?.plan_features?.leads_management
@@ -83,21 +101,6 @@ export default function Leads() {
     return isOverrideTrue
   })()
 
-  if (!isModuleEnabled) {
-    return <Navigate to="/dashboard" replace />
-  }
-  const [searchParams, setSearchParams] = useSearchParams()
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
-  const { showConfirm } = useConfirm()
-  const [leads, setLeads] = useState([])
-  const [suggestedLeads, setSuggestedLeads] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState(null)
-  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '')
-  const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') || 'all')
-  const [sourceFilter, setSourceFilter] = useState(() => searchParams.get('source') || 'all')
-
   // Sync filters from URL
   useEffect(() => {
     const q = searchParams.get('q')
@@ -107,6 +110,23 @@ export default function Leads() {
     if (status !== null) setStatusFilter(status || 'all')
     if (source !== null) setSourceFilter(source || 'all')
   }, [searchParams])
+
+  // Open create modal from URL param
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setShowAddModal(true)
+      // Remove the param from URL
+      searchParams.delete('create')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (isModuleEnabled) {
+      loadLeads()
+      loadSuggestedLeads()
+    }
+  }, [isModuleEnabled])
 
   // Sync filters to URL when they change
   const syncFiltersToUrl = useCallback((updates) => {
@@ -134,12 +154,8 @@ export default function Leads() {
     setSourceFilter(v)
     syncFiltersToUrl({ source: v === 'all' ? undefined : v })
   }, [syncFiltersToUrl])
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [editingLead, setEditingLead] = useState(null)
-  const [showSuggested, setShowSuggested] = useState(true)
-  const [selectedLeadView, setSelectedLeadView] = useState(null)
-  const [selectedIds, setSelectedIds] = useState(new Set())
-  const [bulkLoading, setBulkLoading] = useState(false)
+
+
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -244,9 +260,15 @@ export default function Leads() {
   }, [searchParams, setSearchParams])
 
   useEffect(() => {
-    loadLeads()
-    loadSuggestedLeads()
-  }, [])
+    if (isModuleEnabled) {
+      loadLeads()
+      loadSuggestedLeads()
+    }
+  }, [isModuleEnabled])
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   const loadLeads = async () => {
     setLoadError(null)
@@ -347,7 +369,7 @@ export default function Leads() {
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
       {/* Header Hero */}
       <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
-        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-zinc-200'
       }`}>
         <div
           className="absolute inset-0 opacity-50"
@@ -359,11 +381,11 @@ export default function Leads() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-3 mb-2 min-w-0">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <UserPlus className="w-6 h-6 text-blue-400" />
+                  <UserPlus className="size-6 text-blue-400" />
                 </div>
-                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('leads.title') || 'Gestion des Leads'}</h1>
+                <h1 className={`text-2xl sm:text-3xl font-display font-bold break-words ${isDark ? 'text-white' : 'text-zinc-900'}`}>{t('leads.title') || 'Gestion des Leads'}</h1>
               </div>
-              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>
+              <p className={`text-base sm:text-lg break-words ${isDark ? 'text-zinc-400' : 'text-zinc-700'}`}>
                 {t('leads.subtitle') || 'Suivez et convertissez vos prospects en clients'}
               </p>
             </div>
@@ -372,17 +394,17 @@ export default function Leads() {
                 type="button"
                 onClick={() => loadLeads()}
                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 min-h-[44px] ${
-                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 hover:text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-gray-200'
                 }`}
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />
                 <span className="hidden sm:inline">Actualiser</span>
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="btn-primary flex items-center gap-2 min-h-[44px]"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="size-5" />
                 <span>Ajouter un lead</span>
               </button>
             </div>
@@ -393,11 +415,11 @@ export default function Leads() {
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <Users className="w-5 h-5 text-blue-400" />
+                  <Users className="size-5 text-blue-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Total leads</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{stats.total}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Total leads</p>
                 </div>
               </div>
             </div>
@@ -408,7 +430,7 @@ export default function Leads() {
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent animate-pulse" />
                 <div className="flex items-center gap-3 relative z-10">
                   <div className="p-2 bg-blue-500/20 rounded-xl">
-                    <Sparkles className="w-5 h-5 text-blue-500" />
+                    <Sparkles className="size-5 text-blue-500" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className={`text-xl font-bold truncate ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{stats.suggested}</p>
@@ -420,44 +442,44 @@ export default function Leads() {
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <UserPlus className="w-5 h-5 text-blue-400" />
+                  <UserPlus className="size-5 text-blue-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.new}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Nouveaux</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{stats.new}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Nouveaux</p>
                 </div>
               </div>
             </div>
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
-                  <UserCheck className="w-5 h-5 text-blue-400" />
+                  <UserCheck className="size-5 text-blue-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.qualified}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Qualifiés</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{stats.qualified}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Qualifiés</p>
                 </div>
               </div>
             </div>
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
-                  <ShoppingCart className="w-5 h-5 text-emerald-400" />
+                  <ShoppingCart className="size-5 text-emerald-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.customers}</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Clients</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{stats.customers}</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Clients</p>
                 </div>
               </div>
             </div>
             <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-gold-400/10 rounded-xl flex-shrink-0' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
-                  <TrendingUp className="w-5 h-5 text-gold-400" />
+                  <TrendingUp className="size-5 text-gold-400" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{stats.conversionRate}%</p>
-                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Conversion</p>
+                  <p className={`text-xl font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>{stats.conversionRate}%</p>
+                  <p className={`text-[10px] uppercase font-bold tracking-wider truncate ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Conversion</p>
                 </div>
               </div>
             </div>
@@ -468,25 +490,27 @@ export default function Leads() {
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3 min-w-0">
         <div className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
+          isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-zinc-200 focus-within:border-gray-300 shadow-sm'
         }`}>
-          <div 
+          <button 
+            type="button"
             onClick={(e) => { e.stopPropagation(); toggleSelectAll(); }}
-            className={`w-5 h-5 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+            className={`size-5 flex-shrink-0 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
               selectedIds.size === filteredLeads.length && filteredLeads.length > 0
                 ? 'bg-blue-500 border-blue-500 text-white'
-                : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
+                : isDark ? 'border-space-600 bg-space-900/50' : 'border-zinc-200 bg-gray-50'
             }`}
+            aria-label={selectedIds.size === filteredLeads.length && filteredLeads.length > 0 ? "Tout désélectionner" : "Tout sélectionner"}
           >
-            {selectedIds.size === filteredLeads.length && filteredLeads.length > 0 && <Check className="w-3.5 h-3.5" />}
-          </div>
-          <Search className="w-5 h-5 text-gray-400" />
+            {selectedIds.size === filteredLeads.length && filteredLeads.length > 0 && <Check className="size-3.5" />}
+          </button>
+          <Search className="size-5 text-zinc-400" />
           <input
             type="text"
             placeholder="Rechercher un lead..."
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-gray-500"
+            className="bg-transparent border-none p-0 focus:ring-0 w-full text-base sm:text-lg placeholder:text-zinc-500"
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
@@ -522,19 +546,19 @@ export default function Leads() {
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/30 rounded-xl">
-                <Sparkles className="w-5 h-5 text-blue-400" />
+                <Sparkles className="size-5 text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-100 flex items-center gap-2">
+                <h3 className="font-semibold text-zinc-100 flex items-center gap-2">
                   Leads suggérés par l'IA
                   <span className="px-2 py-0.5 bg-blue-500/30 text-blue-400 text-xs font-medium rounded-full">
                     {suggestedLeads.length}
                   </span>
                 </h3>
-                <p className="text-sm text-gray-400">Détectés automatiquement dans vos conversations</p>
+                <p className="text-sm text-zinc-400">Détectés automatiquement dans vos conversations</p>
               </div>
             </div>
-            {showSuggested ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+            {showSuggested ? <ChevronUp className="size-5 text-zinc-400" /> : <ChevronDown className="size-5 text-zinc-400" />}
           </div>
 
           {showSuggested && (
@@ -546,30 +570,30 @@ export default function Leads() {
                 >
                   <div className="flex items-start gap-4">
                     <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
+                      <div className="size-12 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
                         <span className="text-space-950 font-bold">
                           {lead.name?.charAt(0)?.toUpperCase() || '?'}
                         </span>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                        <Sparkles className="w-3 h-3 text-white" />
+                      <div className="absolute -bottom-1 -right-1 size-5 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Sparkles className="size-3 text-white" />
                       </div>
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h4 className="font-semibold text-gray-100">{lead.name}</h4>
-                          <div className="flex items-center gap-3 mt-1 text-sm text-gray-400">
+                          <h4 className="font-semibold text-zinc-100">{lead.name}</h4>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-zinc-400">
                             {lead.phone && (
                               <span className="flex items-center gap-1">
-                                <Phone className="w-3.5 h-3.5" />
+                                <Phone className="size-3.5" />
                                 {lead.phone}
                               </span>
                             )}
                             {lead.agent_name && (
                               <span className="flex items-center gap-1">
-                                <Bot className="w-3.5 h-3.5" />
+                                <Bot className="size-3.5" />
                                 {lead.agent_name}
                               </span>
                             )}
@@ -581,15 +605,15 @@ export default function Leads() {
                             ? 'bg-green-500/20 text-green-400' 
                             : lead.ai_confidence >= 0.5 
                               ? 'bg-amber-500/20 text-amber-400'
-                              : 'bg-gray-500/20 text-gray-400'
+                              : 'bg-gray-500/20 text-zinc-400'
                         }`}>
                           {Math.round(lead.ai_confidence * 100)}% confiance
                         </div>
                       </div>
 
                       <div className="mt-2 p-2 bg-space-800 rounded-lg">
-                        <p className="text-xs text-gray-400">
-                          <AlertCircle className="w-3 h-3 inline mr-1" />
+                        <p className="text-xs text-zinc-400">
+                          <AlertCircle className="size-3 inline mr-1" />
                           {lead.ai_reason || 'Intérêt potentiel détecté'}
                         </p>
                       </div>
@@ -600,7 +624,7 @@ export default function Leads() {
                             to={`/dashboard/conversations/${lead.conversation_id}`}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-space-800 hover:bg-space-700 text-gray-300 text-sm rounded-lg transition-colors"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="size-4" />
                             Voir la conversation
                           </Link>
                         )}
@@ -608,14 +632,14 @@ export default function Leads() {
                           onClick={() => handleValidateLead(lead.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-sm rounded-lg transition-colors"
                         >
-                          <CheckCircle className="w-4 h-4" />
+                          <CheckCircle className="size-4" />
                           Valider
                         </button>
                         <button
                           onClick={() => handleRejectLead(lead.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm rounded-lg transition-colors"
                         >
-                          <XCircle className="w-4 h-4" />
+                          <XCircle className="size-4" />
                           Rejeter
                         </button>
                       </div>
@@ -637,7 +661,7 @@ export default function Leads() {
             onClick={() => loadLeads()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-xl font-medium transition-colors"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="size-4" />
             Réessayer
           </button>
         </div>
@@ -646,17 +670,17 @@ export default function Leads() {
       {/* Leads List */}
       {!loadError && loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+          <Loader2 className="size-8 text-blue-400 animate-spin" />
         </div>
       ) : !loadError && sortedLeads.length === 0 ? (
         <div className="text-center py-20">
-          <div className="w-20 h-20 bg-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <UserPlus className="w-10 h-10 text-gray-600" />
+          <div className="size-20 bg-space-800 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <UserPlus className="size-10 text-zinc-600" />
           </div>
           <h3 className="text-xl font-semibold text-gray-300 mb-2">
             {leads.length === 0 ? 'Aucun lead' : 'Aucun résultat'}
           </h3>
-          <p className="text-gray-500 mb-6">
+          <p className="text-zinc-500 mb-6">
             {leads.length === 0 
               ? 'Commencez à ajouter des leads pour suivre vos prospects'
               : 'Essayez de modifier vos filtres de recherche'}
@@ -666,7 +690,7 @@ export default function Leads() {
               onClick={() => setShowAddModal(true)}
               className="btn-primary inline-flex items-center gap-2"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="size-5" />
               Ajouter un lead
             </button>
           )}
@@ -676,25 +700,25 @@ export default function Leads() {
           {/* Bulk Action Bar */}
           {selectedIds.size > 0 && (
             <div className={`sticky top-4 z-40 flex items-center justify-between p-3 sm:p-4 mb-2 rounded-2xl shadow-2xl animate-slideUp border ${
-              isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-gray-900'
+              isDark ? 'bg-space-800 border-blue-500/50 text-white' : 'bg-white border-blue-200 text-zinc-900'
             }`}>
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
+                <div className="flex items-center justify-center size-8 sm:w-10 sm:h-10 rounded-xl bg-blue-500 text-white font-bold text-sm sm:text-base">
                   {selectedIds.size}
                 </div>
                 <div className="hidden sm:block">
                   <p className="font-bold text-sm">Leads sélectionnés</p>
-                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Actions groupées</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Actions groupées</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative group/status flex-shrink-0">
                   <button className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm ${
-                    isDark ? 'bg-space-700 text-gray-300 hover:text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    isDark ? 'bg-space-700 text-gray-300 hover:text-white' : 'bg-zinc-100 text-zinc-700 hover:bg-gray-200'
                   }`}>
-                    <Layers className="w-4 h-4" />
+                    <Layers className="size-4" />
                     <span className="hidden xs:inline">Changer statut</span>
-                    <ChevronDown className="w-3 h-3 opacity-50" />
+                    <ChevronDown className="size-3 opacity-50" />
                   </button>
                   <div className={`absolute right-0 mt-2 w-48 py-2 rounded-xl border shadow-xl opacity-0 translate-y-2 pointer-events-none group-hover/status:opacity-100 group-hover/status:translate-y-0 group-hover/status:pointer-events-auto transition-all z-50 ${
                     isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-100'
@@ -704,10 +728,10 @@ export default function Leads() {
                         key={s.id}
                         onClick={() => handleBulkStatusChange(s.id)}
                         className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-left transition-colors ${
-                          isDark ? 'hover:bg-space-800 text-gray-400 hover:text-white' : 'hover:bg-gray-50 text-gray-600 hover:text-gray-900'
+                          isDark ? 'hover:bg-space-800 text-zinc-400 hover:text-white' : 'hover:bg-gray-50 text-zinc-600 hover:text-zinc-900'
                         }`}
                       >
-                        <div className={`w-2 h-2 rounded-full ${
+                        <div className={`size-2 rounded-full ${
                           s.color === 'blue' ? 'bg-blue-400' :
                           s.color === 'amber' ? 'bg-amber-400' :
                           s.color === 'orange' ? 'bg-orange-400' :
@@ -722,7 +746,7 @@ export default function Leads() {
                   onClick={handleBulkDelete}
                   className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-red-500/20 text-xs sm:text-sm"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="size-4" />
                   <span className="hidden xs:inline">Supprimer</span>
                 </button>
               </div>
@@ -733,9 +757,17 @@ export default function Leads() {
             return (
               <div 
                 key={lead.id}
+                role="button"
+                tabIndex={0}
                 onClick={(e) => {
                   if (e.target.closest('.selection-checkbox')) return
                   setSelectedLeadView(lead)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelectedLeadView(lead)
+                  }
                 }}
                 className={`card p-3 sm:p-5 transition-all cursor-pointer group animate-fadeIn border-l-4 ${
                   selectedIds.has(lead.id) 
@@ -745,22 +777,21 @@ export default function Leads() {
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-center gap-3 sm:gap-4">
-                  {/* Selection Checkbox */}
-                  <div 
+                  <button 
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
-                    className="selection-checkbox flex-shrink-0"
-                  >
-                    <div className={`w-6 h-6 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
+                    className={`selection-checkbox flex-shrink-0 size-6 rounded-lg border transition-all flex items-center justify-center cursor-pointer ${
                       selectedIds.has(lead.id)
                         ? 'bg-blue-500 border-blue-500 text-white'
-                        : isDark ? 'border-space-600 bg-space-900/50 hover:border-space-500' : 'border-gray-200 bg-gray-50 hover:border-gray-300'
-                    }`}>
-                      {selectedIds.has(lead.id) && <Check className="w-4 h-4" />}
-                    </div>
-                  </div>
+                        : isDark ? 'border-zinc-700 bg-space-900/50 hover:border-zinc-500' : 'border-zinc-200 bg-gray-50 hover:border-zinc-300'
+                    }`}
+                    aria-label={selectedIds.has(lead.id) ? "Désélectionner le prospect" : "Sélectionner le prospect"}
+                  >
+                    {selectedIds.has(lead.id) && <Check className="size-4" />}
+                  </button>
 
                   <div className="relative flex-shrink-0">
-                    <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
+                    <div className="size-10 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-500 to-gold-400 rounded-xl flex items-center justify-center">
                       <span className="text-space-950 font-bold text-sm sm:text-lg">
                         {lead.name?.charAt(0)?.toUpperCase() || '?'}
                       </span>
@@ -769,7 +800,7 @@ export default function Leads() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-gray-100 truncate group-hover:text-gold-400 transition-colors">
+                      <h3 className="font-semibold text-zinc-100 truncate group-hover:text-gold-400 transition-colors">
                         {lead.name}
                       </h3>
                       <div className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest
@@ -782,36 +813,36 @@ export default function Leads() {
                         {statusInfo.label}
                       </div>
                     </div>
-                    <div className="hidden sm:flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-gray-400">
+                    <div className="hidden sm:flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-zinc-400">
                       {lead.phone && (
                         <span className="flex items-center gap-1 truncate">
-                          <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                          <Phone className="size-3.5 flex-shrink-0" />
                           <span className="truncate">{lead.phone}</span>
                         </span>
                       )}
                       {lead.company && (
                         <span className="truncate flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" />
+                          <Users className="size-3.5" />
                           {lead.company}
                         </span>
                       )}
                     </div>
-                    <div className="sm:hidden text-xs text-gray-500 mt-0.5 truncate">
+                    <div className="sm:hidden text-xs text-zinc-500 mt-0.5 truncate">
                       {lead.phone || lead.company || 'Détails...'}
                     </div>
                   </div>
 
-                  <ChevronDown className="w-4 h-4 text-gray-600 sm:hidden" />
+                  <ChevronDown className="size-4 text-zinc-600 sm:hidden" />
                   <div className="hidden sm:flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleToggleFavorite(lead); }}
                       className={`p-2 rounded-lg transition-colors ${
-                        lead.is_favorite ? 'text-gold-400 bg-gold-400/10' : 'text-gray-500 hover:text-gray-300'
+                        lead.is_favorite ? 'text-gold-400 bg-gold-400/10' : 'text-zinc-500 hover:text-gray-300'
                       }`}
                     >
-                      <Star className={`w-4 h-4 ${lead.is_favorite ? 'fill-current' : ''}`} />
+                      <Star className={`size-4 ${lead.is_favorite ? 'fill-current' : ''}`} />
                     </button>
-                    <ArrowRight className="w-4 h-4 text-gray-500 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="size-4 text-zinc-500 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
               </div>
@@ -839,13 +870,13 @@ export default function Leads() {
         <DetailOverlay onClose={() => setSelectedLeadView(null)}>
           <div className="flex flex-col">
             <div className="flex items-center gap-6 mb-10">
-              <div className="w-24 h-24 bg-white/5 rounded-[2rem] flex items-center justify-center flex-shrink-0 shadow-2xl ring-1 ring-white/10 text-gold-400">
+              <div className="size-24 bg-white/5 rounded-[2rem] flex items-center justify-center flex-shrink-0 shadow-2xl ring-1 ring-white/10 text-gold-400">
                 <span className="text-4xl font-syne font-black italic">
                   {selectedLeadView.name?.charAt(0)?.toUpperCase()}
                 </span>
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-3xl font-display font-bold text-gray-100 mb-3 truncate leading-tight">{selectedLeadView.name}</h3>
+                <h3 className="text-3xl font-display font-semibold text-zinc-100 mb-3 truncate leading-tight">{selectedLeadView.name}</h3>
                 <div className="flex flex-wrap gap-2">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                     getStatusInfo(selectedLeadView.status).color === 'blue' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
@@ -868,27 +899,27 @@ export default function Leads() {
             <div className="space-y-8">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-5 bg-white/5 rounded-3xl border border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Contact</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">Contact</p>
                   <div className="space-y-2">
-                    <p className="text-gray-100 font-bold flex items-center gap-2 truncate text-sm">
-                      <Phone className="w-3.5 h-3.5 text-gray-600" />
+                    <p className="text-zinc-100 font-bold flex items-center gap-2 truncate text-sm">
+                      <Phone className="size-3.5 text-zinc-600" />
                       {selectedLeadView.phone || 'Non renseigné'}
                     </p>
-                    <p className="text-gray-100 font-bold flex items-center gap-2 truncate text-sm">
-                      <Mail className="w-3.5 h-3.5 text-gray-600" />
+                    <p className="text-zinc-100 font-bold flex items-center gap-2 truncate text-sm">
+                      <Mail className="size-3.5 text-zinc-600" />
                       {selectedLeadView.email || 'Non renseigné'}
                     </p>
                   </div>
                 </div>
                 <div className="p-5 bg-white/5 rounded-3xl border border-white/5">
-                  <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Informations</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-2">Informations</p>
                   <div className="space-y-2">
-                    <p className="text-gray-100 font-bold flex items-center gap-2 truncate text-sm">
-                      <Users className="w-3.5 h-3.5 text-gray-600" />
+                    <p className="text-zinc-100 font-bold flex items-center gap-2 truncate text-sm">
+                      <Users className="size-3.5 text-zinc-600" />
                       {selectedLeadView.company || 'Particulier'}
                     </p>
-                    <p className="text-gray-100 font-bold flex items-center gap-2 truncate text-sm">
-                      <Tag className="w-3.5 h-3.5 text-gray-600" />
+                    <p className="text-zinc-100 font-bold flex items-center gap-2 truncate text-sm">
+                      <Tag className="size-3.5 text-zinc-600" />
                       {selectedLeadView.source || 'Direct'}
                     </p>
                   </div>
@@ -897,7 +928,7 @@ export default function Leads() {
 
               {selectedLeadView.notes && (
                 <div className="p-6 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
-                  <p className="text-[10px] text-gray-500 uppercase font-black mb-3 tracking-widest">Notes privées</p>
+                  <p className="text-[10px] text-zinc-500 uppercase font-black mb-3 tracking-widest">Notes privées</p>
                   <p className="text-gray-300 leading-relaxed italic text-sm">{selectedLeadView.notes}</p>
                 </div>
               )}
@@ -910,12 +941,12 @@ export default function Leads() {
                   }}
                   className="w-full sm:flex-1 py-4 px-8 bg-white text-black rounded-2xl font-syne font-black italic uppercase tracking-tight hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl flex items-center justify-center gap-2"
                 >
-                  <Edit className="w-5 h-5" />
+                  <Edit className="size-5" />
                   Modifier le lead
                 </button>
                 <button 
                   onClick={() => setSelectedLeadView(null)} 
-                  className="w-full sm:w-auto py-4 px-8 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-2xl font-bold transition-colors border border-white/5"
+                  className="w-full sm:w-auto py-4 px-8 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded-2xl font-bold transition-colors border border-white/5"
                 >
                   Fermer
                 </button>
@@ -986,18 +1017,18 @@ function LeadModal({ lead, onClose, onSaved }) {
         <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl font-display font-bold text-gray-100 truncate">
+              <h2 className="text-2xl font-display font-semibold text-zinc-100 truncate">
                 {lead ? 'Modifier le lead' : 'Nouveau prospect'}
               </h2>
-              <p className="text-sm text-gray-500 mt-1 truncate">Gérez les informations de votre contact</p>
+              <p className="text-sm text-zinc-500 mt-1 truncate">Gérez les informations de votre contact</p>
             </div>
             <button 
               type="button"
               onClick={onClose} 
-              className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5" 
+              className="p-2 -mr-2 text-zinc-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5" 
               aria-label="Fermer"
             >
-              <XCircle className="w-6 h-6" />
+              <XCircle className="size-6" />
             </button>
           </div>
         </div>
@@ -1006,87 +1037,107 @@ function LeadModal({ lead, onClose, onSaved }) {
           <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-8 custom-scrollbar overscroll-contain">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="sm:col-span-2 space-y-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nom complet *</label>
+                <label htmlFor="lead-name" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Nom complet *</label>
                 <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                   <input
+                    id="lead-name"
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({ ...prev, name: val }));
+                    }}
                     placeholder="Ex: Jean Dupont"
                     className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Téléphone</label>
+                <label htmlFor="lead-phone" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Téléphone</label>
                 <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                   <input
+                    id="lead-phone"
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({ ...prev, phone: val }));
+                    }}
                     placeholder="+33 6 12 34 56 78"
                     className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl font-mono"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email</label>
+                <label htmlFor="lead-email" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Email</label>
                 <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                   <input
+                    id="lead-email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({ ...prev, email: val }));
+                    }}
                     placeholder="jean.dupont@exemple.com"
                     className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Entreprise / Organisation</label>
+                <label htmlFor="lead-company" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Entreprise / Organisation</label>
                 <div className="relative group">
-                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                   <input
+                    id="lead-company"
                     type="text"
                     value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData(prev => ({ ...prev, company: val }));
+                    }}
                     placeholder="Nom de l'entreprise"
                     className="input-dark w-full pl-12 py-4 pr-5 text-base rounded-2xl"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Source d'acquisition</label>
+                <label htmlFor="lead-source-select" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Source d'acquisition</label>
                   <div className="relative group">
-                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                      <select
+                      id="lead-source-select"
                       value={formData.source}
-                      onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => ({ ...prev, source: val }));
+                      }}
                       className="input-dark w-full py-4 pl-12 pr-12 text-base rounded-2xl [color-scheme:dark]"
                     >
                     {LEAD_SOURCES.map(source => (
                       <option key={source.id} value={source.id}>{source.label}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                 </div>
               </div>
 
               <div className="sm:col-span-2 space-y-4">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Statut du prospect</label>
+                <span className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Statut du prospect</span>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {LEAD_STATUSES.map(status => (
                     <button
                       key={status.id}
                       type="button"
-                      onClick={() => setFormData({ ...formData, status: status.id })}
+                      onClick={() => setFormData(prev => ({ ...prev, status: status.id }))}
                       className={`py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
                         formData.status === status.id
                           ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.2)]'
-                          : 'bg-white/[0.02] border-white/5 text-gray-500 hover:border-white/20'
+                          : 'bg-white/[0.02] border-white/5 text-zinc-500 hover:border-white/20'
                       }`}
                     >
                       {status.label}
@@ -1096,10 +1147,14 @@ function LeadModal({ lead, onClose, onSaved }) {
               </div>
 
               <div className="sm:col-span-2 space-y-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Notes et observations</label>
+                <label htmlFor="lead-notes" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Notes et observations</label>
                 <textarea
+                  id="lead-notes"
                   value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormData(prev => ({ ...prev, notes: val }));
+                  }}
                   placeholder="Notes supplémentaires sur ce prospect..."
                   className="input-dark w-full py-4 px-5 text-base rounded-3xl resize-none min-h-[120px] custom-scrollbar"
                 />
@@ -1108,14 +1163,14 @@ function LeadModal({ lead, onClose, onSaved }) {
               <div className="sm:col-span-2">
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, is_favorite: !formData.is_favorite })}
+                  onClick={() => setFormData(prev => ({ ...prev, is_favorite: !prev.is_favorite }))}
                   className={`flex items-center gap-3 px-6 py-4 rounded-2xl border transition-all w-full sm:w-auto ${
                     formData.is_favorite
                       ? 'bg-amber-500/10 border-amber-500/50 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.1)]'
-                      : 'bg-white/[0.02] border-white/5 text-gray-500 hover:border-white/10'
+                      : 'bg-white/[0.02] border-white/5 text-zinc-500 hover:border-white/10'
                   }`}
                 >
-                  <Star className={`w-5 h-5 ${formData.is_favorite ? 'fill-current' : ''}`} />
+                  <Star className={`size-5 ${formData.is_favorite ? 'fill-current' : ''}`} />
                   <span className="font-bold text-sm uppercase tracking-widest">Prospect favori</span>
                 </button>
               </div>
@@ -1126,7 +1181,7 @@ function LeadModal({ lead, onClose, onSaved }) {
             <button 
               type="button" 
               onClick={onClose} 
-              className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all text-sm uppercase tracking-widest"
+              className="flex-1 py-4 px-6 rounded-2xl font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-all text-sm uppercase tracking-widest"
             >
               Annuler
             </button>
@@ -1137,12 +1192,12 @@ function LeadModal({ lead, onClose, onSaved }) {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="size-5 animate-spin" />
                   <span>Chargement...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="w-5 h-5" />
+                  <CheckCircle className="size-5" />
                   <span>{lead ? 'Mettre à jour' : 'Enregistrer le lead'}</span>
                 </>
               )}
@@ -1174,9 +1229,9 @@ function DetailOverlay({ children, onClose }) {
         <div className="flex-shrink-0 p-6 sm:p-10 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
           <button 
             onClick={onClose} 
-            className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+            className="p-2 -mr-2 text-zinc-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
           >
-            <XCircle className="w-7 h-7" />
+            <XCircle className="size-7" />
           </button>
         </div>
 

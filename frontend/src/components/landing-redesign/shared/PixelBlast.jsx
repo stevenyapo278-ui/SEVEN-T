@@ -348,6 +348,8 @@ const PixelBlast = ({
     if (mustReinit) {
       if (threeRef.current) {
         const t = threeRef.current;
+        if (t.onPointerDown) t.renderer.domElement.removeEventListener('pointerdown', t.onPointerDown);
+        if (t.onPointerMove) t.renderer.domElement.removeEventListener('pointermove', t.onPointerMove);
         t.resizeObserver?.disconnect();
         cancelAnimationFrame(t.raf);
         t.quad?.geometry.dispose();
@@ -365,8 +367,7 @@ const PixelBlast = ({
         alpha: true,
         powerPreference: 'high-performance'
       });
-      renderer.domElement.style.width = '100%';
-      renderer.domElement.style.height = '100%';
+      Object.assign(renderer.domElement.style, { width: '100%', height: '100%' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       container.appendChild(renderer.domElement);
       if (transparent) renderer.setClearAlpha(0);
@@ -524,7 +525,8 @@ const PixelBlast = ({
 
       threeRef.current = {
         renderer, scene, camera, material, clock, clickIx: 0, uniforms,
-        resizeObserver: ro, raf, quad, timeOffset, composer, touch, liquidEffect
+        resizeObserver: ro, raf, quad, timeOffset, composer, touch, liquidEffect,
+        onPointerDown, onPointerMove
       };
     } else {
       const t = threeRef.current;
@@ -555,6 +557,8 @@ const PixelBlast = ({
       if (threeRef.current && mustReinit) return;
       if (!threeRef.current) return;
       const t = threeRef.current;
+      if (t.onPointerDown) t.renderer.domElement.removeEventListener('pointerdown', t.onPointerDown);
+      if (t.onPointerMove) t.renderer.domElement.removeEventListener('pointermove', t.onPointerMove);
       t.resizeObserver?.disconnect();
       cancelAnimationFrame(t.raf);
       t.quad?.geometry.dispose();

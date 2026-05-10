@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { m } from "framer-motion";
 import { Navbar } from "../components/landing-redesign/layout/Navbar";
 import { Hero } from "../components/landing-redesign/sections/Hero";
 import { Features } from "../components/landing-redesign/sections/Features";
@@ -10,13 +11,18 @@ import PixelBlast from "../components/landing-redesign/shared/PixelBlast";
 import LightRays from "../components/landing-redesign/shared/LightRays";
 import { Helmet } from "react-helmet-async";
 
+// Simplified Link for when react-router-dom is not available
+const Link = ({ to, children, ...props }) => {
+  return <a href={to} {...props}>{children}</a>;
+};
+
 const LandingRedesign = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-black text-white selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="relative min-h-screen bg-zinc-950 text-white selection:bg-amber-500/30 selection:text-amber-200">
       <Helmet>
         <title>SEVEN T | Automatisation WhatsApp Intelligente</title>
         <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
@@ -71,8 +77,8 @@ const LandingRedesign = () => {
           
           {/* Final CTA */}
           <section className="py-32 px-6 text-center relative overflow-hidden">
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-             <motion.div
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+             <m.div
                initial={{ opacity: 0, y: 20 }}
                whileInView={{ opacity: 1, y: 0 }}
                className="max-w-3xl mx-auto space-y-8"
@@ -89,7 +95,7 @@ const LandingRedesign = () => {
                       Contacter un expert
                    </button>
                 </div>
-             </motion.div>
+             </m.div>
           </section>
         </main>
 
@@ -97,27 +103,19 @@ const LandingRedesign = () => {
       </div>
 
       {/* Global CSS for font and smooth scroll */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style>{`
         html {
           scroll-behavior: smooth;
         }
         body {
-          background-color: black;
+          background-color: #09090b;
         }
         .font-manrope {
           font-family: 'Manrope', sans-serif;
         }
-      `}} />
+      `}</style>
     </div>
   );
 };
-
-// Simplified Link for when react-router-dom is not available (though it should be)
-const Link = ({ to, children, ...props }) => {
-  return <a href={to} {...props}>{children}</a>;
-};
-
-// Simplified motion for when framer-motion is not available
-import { motion } from "framer-motion";
 
 export default LandingRedesign;

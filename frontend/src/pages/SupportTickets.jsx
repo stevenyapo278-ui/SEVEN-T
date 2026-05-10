@@ -160,7 +160,7 @@ export default function SupportTickets() {
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Rechercher…"
+              placeholder="Rechercher..."
               className={`bg-transparent outline-none text-sm w-full sm:w-56 ${isDark ? 'text-gray-200 placeholder:text-gray-600' : 'text-gray-900 placeholder:text-gray-400'}`}
             />
           </div>
@@ -168,7 +168,7 @@ export default function SupportTickets() {
 
         <div className="mt-4 divide-y" style={{ borderColor: 'var(--border-color)' }}>
           {loading ? (
-            <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Chargement…</div>
+            <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Chargement...</div>
           ) : tickets.length === 0 ? (
             <div className="py-10 text-center">
               <LifeBuoy className={`w-10 h-10 mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />

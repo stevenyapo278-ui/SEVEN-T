@@ -196,7 +196,7 @@ export default function Tools() {
       
       const savedToolId = configTool.id;
       setConfigTool(null);
-      toast.success('Configuration sauvegardée, redirection vers Microsoft…');
+      toast.success('Configuration sauvegardée, redirection vers Microsoft...');
       
       // Lance la connexion OAuth maintenant que configuré  
       await connectOutlookAuth(savedToolId);
@@ -252,7 +252,7 @@ export default function Tools() {
       });
       const savedToolId = configTool.id;
       setConfigTool(null);
-      toast.success('Configuration sauvegardée, redirection vers Google…');
+      toast.success('Configuration sauvegardée, redirection vers Google...');
       await connectGoogleAuth(savedToolId);
     } catch (err) {
       toast.error('Erreur configuration Google Calendar');
@@ -633,7 +633,7 @@ export default function Tools() {
                         tool.status === 'connected' ? 'bg-emerald-500/20 text-emerald-400' :
                         tool.status === 'reconnecting' ? 'bg-amber-500/20 text-amber-400' : 'bg-space-700 text-gray-400'
                       }`}>
-                        {tool.status === 'reconnecting' ? 'Reconnexion…' : tool.status === 'connected' ? 'Connecté' : tool.status}
+                        {tool.status === 'reconnecting' ? 'Reconnexion...' : tool.status === 'connected' ? 'Connecté' : tool.status}
                       </span>
                     </div>
                   </div>
@@ -669,7 +669,7 @@ export default function Tools() {
                             {connectingToolId === tool.id ? (
                               <>
                                 <RefreshCw className="w-4 h-4 animate-spin" />
-                                Connexion en cours…
+                                Connexion en cours...
                               </>
                             ) : (
                               <>
@@ -680,7 +680,7 @@ export default function Tools() {
                           </button>
                         </div>
                         {connectingToolId === tool.id && (
-                          <p className="mt-2 text-sm text-gray-400">Ouverture du QR en premier plan…</p>
+                          <p className="mt-2 text-sm text-gray-400">Ouverture du QR en premier plan...</p>
                         )}
                       </>
                     )}

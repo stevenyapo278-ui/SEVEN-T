@@ -117,7 +117,7 @@ function MessageImage({ conversationId, messageId }) {
   }, [conversationId, messageId])
 
   if (error) return <span className="text-xs text-gray-500">[Image non disponible]</span>
-  if (!src) return <span className="text-xs text-gray-500">Chargement…</span>
+  if (!src) return <span className="text-xs text-gray-500">Chargement...</span>
   return (
     <img
       src={src}
@@ -153,7 +153,7 @@ function AssistantMessageImage({ mediaUrl }) {
     }
   }, [path])
   if (error) return <span className="text-xs text-gray-500">[Image non disponible]</span>
-  if (!src) return <span className="text-xs text-gray-500">Chargement…</span>
+  if (!src) return <span className="text-xs text-gray-500">Chargement...</span>
   return (
     <img
       src={src}

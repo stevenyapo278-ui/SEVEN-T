@@ -350,7 +350,7 @@ export default function DashboardContent({ stats, loading, anomalyStats, onTabCh
         {loadingBruteforce ? (
           <div className="flex items-center justify-center h-24 text-gray-400">
             <Loader2 className="w-5 h-5 animate-spin mr-2" />
-            Chargement de la configuration de sécurité…
+            Chargement de la configuration de sécurité...
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
@@ -431,7 +431,7 @@ export default function DashboardContent({ stats, loading, anomalyStats, onTabCh
         {savingBruteforce && !loadingBruteforce && (
           <p className="flex items-center gap-2 text-xs text-amber-400 mt-4">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Sauvegarde de la configuration…
+            Sauvegarde de la configuration...
           </p>
         )}
       </div>

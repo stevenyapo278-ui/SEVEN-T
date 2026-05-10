@@ -13,28 +13,14 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
   
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    duration: 30,
-    category: '',
-    image_url: '',
-    is_active: 1
+    name: service?.name || '',
+    description: service?.description || '',
+    price: service?.price || 0,
+    duration: service?.duration || 30,
+    category: service?.category || '',
+    image_url: service?.image_url || '',
+    is_active: service?.is_active ?? 1
   })
-
-  useEffect(() => {
-    if (service) {
-      setFormData({
-        name: service.name || '',
-        description: service.description || '',
-        price: service.price || 0,
-        duration: service.duration || 30,
-        category: service.category || '',
-        image_url: service.image_url || '',
-        is_active: service.is_active ?? 1
-      })
-    }
-  }, [service])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -57,8 +43,16 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm cursor-pointer"
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          onClose()
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Fermer le modal"
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
       <div 
@@ -66,6 +60,7 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
         role="dialog" 
         aria-modal="true"
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => e.stopPropagation()}
       >
         {/* Mobile Handle */}
         <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
@@ -75,17 +70,17 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
         <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl font-display font-bold text-gray-100 truncate">
+              <h2 className="text-2xl font-display font-semibold text-zinc-100 truncate">
                 {service ? t('services.editTitle') : t('services.addTitle')}
               </h2>
-              <p className="text-sm text-gray-500 mt-1 truncate">Créez ou modifiez vos prestations</p>
+              <p className="text-sm text-zinc-500 mt-1 truncate">Créez ou modifiez vos prestations</p>
             </div>
             <button 
               type="button"
               onClick={onClose}
-              className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+              className="p-2 -mr-2 text-zinc-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
             >
-              <XCircle className="w-6 h-6" />
+              <XCircle className="size-6" />
             </button>
           </div>
         </div>
@@ -96,9 +91,9 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
               {/* Left Column */}
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('common.name')} *</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{t('common.name')} *</label>
                   <div className="relative">
-                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                     <input
                       type="text"
                       required
@@ -111,9 +106,9 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('common.category')}</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{t('common.category')}</label>
                   <div className="relative">
-                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <Layers className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                     <input
                       type="text"
                       value={formData.category}
@@ -126,9 +121,9 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('common.price')}</label>
+                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{t('common.price')}</label>
                     <div className="relative">
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                       <input
                         type="number"
                         value={formData.price}
@@ -139,9 +134,9 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('services.duration')} (min)</label>
+                    <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{t('services.duration')} (min)</label>
                     <div className="relative">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                       <input
                         type="number"
                         value={formData.duration}
@@ -157,9 +152,9 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
               {/* Right Column */}
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('common.image_url')}</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{t('common.image_url')}</label>
                   <div className="relative">
-                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                    <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-zinc-500 pointer-events-none" />
                     <input
                       type="url"
                       value={formData.image_url}
@@ -171,7 +166,7 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">{t('common.description')}</label>
+                  <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">{t('common.description')}</label>
                   <textarea
                     rows={4}
                     value={formData.description}
@@ -189,11 +184,11 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
                       formData.is_active === 1 ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-white/10'
                     }`}
                   >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 shadow-md ${
+                    <div className={`absolute top-1 size-4 rounded-full bg-white transition-all duration-300 shadow-md ${
                       formData.is_active === 1 ? 'left-7' : 'left-1'
                     }`} />
                   </button>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('common.active')}</span>
+                  <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{t('common.active')}</span>
                 </div>
               </div>
             </div>
@@ -204,7 +199,7 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
+              className="flex-1 py-4 px-6 rounded-2xl font-bold text-zinc-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
             >
               {t('common.cancel')}
             </button>
@@ -213,7 +208,7 @@ export default function ServiceModal({ service, onClose, onSaved, getSymbol }) {
               disabled={loading}
               className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl min-h-[48px] inline-flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+              {loading ? <Loader2 className="size-5 animate-spin" /> : <Check className="size-5" />}
               {service ? t('common.update') : t('common.create')}
             </button>
           </div>

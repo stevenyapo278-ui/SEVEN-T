@@ -40,15 +40,15 @@ export default function Services() {
       <div className={`relative rounded-[2.5rem] border p-6 sm:p-10 mb-8 overflow-hidden ${
         isDark ? 'bg-space-900/40 border-space-700/50' : 'bg-gray-50 border-gray-200'
       }`}>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gold-400/5 blur-[100px] rounded-full -mr-20 -mt-20" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full -ml-20 -mb-20" />
+        <div className="absolute top-0 right-0 size-64 bg-gold-400/5 blur-[100px] rounded-full -mr-20 -mt-20" />
+        <div className="absolute bottom-0 left-0 size-64 bg-blue-500/5 blur-[100px] rounded-full -ml-20 -mb-20" />
         
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
             <div className="max-w-xl">
               <div className="flex items-center gap-4 mb-4">
                 <div className="p-3 bg-gold-400/20 rounded-2xl">
-                  <Briefcase className="w-8 h-8 text-gold-400" />
+                  <Briefcase className="size-8 text-gold-400" />
                 </div>
                 <div>
                   <h1 className={`text-3xl sm:text-4xl font-display font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -70,7 +70,7 @@ export default function Services() {
                 onClick={() => setShowAddModal(true)}
                 className="btn-primary group flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl shadow-gold-500/20 hover:scale-105 transition-all duration-300"
               >
-                <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" />
+                <Plus className="size-6 group-hover:rotate-90 transition-transform duration-300" />
                 <span className="font-bold">{t('services.btnAdd') || 'Ajouter un service'}</span>
               </button>
             </div>
@@ -84,7 +84,7 @@ export default function Services() {
       }`}>
         <div className="input-with-icon flex-1 w-full">
           <div className="pl-3 flex items-center justify-center flex-shrink-0 text-gray-500">
-            <Search className="w-5 h-5" />
+            <Search className="size-5" />
           </div>
           <input
             type="text"
@@ -95,7 +95,7 @@ export default function Services() {
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Filter className="w-5 h-5 text-gray-500 hidden sm:block" />
+          <Filter className="size-5 text-gray-500 hidden sm:block" />
           <select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value)}
@@ -117,22 +117,22 @@ export default function Services() {
             onClick={() => loadServices()}
             className="inline-flex items-center gap-2 px-8 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-2xl font-bold transition-all border border-red-500/20"
           >
-            <RefreshCw className="w-5 h-5" />
+            <RefreshCw className="size-5" />
             {t('common.retry')}
           </button>
         </div>
       ) : loading ? (
         <div className="flex flex-col items-center justify-center py-32 gap-4">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-gold-400/20 border-t-gold-400 rounded-full animate-spin" />
-            <Briefcase className="w-6 h-6 text-gold-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <div className="size-16 border-4 border-gold-400/20 border-t-gold-400 rounded-full animate-spin" />
+            <Briefcase className="size-6 text-gold-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
           <p className="text-gray-500 font-medium animate-pulse">{t('common.loading')}</p>
         </div>
       ) : (filteredServices?.length === 0) ? (
         <div className="text-center py-32 px-6">
-          <div className="w-24 h-24 bg-space-800/50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-space-700/50">
-            <Briefcase className="w-12 h-12 text-gray-600" />
+          <div className="size-24 bg-space-800/50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-space-700/50">
+            <Briefcase className="size-12 text-gray-600" />
           </div>
           <h2 className={`text-2xl font-display font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             {(services?.length === 0) ? (t('services.emptyTitle') || 'Aucun service') : (t('services.noResults') || 'Aucun résultat')}
@@ -164,6 +164,7 @@ export default function Services() {
       {/* Modals */}
       {(showAddModal || editingService) && (
         <ServiceModal
+          key={editingService?.id || 'new'}
           service={editingService}
           getSymbol={getSymbol}
           onClose={() => { setShowAddModal(false); setEditingService(null) }}
@@ -176,6 +177,10 @@ export default function Services() {
         <div 
           className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
           onClick={() => setSelectedServiceView(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') setSelectedServiceView(null); }}
+          role="button"
+          tabIndex={0}
+          aria-label="Fermer la vue du service"
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
           <div 
@@ -184,7 +189,7 @@ export default function Services() {
           >
             {/* Mobile Handle */}
             <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
-              <div className="w-12 h-1.5 rounded-full bg-white/10" />
+              <div className="size-12 rounded-full bg-white/10" />
             </div>
 
             <div className="flex-shrink-0 p-6 sm:p-8 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
@@ -192,7 +197,7 @@ export default function Services() {
                 onClick={() => setSelectedServiceView(null)} 
                 className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
               >
-                <XCircle className="w-6 h-6" />
+                <XCircle className="size-6" />
               </button>
             </div>
 
@@ -203,7 +208,7 @@ export default function Services() {
                     <img src={selectedServiceView.image_url} alt={selectedServiceView.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Briefcase className="w-16 h-16 text-space-600" />
+                      <Briefcase className="size-16 text-space-600" />
                     </div>
                   )}
                 </div>

@@ -254,7 +254,7 @@ export default function ImportedContactsPicker({
             <Search className="w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher (nom ou numéro)…"
+              placeholder="Rechercher (nom ou numéro)..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
@@ -280,7 +280,7 @@ export default function ImportedContactsPicker({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Loader2 className="w-10 h-10 animate-spin text-gold-400 mb-4" />
-              <p className="text-gray-500 text-xs font-black uppercase tracking-widest">Chargement…</p>
+              <p className="text-gray-500 text-xs font-black uppercase tracking-widest">Chargement...</p>
             </div>
           ) : error ? (
             <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">

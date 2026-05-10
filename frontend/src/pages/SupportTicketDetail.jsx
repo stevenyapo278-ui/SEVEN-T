@@ -125,7 +125,7 @@ export default function SupportTicketDetail() {
 
           <div className="px-4 py-4 space-y-3 max-h-[62vh] overflow-y-auto">
             {loading ? (
-              <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Chargement…</div>
+              <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Chargement...</div>
             ) : messages.length === 0 ? (
               <div className={`py-10 text-center text-sm ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>Aucun message.</div>
             ) : (
@@ -158,7 +158,7 @@ export default function SupportTicketDetail() {
               onChange={(e) => setText(e.target.value)}
               rows={2}
               disabled={!canReply}
-              placeholder={canReply ? 'Écrire une réponse…' : 'Droits insuffisants ou ticket fermé'}
+              placeholder={canReply ? 'Écrire une réponse...' : 'Droits insuffisants ou ticket fermé'}
               className={`flex-1 resize-none px-3 py-2 rounded-xl border text-sm outline-none ${isDark ? 'bg-space-950 border-space-700 text-gray-100 placeholder:text-gray-600' : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400'} disabled:opacity-70`}
             />
             <button

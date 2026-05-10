@@ -64,22 +64,6 @@ export default function FlowBuilder() {
   const { user } = useAuth()
   const { id } = useParams()
   const navigate = useNavigate()
-
-  const isModuleEnabled = (() => {
-    const feat = user?.plan_features?.flows
-    const override = user?.flows_module_enabled
-    const isOverrideTrue = override === 1 || override === '1' || override === true
-    const isOverrideFalse = override === 0 || override === '0'
-    if (!user?.parent_user_id || user?.role === 'owner') {
-      if (isOverrideFalse) return false
-      return !!feat || isOverrideTrue
-    }
-    return isOverrideTrue
-  })()
-
-  if (!isModuleEnabled) {
-    return <Navigate to="/dashboard" replace />
-  }
   const { isDark } = useTheme()
   const canvasRef = useRef(null)
 
@@ -93,11 +77,27 @@ export default function FlowBuilder() {
   const [connecting, setConnecting] = useState(null)
   const [showNodePanel, setShowNodePanel] = useState(false)
 
+  const isModuleEnabled = (() => {
+    const feat = user?.plan_features?.flows
+    const override = user?.flows_module_enabled
+    const isOverrideTrue = override === 1 || override === '1' || override === true
+    const isOverrideFalse = override === 0 || override === '0'
+    if (!user?.parent_user_id || user?.role === 'owner') {
+      if (isOverrideFalse) return false
+      return !!feat || isOverrideTrue
+    }
+    return isOverrideTrue
+  })()
+
   useEffect(() => {
-    if (id) {
+    if (id && isModuleEnabled) {
       loadFlow()
     }
-  }, [id])
+  }, [id, isModuleEnabled])
+
+  if (!isModuleEnabled) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   const loadFlow = async () => {
     try {
@@ -205,7 +205,7 @@ export default function FlowBuilder() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+        <div className="animate-spin rounded-full size-12 border-b-2 border-gold-400"></div>
       </div>
     )
   }
@@ -221,7 +221,7 @@ export default function FlowBuilder() {
             onClick={() => navigate('/dashboard/flows')}
             className={`p-2 rounded-lg flex-shrink-0 touch-target text-icon ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="size-5" />
           </button>
           <div className="min-w-0">
             <h1 className={`font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
@@ -242,7 +242,7 @@ export default function FlowBuilder() {
                 : isDark ? 'bg-space-800 text-icon' : 'bg-gray-100 text-gray-600'
             }`}
           >
-            {flow?.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {flow?.is_active ? <Pause className="size-4" /> : <Play className="size-4" />}
             {flow?.is_active ? 'Actif' : 'Inactif'}
           </button>
           <button
@@ -250,7 +250,7 @@ export default function FlowBuilder() {
             disabled={saving}
             className="btn-primary flex items-center justify-center gap-2 touch-target"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             Enregistrer
           </button>
         </div>
@@ -270,7 +270,7 @@ export default function FlowBuilder() {
             }`}
             title="Ajouter un noeud"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="size-5" />
           </button>
         </div>
 
@@ -283,19 +283,22 @@ export default function FlowBuilder() {
               Ajouter un noeud
             </h3>
             <div className="space-y-2">
-              {Object.entries(NODE_LABELS).filter(([type]) => type !== 'start').map(([type, label]) => {
-                const Icon = NODE_ICONS[type]
-                return (
-                  <button
-                    key={type}
-                    onClick={() => addNode(type)}
-                    className={`w-full p-3 rounded-lg border-2 flex items-center gap-3 transition-all hover:scale-105 ${NODE_COLORS[type]}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{label}</span>
-                  </button>
-                )
-              })}
+              {Object.entries(NODE_LABELS).reduce((acc, [type, label]) => {
+                if (type !== 'start') {
+                  const Icon = NODE_ICONS[type]
+                  acc.push(
+                    <button
+                      key={type}
+                      onClick={() => addNode(type)}
+                      className={`w-full p-3 rounded-lg border-2 flex items-center gap-3 transition-all hover:scale-105 ${NODE_COLORS[type]}`}
+                    >
+                      <Icon className="size-5" />
+                      <span className="font-medium">{label}</span>
+                    </button>
+                  )
+                }
+                return acc
+              }, [])}
             </div>
           </div>
         )}
@@ -360,6 +363,14 @@ export default function FlowBuilder() {
             return (
               <div
                 key={node.id}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelectedNode(node)
+                  }
+                }}
                 className={`absolute w-40 rounded-xl border-2 cursor-move transition-all ${NODE_COLORS[node.type]} ${
                   isSelected ? 'ring-2 ring-gold-400 ring-offset-2 ring-offset-space-950' : ''
                 }`}
@@ -377,7 +388,7 @@ export default function FlowBuilder() {
               >
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <Icon className="w-4 h-4" />
+                    <Icon className="size-4" />
                     <span className="text-sm font-medium">{node.data.label}</span>
                   </div>
                   {node.type === 'message' && node.data.message && (
@@ -393,8 +404,9 @@ export default function FlowBuilder() {
 
                 {/* Connection point */}
                 {node.type !== 'end' && (
-                  <div
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-current cursor-crosshair"
+                  <button
+                    type="button"
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 size-4 rounded-full bg-current cursor-crosshair border-2 border-space-950"
                     onClick={(e) => {
                       e.stopPropagation()
                       if (connecting) {
@@ -404,11 +416,13 @@ export default function FlowBuilder() {
                         setConnecting(node.id)
                       }
                     }}
+                    aria-label="Point de sortie"
                   />
                 )}
                 {node.type !== 'start' && (
-                  <div
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-current cursor-crosshair"
+                  <button
+                    type="button"
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 size-4 rounded-full bg-current cursor-crosshair border-2 border-space-950"
                     onClick={(e) => {
                       e.stopPropagation()
                       if (connecting) {
@@ -416,6 +430,7 @@ export default function FlowBuilder() {
                         setConnecting(null)
                       }
                     }}
+                    aria-label="Point d'entrée"
                   />
                 )}
               </div>
@@ -450,16 +465,17 @@ export default function FlowBuilder() {
                 onClick={() => setSelectedNode(null)}
                 className="text-icon hover:opacity-80"
               >
-                <X className="w-5 h-5" />
+                <X className="size-5" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <label htmlFor="node-label" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Label
                 </label>
                 <input
+                  id="node-label"
                   type="text"
                   value={selectedNode.data.label}
                   onChange={(e) => updateNode(selectedNode.id, { label: e.target.value })}
@@ -471,10 +487,11 @@ export default function FlowBuilder() {
 
               {selectedNode.type === 'message' && (
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <label htmlFor="node-message" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Message
                   </label>
                   <textarea
+                    id="node-message"
                     value={selectedNode.data.message || ''}
                     onChange={(e) => updateNode(selectedNode.id, { message: e.target.value })}
                     className={`w-full px-3 py-2 rounded-lg border h-24 ${
@@ -487,10 +504,11 @@ export default function FlowBuilder() {
               {selectedNode.type === 'question' && (
                 <>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <label htmlFor="node-question" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       Question
                     </label>
                     <textarea
+                      id="node-question"
                       value={selectedNode.data.question || ''}
                       onChange={(e) => updateNode(selectedNode.id, { question: e.target.value })}
                       className={`w-full px-3 py-2 rounded-lg border h-20 ${
@@ -499,13 +517,14 @@ export default function FlowBuilder() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <span className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                       Options de réponse
-                    </label>
+                    </span>
                     {(selectedNode.data.options || []).map((opt, i) => (
-                      <div key={i} className="flex gap-2 mb-2">
+                      <div key={`${selectedNode.id}-opt-${i}`} className="flex gap-2 mb-2">
                         <input
                           type="text"
+                          aria-label={`Option ${i + 1}`}
                           value={opt}
                           onChange={(e) => {
                             const newOpts = [...(selectedNode.data.options || [])]
@@ -523,7 +542,7 @@ export default function FlowBuilder() {
                           }}
                           className="p-2 text-red-400 hover:text-red-300"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="size-4" />
                         </button>
                       </div>
                     ))}
@@ -534,7 +553,7 @@ export default function FlowBuilder() {
                       }}
                       className="text-sm text-gold-400 hover:text-gold-300 flex items-center gap-1"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="size-4" />
                       Ajouter une option
                     </button>
                   </div>
@@ -543,10 +562,11 @@ export default function FlowBuilder() {
 
               {selectedNode.type === 'delay' && (
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <label htmlFor="node-delay" className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     Délai (secondes)
                   </label>
                   <input
+                    id="node-delay"
                     type="number"
                     value={selectedNode.data.delay || 5}
                     onChange={(e) => updateNode(selectedNode.id, { delay: parseInt(e.target.value) || 5 })}
@@ -563,7 +583,7 @@ export default function FlowBuilder() {
                   onClick={() => deleteNode(selectedNode.id)}
                   className="w-full mt-4 px-4 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 flex items-center justify-center gap-2"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="size-4" />
                   Supprimer ce noeud
                 </button>
               )}

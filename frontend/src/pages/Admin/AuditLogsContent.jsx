@@ -144,7 +144,7 @@ export default function AuditLogsContent({ logs, loading, pagination, onPageChan
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Rechercher (action, mot-clé…)"
+              placeholder="Rechercher (action, mot-clé...)"
               className="input-dark pl-10 w-full h-10 text-sm bg-space-800/50 border-space-700/50 rounded-xl focus:border-gold-400/50"
               value={filters.action || ''}
               onChange={(e) => onFilterChange({ ...filters, action: e.target.value, actionExact: '' })}
@@ -244,7 +244,7 @@ export default function AuditLogsContent({ logs, loading, pagination, onPageChan
             <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Filtrer par adresse IP…"
+              placeholder="Filtrer par adresse IP..."
               className="input-dark pl-10 h-10 w-full text-sm bg-space-800/50 border-space-700/50 rounded-xl"
               value={filters.ip || ''}
               onChange={(e) => onFilterChange({ ...filters, ip: e.target.value })}
@@ -283,7 +283,7 @@ export default function AuditLogsContent({ logs, loading, pagination, onPageChan
           )}
           {filters.userId && (
             <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-400/10 border border-blue-400/20 text-blue-400 text-xs font-semibold rounded-full">
-              Utilisateur: {filterUserName || filters.userId.slice(0, 8) + '…'}
+              Utilisateur: {filterUserName || filters.userId.slice(0, 8) + '...'}
               <button onClick={() => onFilterChange({ ...filters, userId: '' })} className="hover:text-blue-200"><X className="w-3 h-3" /></button>
             </span>
           )}
@@ -295,7 +295,7 @@ export default function AuditLogsContent({ logs, loading, pagination, onPageChan
           )}
           {(filters.dateFrom || filters.dateTo) && (
             <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold rounded-full">
-              📅 {filters.dateFrom || '…'} → {filters.dateTo || '…'}
+              📅 {filters.dateFrom || '...'} → {filters.dateTo || '...'}
               <button onClick={() => onFilterChange({ ...filters, dateFrom: '', dateTo: '' })} className="hover:text-emerald-200"><X className="w-3 h-3" /></button>
             </span>
           )}

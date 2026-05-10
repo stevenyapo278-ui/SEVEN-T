@@ -140,7 +140,7 @@ export default function Workflows() {
     }
 
     setSyncingContacts(true)
-    const loadingToastId = toast.loading('Synchronisation des contacts WhatsApp…')
+    const loadingToastId = toast.loading('Synchronisation des contacts WhatsApp...')
     try {
       const results = await Promise.allSettled(
         connectedAgents.map(agent => api.post(`/whatsapp/sync/${agent.id}`))
@@ -444,7 +444,7 @@ export default function Workflows() {
               >
                 <Users className="w-4 h-4" />
                 <RefreshCw className={`w-4 h-4 ${syncingContacts ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{syncingContacts ? 'Sync…' : 'Mettre à jour contacts'}</span>
+                <span className="hidden sm:inline">{syncingContacts ? 'Sync...' : 'Mettre à jour contacts'}</span>
               </button>
               <button
                 onClick={() => {
@@ -1050,7 +1050,7 @@ export default function Workflows() {
                                       >
                                         {action.config.phone_number
                                           ? `${action.config.contact_name ? `${action.config.contact_name} • ` : ''}${action.config.phone_number}`
-                                          : 'Sélectionner…'}
+                                          : 'Sélectionner...'}
                                       </button>
                                       <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest ml-1">
                                         Astuce: nécessite un agent WhatsApp connecté pour envoyer.
