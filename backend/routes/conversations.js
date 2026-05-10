@@ -185,7 +185,13 @@ router.get('/:convId/messages/:msgId/media', authenticateToken, async (req, res)
         const ext = extname(msg.media_url || '').toLowerCase();
         let contentType = null;
         if (msg.message_type === 'audio') {
-            contentType = ext === '.mp3' ? 'audio/mpeg' : 'audio/ogg';
+            if (ext === '.mp3') {
+                contentType = 'audio/mpeg';
+            } else if (ext === '.opus') {
+                contentType = 'audio/opus';
+            } else {
+                contentType = 'audio/ogg';
+            }
         } else if (msg.message_type === 'image') {
             contentType = ext === '.png' ? 'image/png' : 'image/jpeg';
         }
