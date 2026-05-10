@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Search, XCircle, Users, Loader2, Check } from 'lucide-react'
+import { Search, XCircle, Users, Loader2, Check, Phone, UserPlus, ChevronRight, User } from 'lucide-react'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
+import toast from 'react-hot-toast'
 
 function normalizePhoneForCompare(phone) {
   return String(phone || '').replace(/\D/g, '')
@@ -28,6 +29,14 @@ export default function ImportedContactsPicker({
   const lastFetchKeyRef = useRef('')
   const debounceRef = useRef(null)
 
+  // Manual entry states
+  const [activeTab, setActiveTab] = useState('list') // 'list' | 'manual'
+  const [manualPhone, setManualPhone] = useState('')
+  const [manualName, setManualName] = useState('')
+  const [manualAgentId, setManualAgentId] = useState(agentId || '')
+  const [agents, setAgents] = useState([])
+  const [fetchingAgents, setFetchingAgents] = useState(false)
+
   const selectedCount = selected.size
   const initialSelectedKey = useMemo(() => {
     const list = Array.isArray(initialSelected) ? initialSelected : []
@@ -42,6 +51,9 @@ export default function ImportedContactsPicker({
   useEffect(() => {
     if (!open) {
       setSelected(new Map())
+      setManualPhone('')
+      setManualName('')
+      setActiveTab('list')
       return
     }
     const map = new Map()
@@ -57,7 +69,21 @@ export default function ImportedContactsPicker({
       })
     })
     setSelected(map)
-  }, [open, initialSelectedKey, agentId])
+
+    // Load agents if in single mode (for manual entry)
+    if (mode === 'single' && open) {
+      setFetchingAgents(true)
+      api.get('/agents')
+        .then(res => {
+          const activeAgents = (res.data.agents || []).filter(a => a.whatsapp_connected)
+          setAgents(activeAgents)
+          if (activeAgents.length > 0 && !manualAgentId) {
+            setManualAgentId(activeAgents[0].id)
+          }
+        })
+        .finally(() => setFetchingAgents(false))
+    }
+  }, [open, initialSelectedKey, agentId, mode])
 
   const fetchContacts = async (qValue) => {
     if (!open) return
@@ -67,7 +93,6 @@ export default function ImportedContactsPicker({
     setLoading(true)
     setError(null)
     try {
-      // Prefer Baileys store contacts (full list). Fallbacks based on conversations are incomplete.
       const res = await api.get('/whatsapp/imported-contacts', {
         params: {
           agent_id: agentId || undefined,
@@ -78,13 +103,12 @@ export default function ImportedContactsPicker({
       let finalContacts = res.data?.contacts || []
 
       try {
-        // Fallback: contacts based on conversations (always available even when Baileys store is empty)
         const fallback = await api.get('/conversations/imported-contacts', {
           params: {
             agent_id: agentId || undefined,
             q: qValue || undefined,
             min_messages: minMessages || undefined,
-            limit: 2000 // Get all fallback contacts
+            limit: 2000
           }
         })
         
@@ -114,7 +138,6 @@ export default function ImportedContactsPicker({
   useEffect(() => {
     if (!open) return
     fetchContacts('')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, agentId, minMessages])
 
   useEffect(() => {
@@ -126,7 +149,6 @@ export default function ImportedContactsPicker({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
   const list = useMemo(() => {
@@ -157,7 +179,6 @@ export default function ImportedContactsPicker({
 
   const toggleAll = () => {
     if (mode === 'single') return
-    
     const allVisibleSelected = list.every(c => {
       const key = normalizePhoneForCompare(c.contact_number)
       return key && selected.has(key)
@@ -181,6 +202,24 @@ export default function ImportedContactsPicker({
   }
 
   const confirm = () => {
+    if (activeTab === 'manual') {
+      if (!manualPhone) return toast.error('Le numéro est requis')
+      if (!manualAgentId) return toast.error('Veuillez sélectionner un agent')
+      
+      const cleanPhone = manualPhone.replace(/\D/g, '')
+      if (cleanPhone.length < 8) return toast.error('Numéro invalide')
+
+      const manualContact = {
+        agent_id: manualAgentId,
+        contact_number: cleanPhone,
+        contact_name: manualName || cleanPhone,
+        jid: `${cleanPhone}@s.whatsapp.net`
+      }
+      onSelect?.(manualContact)
+      onClose?.()
+      return
+    }
+
     const items = Array.from(selected.values()).map((c) => ({
       agent_id: c.agent_id,
       agent_name: c.agent_name,
@@ -202,7 +241,6 @@ export default function ImportedContactsPicker({
     <div
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-4 bg-black/70 backdrop-blur-sm"
       onClick={onClose}
-      style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
       <div
         className="relative z-10 w-full max-w-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden"
@@ -214,7 +252,7 @@ export default function ImportedContactsPicker({
           <div className="w-12 h-1.5 rounded-full bg-white/10" />
         </div>
 
-        <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
+        <div className="flex-shrink-0 p-6 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <h2 className="text-2xl font-display font-bold text-gray-100 truncate flex items-center gap-3">
@@ -222,62 +260,147 @@ export default function ImportedContactsPicker({
                 {title}
               </h2>
               <p className="text-sm text-gray-500 mt-1 truncate">
-                Sélectionnez {mode === 'single' ? 'un contact' : 'des contacts'} depuis votre répertoire WhatsApp
+                {activeTab === 'list' 
+                  ? `Sélectionnez ${mode === 'single' ? 'un contact' : 'des contacts'} existants`
+                  : 'Saisissez un nouveau numéro WhatsApp'}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => fetchContacts(query)}
-                disabled={loading}
-                className="p-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
-                title="Actualiser la liste"
-              >
-                <Loader2 className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              </button>
+              {activeTab === 'list' && (
+                <button
+                  type="button"
+                  onClick={() => fetchContacts(query)}
+                  disabled={loading}
+                  className="p-2 text-gray-500 hover:text-white transition-colors rounded-xl hover:bg-white/5"
+                  title="Actualiser"
+                >
+                  <Loader2 className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
-                aria-label="Fermer"
+                className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors rounded-xl hover:bg-white/5"
               >
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
           </div>
 
-          <div
-            className={`mt-6 flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 ${
-              isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200'
-            }`}
-          >
-            <Search className="w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher (nom ou numéro)..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
-            />
-          </div>
-
-          {!loading && !error && list.length > 0 && mode === 'multi' && (
-            <div className="mt-4 px-1 flex justify-end">
+          {/* Tabs UI */}
+          {mode === 'single' && (
+            <div className="mt-6 flex p-1 bg-space-900/50 rounded-2xl border border-white/5">
               <button
-                type="button"
-                onClick={toggleAll}
-                className="text-[10px] font-black text-blue-400 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2"
+                onClick={() => setActiveTab('list')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  activeTab === 'list' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-gray-100'
+                }`}
               >
-                {list.every(c => selected.has(normalizePhoneForCompare(c.contact_number))) 
-                  ? 'Désélectionner tout' 
-                  : 'Tout sélectionner'}
+                <Users className="w-4 h-4" />
+                Répertoire
               </button>
+              <button
+                onClick={() => setActiveTab('manual')}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  activeTab === 'manual' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-gray-100'
+                }`}
+              >
+                <Phone className="w-4 h-4" />
+                Saisie manuelle
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'list' && (
+            <div
+              className={`mt-6 flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-300 ${
+                isDark ? 'bg-space-800/50 border-space-700/50 focus-within:border-space-600' : 'bg-white border-gray-200'
+              }`}
+            >
+              <Search className="w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher (nom ou numéro)..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="bg-transparent border-none p-0 focus:ring-0 w-full text-base placeholder:text-gray-500"
+              />
             </div>
           )}
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto p-6 sm:p-8 pt-0 custom-scrollbar overscroll-contain">
-          {loading ? (
+          {activeTab === 'manual' ? (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Numéro de téléphone</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Phone className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <input
+                      type="tel"
+                      value={manualPhone}
+                      onChange={(e) => setManualPhone(e.target.value)}
+                      placeholder="Ex: 2250707070707"
+                      className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <p className="mt-2 text-[10px] text-gray-500 italic">Incluez l'indicatif pays sans le + (ex: 225 pour la Côte d'Ivoire)</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Nom du contact (optionnel)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <UserPlus className="w-5 h-5 text-gray-500" />
+                    </div>
+                    <input
+                      type="text"
+                      value={manualName}
+                      onChange={(e) => setManualName(e.target.value)}
+                      placeholder="Ex: Jean Dupont"
+                      className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-2">Envoyer via l'agent</label>
+                  {fetchingAgents ? (
+                    <div className="h-14 bg-white/5 rounded-2xl animate-pulse" />
+                  ) : agents.length === 0 ? (
+                    <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+                      Aucun agent WhatsApp connecté. Veuillez connecter un agent dans les paramètres.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {agents.map(agent => (
+                        <button
+                          key={agent.id}
+                          onClick={() => setManualAgentId(agent.id)}
+                          className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                            manualAgentId === agent.id 
+                              ? 'bg-blue-500/20 border-blue-500 text-blue-100 shadow-lg' 
+                              : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${manualAgentId === agent.id ? 'bg-blue-500 text-white' : 'bg-white/10'}`}>
+                              <User className="w-4 h-4" />
+                            </div>
+                            <span className="font-bold">{agent.name}</span>
+                          </div>
+                          {manualAgentId === agent.id && <Check className="w-5 h-5 text-blue-500" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Loader2 className="w-10 h-10 animate-spin text-gold-400 mb-4" />
               <p className="text-gray-500 text-xs font-black uppercase tracking-widest">Chargement...</p>
@@ -288,7 +411,13 @@ export default function ImportedContactsPicker({
             </div>
           ) : list.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-gray-500">Aucun contact importé trouvé.</p>
+              <p className="text-gray-500">Aucun contact trouvé.</p>
+              <button 
+                onClick={() => setActiveTab('manual')}
+                className="mt-4 text-blue-400 font-bold flex items-center gap-2 mx-auto hover:underline"
+              >
+                Saisir un numéro manuellement <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -301,7 +430,7 @@ export default function ImportedContactsPicker({
                     type="button"
                     onClick={() => toggle(c)}
                     className={`text-left p-4 rounded-2xl border transition-all ${
-                      isSelected ? 'bg-gold-400 text-black border-gold-400' : 'bg-white/[0.02] border-white/5 hover:border-white/15'
+                      isSelected ? 'bg-white text-black border-white' : 'bg-white/[0.02] border-white/5 hover:border-white/15'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -329,23 +458,23 @@ export default function ImportedContactsPicker({
           )}
         </div>
 
-        <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col sm:flex-row gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all min-h-[48px]"
+            className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-400 hover:text-white transition-all"
           >
             Annuler
           </button>
           <button
             type="button"
             onClick={confirm}
-            disabled={mode === 'single' ? selectedCount !== 1 : selectedCount === 0}
-            className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl min-h-[48px] disabled:opacity-50 disabled:grayscale disabled:scale-100"
+            disabled={activeTab === 'manual' ? !manualPhone || !manualAgentId : (mode === 'single' ? selectedCount !== 1 : selectedCount === 0)}
+            className="flex-1 py-4 px-6 rounded-2xl font-syne font-black italic bg-white text-black hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl disabled:opacity-50"
           >
-            {mode === 'single'
-              ? 'Choisir ce contact'
-              : `Ajouter ${selectedCount > 0 ? selectedCount : 'des'} contact(s)`}
+            {activeTab === 'manual' 
+              ? 'Démarrer la discussion'
+              : (mode === 'single' ? 'Choisir ce contact' : `Ajouter ${selectedCount} contact(s)`)}
           </button>
         </div>
       </div>
