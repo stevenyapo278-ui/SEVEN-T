@@ -1329,9 +1329,9 @@ class WhatsAppManager {
                             const stats = existsSync(finalMp3Path) ? { size: (await execPromise(`stat -c%s "${finalMp3Path}"`)).stdout.trim() } : { size: 0 };
                             console.log(`[WhatsApp] Audio converted and saved: ${finalMp3Filename} (${stats.size} bytes)`);
                             
-                            // Cleanup temp file asynchronously
+                            // Cleanup temp file synchronously
                             if (existsSync(tempOggPath)) {
-                                exec(`rm "${tempOggPath}"`).catch(e => console.error('[WhatsApp] Cleanup error:', e.message));
+                                try { rmSync(tempOggPath); } catch (e) {}
                             }
                         } catch (convErr) {
                             console.error('[WhatsApp] FFmpeg conversion failed, falling back to raw ogg:', convErr.message);
@@ -3908,7 +3908,7 @@ class WhatsAppManager {
             writeFileSync(tempSentPath, audioBuffer);
             await execPromise(`ffmpeg -i "${tempSentPath}" -vn -ar 16000 -ac 1 -b:a 64k -codec:a libmp3lame "${destPath}"`);
             if (existsSync(tempSentPath)) {
-                exec(`rm "${tempSentPath}"`).catch(e => console.error('[WhatsApp] Outgoing cleanup error:', e.message));
+                try { rmSync(tempSentPath); } catch (e) {}
             }
         } catch (e) {
             console.warn('[WhatsApp] Failed to convert/copy outgoing audio to MP3:', e.message);
