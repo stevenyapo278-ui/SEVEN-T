@@ -425,14 +425,14 @@ export default function Conversations() {
     <div className="max-w-full mx-auto w-full space-y-6 px-4 sm:px-6 lg:px-8 min-w-0">
       {/* Hero Header */}
       <div className={`relative rounded-2xl sm:rounded-3xl border p-4 sm:p-8 mb-4 sm:mb-8 ${
-        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-zinc-200'
+        isDark ? 'bg-gradient-to-br from-space-800 via-space-900 to-space-800 border-space-700/50' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50 border-gray-200'
       }`}>
         <div className="absolute inset-0 opacity-50" style={{ backgroundImage: `url(${isDark ? patternDark : patternLight})` }} />
         <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-gold-400/10 rounded-xl"><MessageSquare className="size-6 text-gold-400" /></div>
-              <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-zinc-900'}`}>Conversations</h1>
+              <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Conversations</h1>
               {isLive && (
                 <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider animate-pulse border border-emerald-500/20">
                   <span className="size-1.5 rounded-full bg-emerald-500" />
@@ -440,7 +440,7 @@ export default function Conversations() {
                 </span>
               )}
             </div>
-            <p className={`text-base sm:text-lg ${isDark ? 'text-zinc-400' : 'text-zinc-700'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
+            <p className={`text-base sm:text-lg ${isDark ? 'text-zinc-400' : 'text-gray-600'}`}>Gérez toutes les conversations de vos agents WhatsApp</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {selectedConversations.size > 0 && (
@@ -464,14 +464,14 @@ export default function Conversations() {
                 <button
                   onClick={handleDeleteSelected}
                   disabled={bulkLoading}
-                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-red-400 hover:text-red-300' : 'bg-white border-zinc-200 text-red-500'}`}
+                  className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-red-400 hover:text-red-300' : 'bg-white border-gray-200 text-red-500 hover:bg-red-50'}`}
                   title="Supprimer la sélection"
                 >
                   <Trash2 className="size-5" />
                 </button>
               </div>
             )}
-            <button onClick={() => setContactPickerOpen(true)} className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-medium transition-all ${isDark ? 'bg-space-900 border-space-700 text-gold-400 hover:text-gold-300' : 'bg-white border-zinc-200 text-gold-500 hover:bg-gray-50'}`}>
+            <button onClick={() => setContactPickerOpen(true)} className={`px-4 py-2 rounded-xl border flex items-center gap-2 font-medium transition-all ${isDark ? 'bg-space-900 border-space-700 text-gold-400 hover:text-gold-300' : 'bg-white border-gray-200 text-gold-600 hover:bg-gray-50 shadow-sm'}`}>
               <Plus className="size-5" /> Nouveau
             </button>
             <button onClick={loadConversations} disabled={loading} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-zinc-400 hover:text-white' : 'bg-white border-zinc-200 text-zinc-500'}`}>
@@ -505,14 +505,14 @@ export default function Conversations() {
         <>
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className={`flex-1 flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 ${
-              isDark ? 'bg-space-800 border-space-700 focus-within:border-space-600 shadow-inner' : 'bg-white border-zinc-200 focus-within:border-gray-300 shadow-sm'
+              isDark ? 'bg-space-800 border-space-700 focus-within:border-space-600 shadow-inner' : 'bg-white border-gray-200 focus-within:border-gray-300 shadow-sm'
             }`}>
               <button
                 onClick={toggleSelectAll}
                 className={`p-1.5 rounded-lg border transition-all flex items-center justify-center flex-shrink-0 ${
                   selectedConversations.size === filteredConversations.length && filteredConversations.length > 0
                     ? 'bg-blue-500 border-blue-500 text-white'
-                    : isDark ? 'border-space-600 bg-space-900/50' : 'border-zinc-200 bg-gray-50'
+                    : isDark ? 'border-space-600 bg-space-900/50' : 'border-gray-200 bg-gray-50'
                 }`}
                 title="Tout sélectionner"
               >
@@ -531,7 +531,7 @@ export default function Conversations() {
           </div>
 
           {showFilters && (
-            <div className={`p-4 rounded-2xl border mb-6 ${isDark ? 'bg-space-800/40 border-space-700/50' : 'bg-white border-zinc-200'}`}>
+            <div className={`p-4 rounded-2xl border mb-6 ${isDark ? 'bg-space-800/40 border-space-700/50' : 'bg-white border-gray-100 shadow-sm'}`}>
               <div className="flex flex-col md:flex-row gap-3 md:items-end">
                 <div className="flex-1">
                   <label htmlFor="filter-agent" className={`text-xs font-bold uppercase tracking-wide ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Agent</label>
@@ -650,7 +650,7 @@ function StatItem({ icon: Icon, color, value, label, isDark }) {
         <Icon className="size-3.5 sm:w-4 sm:h-4" />
       </div>
       <div className="w-full min-w-0">
-        <p className={`text-base sm:text-xl font-bold truncate leading-none mb-1 ${isDark ? 'text-white' : 'text-zinc-900'}`}>{value}</p>
+        <p className={`text-base sm:text-xl font-bold truncate leading-none mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</p>
         <p className="text-[8px] sm:text-[10px] text-zinc-500 uppercase font-black tracking-tighter sm:tracking-normal truncate">{label}</p>
       </div>
     </div>
@@ -667,7 +667,7 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
       onClick={bulkMode ? onToggle : undefined}
       className={`group block w-full p-3 rounded-xl border transition-all duration-300 animate-fadeIn relative ${
         isSelected ? (isDark ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/30 shadow-sm' : 'bg-blue-50 border-blue-300 ring-1 ring-blue-200 shadow-sm') 
-        : isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-100 hover:border-zinc-200 shadow-sm shadow-black/5'
+        : isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}
     >
       <div className="flex items-center gap-4">
@@ -687,7 +687,7 @@ function ConversationRow({ conv, isDark, bulkMode, isSelected, onToggle, onToggl
       <ProfileAvatar agentId={conv.agent_id} contactJid={conv.contact_jid} name={getDisplayName(conv)} profilePictureUrl={conv.profile_picture} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-0.5">
-          <h3 className="font-semibold text-gray-100 truncate">{getDisplayName(conv)}</h3>
+          <h3 className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{getDisplayName(conv)}</h3>
           <span className="text-[10px] text-zinc-500">{getTimeAgo(conv.last_message_at)}</span>
         </div>
         {conv.last_message?.startsWith('[Commande]') || conv.last_message === '🛒 Commande via le catalogue' ? (

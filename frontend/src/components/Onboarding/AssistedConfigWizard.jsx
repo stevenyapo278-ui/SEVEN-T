@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTheme } from '../../contexts/ThemeContext'
 import { 
   Bot, 
   MessageSquare, 
@@ -9,10 +10,8 @@ import {
   Rocket, 
   Sparkles, 
   ArrowRight,
-  ArrowLeft,
   X,
   Loader2,
-  CheckCircle,
   Zap,
   ShoppingBag
 } from 'lucide-react'
@@ -23,6 +22,7 @@ const MotionDiv = motion.div
 
 export default function AssistedConfigWizard({ isOpen, onClose, onComplete, initialData }) {
   const navigate = useNavigate()
+  const { isDark } = useTheme()
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -125,28 +125,33 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-space-950/95 backdrop-blur-xl"
+        className={`absolute inset-0 backdrop-blur-xl ${isDark ? 'bg-space-950/95' : 'bg-zinc-950/40'}`}
         onClick={onClose}
       />
 
       <MotionDiv
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-xl bg-[#0B0F1A] rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col"
+        className={`relative z-10 w-full max-w-xl rounded-[2rem] border shadow-2xl overflow-hidden flex flex-col ${
+          isDark ? 'bg-[#0B0F1A] border-white/10' : 'bg-white border-zinc-200'
+        }`}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className={`px-6 py-4 border-b flex items-center justify-between ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gold-400 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-black" />
+            <div className="size-10 rounded-xl bg-gold-400 flex items-center justify-center shadow-lg shadow-gold-400/20">
+              <Zap className="size-5 text-black" />
             </div>
             <div>
-              <h3 className="font-syne font-black italic text-white leading-none">Configuration Assistée</h3>
+              <h3 className={`font-syne font-black italic leading-none ${isDark ? 'text-white' : 'text-zinc-900'}`}>Configuration Assistée</h3>
               <p className="text-[10px] uppercase font-bold tracking-widest text-gold-400">En 3 minutes top chrono</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white transition-colors rounded-xl hover:bg-white/5">
-             <X className="w-5 h-5" />
+          <button 
+            onClick={onClose} 
+            className={`p-2 transition-colors rounded-xl ${isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100'}`}
+          >
+             <X className="size-5" />
           </button>
         </div>
 
@@ -165,12 +170,12 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
               >
                 {step.id === 'intro' && (
                   <div className="text-center space-y-6">
-                    <div className="w-24 h-24 mx-auto rounded-3xl bg-gradient-to-br from-gold-400/20 to-amber-600/20 flex items-center justify-center border border-gold-400/30">
-                       <Rocket className="w-12 h-12 text-gold-400" />
+                    <div className="size-24 mx-auto rounded-3xl bg-gradient-to-br from-gold-400/20 to-amber-600/20 flex items-center justify-center border border-gold-400/30">
+                       <Rocket className="size-12 text-gold-400" />
                     </div>
                     <div>
-                       <h2 className="text-2xl font-syne font-black text-white italic">Faisons ça ensemble</h2>
-                       <p className="text-gray-400 text-sm mt-2 max-w-sm mx-auto">
+                       <h2 className={`text-2xl font-syne font-black italic ${isDark ? 'text-white' : 'text-zinc-900'}`}>Faisons ça ensemble</h2>
+                       <p className={`text-sm mt-2 max-w-sm mx-auto ${isDark ? 'text-gray-400' : 'text-zinc-500'}`}>
                           Je vais vous guider pas à pas pour créer votre premier produit, configurer votre assistant IA et le connecter à WhatsApp.
                        </p>
                     </div>
@@ -180,33 +185,38 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
                 {step.id === 'product' && (
                   <div className="space-y-6">
                     <div>
-                       <h2 className="text-2xl font-syne font-black text-white italic flex items-center gap-2">
-                          <Package className="w-6 h-6 text-gold-400" /> Que vendez-vous ?
+                       <h2 className={`text-2xl font-syne font-black italic flex items-center gap-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                          <Package className="size-6 text-gold-400" /> Que vendez-vous ?
                        </h2>
-                       <p className="text-gray-400 text-sm mt-1">
+                       <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-zinc-500'}`}>
                           Commençons par votre produit ou service principal.
                        </p>
                     </div>
                     <div className="space-y-4">
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Nom du produit/service *</label>
+                          <label htmlFor="product-name" className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Nom du produit/service *</label>
                           <input 
+                            id="product-name"
                             type="text"
                             value={formData.productName}
-                            onChange={(e) => setFormData({...formData, productName: e.target.value})}
-                            placeholder="Ex: Formation Marketing, Chaussures Nike..."
-                            className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-4 text-white focus:border-gold-400 transition-colors outline-none"
-                            autoFocus
+                            onChange={(e) => setFormData(prev => ({...prev, productName: e.target.value}))}
+                            placeholder="Ex: Formation Marketing, Chaussures Nike…"
+                            className={`w-full border-2 rounded-2xl p-4 transition-colors outline-none ${
+                              isDark ? 'bg-white/5 border-white/10 text-white focus:border-gold-400' : 'bg-zinc-50 border-zinc-100 text-zinc-900 focus:border-gold-400'
+                            }`}
                           />
                        </div>
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Prix (en FCFA) *</label>
+                          <label htmlFor="product-price" className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Prix (en FCFA) *</label>
                           <input 
+                            id="product-price"
                             type="number"
                             value={formData.productPrice}
-                            onChange={(e) => setFormData({...formData, productPrice: e.target.value})}
+                            onChange={(e) => setFormData(prev => ({...prev, productPrice: e.target.value}))}
                             placeholder="Ex: 15000"
-                            className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-4 text-white focus:border-gold-400 transition-colors outline-none"
+                            className={`w-full border-2 rounded-2xl p-4 transition-colors outline-none ${
+                              isDark ? 'bg-white/5 border-white/10 text-white focus:border-gold-400' : 'bg-zinc-50 border-zinc-100 text-zinc-900 focus:border-gold-400'
+                            }`}
                           />
                        </div>
                     </div>
@@ -216,29 +226,31 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
                 {step.id === 'agent' && (
                   <div className="space-y-6">
                     <div>
-                       <h2 className="text-2xl font-syne font-black text-white italic flex items-center gap-2">
-                          <Bot className="w-6 h-6 text-gold-400" /> Votre Assistant IA
+                       <h2 className={`text-2xl font-syne font-black italic flex items-center gap-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+                          <Bot className="size-6 text-gold-400" /> Votre Assistant IA
                        </h2>
-                       <p className="text-gray-400 text-sm mt-1">
+                       <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-zinc-500'}`}>
                           Comment voulez-vous appeler l'IA qui s'occupera de répondre à vos clients ?
                        </p>
                     </div>
                     <div className="space-y-4">
                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Nom de l'assistant *</label>
+                          <label htmlFor="agent-name" className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Nom de l'assistant *</label>
                           <input 
+                            id="agent-name"
                             type="text"
                             value={formData.agentName}
-                            onChange={(e) => setFormData({...formData, agentName: e.target.value})}
-                            placeholder="Ex: Sophie, Assistant Support..."
-                            className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-4 text-white focus:border-gold-400 transition-colors outline-none"
-                            autoFocus
+                            onChange={(e) => setFormData(prev => ({...prev, agentName: e.target.value}))}
+                            placeholder="Ex: Sophie, Assistant Support…"
+                            className={`w-full border-2 rounded-2xl p-4 transition-colors outline-none ${
+                              isDark ? 'bg-white/5 border-white/10 text-white focus:border-gold-400' : 'bg-zinc-50 border-zinc-100 text-zinc-900 focus:border-gold-400'
+                            }`}
                           />
                        </div>
                        
-                       <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 flex gap-3">
-                          <MessageSquare className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                          <p className="text-sm text-blue-100 italic">
+                       <div className={`p-4 rounded-2xl border flex gap-3 ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
+                          <MessageSquare className="size-5 text-blue-400 flex-shrink-0" />
+                          <p className={`text-sm italic ${isDark ? 'text-blue-100' : 'text-blue-700'}`}>
                              "Bonjour ! Je suis {formData.agentName || 'votre assistant'}. Comment puis-je vous aider avec {formData.productName || 'nos services'} ?"
                           </p>
                        </div>
@@ -248,12 +260,12 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
 
                 {step.id === 'whatsapp' && (
                   <div className="text-center space-y-6">
-                    <div className="w-24 h-24 mx-auto rounded-3xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                       <MessageSquare className="w-10 h-10 text-emerald-400" />
+                    <div className="size-24 mx-auto rounded-3xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                       <MessageSquare className="size-10 text-emerald-400" />
                     </div>
                     <div>
-                       <h2 className="text-2xl font-syne font-black text-white italic">Dernière étape !</h2>
-                       <p className="text-gray-400 text-sm mt-2 max-w-sm mx-auto leading-relaxed">
+                       <h2 className={`text-2xl font-syne font-black italic ${isDark ? 'text-white' : 'text-zinc-900'}`}>Dernière étape !</h2>
+                       <p className={`text-sm mt-2 max-w-sm mx-auto leading-relaxed ${isDark ? 'text-gray-400' : 'text-zinc-500'}`}>
                           Votre produit et votre agent sont créés. <br/>
                           Il ne reste plus qu'à lier votre numéro WhatsApp pour que l'agent puisse commencer à répondre.
                        </p>
@@ -265,25 +277,31 @@ export default function AssistedConfigWizard({ isOpen, onClose, onComplete, init
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-5 border-t border-white/5 bg-[#0D121F] flex items-center justify-between">
+        <div className={`px-6 py-5 border-t flex items-center justify-between ${
+          isDark ? 'border-white/5 bg-[#0D121F]' : 'border-zinc-100 bg-zinc-50/50'
+        }`}>
            <button 
              onClick={handleBack}
              disabled={isFirstStep || loading}
-             className={`px-4 py-2 text-sm font-bold text-gray-500 transition-colors ${isFirstStep ? 'opacity-0 pointer-events-none' : 'hover:text-white'}`}
+             className={`px-4 py-2 text-sm font-bold transition-colors ${
+               isFirstStep ? 'opacity-0 pointer-events-none' : isDark ? 'text-gray-500 hover:text-white' : 'text-zinc-400 hover:text-zinc-900'
+             }`}
            >
              Retour
            </button>
            <button 
              onClick={handleNext}
              disabled={loading}
-             className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-syne font-bold overflow-hidden transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
+               isDark ? 'bg-white text-black' : 'bg-zinc-900 text-white'
+             }`}
            >
              {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Préparation...</>
+                <><Loader2 className="size-4 animate-spin" /> Préparation…</>
              ) : step.id === 'whatsapp' ? (
-                <>Ouvrir les réglages WhatsApp <ArrowRight className="w-4 h-4" /></>
+                <>Ouvrir les réglages WhatsApp <ArrowRight className="size-4" /></>
              ) : (
-                <>Continuer <ArrowRight className="w-4 h-4" /></>
+                <>Continuer <ArrowRight className="size-4" /></>
              )}
            </button>
         </div>

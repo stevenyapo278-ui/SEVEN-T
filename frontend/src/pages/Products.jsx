@@ -293,26 +293,26 @@ export default function Products() {
           <div className="flex flex-col">
             <div className="flex items-center gap-6 mb-10">
               <div
-                className={`w-28 h-28 bg-white/5 rounded-3xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-2xl ring-1 ring-white/10 ${
-                  selectedProductView.image_url ? 'cursor-zoom-in group' : ''
-                }`}
+                className={`w-28 h-28 rounded-3xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-2xl ring-1 ${
+                  isDark ? 'bg-white/5 ring-white/10' : 'bg-gray-50 ring-gray-200'
+                } ${selectedProductView.image_url ? 'cursor-zoom-in group' : ''}`}
                 onClick={() => selectedProductView.image_url && setImageZoom(getProductImageUrl(selectedProductView.image_url))}
               >
                 {selectedProductView.image_url ? (
                   <img src={getProductImageUrl(selectedProductView.image_url)} alt={selectedProductView.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                 ) : (
-                  <Package className="w-12 h-12 text-gray-700" />
+                  <Package className={`w-12 h-12 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-3xl font-display font-bold text-gray-100 mb-3 truncate leading-tight">{selectedProductView.name}</h3>
+                <h3 className={`text-3xl font-display font-bold mb-3 truncate leading-tight ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{selectedProductView.name}</h3>
                 <div className="flex flex-wrap gap-2">
                   {selectedProductView.category && (
                     <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
                       {selectedProductView.category}
                     </span>
                   )}
-                  <span className="px-3 py-1 rounded-full bg-white/5 text-gray-400 text-[10px] font-mono font-bold tracking-wider border border-white/5">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider border ${isDark ? 'bg-white/5 text-gray-400 border-white/5' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                     {selectedProductView.sku || 'AUCUN-SKU'}
                   </span>
                 </div>
@@ -321,11 +321,11 @@ export default function Products() {
 
             <div className="space-y-8">
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-5 bg-white/5 rounded-3xl border border-white/5">
+                <div className={`p-5 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
                   <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Prix de vente</p>
                   <p className="text-3xl font-display font-bold text-emerald-400 font-mono italic">{formatPrice(selectedProductView.price)}</p>
                 </div>
-                <div className="p-5 bg-white/5 rounded-3xl border border-white/5">
+                <div className={`p-5 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
                   <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mb-2">Stock actuel</p>
                   <p className={`text-3xl font-display font-bold font-mono italic ${
                     selectedProductView.stock === 0 ? 'text-red-400' : 
@@ -338,29 +338,29 @@ export default function Products() {
               </div>
 
               {selectedProductView.description && (
-                <div className="p-6 bg-white/[0.02] rounded-3xl border border-white/5 border-dashed">
+                <div className={`p-6 rounded-3xl border border-dashed ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-gray-50/50 border-gray-200'}`}>
                   <p className="text-[10px] text-gray-500 uppercase font-black mb-3 tracking-widest">Description</p>
-                  <p className="text-gray-300 leading-relaxed italic text-sm">{selectedProductView.description}</p>
+                  <p className={`leading-relaxed italic text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{selectedProductView.description}</p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl border border-white/5">
+                <div className={`flex items-center gap-4 p-5 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
                   <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
                     <ShoppingCart className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Ventes totales</p>
-                    <p className="text-gray-100 font-bold font-mono">{selectedProductView.total_sold || 0} vendus</p>
+                    <p className={`font-bold font-mono ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{selectedProductView.total_sold || 0} vendus</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl border border-white/5">
+                <div className={`flex items-center gap-4 p-5 rounded-3xl border ${isDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100 shadow-sm'}`}>
                   <div className="w-12 h-12 rounded-2xl bg-gold-400/10 flex items-center justify-center text-gold-400">
                     <TrendingUp className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Marge unitaire</p>
-                    <p className="text-gray-100 font-bold font-mono">
+                    <p className={`font-bold font-mono ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                       {formatPrice((selectedProductView.price || 0) - (selectedProductView.cost_price || 0))}
                     </p>
                   </div>
@@ -379,7 +379,9 @@ export default function Products() {
                 </button>
                 <button 
                   onClick={() => setSelectedProductView(null)} 
-                  className="w-full sm:w-auto py-4 px-8 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white rounded-2xl font-bold transition-colors border border-white/5"
+                  className={`w-full sm:w-auto py-4 px-8 rounded-2xl font-bold transition-all border ${
+                    isDark ? 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border-white/5' : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 border-gray-200'
+                  }`}
                 >
                   Fermer
                 </button>
@@ -429,7 +431,9 @@ function DetailOverlay({ children, onClose }) {
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
       <div 
-        className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
+        className={`relative z-10 w-full max-w-2xl border rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn ${
+          isDark ? 'bg-space-950 border-white/10' : 'bg-white border-gray-200'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
@@ -439,7 +443,9 @@ function DetailOverlay({ children, onClose }) {
         <div className="flex-shrink-0 p-6 sm:p-10 flex justify-end" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
           <button 
             onClick={onClose} 
-            className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+            className={`p-2 -mr-2 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl ${
+              isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+            }`}
           >
             <XCircle className="w-7 h-7" />
           </button>

@@ -494,7 +494,7 @@ export default function Campaigns() {
               className={`card p-3 sm:p-5 transition-all cursor-pointer group animate-fadeIn border-l-4 ${
                 isSelected 
                   ? 'border-l-blue-500 bg-blue-500/5 border-blue-500/30' 
-                  : 'hover:border-blue-500/10 hover:bg-space-800/80 border-l-transparent'
+                  : `border-l-transparent ${isDark ? 'hover:border-blue-500/10 hover:bg-space-800/80' : 'hover:border-gray-200/50 hover:bg-gray-50'}`
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
@@ -516,7 +516,7 @@ export default function Campaigns() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-gray-100 truncate group-hover:text-gold-400 transition-colors">
+                      <h3 className={`font-semibold truncate transition-colors ${isDark ? 'text-gray-100 group-hover:text-gold-400' : 'text-gray-900 group-hover:text-blue-600'}`}>
                         {c.name}
                       </h3>
                       {getStatusBadge(c.status)}
@@ -844,7 +844,7 @@ function StatCard({ icon: Icon, value, label, isDark, color }) {
   
   return (
     <div className={`rounded-xl p-4 border transition-all duration-300 ${
-      isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md shadow-sm hover:scale-[1.02]'
+      isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:bg-gray-50 hover:scale-[1.02] shadow-sm'
     }`}>
       <div className="flex items-center gap-3 min-w-0">
         <div className={`p-2 rounded-xl flex-shrink-0 ${colorClasses[color] || colorClasses.blue}`}>

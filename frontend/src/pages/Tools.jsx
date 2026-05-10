@@ -567,7 +567,7 @@ export default function Tools() {
               <div 
                 key={tool.id} 
                 className={`group block p-3 rounded-xl border transition-all duration-300 animate-fadeIn ${
-                  isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:border-gray-300'
+                  isDark ? 'bg-space-800/50 hover:bg-space-800 border-space-700/50' : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
@@ -612,11 +612,13 @@ export default function Tools() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-semibold text-gray-100">{tool.label || TOOL_LABELS[tool.type] || tool.type}</p>
+                          <p className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{tool.label || TOOL_LABELS[tool.type] || tool.type}</p>
                           <button
                             type="button"
                             onClick={() => startEditLabel(tool)}
-                            className="p-1 text-gray-400 hover:text-gray-200 hover:bg-space-700 rounded transition-colors"
+                            className={`p-1 rounded transition-colors ${
+                              isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-space-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                            }`}
                             title="Modifier le nom"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -631,7 +633,8 @@ export default function Tools() {
                       )}
                       <span className={`inline-block text-xs px-2 py-0.5 rounded-full mt-1 ${
                         tool.status === 'connected' ? 'bg-emerald-500/20 text-emerald-400' :
-                        tool.status === 'reconnecting' ? 'bg-amber-500/20 text-amber-400' : 'bg-space-700 text-gray-400'
+                        tool.status === 'reconnecting' ? 'bg-amber-500/20 text-amber-400' : 
+                        isDark ? 'bg-space-700 text-gray-400' : 'bg-gray-100 text-gray-500'
                       }`}>
                         {tool.status === 'reconnecting' ? 'Reconnexion...' : tool.status === 'connected' ? 'Connecté' : tool.status}
                       </span>
@@ -652,7 +655,9 @@ export default function Tools() {
                     {tool.status === 'connected' ? (
                       <button
                         onClick={() => disconnectWhatsApp(tool.id)}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                        className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                          isDark ? 'bg-space-700 text-gray-200 hover:bg-space-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                         disabled={busyToolId === tool.id}
                       >
                         <PowerOff className="w-4 h-4" />
@@ -697,7 +702,9 @@ export default function Tools() {
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => disconnectOutlook(tool.id)}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                              isDark ? 'bg-space-700 text-gray-200 hover:bg-space-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                             disabled={busyToolId === tool.id}
                           >
                             <PowerOff className="w-4 h-4" />
@@ -705,7 +712,9 @@ export default function Tools() {
                           </button>
                           <button
                             onClick={() => setConfigTool({ ...tool, draftConfig: { clientId: tool.config?.clientId || '', clientSecret: tool.config?.clientSecret || '' } })}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                              isDark ? 'bg-space-700 text-gray-200 hover:bg-space-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                             disabled={busyToolId === tool.id}
                           >
                             <Wrench className="w-4 h-4" />
@@ -736,7 +745,9 @@ export default function Tools() {
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => disconnectGoogle(tool.id)}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                              isDark ? 'bg-space-700 text-gray-200 hover:bg-space-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                             disabled={busyToolId === tool.id}
                           >
                             <PowerOff className="w-4 h-4" />
@@ -744,7 +755,9 @@ export default function Tools() {
                           </button>
                           <button
                             onClick={() => setConfigTool({ ...tool, draftConfig: { clientId: tool.config?.clientId || '', clientSecret: tool.config?.clientSecret || '' } })}
-                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-space-700 text-gray-200 hover:bg-space-600 transition-colors"
+                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-colors ${
+                              isDark ? 'bg-space-700 text-gray-200 hover:bg-space-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
                             disabled={busyToolId === tool.id}
                           >
                             <Wrench className="w-4 h-4" />

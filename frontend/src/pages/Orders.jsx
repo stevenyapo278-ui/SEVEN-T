@@ -863,7 +863,7 @@ export default function Orders() {
             <div 
               onClick={() => setFocusStat({ label: 'En attente', value: stats.pending, icon: Clock, color: 'amber' })}
               className={`rounded-xl p-4 border transition-all duration-300 cursor-pointer ${
-                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:shadow-md hover:scale-[1.02]'
+                isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800 hover:scale-[1.02]' : 'bg-white border-gray-100 hover:bg-gray-50 hover:scale-[1.02] shadow-sm'
               }`}
             >
               <div className="flex items-center gap-3 min-w-0">

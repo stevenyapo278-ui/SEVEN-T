@@ -16,8 +16,10 @@ import {
   Loader2
 } from 'lucide-react'
 import StatCard from './StatCard'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function DashboardContent({ stats, loading, anomalyStats, onTabChange, bruteforceSettings, loadingBruteforce, savingBruteforce, onChangeBruteforce }) {
+  const { isDark } = useTheme()
   if (loading || !stats) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -174,7 +176,9 @@ export default function DashboardContent({ stats, loading, anomalyStats, onTabCh
               stats.security.recentSecurityEvents.map((log) => {
                 const style = getActionStyles(log.action);
                 return (
-                  <div key={log.id} className="flex items-center gap-4 p-3 bg-space-800/20 hover:bg-space-800/40 border border-space-700/30 rounded-xl transition-all group">
+                  <div key={log.id} className={`flex items-center gap-4 p-3 border border-space-700/30 rounded-xl transition-all group ${
+                    isDark ? 'bg-space-800/20 hover:bg-space-800/40' : 'bg-gray-50/50 hover:bg-gray-100/50'
+                  }`}>
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${style.bg} ${style.color} border border-white/5`}>
                       {style.icon}
                     </div>

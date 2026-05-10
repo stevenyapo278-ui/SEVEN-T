@@ -478,9 +478,9 @@ export default function Settings() {
 
       {/* Profile */}
       <form onSubmit={handleSaveAll} className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4">{t('settings.profileTitle')}</h2>
+        <h2 className={`text-lg font-display font-semibold mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.profileTitle')}</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -503,6 +503,7 @@ export default function Settings() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className={isDark ? 'input-dark' : 'input-light'}
                 />
               </div>
             </div>
@@ -518,6 +519,7 @@ export default function Settings() {
                   type="text"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  className={isDark ? 'input-dark' : 'input-light'}
                 />
               </div>
             </div>
@@ -533,7 +535,7 @@ export default function Settings() {
                 type="text"
                 value={formData.notification_number}
                 onChange={(e) => setFormData({ ...formData, notification_number: e.target.value })}
-                className="input-dark w-full max-w-md"
+                className={`w-full max-w-md px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                 placeholder="ex: 2250102030405"
               />
               <p className="text-xs text-gray-500 mt-1">
@@ -546,10 +548,10 @@ export default function Settings() {
 
       {/* Abonnement et usage */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-display font-semibold text-gray-100 flex items-center gap-2 min-w-0 truncate">
+          <h2 className={`text-lg font-display font-semibold flex items-center gap-2 min-w-0 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             <Crown className="w-5 h-5 text-gold-400 flex-shrink-0" />
             {t('settings.subscriptionTitle')}
           </h2>
@@ -565,7 +567,7 @@ export default function Settings() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <p className="text-sm text-gray-500">Plan actuel</p>
-            <p className="text-xl font-display font-semibold text-gray-100">{currentPlan.name}</p>
+            <p className={`text-xl font-display font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{currentPlan.name}</p>
           </div>
           <div className="text-left sm:text-right">
             <p className="text-sm text-gray-500">Messages IA restants</p>
@@ -651,9 +653,9 @@ export default function Settings() {
 
       {/* Automatisation & Relances */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+        <h2 className={`text-lg font-display font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           <BellRing className="w-5 h-5 text-blue-400" />
           Automatisation & Relances
         </h2>
@@ -712,9 +714,9 @@ export default function Settings() {
         </div>
       </div>
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+        <h2 className={`text-lg font-display font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           <Coins className="w-5 h-5 text-gold-400" />
           {t('settings.preferencesTitle')}
         </h2>
@@ -740,8 +742,10 @@ export default function Settings() {
                       onClick={() => setFontSize(opt.id)}
                       className={`px-4 py-2 rounded-xl border-2 text-sm font-semibold transition-all ${
                         fontSize === opt.id
-                          ? 'border-blue-500 bg-blue-500/10 text-gray-100'
-                          : 'border-space-700 bg-space-800/50 hover:border-space-600 text-gray-200'
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-400'
+                          : isDark 
+                            ? 'border-space-700 bg-space-800/50 hover:border-space-600 text-gray-200'
+                            : 'border-gray-200 bg-gray-50 hover:border-gray-300 text-gray-700'
                       }`}
                     >
                       {opt.label}
@@ -803,11 +807,13 @@ export default function Settings() {
                       className={`p-3 rounded-xl border-2 transition-all text-center ${
                         currency === curr.code
                           ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-space-700 bg-space-800/50 hover:border-space-600'
+                          : isDark
+                            ? 'border-space-700 bg-space-800/50 hover:border-space-600'
+                            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
                       }`}
                     >
                       <div className="text-base font-bold text-gold-400 mb-0.5">{curr.symbol}</div>
-                      <div className="text-xs font-medium text-gray-100">{curr.code}</div>
+                      <div className={`text-xs font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{curr.code}</div>
                     </button>
                   ))}
                 </div>
@@ -822,7 +828,7 @@ export default function Settings() {
       {/* Moyens de paiement */}
       {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && (
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
           <Lock className="w-5 h-5 text-gold-400" />
@@ -846,12 +852,14 @@ export default function Settings() {
                 return (
                   <div
                     key={providerId}
-                    className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-space-700 bg-space-800/50"
+                    className={`flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border ${
+                      isDark ? 'border-space-700 bg-space-800/50' : 'border-gray-200 bg-gray-50'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-2xl flex-shrink-0">{p?.icon || '💳'}</span>
                       <div className="min-w-0">
-                        <p className="font-medium text-gray-100 truncate">{p?.name || providerId}</p>
+                        <p className={`font-medium truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{p?.name || providerId}</p>
                         <p className="text-xs text-gray-500">
                           {configured ? 'Configuré' : 'Non configuré'}
                         </p>
@@ -958,7 +966,7 @@ export default function Settings() {
       {/* Résumé quotidien */}
       {user?.plan_features?.daily_briefing && (
         <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         }`}>
           <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
             <Mail className="w-5 h-5 text-gold-400" />
@@ -967,7 +975,9 @@ export default function Settings() {
           <p className="text-sm text-gray-400 mb-4">
             {t('settings.dailyBriefingDesc')}
           </p>
-          <div className="mb-4 p-3 rounded-lg bg-space-800/80 border border-space-600">
+          <div className={`mb-4 p-3 rounded-lg border ${
+            isDark ? 'bg-space-800/80 border-space-600' : 'bg-blue-50 border-blue-100'
+          }`}>
             <p className="text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-gold-400 shrink-0" />
               {i18n.language === 'en' ? 'How to use' : 'Comment utiliser'}
@@ -1004,7 +1014,9 @@ export default function Settings() {
                   max={23}
                   value={dailyBriefingForm.preferred_hour}
                   onChange={(e) => setDailyBriefingForm((f) => ({ ...f, preferred_hour: parseInt(e.target.value, 10) || 8 }))}
-                  className="w-24 px-3 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                  className={`w-24 px-3 py-2 rounded-lg border ${
+                    isDark ? 'border-space-700 bg-space-800 text-gray-100' : 'border-gray-200 bg-white text-gray-900'
+                  }`}
                 />
               </div>
               <div>
@@ -1042,7 +1054,9 @@ export default function Settings() {
                     value={dailyBriefingForm.email}
                     onChange={(e) => setDailyBriefingForm((f) => ({ ...f, email: e.target.value }))}
                     placeholder={user?.email || 'votre@email.com'}
-                    className="w-full max-w-md px-3 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                    className={`w-full max-w-md px-3 py-2 rounded-lg border ${
+                      isDark ? 'border-space-700 bg-space-800 text-gray-100' : 'border-gray-200 bg-white text-gray-900'
+                    }`}
                   />
                 </div>
               )}
@@ -1068,7 +1082,7 @@ export default function Settings() {
 
       {/* Données et confidentialité */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
         <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
           <Download className="w-5 h-5 text-blue-400" />

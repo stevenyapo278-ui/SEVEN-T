@@ -232,7 +232,7 @@ export default function KnowledgeBase() {
 
         {/* Stats Row */}
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-          <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+          <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                 <FileText className="w-5 h-5 text-blue-400" />
@@ -490,7 +490,7 @@ function KnowledgeStructureModal({ onClose }) {
 const KnowledgeCard = forwardRef(({ item, index, viewMode, onEdit, onDelete, isExpanded, onToggleExpand, isDark }, ref) => {
   const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {})
   
-  const cardBase = "card p-4 transition-all hover:bg-space-800/80 group cursor-pointer animate-fadeIn";
+  const cardBase = `card p-4 transition-all group cursor-pointer animate-fadeIn ${isDark ? 'hover:bg-space-800/80' : 'hover:bg-gray-50'}`;
 
   if (viewMode === 'list') {
     return (
@@ -500,7 +500,7 @@ const KnowledgeCard = forwardRef(({ item, index, viewMode, onEdit, onDelete, isE
             <KnowledgeTypeIcon type={item.type} className="w-5 h-5" isDark={isDark} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-100 truncate group-hover:text-gold-400 transition-colors uppercase tracking-tight">{item.title}</h3>
+            <h3 className={`font-semibold truncate transition-colors uppercase tracking-tight ${isDark ? 'text-gray-100 group-hover:text-gold-400' : 'text-gray-900 group-hover:text-blue-600'}`}>{item.title}</h3>
             <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
               <span>{getTypeLabel(item.type)}</span>
               <span className="text-gray-700">•</span>
@@ -536,7 +536,7 @@ const KnowledgeCard = forwardRef(({ item, index, viewMode, onEdit, onDelete, isE
       </div>
 
       <div className="mb-3">
-        <h3 className="font-bold text-gray-100 line-clamp-2 leading-snug uppercase tracking-tight group-hover:text-gold-400 transition-colors">{item.title}</h3>
+        <h3 className={`font-bold line-clamp-2 leading-snug uppercase tracking-tight transition-colors ${isDark ? 'text-gray-100 group-hover:text-gold-400' : 'text-gray-900 group-hover:text-blue-600'}`}>{item.title}</h3>
         <p className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-widest leading-none">{getTypeLabel(item.type)}</p>
       </div>
 

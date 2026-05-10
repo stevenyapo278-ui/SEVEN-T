@@ -200,7 +200,9 @@ export default function Analytics() {
                       <div className="absolute right-0 top-full mt-2 w-56 bg-space-900 border border-space-700 rounded-xl shadow-2xl z-40 py-2 animate-fadeIn">
                         <button
                           onClick={() => { setSelectedAgent('all'); setShowAgentFilter(false); }}
-                          className={`w-full text-left px-4 py-2 text-sm hover:bg-space-800 transition-colors ${selectedAgent === 'all' ? 'text-gold-400 font-bold' : 'text-gray-400'}`}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            isDark ? 'hover:bg-space-800' : 'hover:bg-gray-50'
+                          } ${selectedAgent === 'all' ? 'text-gold-400 font-bold' : 'text-gray-400'}`}
                         >
                           Tous les agents
                         </button>
@@ -208,7 +210,9 @@ export default function Analytics() {
                           <button
                             key={agent.id}
                             onClick={() => { setSelectedAgent(agent.id); setShowAgentFilter(false); }}
-                            className={`w-full text-left px-4 py-2 text-sm hover:bg-space-800 transition-colors ${selectedAgent === agent.id ? 'text-gold-400 font-bold' : 'text-gray-400'}`}
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                              isDark ? 'hover:bg-space-800' : 'hover:bg-gray-50'
+                            } ${selectedAgent === agent.id ? 'text-gold-400 font-bold' : 'text-gray-400'}`}
                           >
                             {agent.name}
                           </button>
@@ -423,7 +427,9 @@ export default function Analytics() {
                   <p className="text-gray-400 text-center py-8">Aucun agent créé</p>
                 ) : (
                   agentPerformance.map((agent) => (
-                    <div key={agent.id} className="flex items-center gap-4 p-4 bg-space-800 rounded-xl">
+                    <div key={agent.id} className={`flex items-center gap-4 p-4 rounded-xl ${
+                      isDark ? 'bg-space-800' : 'bg-gray-50 border border-gray-100'
+                    }`}>
                       <div className={`size-10 rounded-lg flex items-center justify-center ${
                         agent.whatsapp_connected ? 'bg-emerald-500/20' : 'bg-gray-500/20'
                       }`}>
@@ -779,7 +785,7 @@ function StatSmall({ title, value, growth, icon: Icon, color = 'blue' }) {
   }
 
   return (
-    <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+    <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
       <div className="flex items-center justify-between mb-3">
         <div className={`p-2 rounded-lg flex-shrink-0 ${colorClasses[color]}`}>
           <Icon className="size-5" />

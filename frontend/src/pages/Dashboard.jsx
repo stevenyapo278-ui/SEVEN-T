@@ -206,8 +206,8 @@ export default function Dashboard() {
           {/* Main content grid */}
           <div data-tour="agents-list" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card overflow-hidden">
-              <div className="p-6 border-b border-space-700/60 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-100">{t('dashboard.agents.title')}</h2>
+              <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'border-space-700/60' : 'border-gray-100'}`}>
+                <h2 className={`text-lg font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('dashboard.agents.title')}</h2>
                 <Link to="/dashboard/agents" className="text-gold-400 hover:text-gold-300 text-sm font-medium flex items-center gap-1">{t('dashboard.agents.viewAll')} <ArrowRight className="w-4 h-4" /></Link>
               </div>
               {agents.length === 0 ? (
@@ -219,11 +219,13 @@ export default function Dashboard() {
               ) : (
                 <div className="divide-y divide-space-700/40">
                   {agents.slice(0, 5).map(agent => (
-                    <div key={agent.id} onClick={() => setSelectedAgentView(agent)} className="flex items-center justify-between p-4 hover:bg-space-800/50 transition-colors cursor-pointer group">
+                    <div key={agent.id} onClick={() => setSelectedAgentView(agent)} className={`flex items-center justify-between p-4 transition-colors cursor-pointer group ${
+                      isDark ? 'hover:bg-space-800/50' : 'hover:bg-gray-50'
+                    }`}>
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${agent.whatsapp_connected ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-400/10 text-orange-400'}`}><Bot className="w-5 h-5" /></div>
                         <div>
-                          <p className="font-medium text-gray-200 group-hover:text-gold-400 transition-colors">{agent.name}</p>
+                          <p className={`font-medium transition-colors ${isDark ? 'text-gray-200 group-hover:text-gold-400' : 'text-gray-900 group-hover:text-blue-600'}`}>{agent.name}</p>
                           <p className="text-xs text-gray-500">{agent.total_conversations || 0} conversations</p>
                         </div>
                       </div>
@@ -259,7 +261,7 @@ export default function Dashboard() {
 function StatCard({ icon: Icon, color, value, label, isDark }) {
   const colorMap = { blue: 'text-blue-400 bg-blue-400/10', emerald: 'text-emerald-400 bg-emerald-400/10', gold: 'text-gold-400 bg-gold-400/10' }
   return (
-    <div className={`rounded-xl p-4 border transition-all ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 shadow-sm'}`}>
+    <div className={`rounded-xl p-4 border transition-all ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
       <div className="flex items-center gap-3">
         <div className={`p-2 rounded-xl flex-shrink-0 ${colorMap[color] || colorMap.blue}`}><Icon className="w-5 h-5" /></div>
         <div className="min-w-0 flex-1">
@@ -288,10 +290,10 @@ function SkeletonStatCard({ isDark }) {
 function QuickActionLink({ to, icon: Icon, color, title, subtitle, isDark }) {
   const colorMap = { emerald: 'bg-emerald-500/10 text-emerald-400', gold: 'bg-gold-400/10 text-gold-400' }
   return (
-    <Link to={to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${isDark ? 'bg-space-800/50 hover:bg-space-800' : 'bg-gray-50 hover:bg-gray-100'}`}>
+    <Link to={to} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${isDark ? 'bg-space-800/50 hover:bg-space-800' : 'bg-white border border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorMap[color]}`}><Icon className="w-5 h-5" /></div>
       <div>
-        <p className="font-medium text-gray-200">{title}</p>
+        <p className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>{title}</p>
         <p className="text-[10px] text-gray-500">{subtitle}</p>
       </div>
     </Link>

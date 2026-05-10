@@ -412,7 +412,7 @@ export default function Leads() {
 
           {/* Stats Bar */}
           <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mt-8">
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <Users className="size-5 text-blue-400" />
@@ -439,7 +439,7 @@ export default function Leads() {
                 </div>
               </div>
             )}
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <UserPlus className="size-5 text-blue-400" />
@@ -450,7 +450,7 @@ export default function Leads() {
                 </div>
               </div>
             </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-500/10 rounded-xl flex-shrink-0">
                   <UserCheck className="size-5 text-blue-400" />
@@ -461,7 +461,7 @@ export default function Leads() {
                 </div>
               </div>
             </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-space-800/50 border-space-700/50 hover:bg-space-800' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-emerald-500/10 rounded-xl flex-shrink-0">
                   <ShoppingCart className="size-5 text-emerald-400" />
@@ -472,7 +472,7 @@ export default function Leads() {
                 </div>
               </div>
             </div>
-            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-gold-400/10 rounded-xl flex-shrink-0' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+            <div className={`rounded-xl p-4 border transition-all duration-300 ${isDark ? 'bg-gold-400/10 rounded-xl flex-shrink-0' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gold-400/10 rounded-xl flex-shrink-0">
                   <TrendingUp className="size-5 text-gold-400" />
@@ -772,7 +772,7 @@ export default function Leads() {
                 className={`card p-3 sm:p-5 transition-all cursor-pointer group animate-fadeIn border-l-4 ${
                   selectedIds.has(lead.id) 
                     ? 'border-l-blue-500 bg-blue-500/5 border-blue-500/30' 
-                    : 'hover:border-blue-500/50 hover:bg-space-800/80'
+                    : `hover:border-blue-500/50 ${isDark ? 'hover:bg-space-800/80' : 'hover:bg-gray-50'}`
                 }`}
                 style={{ animationDelay: `${index * 50}ms` }}
               >

@@ -1,147 +1,93 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo, useReducer } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronRight } from 'lucide-react'
-
-const MotionDiv = motion.div
+import { motion, AnimatePresence, LazyMotion, domAnimation, m } from 'framer-motion'
+import { X } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 // ─── Tour steps definitions ──────────────────────────────────────────────────
-// Each tour is an array of steps. Every step targets a `data-tour="xxx"` element.
 
 export const TOUR_STEPS = {
-  // ── Sidebar tour (desktop only) ────────────────────────────────────────────
   sidebar: [
-    {
-      id: 'nav-dashboard',
-      target: '[data-tour="nav-dashboard"]',
-      title: '🏠 Accueil',
-      description: 'Votre tableau de bord avec un résumé de toute votre activité.',
-      position: 'right',
-      desktopOnly: true,
-    },
-    {
-      id: 'nav-agents',
-      target: '[data-tour="nav-agents"]',
-      title: '🤖 Vos agents IA',
-      description: 'Créez et gérez vos assistants IA pour automatiser vos réponses WhatsApp.',
-      position: 'right',
-      desktopOnly: true,
-    },
-    {
-      id: 'nav-conversations',
-      target: '[data-tour="nav-conversations"]',
-      title: '💬 Conversations',
-      description: 'Consultez tous les échanges WhatsApp gérés par vos agents.',
-      position: 'right',
-      desktopOnly: true,
-    },
-    {
-      id: 'nav-tools',
-      target: '[data-tour="nav-tools"]',
-      title: '📱 Téléphones',
-      description: 'Connectez vos comptes WhatsApp ici en scannant un QR code.',
-      position: 'right',
-      desktopOnly: true,
-    },
+    { id: 'nav-dashboard', target: '[data-tour="nav-dashboard"]', title: '🏠 Accueil', description: 'Votre tableau de bord avec un résumé de toute votre activité.', position: 'right', desktopOnly: true },
+    { id: 'nav-agents', target: '[data-tour="nav-agents"]', title: '🤖 Vos agents IA', description: 'Créez et gérez vos assistants IA pour automatiser vos réponses WhatsApp.', position: 'right', desktopOnly: true },
+    { id: 'nav-conversations', target: '[data-tour="nav-conversations"]', title: '💬 Conversations', description: 'Consultez tous les échanges WhatsApp gérés par vos agents.', position: 'right', desktopOnly: true },
+    { id: 'nav-tools', target: '[data-tour="nav-tools"]', title: '📱 Téléphones', description: 'Connectez vos comptes WhatsApp ici en scannant un QR code.', position: 'right', desktopOnly: true },
   ],
-
-  // ── Dashboard tour ─────────────────────────────────────────────────────────
   dashboard: [
-    {
-      id: 'dashboard-stats',
-      target: '[data-tour="stats"]',
-      title: '📊 Vos statistiques',
-      description: 'Suivez vos conversations, messages et crédits IA en temps réel.',
-      position: 'bottom',
-    },
-    {
-      id: 'dashboard-agents',
-      target: '[data-tour="agents-list"]',
-      title: '🤖 Vos agents',
-      description: 'Gérez vos assistants IA ici. Chaque agent a sa propre personnalité et ses propres compétences.',
-      position: 'bottom',
-    },
+    { id: 'dashboard-stats', target: '[data-tour="stats"]', title: '📊 Vos statistiques', description: 'Suivez vos conversations, messages et crédits IA en temps réel.', position: 'bottom' },
+    { id: 'dashboard-agents', target: '[data-tour="agents-list"]', title: '🤖 Vos agents', description: 'Gérez vos assistants IA ici.', position: 'bottom' },
   ],
-
-  // ── Agents page tour ────────────────────────────────────────────────────────
   agents: [
-    {
-      id: 'agents-create',
-      target: '[data-tour="create-agent"]',
-      title: '➕ Créer un agent',
-      description: 'Cliquez ici pour créer votre premier assistant IA.',
-      position: 'bottom-left',
-    },
+    { id: 'agents-create', target: '[data-tour="create-agent"]', title: '➕ Créer un agent', description: 'Cliquez ici pour créer votre premier assistant IA.', position: 'bottom-left' },
   ],
-
-  // ── Agent detail tour ──────────────────────────────────────────────────────
   agentDetail: [
-    {
-      id: 'agent-overview',
-      target: '[data-tour="tab-overview"]',
-      title: '📋 Vue d\'ensemble',
-      description: 'Statut de connexion et statistiques de votre agent.',
-      position: 'bottom',
-    },
-    {
-      id: 'agent-settings',
-      target: '[data-tour="tab-settings"]',
-      title: '⚙️ Paramètres',
-      description: 'Personnalisez le comportement, le modèle IA et les réponses automatiques.',
-      position: 'bottom',
-    },
-    {
-      id: 'agent-knowledge',
-      target: '[data-tour="tab-knowledge"]',
-      title: '📚 Base de connaissances',
-      description: 'Ajoutez des informations pour que l\'IA réponde plus précisément.',
-      position: 'bottom',
-    },
+    { id: 'agent-overview', target: '[data-tour="tab-overview"]', title: '📋 Vue d\'ensemble', description: 'Statut de connexion et statistiques de votre agent.', position: 'bottom' },
+    { id: 'agent-settings', target: '[data-tour="tab-settings"]', title: '⚙️ Paramètres', description: 'Personnalisez le comportement et le modèle IA.', position: 'bottom' },
+    { id: 'agent-knowledge', target: '[data-tour="tab-knowledge"]', title: '📚 Base de connaissances', description: 'Ajoutez des informations pour enrichir la mémoire de l\'IA.', position: 'bottom' },
   ],
-
-  // ── WhatsApp connect tour ──────────────────────────────────────────────────
   whatsapp_connect: [
-    {
-      id: 'wc-select-agent',
-      target: '[data-tour="create-tool-whatsapp"]',
-      title: '📱 Connecter un compte',
-      description: 'Cliquez ici pour lier votre compte WhatsApp.',
-      position: 'bottom',
-    },
+    { id: 'wc-select-agent', target: '[data-tour="create-tool-whatsapp"]', title: '📱 Connecter un compte', description: 'Cliquez ici pour lier votre compte WhatsApp.', position: 'bottom' },
   ],
-
-  // ── Knowledge tour ─────────────────────────────────────────────────────────
   add_knowledge: [
-    {
-      id: 'ak-add-button',
-      target: '[data-tour="add-knowledge-button"]',
-      title: '➕ Ajouter du contenu',
-      description: 'Importez des PDF, du texte ou des liens web pour enrichir la mémoire de votre IA.',
-      position: 'left',
-    },
+    { id: 'ak-add-button', target: '[data-tour="add-knowledge-button"]', title: '➕ Ajouter du contenu', description: 'Importez des PDF, du texte ou des liens web.', position: 'left' },
   ],
-
-  // ── Conversations tour ─────────────────────────────────────────────────────
   conversations: [
-    {
-      id: 'conv-test',
-      target: '[data-tour="conv-list"]',
-      title: '💬 Vos conversations',
-      description: 'Ici apparaîtront toutes les conversations gérées par vos agents.',
-      position: 'bottom',
-    },
+    { id: 'conv-test', target: '[data-tour="conv-list"]', title: '💬 Vos conversations', description: 'Ici apparaîtront toutes les conversations gérées par vos agents.', position: 'bottom' },
   ],
-
-  // ── Products tour ──────────────────────────────────────────────────────────
   products: [
-    {
-      id: 'prod-create',
-      target: '[data-tour="create-product"]',
-      title: '➕ Ajouter un produit',
-      description: 'Ajoutez vos produits pour que votre agent puisse les proposer à vos clients.',
-      position: 'bottom',
-    },
+    { id: 'prod-create', target: '[data-tour="create-product"]', title: '➕ Ajouter un produit', description: 'Ajoutez vos produits pour que votre agent puisse les proposer.', position: 'bottom' },
   ],
+}
+
+// ─── State Management ────────────────────────────────────────────────────────
+
+const initialState = {
+  activeTour: null,
+  currentStepIndex: 0,
+  completedTours: [],
+  guidedTask: null
+}
+
+function tourReducer(state, action) {
+  switch (action.type) {
+    case 'START_TOUR':
+      if (state.completedTours.includes(action.tourId)) return state
+      return { ...state, activeTour: action.tourId, currentStepIndex: 0 }
+    case 'END_TOUR':
+      return { 
+        ...state, 
+        completedTours: state.activeTour && !state.completedTours.includes(state.activeTour) 
+          ? [...state.completedTours, state.activeTour] 
+          : state.completedTours,
+        activeTour: null,
+        currentStepIndex: 0
+      }
+    case 'NEXT_STEP':
+      const steps = TOUR_STEPS[state.activeTour]
+      if (state.currentStepIndex < steps.length - 1) {
+        return { ...state, currentStepIndex: state.currentStepIndex + 1 }
+      }
+      return { 
+        ...state, 
+        completedTours: !state.completedTours.includes(state.activeTour) 
+          ? [...state.completedTours, state.activeTour] 
+          : state.completedTours,
+        activeTour: null,
+        currentStepIndex: 0
+      }
+    case 'PREV_STEP':
+      return { ...state, currentStepIndex: Math.max(0, state.currentStepIndex - 1) }
+    case 'SET_GUIDED_TASK':
+      return { ...state, guidedTask: action.task }
+    case 'LOAD_PERSISTED':
+      return { ...state, ...action.data }
+    case 'SKIP_ALL':
+      return { ...state, completedTours: Object.keys(TOUR_STEPS), activeTour: null, currentStepIndex: 0 }
+    case 'RESET':
+      return { ...state, completedTours: [], activeTour: null, currentStepIndex: 0 }
+    default:
+      return state
+  }
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -149,135 +95,89 @@ export const TOUR_STEPS = {
 const OnboardingTourContext = createContext(null)
 
 export function OnboardingTourProvider({ children, userId }) {
-  const [activeTour, setActiveTour] = useState(null)
-  const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [guidedTask, setGuidedTask] = useState(null)
-
-  const storageKey = userId ? `seven-t-tours-v2-${userId}` : null
-  const taskKey = userId ? `seven-t-task-v2-${userId}` : null
-  const [completedTours, setCompletedTours] = useState([])
+  const [state, dispatch] = useReducer(tourReducer, initialState)
+  const storageKey = userId ? `seven-t-tours-v3-${userId}` : null
+  const taskKey = userId ? `seven-t-task-v3-${userId}` : null
 
   // Load persisted state
   useEffect(() => {
     if (storageKey) {
       try {
-        const saved = localStorage.getItem(storageKey)
-        if (saved) setCompletedTours(JSON.parse(saved))
-      } catch { /* noop */ }
-    }
-    if (taskKey) {
-      try {
-        const saved = localStorage.getItem(taskKey)
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          setGuidedTask(parsed)
-          if (!activeTour && parsed.tour) {
-            setActiveTour(parsed.tour)
-            setCurrentStepIndex(0)
+        const savedTours = localStorage.getItem(storageKey)
+        const savedTask = localStorage.getItem(taskKey)
+        const data = {}
+        if (savedTours) data.completedTours = JSON.parse(savedTours)
+        if (savedTask) {
+          const parsedTask = JSON.parse(savedTask)
+          data.guidedTask = parsedTask
+          if (parsedTask.tour) {
+            data.activeTour = parsedTask.tour
+            data.currentStepIndex = 0
           }
         }
+        dispatch({ type: 'LOAD_PERSISTED', data })
       } catch { /* noop */ }
     }
   }, [storageKey, taskKey])
 
-  // Persist completedTours
+  // Persist state
   useEffect(() => {
-    if (storageKey && completedTours.length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(completedTours))
-    }
-  }, [completedTours, storageKey])
-
-  // Persist guidedTask
-  useEffect(() => {
+    if (storageKey) localStorage.setItem(storageKey, JSON.stringify(state.completedTours))
     if (taskKey) {
-      if (guidedTask) localStorage.setItem(taskKey, JSON.stringify(guidedTask))
+      if (state.guidedTask) localStorage.setItem(taskKey, JSON.stringify(state.guidedTask))
       else localStorage.removeItem(taskKey)
     }
-  }, [guidedTask, taskKey])
+  }, [state.completedTours, state.guidedTask, storageKey, taskKey])
 
-  const startTour = useCallback((tourId) => {
-    if (!userId || !TOUR_STEPS[tourId]) return
-    if (!completedTours.includes(tourId)) {
-      setActiveTour(tourId)
-      setCurrentStepIndex(0)
-    }
-  }, [completedTours, userId])
-
-  const endTour = useCallback(() => {
-    if (activeTour) {
-      setCompletedTours(prev => prev.includes(activeTour) ? prev : [...prev, activeTour])
-    }
-    setActiveTour(null)
-    setCurrentStepIndex(0)
-  }, [activeTour])
-
-  const skipAllTours = useCallback(() => {
-    setCompletedTours(Object.keys(TOUR_STEPS))
-    setActiveTour(null)
-    setCurrentStepIndex(0)
-  }, [])
-
-  const nextStep = useCallback(() => {
-    if (!activeTour) return
-    const steps = TOUR_STEPS[activeTour]
-    if (currentStepIndex < steps.length - 1) {
-      setCurrentStepIndex(prev => prev + 1)
-    } else {
-      endTour()
-    }
-  }, [activeTour, currentStepIndex, endTour])
-
-  const prevStep = useCallback(() => {
-    if (currentStepIndex > 0) setCurrentStepIndex(prev => prev - 1)
-  }, [currentStepIndex])
-
-  const resetTours = useCallback(() => {
-    setCompletedTours([])
-    if (storageKey) localStorage.removeItem(storageKey)
-  }, [storageKey])
-
+  const startTour = useCallback((tourId) => dispatch({ type: 'START_TOUR', tourId }), [])
+  const endTour = useCallback(() => dispatch({ type: 'END_TOUR' }), [])
+  const nextStep = useCallback(() => dispatch({ type: 'NEXT_STEP' }), [])
+  const prevStep = useCallback(() => dispatch({ type: 'PREV_STEP' }), [])
+  const skipAllTours = useCallback(() => dispatch({ type: 'SKIP_ALL' }), [])
+  const resetTours = useCallback(() => dispatch({ type: 'RESET' }), [])
   const startGuidedTask = useCallback((taskId, targetTour = null) => {
-    setGuidedTask({ id: taskId, tour: targetTour || taskId })
-    if (targetTour || taskId) startTour(targetTour || taskId)
-  }, [startTour])
-
-  const completeGuidedTask = useCallback(() => {
-    setGuidedTask(null)
+    const task = { id: taskId, tour: targetTour || taskId }
+    dispatch({ type: 'SET_GUIDED_TASK', task })
+    dispatch({ type: 'START_TOUR', tourId: task.tour })
   }, [])
+  const completeGuidedTask = useCallback(() => dispatch({ type: 'SET_GUIDED_TASK', task: null }), [])
 
-  const currentStep = activeTour ? TOUR_STEPS[activeTour]?.[currentStepIndex] : null
-  const totalSteps = activeTour ? TOUR_STEPS[activeTour]?.length : 0
-  const isTourActive = activeTour !== null
+  const currentStep = state.activeTour ? TOUR_STEPS[state.activeTour]?.[state.currentStepIndex] : null
+  const totalSteps = state.activeTour ? TOUR_STEPS[state.activeTour]?.length : 0
+  const isTourActive = state.activeTour !== null
+
+  // Handle automatic skipping of desktop-only steps on mobile
+  useEffect(() => {
+    if (isTourActive && currentStep?.desktopOnly && window.innerWidth < 640) {
+      nextStep()
+    }
+  }, [isTourActive, currentStep, nextStep])
 
   const value = useMemo(() => ({
-    activeTour, currentStep, currentStepIndex, totalSteps, isTourActive,
-    completedTours, guidedTask,
+    ...state, currentStep, totalSteps, isTourActive,
     startTour, endTour, skipAllTours, nextStep, prevStep, resetTours,
     startGuidedTask, completeGuidedTask,
     isStepActive: (stepId) => currentStep?.id === stepId,
-  }), [
-    activeTour, currentStep, currentStepIndex, totalSteps, isTourActive,
-    completedTours, guidedTask,
-    startTour, endTour, skipAllTours, nextStep, prevStep, resetTours,
-    startGuidedTask, completeGuidedTask,
-  ])
+  }), [state, currentStep, totalSteps, isTourActive, startTour, endTour, skipAllTours, nextStep, prevStep, resetTours, startGuidedTask, completeGuidedTask])
 
   return (
     <OnboardingTourContext.Provider value={value}>
-      {children}
-      <AnimatePresence>
-        {isTourActive && currentStep && (
-          <TourOverlay
-            key={currentStep.id}
-            step={currentStep}
-            stepNumber={currentStepIndex + 1}
-            totalSteps={totalSteps}
-            onNext={nextStep}
-            onPrev={prevStep}
-            onDismiss={endTour}
-          />
-        )}
-      </AnimatePresence>
+      <LazyMotion features={domAnimation}>
+        {children}
+        <AnimatePresence>
+          {isTourActive && currentStep && (
+            <TourOverlay
+              key={currentStep.id}
+              step={currentStep}
+              stepNumber={state.currentStepIndex + 1}
+              totalSteps={totalSteps}
+              onNext={nextStep}
+              onPrev={prevStep}
+              onDismiss={endTour}
+            />
+          )}
+        </AnimatePresence>
+      </LazyMotion>
     </OnboardingTourContext.Provider>
   )
 }
@@ -288,32 +188,21 @@ export function useOnboardingTour() {
   return ctx
 }
 
-// ─── Mobile detection ─────────────────────────────────────────────────────────
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 640 : false
-  )
-  useEffect(() => {
-    const mql = window.matchMedia('(max-width: 639px)')
-    const handler = (e) => setIsMobile(e.matches)
-    mql.addEventListener('change', handler)
-    return () => mql.removeEventListener('change', handler)
-  }, [])
-  return isMobile
-}
-
 // ─── Tour Overlay (unified desktop / mobile) ──────────────────────────────────
 
 function TourOverlay({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
   const [targetRect, setTargetRect] = useState(null)
   const [position, setPosition] = useState({ top: 0, left: 0 })
-  const isMobile = useIsMobile()
+  const { isDark } = useTheme()
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 640)
 
   useEffect(() => {
-    // Skip desktop-only steps on mobile
-    if (step.desktopOnly && isMobile) { onNext(); return }
+    const handleResize = () => setIsMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
+  useEffect(() => {
     const findTarget = () => {
       const candidates = document.querySelectorAll(step.target)
       return Array.from(candidates).find((el) => {
@@ -326,13 +215,11 @@ function TourOverlay({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }
     const update = () => {
       const el = findTarget()
       if (!el) { setTargetRect(null); return }
-
       const rect = el.getBoundingClientRect()
       if (rect.width === 0 || rect.height === 0) { setTargetRect(null); return }
-
       setTargetRect(rect)
 
-      if (!isMobile) {
+      if (window.innerWidth >= 640) {
         const tw = 320, th = 180, off = 16
         let top = 0, left = 0
         switch (step.position) {
@@ -349,7 +236,6 @@ function TourOverlay({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }
     }
 
     update()
-    // Retry after short delay in case elements need to render
     const retryTimeout = setTimeout(update, 300)
     window.addEventListener('resize', update)
     window.addEventListener('scroll', update, true)
@@ -358,74 +244,52 @@ function TourOverlay({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }
       window.removeEventListener('resize', update)
       window.removeEventListener('scroll', update, true)
     }
-  }, [step, isMobile, onNext])
+  }, [step])
 
-  // Don't render if blocking modal is open
   const isBlocked = !!(document.querySelector('[role="dialog"]') || document.querySelector('.wizard-modal'))
   if (isBlocked || !targetRect) return null
-
   const pad = 8
 
   return createPortal(
     <div className="fixed inset-0 z-[9998] pointer-events-none">
-      {/* Spotlight backdrop */}
-      <MotionDiv
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-space-950/60 backdrop-blur-[2px] pointer-events-auto"
+        className={`absolute inset-0 backdrop-blur-[2px] pointer-events-auto ${isDark ? 'bg-space-950/60' : 'bg-zinc-950/40'}`}
         onClick={onDismiss}
         style={{
-          clipPath: `polygon(
-            0% 0%, 0% 100%,
-            ${targetRect.left - pad}px 100%,
-            ${targetRect.left - pad}px ${targetRect.top - pad}px,
-            ${targetRect.left + targetRect.width + pad}px ${targetRect.top - pad}px,
-            ${targetRect.left + targetRect.width + pad}px ${targetRect.top + targetRect.height + pad}px,
-            ${targetRect.left - pad}px ${targetRect.top + targetRect.height + pad}px,
-            ${targetRect.left - pad}px 100%,
-            100% 100%, 100% 0%
-          )`,
+          clipPath: `polygon(0% 0%, 0% 100%, ${targetRect.left - pad}px 100%, ${targetRect.left - pad}px ${targetRect.top - pad}px, ${targetRect.left + targetRect.width + pad}px ${targetRect.top - pad}px, ${targetRect.left + targetRect.width + pad}px ${targetRect.top + targetRect.height + pad}px, ${targetRect.left - pad}px ${targetRect.top + targetRect.height + pad}px, ${targetRect.left - pad}px 100%, 100% 100%, 100% 0%)`,
         }}
       />
-
-      {/* Highlight ring */}
-      <MotionDiv
+      <m.div
         layoutId="tour-ring"
         className="absolute z-[9999] rounded-xl border-2 border-gold-400 shadow-[0_0_20px_rgba(245,212,122,0.25)] pointer-events-none"
         initial={false}
-        animate={{
-          top: targetRect.top - pad,
-          left: targetRect.left - pad,
-          width: targetRect.width + pad * 2,
-          height: targetRect.height + pad * 2,
-        }}
+        animate={{ top: targetRect.top - pad, left: targetRect.left - pad, width: targetRect.width + pad * 2, height: targetRect.height + pad * 2 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       />
-
-      {/* Tooltip */}
       {isMobile ? (
         <MobileSheet step={step} stepNumber={stepNumber} totalSteps={totalSteps} onNext={onNext} onPrev={onPrev} onDismiss={onDismiss} />
       ) : (
-        <MotionDiv
+        <m.div
           initial={{ opacity: 0, y: 8, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1, top: position.top, left: position.left }}
           exit={{ opacity: 0, scale: 0.96 }}
           className="fixed z-[10000] w-80 pointer-events-auto"
         >
           <TooltipCard step={step} stepNumber={stepNumber} totalSteps={totalSteps} onNext={onNext} onPrev={onPrev} onDismiss={onDismiss} />
-        </MotionDiv>
+        </m.div>
       )}
     </div>,
     document.body
   )
 }
 
-// ─── Mobile bottom sheet ──────────────────────────────────────────────────────
-
 function MobileSheet({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }) {
+  const { isDark } = useTheme()
   return (
-    <MotionDiv
+    <m.div
       initial={{ y: '100%' }}
       animate={{ y: 0 }}
       exit={{ y: '100%' }}
@@ -434,55 +298,47 @@ function MobileSheet({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss }
       dragConstraints={{ top: 0 }}
       dragElastic={{ top: 0, bottom: 0.4 }}
       onDragEnd={(_, info) => { if (info.offset.y > 80) onDismiss() }}
-      className="fixed bottom-0 left-0 right-0 z-[10000] pointer-events-auto rounded-t-2xl overflow-hidden"
+      className={`fixed bottom-0 left-0 right-0 z-[10000] pointer-events-auto rounded-t-2xl overflow-hidden ${isDark ? 'bg-[#0B0F1A]' : 'bg-white'}`}
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
-      <div className="bg-[#0B0F1A] pt-3 pb-0 flex justify-center">
-        <div className="w-10 h-1 rounded-full bg-white/20" />
+      <div className={`pt-3 pb-0 flex justify-center ${isDark ? 'bg-[#0B0F1A]' : 'bg-white'}`}>
+        <div className={`w-10 h-1 rounded-full ${isDark ? 'bg-white/20' : 'bg-zinc-200'}`} />
       </div>
       <TooltipCard step={step} stepNumber={stepNumber} totalSteps={totalSteps} onNext={onNext} onPrev={onPrev} onDismiss={onDismiss} isMobile />
-    </MotionDiv>
+    </m.div>
   )
 }
 
-// ─── Shared tooltip card ──────────────────────────────────────────────────────
-
 function TooltipCard({ step, stepNumber, totalSteps, onNext, onPrev, onDismiss, isMobile = false }) {
+  const { isDark } = useTheme()
   return (
     <div
-      className="bg-[#0B0F1A] border border-white/10 shadow-2xl shadow-black overflow-hidden"
+      className={`shadow-2xl shadow-black overflow-hidden border ${isDark ? 'bg-[#0B0F1A] border-white/10' : 'bg-white border-zinc-200'}`}
       style={{ borderRadius: isMobile ? 0 : '1.25rem' }}
     >
-      {/* Header */}
-      <div className="px-5 py-3.5 bg-white/[0.03] border-b border-white/5 flex items-center justify-between">
-        <h4 className="font-syne font-bold text-white text-sm">{step.title}</h4>
-        <button onClick={(e) => { e.stopPropagation(); onDismiss() }} className="text-gray-600 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10">
-          <X className="w-4 h-4" />
+      <div className={`px-5 py-3.5 border-b flex items-center justify-between ${isDark ? 'bg-white/[0.03] border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
+        <h4 className={`font-syne font-bold text-sm ${isDark ? 'text-white' : 'text-zinc-900'}`}>{step.title}</h4>
+        <button onClick={(e) => { e.stopPropagation(); onDismiss() }} className={`transition-colors p-1 rounded-lg ${isDark ? 'text-zinc-600 hover:text-white hover:bg-white/10' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100'}`} aria-label="Fermer">
+          <X className="size-4" />
         </button>
       </div>
-
-      {/* Body */}
       <div className="px-5 py-4">
-        <p className="text-sm text-gray-400 leading-relaxed">{step.description}</p>
-        {isMobile && <p className="text-[10px] text-gray-600 mt-3 text-center">Glissez vers le bas pour fermer</p>}
+        <p className={`text-sm leading-relaxed ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{step.description}</p>
+        {isMobile && <p className={`text-[10px] mt-3 text-center ${isDark ? 'text-zinc-600' : 'text-zinc-400'}`}>Glissez vers le bas pour fermer</p>}
       </div>
-
-      {/* Footer */}
-      <div className="px-5 py-3.5 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+      <div className={`px-5 py-3.5 border-t flex items-center justify-between ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
         <div className="flex gap-1">
           {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === stepNumber - 1 ? 'w-4 bg-gold-400' : 'w-1 bg-white/10'}`} />
+            <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === stepNumber - 1 ? 'w-4 bg-gold-400' : isDark ? 'w-1 bg-white/10' : 'w-1 bg-zinc-200'}`} />
           ))}
         </div>
         <div className="flex items-center gap-2">
           {stepNumber > 1 && (
-            <button onClick={(e) => { e.stopPropagation(); onPrev() }} className="text-xs font-bold text-gray-500 hover:text-white transition-colors px-2 py-1">
-              Précédent
-            </button>
+            <button onClick={(e) => { e.stopPropagation(); onPrev() }} className={`text-xs font-bold transition-colors px-2 py-1 ${isDark ? 'text-zinc-500 hover:text-white' : 'text-zinc-400 hover:text-zinc-900'}`}>Précédent</button>
           )}
           <button
             onClick={(e) => { e.stopPropagation(); stepNumber === totalSteps ? onDismiss() : onNext() }}
-            className="px-4 py-2 text-xs font-black bg-white text-black rounded-lg hover:bg-gold-400 transition-all hover:scale-105 active:scale-95"
+            className={`px-4 py-2 text-xs font-black rounded-lg transition-all hover:scale-105 active:scale-95 ${isDark ? 'bg-white text-black hover:bg-gold-400' : 'bg-zinc-900 text-white hover:bg-gold-400'}`}
           >
             {stepNumber === totalSteps ? 'Terminer ✓' : 'Suivant'}
           </button>

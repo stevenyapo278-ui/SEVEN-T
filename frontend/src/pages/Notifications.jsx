@@ -460,10 +460,10 @@ export default function Notifications() {
                   {groupNotifs.map((notif, idx) => (
                     <div
                       key={notif.id}
-                      className={`group p-4 md:p-5 transition-all duration-300 hover:bg-space-800/40 animate-fadeIn ${
+                      className={`group p-4 md:p-5 transition-all duration-300 animate-fadeIn ${
                         isDark
-                          ? notif.is_read ? 'bg-transparent' : 'bg-blue-500/5 border-l-2 border-l-blue-500'
-                          : notif.is_read ? 'bg-white' : 'bg-blue-50/40 border-l-2 border-l-blue-500'
+                          ? `hover:bg-space-800/40 ${notif.is_read ? 'bg-transparent' : 'bg-blue-500/5 border-l-2 border-l-blue-500'}`
+                          : `hover:bg-gray-50 ${notif.is_read ? 'bg-white' : 'bg-blue-50/40 border-l-2 border-l-blue-500'}`
                       }`}
                     >
                       <div className="flex items-start gap-4">

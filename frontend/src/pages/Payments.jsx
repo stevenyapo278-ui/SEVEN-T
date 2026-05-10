@@ -329,7 +329,7 @@ export default function Payments() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className={`p-4 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
+          <div className={`p-4 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
             <p className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</p>
             <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total liens</p>
           </div>
@@ -416,7 +416,7 @@ export default function Payments() {
               className={`p-6 rounded-2xl border transition-all duration-300 animate-fadeIn print:hidden ${
                 selectedIds.has(link.id)
                   ? isDark ? 'bg-blue-500/10 border-blue-500/50 shadow-blue-500/5' : 'bg-blue-50 border-blue-200 shadow-sm'
-                  : isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+                  : isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >

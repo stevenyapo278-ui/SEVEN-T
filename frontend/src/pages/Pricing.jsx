@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { CheckCircle, Zap, Star, Building2, ArrowRight, Tag, Loader2, AlertTriangle, Crown } from 'lucide-react'
 import api from '../services/api'
+import { useTheme } from '../contexts/ThemeContext'
 import PricingDetailsModal from '../components/PricingDetailsModal'
 
 const PLAN_ICONS = { free: Zap, starter: Star, pro: Crown, business: Building2 }
@@ -70,6 +71,8 @@ function PlanFeatureList({ features }) {
 }
 
 export default function Pricing() {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const { user, token } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -147,7 +150,9 @@ export default function Pricing() {
   const currentPlan = user?.plan
 
   return (
-    <div className="min-h-screen bg-space-950 text-gray-100 px-4 py-10">
+    <div className={`min-h-screen px-4 py-10 transition-colors duration-500 ${
+      isDark ? 'bg-space-950 text-gray-100' : 'bg-white text-gray-900'
+    }`}>
       <Helmet>
         <title>Tarifs & Abonnements | SEVEN T</title>
         <meta name="description" content="Découvrez nos forfaits flexibles pour automatiser votre service client WhatsApp avec l'IA. Essai gratuit, sans engagement." />
@@ -155,7 +160,9 @@ export default function Pricing() {
 
       {/* Header */}
       <div className="text-center mb-10">
-        <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+        <h1 className={`text-3xl md:text-4xl font-black tracking-tight bg-clip-text text-transparent ${
+          isDark ? 'bg-gradient-to-r from-white to-gray-400' : 'bg-gradient-to-r from-gray-900 to-gray-600'
+        }`}>
           Choisissez votre plan
         </h1>
         <p className="text-gray-400 mt-2 text-sm max-w-xl mx-auto">
@@ -163,7 +170,9 @@ export default function Pricing() {
         </p>
 
         {/* Billing toggle */}
-        <div className="inline-flex items-center gap-3 mt-6 bg-space-900 border border-space-700 rounded-2xl p-1">
+        <div className={`inline-flex items-center gap-3 mt-6 border rounded-2xl p-1 ${
+          isDark ? 'bg-space-900 border-space-700' : 'bg-gray-100 border-gray-200'
+        }`}>
           <button
             onClick={() => setBilling('monthly')}
             className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${billing === 'monthly' ? 'bg-gold-500 text-black' : 'text-gray-400 hover:text-white'}`}
@@ -221,7 +230,7 @@ export default function Pricing() {
                     <Icon size={18} />
                   </div>
                   <div>
-                    <h2 className="font-bold text-white text-base">{plan.display_name}</h2>
+                    <h2 className={`font-bold text-base ${isDark ? 'text-white' : 'text-gray-900'}`}>{plan.display_name}</h2>
                     <p className="text-xs text-gray-500">{plan.description}</p>
                   </div>
                 </div>
@@ -229,12 +238,12 @@ export default function Pricing() {
                 {/* Price */}
                 <div className="mb-2">
                   {price <= 0 ? (
-                    <span className="text-2xl font-black text-white">Gratuit</span>
+                    <span className={`text-2xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>Gratuit</span>
                   ) : plan.id === 'enterprise' ? (
-                    <span className="text-xl font-black text-white">Sur devis</span>
+                    <span className={`text-xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>Sur devis</span>
                   ) : (
                     <>
-                      <span className="text-3xl font-black text-white">{formatPrice(price, plan.priceCurrency)}</span>
+                      <span className={`text-3xl font-black ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatPrice(price, plan.priceCurrency)}</span>
                       <span className="text-gray-500 text-sm ml-1">/ {billing === 'yearly' ? 'an' : 'mois'}</span>
                     </>
                   )}
@@ -245,7 +254,7 @@ export default function Pricing() {
                   let limits = plan.limits
                   if (typeof limits === 'string') { try { limits = JSON.parse(limits) } catch { return null } }
                   return (
-                    <div className="text-xs text-gray-500 space-y-1 mb-2 border-t border-space-700/50 pt-3">
+                    <div className={`text-xs text-gray-500 space-y-1 mb-2 border-t pt-3 ${isDark ? 'border-space-700/50' : 'border-gray-200'}`}>
                       {limits.agents > 0 && <div>{limits.agents === -1 ? 'Agents illimités' : `${limits.agents} agent(s)`}</div>}
                       {limits.messages_per_month && <div>{limits.messages_per_month === -1 ? 'Messages illimités' : `${limits.messages_per_month.toLocaleString('fr-FR')} messages/mois`}</div>}
                     </div>
@@ -261,7 +270,7 @@ export default function Pricing() {
                   Voir les détails
                 </button>
 
-                <div className="mt-auto pt-5 border-t border-space-700/50">
+                <div className={`mt-auto pt-5 border-t ${isDark ? 'border-space-700/50' : 'border-gray-100'}`}>
                   {isCurrent ? (
                     <button disabled className="w-full py-3 rounded-2xl text-sm font-semibold bg-gold-500/20 text-gold-400 border border-gold-500/30 cursor-default">
                       ✓ Plan actuel
@@ -295,7 +304,7 @@ export default function Pricing() {
       {/* Coupon */}
       {!loading && plans.length > 0 && (
         <div className="max-w-md mx-auto mt-10">
-          <div className="bg-space-900 border border-space-700 rounded-2xl p-5">
+          <div className={`border rounded-2xl p-5 ${isDark ? 'bg-space-900 border-space-700' : 'bg-gray-50 border-gray-200'}`}>
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
               <Tag size={14} /> Code promo
             </h3>
@@ -305,7 +314,9 @@ export default function Pricing() {
                 placeholder="Entrez votre code..."
                 value={couponCode}
                 onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null) }}
-                className="flex-1 bg-space-800 border border-space-600 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-gold-400"
+                className={`flex-1 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-gold-400 border ${
+                  isDark ? 'bg-space-800 border-space-600 text-white placeholder-gray-600' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
+                }`}
               />
               <button
                 onClick={validateCoupon}

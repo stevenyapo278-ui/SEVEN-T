@@ -136,8 +136,8 @@ export default function Help() {
         
         {/* Left Col - Guides */}
         <div className="lg:col-span-2 space-y-6">
-        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
+            <h2 className={`text-xl font-display font-bold mb-6 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <Sparkles className="w-5 h-5 text-gold-400" />
               Accès rapide
             </h2>
@@ -146,15 +146,15 @@ export default function Help() {
                 <Link
                   key={idx}
                   to={q.href}
-                  className="p-4 rounded-xl border border-space-700 bg-space-800/30 hover:bg-space-800 hover:border-space-600 transition-all group"
+                  className={`p-4 rounded-xl border transition-all group ${isDark ? 'border-space-700 bg-space-800/30 hover:bg-space-800 hover:border-space-600' : 'border-gray-100 bg-gray-50 hover:bg-white hover:border-gray-200'}`}
                 >
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-space-900 rounded-lg group-hover:scale-110 transition-transform">
+                    <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${isDark ? 'bg-space-900' : 'bg-white'}`}>
                       {q.icon}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-semibold text-gray-100 truncate">{q.title}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">{q.desc}</p>
+                      <h3 className={`font-semibold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{q.title}</h3>
+                      <p className={`text-xs mt-0.5 truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{q.desc}</p>
                     </div>
                   </div>
                   <div className="flex justify-end">
@@ -165,21 +165,21 @@ export default function Help() {
             </div>
           </div>
 
-        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
+            <h2 className={`text-xl font-display font-bold mb-6 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <PlayCircle className="w-5 h-5 text-blue-400" />
               Guides rapides
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {guides.map((guide, idx) => (
-                <Link key={idx} to={guide.href} className="p-4 rounded-xl border border-space-700 bg-space-800/50 hover:bg-space-800 hover:border-space-600 transition-all cursor-pointer group">
+                <Link key={idx} to={guide.href} className={`p-4 rounded-xl border transition-all cursor-pointer group ${isDark ? 'border-space-700 bg-space-800/50 hover:bg-space-800 hover:border-space-600' : 'border-gray-100 bg-gray-50 hover:bg-white hover:border-gray-200'}`}>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-space-900 rounded-lg group-hover:scale-110 transition-transform">
+                    <div className={`p-2 rounded-lg group-hover:scale-110 transition-transform ${isDark ? 'bg-space-900' : 'bg-white'}`}>
                       {guide.icon}
                     </div>
-                    <h3 className="font-semibold text-gray-100">{guide.title}</h3>
+                    <h3 className={`font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{guide.title}</h3>
                   </div>
-                  <p className="text-sm text-gray-400">{guide.desc}</p>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{guide.desc}</p>
                   <div className="mt-3 flex justify-end">
                     <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
                   </div>
@@ -188,16 +188,16 @@ export default function Help() {
             </div>
           </div>
 
-          <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+          <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
+            <h2 className={`text-xl font-display font-bold mb-6 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
               Dépannage rapide
             </h2>
             <div className="space-y-4">
               {troubleshooting.map((b, idx) => (
-                <div key={idx} className="p-4 rounded-xl border border-space-700 bg-space-800/30">
-                  <h3 className="font-semibold text-gray-100 mb-2">{b.title}</h3>
-                  <ul className="space-y-1.5 text-sm text-gray-400">
+                <div key={idx} className={`p-4 rounded-xl border ${isDark ? 'border-space-700 bg-space-800/30' : 'border-gray-100 bg-gray-50'}`}>
+                  <h3 className={`font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{b.title}</h3>
+                  <ul className={`space-y-1.5 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     {b.items.map((it, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <span className="text-blue-400 font-bold mt-[2px]">•</span>
@@ -210,19 +210,19 @@ export default function Help() {
             </div>
           </div>
 
-        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
+            <h2 className={`text-xl font-display font-bold mb-6 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <MessagesSquare className="w-5 h-5 text-gold-400" />
               Foire Aux Questions (FAQ)
             </h2>
             <div className="space-y-4">
               {faqs.map((faq, idx) => (
-                <div key={idx} className="p-4 rounded-xl border border-space-700 bg-space-800/30">
-                  <h3 className="font-medium text-gray-100 mb-2 flex items-start gap-2">
+                <div key={idx} className={`p-4 rounded-xl border ${isDark ? 'border-space-700 bg-space-800/30' : 'border-gray-100 bg-gray-50'}`}>
+                  <h3 className={`font-medium mb-2 flex items-start gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                     <span className="text-blue-400 font-bold">Q.</span>
                     {faq.q}
                   </h3>
-                  <p className="text-gray-400 text-sm flex items-start gap-2">
+                  <p className={`text-sm flex items-start gap-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                     <span className="text-emerald-400 font-bold">R.</span>
                     <span className="flex-1">{faq.a}</span>
                   </p>
@@ -234,8 +234,8 @@ export default function Help() {
 
         {/* Right Col - Docs & Resources */}
         <div className="space-y-6">
-          <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-4 flex items-center gap-2">
+          <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
+            <h2 className={`text-xl font-display font-bold mb-4 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <LifeBuoy className="w-5 h-5 text-blue-400" />
               Support & Tickets
             </h2>
@@ -257,37 +257,37 @@ export default function Help() {
             </p>
           </div>
 
-        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'}`}>
-            <h2 className="text-xl font-display font-bold text-gray-100 mb-6 flex items-center gap-2">
+        <div className={`p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
+            <h2 className={`text-xl font-display font-bold mb-6 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
               <BookOpen className="w-5 h-5 text-cyan-400" />
               Ressources
             </h2>
             <div className="space-y-3">
-              <Link to="/dashboard/docs" className="flex items-center justify-between p-3 rounded-xl hover:bg-space-800 transition-colors border border-transparent hover:border-space-700 group">
+              <Link to="/dashboard/docs" className={`flex items-center justify-between p-3 rounded-xl transition-colors border border-transparent group ${isDark ? 'hover:bg-space-800 hover:border-space-700' : 'hover:bg-gray-50 hover:border-gray-100'}`}>
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
-                  <span className="font-medium text-gray-200">Documentation technique</span>
+                  <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Documentation technique</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-500" />
               </Link>
-              <Link to="/dashboard/settings" className="flex items-center justify-between p-3 rounded-xl hover:bg-space-800 transition-colors border border-transparent hover:border-space-700 group">
+              <Link to="/dashboard/settings" className={`flex items-center justify-between p-3 rounded-xl transition-colors border border-transparent group ${isDark ? 'hover:bg-space-800 hover:border-space-700' : 'hover:bg-gray-50 hover:border-gray-100'}`}>
                 <div className="flex items-center gap-3">
                   <Settings className="w-5 h-5 text-gray-400 group-hover:text-gold-400 transition-colors" />
-                  <span className="font-medium text-gray-200">Paramètres & préférences</span>
+                  <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Paramètres & préférences</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-500" />
               </Link>
-              <a href="https://youtu.be/SevenT" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-space-800 transition-colors border border-transparent hover:border-space-700 group">
+              <a href="https://youtu.be/SevenT" target="_blank" rel="noopener noreferrer" className={`flex items-center justify-between p-3 rounded-xl transition-colors border border-transparent group ${isDark ? 'hover:bg-space-800 hover:border-space-700' : 'hover:bg-gray-50 hover:border-gray-100'}`}>
                 <div className="flex items-center gap-3">
                   <PlayCircle className="w-5 h-5 text-gray-400 group-hover:text-red-400 transition-colors" />
-                  <span className="font-medium text-gray-200">Tutoriels YouTube</span>
+                  <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Tutoriels YouTube</span>
                 </div>
                 <ExternalLink className="w-4 h-4 text-gray-500" />
               </a>
-              <a href="https://discord.gg/sevent" target="_blank" rel="noopener noreferrer" className="flex items-center justify-between p-3 rounded-xl hover:bg-space-800 transition-colors border border-transparent hover:border-space-700 group">
+              <a href="https://discord.gg/sevent" target="_blank" rel="noopener noreferrer" className={`flex items-center justify-between p-3 rounded-xl transition-colors border border-transparent group ${isDark ? 'hover:bg-space-800 hover:border-space-700' : 'hover:bg-gray-50 hover:border-gray-100'}`}>
                 <div className="flex items-center gap-3">
                   <MessagesSquare className="w-5 h-5 text-gray-400 group-hover:text-indigo-400 transition-colors" />
-                  <span className="font-medium text-gray-200">Communauté Discord</span>
+                  <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>Communauté Discord</span>
                 </div>
                 <ExternalLink className="w-4 h-4 text-gray-500" />
               </a>

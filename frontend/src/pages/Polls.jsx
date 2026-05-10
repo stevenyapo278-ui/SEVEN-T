@@ -292,7 +292,7 @@ export default function Polls() {
             const isSelected = selectedIds.has(poll.id)
             return (
               <div key={poll.id}
-                className={`group relative p-5 rounded-3xl border transition-all duration-300 cursor-pointer hover:shadow-xl ${isSelected ? 'bg-violet-500/10 border-violet-500/50' : isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/70 hover:border-violet-500/30' : 'bg-white border-gray-100 hover:shadow-violet-100 hover:border-violet-200'}`}
+                className={`group relative p-5 rounded-3xl border transition-all duration-300 cursor-pointer ${isSelected ? 'bg-violet-500/10 border-violet-500/50' : isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/70 hover:border-violet-500/30' : 'bg-white border-gray-100 hover:bg-gray-50 hover:shadow-violet-100 hover:border-violet-200'}`}
                 onClick={() => setSelectedPoll(poll)}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -404,7 +404,7 @@ function CreatePollModal({ agents, onClose, onSuccess, isDark }) {
             <BarChart2 className="w-5 h-5 text-violet-400" />
             Nouveau sondage
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-space-800 rounded-xl transition-colors"><X className="w-4 h-4 text-gray-400" /></button>
+          <button onClick={onClose} className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}><X className="w-4 h-4 text-gray-400" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
           <div>
@@ -554,7 +554,7 @@ function PollDetailModal({ poll: initialPoll, leads, onClose, onRefresh, isDark 
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${badge.class}`}>{badge.label}</span>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-space-800 rounded-xl transition-colors flex-shrink-0 ml-2"><X className="w-4 h-4 text-gray-400" /></button>
+            <button onClick={onClose} className={`p-2 rounded-xl transition-colors flex-shrink-0 ml-2 ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}><X className="w-4 h-4 text-gray-400" /></button>
           </div>
         </div>
 

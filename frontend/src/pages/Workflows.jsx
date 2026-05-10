@@ -464,7 +464,7 @@ export default function Workflows() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <div className={`p-4 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gold-400/20 flex items-center justify-center flex-shrink-0">
             <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-gold-400" />
@@ -475,7 +475,7 @@ export default function Workflows() {
           </div>
         </div>
         <div className={`p-4 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
             <Play className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
@@ -486,7 +486,7 @@ export default function Workflows() {
           </div>
         </div>
         <div className={`p-4 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         } flex items-center gap-4`}>
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-400/20 flex items-center justify-center flex-shrink-0">
             <History className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
@@ -511,7 +511,7 @@ export default function Workflows() {
 
       {/* Contacts pour les actions (livreur, gérant, etc.) */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0">
@@ -551,7 +551,9 @@ export default function Workflows() {
                     <tr 
                       key={c.id} 
                       onClick={() => setSelectedContactView(c)}
-                      className="border-b border-space-700/50 cursor-pointer hover:bg-space-800/50 transition-colors group"
+                      className={`border-b cursor-pointer transition-colors ${
+                        isDark ? 'border-space-700/50 hover:bg-space-800/50' : 'border-gray-100 hover:bg-gray-50'
+                      } group`}
                     >
                       <td className="py-3 pr-4 font-medium">
                         <div className="flex items-center gap-2">
@@ -598,7 +600,9 @@ export default function Workflows() {
                 <div 
                   key={c.id}
                   onClick={() => setSelectedContactView(c)}
-                  className="p-4 rounded-2xl bg-space-800/50 border border-space-700 active:scale-[0.98] transition-all"
+                  className={`p-4 rounded-2xl border active:scale-[0.98] transition-all ${
+                    isDark ? 'bg-space-800/50 border-space-700' : 'bg-gray-50 border-gray-200'
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className={`font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{c.name}</h4>
@@ -649,7 +653,7 @@ export default function Workflows() {
             const TriggerIcon = TRIGGER_ICONS[workflow.trigger_type] || Zap
             return (
               <div key={workflow.id} className={`p-6 rounded-2xl border transition-all duration-300 animate-fadeIn ${
-                isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+                isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
               }`} style={{ animationDelay: `${index * 50}ms` }}>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -726,7 +730,7 @@ export default function Workflows() {
 
       {/* Workflow execution history */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div className="min-w-0">
@@ -788,7 +792,9 @@ export default function Workflows() {
                       <tr 
                         key={log.id} 
                         onClick={() => setSelectedLogView(log)}
-                        className="border-b border-space-700/50 hover:bg-space-800/50 cursor-pointer group transition-colors"
+                        className={`border-b cursor-pointer group transition-colors ${
+                          isDark ? 'border-space-700/50 hover:bg-space-800/50' : 'border-gray-100 hover:bg-gray-50'
+                        }`}
                       >
                         <td className="py-4 pr-4">
                           <div className={`font-semibold group-hover:text-blue-400 transition-colors ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{log.workflow_name}</div>
@@ -822,7 +828,9 @@ export default function Workflows() {
                   <div
                     key={log.id}
                     onClick={() => setSelectedLogView(log)}
-                    className="p-4 rounded-2xl bg-space-800/50 border border-space-700 hover:border-blue-500/30 transition-all cursor-pointer active:scale-[0.98]"
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer active:scale-[0.98] ${
+                      isDark ? 'bg-space-800/50 border-space-700 hover:border-blue-500/30' : 'bg-gray-50 border-gray-200 hover:border-blue-500'
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -848,7 +856,9 @@ export default function Workflows() {
           style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
         >
           <div 
-            className="relative z-10 w-full max-w-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden" 
+            className={`relative z-10 w-full max-w-2xl max-h-[92dvh] sm:max-h-[85vh] flex flex-col border rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] animate-fadeIn overflow-hidden ${
+              isDark ? 'bg-[#0B0F1A] border-white/10' : 'bg-white border-gray-200'
+            }`} 
             role="dialog" 
             aria-modal="true"
             onClick={e => e.stopPropagation()}

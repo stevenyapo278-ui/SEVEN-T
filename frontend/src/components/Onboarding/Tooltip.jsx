@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, ChevronRight, ChevronLeft } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 // Tooltip positions
 const POSITIONS = {
@@ -38,6 +39,7 @@ export function Tooltip({
   children 
 }) {
   const tooltipRef = useRef(null)
+  const { isDark } = useTheme()
 
   if (!isVisible) {
     return children
@@ -46,7 +48,9 @@ export function Tooltip({
   return (
     <div className="relative inline-block">
       {/* Highlight ring around the element */}
-      <div className="relative z-50 ring-2 ring-gold-400 ring-offset-2 ring-offset-space-900 rounded-lg animate-pulse">
+      <div className={`relative z-50 ring-2 ring-gold-400 ring-offset-2 rounded-lg animate-pulse ${
+        isDark ? 'ring-offset-space-900' : 'ring-offset-white'
+      }`}>
         {children}
       </div>
 
@@ -56,46 +60,58 @@ export function Tooltip({
         className={`absolute z-[60] w-72 ${POSITIONS[position]}`}
       >
         {/* Arrow */}
-        <div className={`absolute w-0 h-0 border-8 ${ARROW_POSITIONS[position]}`} />
+        <div className={`absolute size-0 border-8 ${ARROW_POSITIONS[position]}`} />
         
         {/* Content */}
-        <div className="bg-space-800 border border-gold-400/50 rounded-xl shadow-xl shadow-gold-400/10 overflow-hidden">
+        <div className={`border rounded-xl shadow-xl overflow-hidden ${
+          isDark 
+            ? 'bg-space-800 border-gold-400/50 shadow-gold-400/10' 
+            : 'bg-white border-gold-400 shadow-zinc-200'
+        }`}>
           {/* Header */}
-          <div className="px-4 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 border-b border-space-700">
+          <div className={`px-4 py-3 bg-gradient-to-r from-gold-400/20 to-blue-500/20 border-b ${
+            isDark ? 'border-space-700' : 'border-zinc-100'
+          }`}>
             <div className="flex items-center justify-between">
               <h4 className="font-syne font-semibold text-gold-400">{title}</h4>
               <button 
                 onClick={onDismiss}
-                className="text-gray-400 hover:text-white transition-colors"
+                className={`transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-zinc-400 hover:text-zinc-900'}`}
               >
-                <X className="w-4 h-4" />
+                <X className="size-4" />
               </button>
             </div>
           </div>
 
           {/* Body */}
           <div className="px-4 py-3">
-            <p className="text-sm text-gray-300">{description}</p>
+            <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-zinc-600'}`}>{description}</p>
           </div>
 
           {/* Footer with navigation */}
-          <div className="px-4 py-3 bg-space-900/50 border-t border-space-700 flex items-center justify-between">
-            <span className="text-xs text-gray-500">
+          <div className={`px-4 py-3 border-t flex items-center justify-between ${
+            isDark ? 'bg-space-900/50 border-space-700' : 'bg-zinc-50 border-zinc-100'
+          }`}>
+            <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-zinc-400'}`}>
               {step}/{totalSteps}
             </span>
             <div className="flex items-center gap-2">
               {step > 1 && (
                 <button
                   onClick={onPrev}
-                  className="p-1.5 text-gray-400 hover:text-white hover:bg-space-700 rounded-lg transition-colors"
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    isDark ? 'text-gray-400 hover:text-white hover:bg-space-700' : 'text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100'
+                  }`}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="size-4" />
                 </button>
               )}
               {step < totalSteps ? (
                 <button
                   onClick={onNext}
-                  className="px-3 py-1.5 text-xs font-medium bg-gold-400 text-space-900 rounded-lg hover:bg-gold-300 transition-colors"
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    isDark ? 'bg-gold-400 text-space-900 hover:bg-gold-300' : 'bg-zinc-900 text-white hover:bg-zinc-800'
+                  }`}
                 >
                   Suivant
                 </button>
@@ -117,12 +133,23 @@ export function Tooltip({
 
 // Overlay backdrop when tooltips are active
 export function TooltipOverlay({ isVisible, onClick }) {
+  const { isDark } = useTheme()
   if (!isVisible) return null
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      onClick()
+    }
+  }
 
   return (
     <div 
-      className="fixed inset-0 bg-space-950/80 backdrop-blur-sm z-40"
+      className={`fixed inset-0 backdrop-blur-sm z-40 ${isDark ? 'bg-space-950/80' : 'bg-zinc-950/40'}`}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label="Fermer"
     />
   )
 }

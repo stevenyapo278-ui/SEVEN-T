@@ -459,7 +459,7 @@ export default function Reports() {
 
       {/* Generate Report Section */}
       <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-gold-400/10 rounded-lg">
@@ -549,7 +549,9 @@ export default function Reports() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {generatedReport.data?.conversations && (
                 <>
-                  <div className="p-5 bg-space-800/50 rounded-2xl border border-white/5 group hover:border-blue-500/30 transition-colors">
+                  <div className={`p-5 rounded-2xl border group transition-colors ${
+                    isDark ? 'bg-space-800/50 border-white/5 hover:border-blue-500/30' : 'bg-gray-50 border-gray-200 hover:border-blue-500'
+                  }`}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="p-2 bg-blue-500/10 rounded-xl">
                         <Users className="w-5 h-5 text-blue-400" />
@@ -564,7 +566,9 @@ export default function Reports() {
                     </div>
                   </div>
 
-                  <div className="p-5 bg-space-800/50 rounded-2xl border border-white/5 group hover:border-gold-400/30 transition-colors">
+                  <div className={`p-5 rounded-2xl border group transition-colors ${
+                    isDark ? 'bg-space-800/50 border-white/5 hover:border-gold-400/30' : 'bg-gray-50 border-gray-200 hover:border-gold-400'
+                  }`}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="p-2 bg-gold-400/10 rounded-xl">
                         <TrendingUp className="w-5 h-5 text-gold-400" />
@@ -579,7 +583,9 @@ export default function Reports() {
                     </div>
                   </div>
 
-                  <div className="p-5 bg-space-800/50 rounded-2xl border border-white/5 group hover:border-emerald-500/30 transition-colors">
+                  <div className={`p-5 rounded-2xl border group transition-colors ${
+                    isDark ? 'bg-space-800/50 border-white/5 hover:border-emerald-500/30' : 'bg-gray-50 border-gray-200 hover:border-emerald-500'
+                  }`}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="p-2 bg-emerald-500/10 rounded-xl">
                         <PieIcon className="w-5 h-5 text-emerald-400" />
@@ -594,7 +600,9 @@ export default function Reports() {
                     </div>
                   </div>
 
-                  <div className="p-5 bg-space-800/50 rounded-2xl border border-white/5 group hover:border-blue-400/30 transition-colors">
+                  <div className={`p-5 rounded-2xl border group transition-colors ${
+                    isDark ? 'bg-space-800/50 border-white/5 hover:border-blue-400/30' : 'bg-gray-50 border-gray-200 hover:border-blue-400'
+                  }`}>
                     <div className="flex items-center justify-between mb-3">
                       <div className="p-2 bg-blue-400/10 rounded-xl">
                         <Globe className="w-5 h-5 text-blue-400" />
@@ -623,7 +631,9 @@ export default function Reports() {
                   </h4>
                   <div className="p-2 bg-space-800/30 rounded-2xl border border-white/5 space-y-1">
                     {generatedReport.data.agents.map((agent) => (
-                      <div key={agent.id} className="flex items-center justify-between p-4 bg-space-800/50 rounded-xl border border-white/5 hover:bg-space-800 transition-colors">
+                      <div key={agent.id} className={`flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                        isDark ? 'bg-space-800/50 border-white/5 hover:bg-space-800' : 'bg-gray-50 border-gray-100 hover:bg-white'
+                      }`}>
                         <div className="min-w-0">
                           <p className="font-bold text-gray-100 truncate">{agent.name}</p>
                           <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-500 font-bold uppercase tracking-wider">
@@ -651,15 +661,21 @@ export default function Reports() {
                     Performance Proactive AI
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5 flex flex-col items-center">
+                      <div className={`p-6 rounded-2xl border flex flex-col items-center ${
+                        isDark ? 'bg-space-800/30 border-white/5' : 'bg-gray-50 border-gray-200'
+                      }`}>
                           <span className="text-3xl font-black text-white">{generatedReport.data.generated}</span>
                           <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Suggérés</span>
                       </div>
-                      <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5 flex flex-col items-center">
+                      <div className={`p-6 rounded-2xl border flex flex-col items-center ${
+                        isDark ? 'bg-space-800/30 border-white/5' : 'bg-gray-50 border-gray-200'
+                      }`}>
                           <span className="text-3xl font-black text-gold-400">{generatedReport.data.sent}</span>
                           <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Confirmés</span>
                       </div>
-                      <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5 flex flex-col items-center">
+                      <div className={`p-6 rounded-2xl border flex flex-col items-center ${
+                        isDark ? 'bg-space-800/30 border-white/5' : 'bg-gray-50 border-gray-200'
+                      }`}>
                           <span className="text-3xl font-black text-blue-400">{generatedReport.data.adoption_rate}%</span>
                           <span className="text-[10px] font-bold text-gray-500 uppercase mt-1">Adoption</span>
                       </div>
@@ -681,7 +697,9 @@ export default function Reports() {
                     <Target className="w-4 h-4" />
                     {t('reports.conversion_funnel')}
                   </h4>
-                  <div className="p-6 bg-space-800/30 rounded-2xl border border-white/5">
+                  <div className={`p-6 rounded-2xl border ${
+                    isDark ? 'bg-space-800/30 border-white/5' : 'bg-gray-50 border-gray-200'
+                  }`}>
                     <div className="flex flex-col gap-2">
                       {generatedReport.data.funnel.map((stage, idx) => {
                         const total = generatedReport.data.funnel[0]?.count || 1;
@@ -723,7 +741,9 @@ export default function Reports() {
                     {t('reports.top_performing_products')}
                   </h4>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-space-800/30 overflow-hidden">
+                <div className={`rounded-2xl border overflow-hidden ${
+                  isDark ? 'bg-space-800/30 border-white/5' : 'bg-gray-50 border-gray-200'
+                }`}>
                   <table className="w-full text-sm border-collapse">
                     <thead>
                       <tr className="text-left text-[10px] text-gray-500 border-b border-white/5 bg-white/2 font-black uppercase tracking-widest">
@@ -770,7 +790,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Report History */}
         <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         }`}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-gray-100">{t('reports.history')}</h3>
@@ -788,7 +808,9 @@ export default function Reports() {
                   <div
                     key={report.id}
                     onClick={() => viewReport(report.id)}
-                    className="flex items-center gap-3 p-3 bg-space-800 rounded-xl cursor-pointer hover:bg-space-700 transition-colors"
+                    className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
+                      isDark ? 'bg-space-800 hover:bg-space-700' : 'bg-gray-50 hover:bg-gray-100'
+                    }`}
                   >
                     <div className="w-10 h-10 rounded-lg bg-gold-400/20 flex items-center justify-center">
                       <Icon className="w-5 h-5 text-gold-400" />
@@ -815,7 +837,7 @@ export default function Reports() {
 
         {/* Subscriptions */}
         <div className={`p-6 rounded-2xl border transition-all duration-300 ${
-          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:shadow-md shadow-sm'
+          isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         }`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-100">{t('reports.scheduled_reports')}</h3>
@@ -842,7 +864,9 @@ export default function Reports() {
               {subscriptions.map((sub) => {
                 const Icon = REPORT_ICONS[sub.report_type] || FileBarChart
                 return (
-                  <div key={sub.id} className="flex items-center gap-3 p-3 bg-space-800 rounded-xl">
+                  <div key={sub.id} className={`flex items-center gap-3 p-3 rounded-xl ${
+                    isDark ? 'bg-space-800' : 'bg-gray-50 border border-gray-100'
+                  }`}>
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                       sub.is_active ? 'bg-emerald-400/20' : 'bg-gray-500/20'
                     }`}>

@@ -277,7 +277,7 @@ export default function Team() {
           {filteredMembers.map((member) => {
             const isSelected = selectedIds.has(member.id)
             return (
-              <div key={member.id} className={`group relative p-6 rounded-3xl border transition-all duration-300 ${isSelected ? 'bg-blue-500/10 border-blue-500/50' : isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/60' : 'bg-white border-gray-100 hover:shadow-xl shadow-sm'}`}>
+              <div key={member.id} className={`group relative p-6 rounded-3xl border transition-all duration-300 ${isSelected ? 'bg-blue-500/10 border-blue-500/50' : isDark ? 'bg-space-800/40 border-space-700/50 hover:bg-space-800/60' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'}`}>
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4">
                     <div 
@@ -300,7 +300,7 @@ export default function Team() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg">{member.name}</h3>
+                  <h3 className={`font-bold text-lg ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{member.name}</h3>
                   <div className="flex items-center gap-2 text-sm text-gray-500 mt-1"><Mail className="w-3.5 h-3.5" />{member.email}</div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -323,7 +323,7 @@ export default function Team() {
                 {memberForm.id ? <Edit2 className="w-5 h-5 text-blue-400" /> : <UserPlus className="w-5 h-5 text-blue-400" />}
                 {memberForm.id ? 'Modifier le gestionnaire' : 'Ajouter un gestionnaire'}
               </h2>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-space-800 rounded-xl transition-colors"><X className="w-5 h-5 text-gray-500" /></button>
+              <button onClick={() => setShowAddModal(false)} className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
