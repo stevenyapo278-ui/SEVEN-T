@@ -507,16 +507,16 @@ export default function Settings() {
         <h2 className={`text-lg font-display font-semibold mb-4 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{t('settings.profileTitle')}</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Email
             </label>
-            <div className="px-3 py-2 bg-space-800 border border-space-700 rounded-xl text-gray-500">
+            <div className={`px-3 py-2 border rounded-xl text-gray-500 ${isDark ? 'bg-space-800 border-space-700' : 'bg-gray-100 border-gray-200'}`}>
               {user?.email}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 {t('settings.fullName')}
               </label>
               <div className="input-with-icon">
@@ -532,7 +532,7 @@ export default function Settings() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 {t('settings.company')}
               </label>
               <div className="input-with-icon">
@@ -551,7 +551,7 @@ export default function Settings() {
 
           {currentPlan?.features?.human_handoff_alerts && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1 flex items-center gap-2">
+              <label className={`block text-sm font-medium mb-1 flex items-center gap-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                 <MessageCircle className="w-4 h-4 text-blue-400" />
                 {t('settings.whatsappNotification')}
               </label>
@@ -595,7 +595,7 @@ export default function Settings() {
           </div>
           <div className="text-left sm:text-right">
             <p className="text-sm text-gray-500">Messages IA restants</p>
-            <p className="text-2xl font-display font-bold text-blue-400 flex items-center gap-2">
+            <p className={`text-2xl font-display font-bold flex items-center gap-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
               <Sparkles className="w-5 h-5 flex-shrink-0" />
               <span className="tabular-nums">
                 {quotas?.limits?.credits_per_month === -1 ? 'Illimité' : String(user?.credits ?? 0)}
@@ -854,7 +854,7 @@ export default function Settings() {
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-4 flex items-center gap-2">
+        <h2 className={`text-lg font-display font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           <Lock className="w-5 h-5 text-gold-400" />
           {t('settings.paymentMethods')}
         </h2>
@@ -925,10 +925,12 @@ export default function Settings() {
       {!!(user?.plan_features?.payment_module || user?.payment_module_enabled) && paymentProviderModal?.provider && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} />
-          <div className="relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-space-700 bg-space-900 shadow-2xl animate-fadeIn overflow-hidden">
+          <div className={`relative z-10 w-full max-w-md max-h-[90vh] sm:max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border shadow-2xl animate-fadeIn overflow-hidden ${
+            isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
+          }`}>
             <div className="flex-shrink-0 p-4 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <h3 className="text-lg font-display font-semibold text-gray-100 min-w-0 truncate">
+              <h3 className={`text-lg font-display font-semibold min-w-0 truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 Configurer GeniusPay
               </h3>
               <button type="button" onClick={() => !paymentProviderSaving && setPaymentProviderModal(null)} className="flex-shrink-0 touch-target text-gray-400 hover:text-gray-200">
@@ -939,41 +941,41 @@ export default function Settings() {
             <form onSubmit={handleSavePaymentProvider} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-0 space-y-4 custom-scrollbar">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">API Key (pk_...)</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>API Key (pk_...)</label>
                   <input
                     type="text"
                     required
                     value={paymentProviderForm.api_key || ''}
                     onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_key: e.target.value }))}
-                    className="input-dark w-full"
+                    className={`w-full px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                     placeholder="pk_live_..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">API Secret</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>API Secret</label>
                   <input
                     type="password"
                     required
                     value={paymentProviderForm.api_secret || ''}
                     onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, api_secret: e.target.value }))}
-                    className="input-dark w-full"
+                    className={`w-full px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                     placeholder="••••••••"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Webhook Secret (Optionnel)</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Webhook Secret (Optionnel)</label>
                   <input
                     type="text"
                     value={paymentProviderForm.webhook_secret || ''}
                     onChange={(e) => setPaymentProviderForm((prev) => ({ ...prev, webhook_secret: e.target.value }))}
-                    className="input-dark w-full"
+                    className={`w-full px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                     placeholder="whsec_..."
                   />
                   <p className="text-[10px] text-gray-500 mt-1">Nécessaire pour vérifier la validité des notifications de paiement.</p>
                 </div>
               </div>
-              <div className="flex-shrink-0 p-4 sm:p-6 border-t border-space-700 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end bg-inherit">
-                <button type="button" onClick={() => setPaymentProviderModal(null)} className="min-h-[44px] touch-target px-4 py-2 rounded-lg text-gray-400 hover:bg-space-800 flex-1 sm:flex-none">
+              <div className={`flex-shrink-0 p-4 sm:p-6 border-t flex flex-col-reverse sm:flex-row gap-3 sm:justify-end bg-inherit ${isDark ? 'border-space-700' : 'border-gray-200'}`}>
+                <button type="button" onClick={() => setPaymentProviderModal(null)} className={`min-h-[44px] touch-target px-4 py-2 rounded-lg transition-colors flex-1 sm:flex-none ${isDark ? 'text-gray-400 hover:bg-space-800' : 'text-gray-600 hover:bg-gray-100'}`}>
                   Annuler
                 </button>
                 <button type="submit" disabled={paymentProviderSaving} className="btn-primary inline-flex items-center justify-center gap-2 min-h-[44px] touch-target flex-1 sm:flex-none disabled:opacity-50">
@@ -992,7 +994,7 @@ export default function Settings() {
         <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
           isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
         }`}>
-          <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+          <h2 className={`text-lg font-display font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
             <Mail className="w-5 h-5 text-gold-400" />
             {t('settings.dailyBriefing')}
           </h2>
@@ -1028,10 +1030,10 @@ export default function Settings() {
                   onChange={(e) => setDailyBriefingForm((f) => ({ ...f, enabled: e.target.checked }))}
                   className="rounded border-space-600 bg-space-800 text-gold-400 focus:ring-gold-400/50"
                 />
-                <label htmlFor="daily-briefing-enabled" className="text-gray-300">Activer le résumé quotidien</label>
+                <label htmlFor="daily-briefing-enabled" className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Activer le résumé quotidien</label>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Heure d&apos;envoi (0-23)</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Heure d&apos;envoi (0-23)</label>
                 <input
                   type="number"
                   min={0}
@@ -1086,13 +1088,15 @@ export default function Settings() {
               )}
               {dailyBriefingForm.channel === 'whatsapp' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Numéro WhatsApp (ex: 2250712345678)</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Numéro WhatsApp (ex: 2250712345678)</label>
                   <input
                     type="text"
                     value={dailyBriefingForm.whatsapp_contact_jid}
                     onChange={(e) => setDailyBriefingForm((f) => ({ ...f, whatsapp_contact_jid: e.target.value }))}
                     placeholder="2250712345678"
-                    className="w-full max-w-md px-3 py-2 rounded-lg border border-space-700 bg-space-800 text-gray-100"
+                    className={`w-full max-w-md px-3 py-2 rounded-lg border ${
+                      isDark ? 'border-space-700 bg-space-800 text-gray-100' : 'border-gray-200 bg-white text-gray-900'
+                    }`}
                   />
                 </div>
               )}
@@ -1108,7 +1112,7 @@ export default function Settings() {
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+        <h2 className={`text-lg font-display font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           <Lock className="w-5 h-5 text-blue-400" />
           Sécurité du compte
         </h2>
@@ -1150,7 +1154,7 @@ export default function Settings() {
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+        <h2 className={`text-lg font-display font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           <Download className="w-5 h-5 text-blue-400" />
           {t('settings.dataPrivacy')}
         </h2>
@@ -1168,9 +1172,10 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Supprimer mon compte (droit à l'effacement RGPD) */}
-      <div className="card p-6 mb-6 border-red-500/30">
-        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-red-500/30 hover:bg-space-800/30' : 'bg-white border-red-200 hover:bg-red-50/30 shadow-sm'
+      }`}>
+        <h2 className={`text-lg font-display font-semibold mb-2 flex items-center gap-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
           <Trash2 className="w-5 h-5 text-red-400" />
           {t('settings.deleteAccount')}
         </h2>
@@ -1188,11 +1193,12 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Modal confirmation suppression compte */}
       {showDeleteAccountModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative z-10 bg-space-900 border border-space-600 rounded-t-2xl sm:rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-display font-semibold text-gray-100 mb-2">Supprimer définitivement mon compte ?</h3>
+          <div className={`relative z-10 border rounded-t-2xl sm:rounded-2xl shadow-xl max-w-md w-full p-6 animate-fadeIn ${
+            isDark ? 'bg-space-900 border-space-600' : 'bg-white border-gray-200'
+          }`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-lg font-display font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Supprimer définitivement mon compte ?</h3>
             <p className="text-sm text-gray-400 mb-6">
               Toutes vos données seront effacées. Cette action est irréversible.
             </p>
@@ -1201,7 +1207,9 @@ export default function Settings() {
                 type="button"
                 onClick={() => setShowDeleteAccountModal(false)}
                 disabled={deletingAccount}
-                className="min-h-[44px] touch-target flex-1 sm:flex-none px-4 py-2 rounded-xl font-medium bg-space-700 text-gray-300 hover:bg-space-600 disabled:opacity-50"
+                className={`min-h-[44px] touch-target flex-1 sm:flex-none px-4 py-2 rounded-xl font-medium transition-colors ${
+                  isDark ? 'bg-space-700 text-gray-300 hover:bg-space-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                } disabled:opacity-50`}
               >
                 Annuler
               </button>
@@ -1231,13 +1239,14 @@ export default function Settings() {
         document.body
       )}
 
-      {/* Modal Définir/Changer mot de passe */}
       {showPasswordModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !settingPassword && setShowPasswordModal(false)} />
-          <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-2xl shadow-2xl animate-fadeIn overflow-hidden">
-            <div className="p-6 border-b border-space-700 flex items-center justify-between">
-              <h3 className="text-lg font-display font-semibold text-gray-100">
+          <div className={`relative z-10 w-full max-w-md border rounded-2xl shadow-2xl animate-fadeIn overflow-hidden ${
+            isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className={`p-6 border-b flex items-center justify-between ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
+              <h3 className={`text-lg font-display font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
                 {user?.is_google_user ? 'Définir un mot de passe' : 'Changer le mot de passe'}
               </h3>
               <button onClick={() => !settingPassword && setShowPasswordModal(false)} className="text-gray-400 hover:text-gray-200">
@@ -1246,26 +1255,26 @@ export default function Settings() {
             </div>
             <form onSubmit={handleSetPassword} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Nouveau mot de passe</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Nouveau mot de passe</label>
                 <input
                   type="password"
                   required
                   minLength={6}
                   value={passwordForm.password}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, password: e.target.value }))}
-                  className="input-dark w-full"
+                  className={`w-full px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
                   placeholder="••••••••"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Confirmer le mot de passe</label>
+                <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Confirmer le mot de passe</label>
                 <input
                   type="password"
                   required
                   minLength={6}
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                  className="input-dark w-full"
+                  className={`w-full px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
                   placeholder="••••••••"
                 />
               </div>
@@ -1274,7 +1283,9 @@ export default function Settings() {
                   type="button"
                   onClick={() => setShowPasswordModal(false)}
                   disabled={settingPassword}
-                  className="px-4 py-2 rounded-xl font-medium bg-space-700 text-gray-300 hover:bg-space-600 disabled:opacity-50"
+                  className={`px-4 py-2 rounded-xl font-medium transition-colors ${
+                    isDark ? 'bg-space-700 text-gray-300 hover:bg-space-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  } disabled:opacity-50`}
                 >
                   Annuler
                 </button>

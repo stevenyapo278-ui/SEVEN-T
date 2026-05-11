@@ -102,6 +102,11 @@ function ProtectedRoute({ children }) {
     return <Navigate to={`/login${redirect}`} replace />
   }
 
+  // Enforce onboarding
+  if (!user.onboarding_completed && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />
+  }
+
   return children
 }
 

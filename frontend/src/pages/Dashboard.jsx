@@ -238,7 +238,7 @@ export default function Dashboard() {
 
             <div className="space-y-6">
               <div className="card p-6">
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Raccourcis</h3>
+                <h3 className={`text-sm font-bold uppercase tracking-widest mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Raccourcis</h3>
                 <div className="grid gap-3">
                   <QuickActionLink to="/dashboard/conversations" icon={MessageSquare} color="emerald" title={t('nav.conversations')} subtitle="Gérer les chats" isDark={isDark} />
                   <QuickActionLink to="/dashboard/settings" icon={Crown} color="gold" title={t('nav.settings')} subtitle={quotas?.plan?.displayName} isDark={isDark} />
@@ -301,10 +301,12 @@ function QuickActionLink({ to, icon: Icon, color, title, subtitle, isDark }) {
 }
 
 function AlertContent({ alert, onClose, t }) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   return (
     <div className="flex flex-col items-center text-center">
       <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${alert.type === 'error' ? 'bg-red-500/20 text-red-400' : alert.type === 'warning' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400'}`}><AlertCircle className="w-8 h-8" /></div>
-      <h3 className="text-xl font-bold text-gray-100 mb-2">Notification</h3>
+      <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Notification</h3>
       <p className="text-gray-400 mb-8 text-sm">{alert.message}</p>
       <div className="flex flex-col w-full gap-2">
         {alert.link && <Link to={alert.link} onClick={onClose} className="btn-primary py-2 text-sm">{alert.action}</Link>}
@@ -315,10 +317,12 @@ function AlertContent({ alert, onClose, t }) {
 }
 
 function AgentContent({ agent, onClose, t }) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   return (
     <div className="flex flex-col items-center text-center">
       <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${agent.whatsapp_connected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-400/10 text-orange-400'}`}><Bot className="w-8 h-8" /></div>
-      <h3 className="text-2xl font-bold text-gray-100 mb-1">{agent.name}</h3>
+      <h3 className={`text-2xl font-bold mb-1 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.name}</h3>
       <p className={`text-sm mb-8 ${agent.whatsapp_connected ? 'text-emerald-400' : 'text-orange-400'}`}>{agent.whatsapp_connected ? 'Connecté' : 'Déconnecté'}</p>
       <div className="flex flex-col w-full gap-2">
         <Link to={`/dashboard/agents/${agent.id}`} className="btn-primary py-2 text-sm">Ouvrir l'agent</Link>
@@ -329,10 +333,14 @@ function AgentContent({ agent, onClose, t }) {
 }
 
 function DetailOverlay({ children, onClose }) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-[101] w-full max-w-sm bg-space-900 border border-space-700/50 rounded-3xl shadow-2xl p-8 animate-in zoom-in duration-200">
+      <div className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-space-950/80' : 'bg-gray-900/40'}`} onClick={onClose} />
+      <div className={`relative z-[101] w-full max-w-sm border rounded-3xl shadow-2xl p-8 animate-in zoom-in duration-200 ${
+        isDark ? 'bg-space-900 border-space-700/50' : 'bg-white border-gray-200'
+      }`}>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white"><XCircle className="w-5 h-5" /></button>
         {children}
       </div>

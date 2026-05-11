@@ -475,7 +475,7 @@ export default function WhatsAppStatus() {
 
           {/* Agent selector */}
           <div className={`card p-5 space-y-3`}>
-            <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
               Agent expéditeur *
             </label>
             {loadingAgents ? (
@@ -486,11 +486,13 @@ export default function WhatsAppStatus() {
               <select
                 value={selectedAgent}
                 onChange={e => setSelectedAgent(e.target.value)}
-                className="input-dark w-full py-3 px-4 rounded-xl text-sm"
+                className={`w-full py-3 px-4 rounded-xl text-sm border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                  isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                }`}
               >
-                <option value="">— Choisir un agent —</option>
+                <option value="" className={isDark ? 'bg-space-800' : 'bg-white'}>— Choisir un agent —</option>
                 {agents.map(a => (
-                  <option key={a.id} value={a.id}>{a.name} ({a.whatsapp_number || 'Connecté'})</option>
+                  <option key={a.id} value={a.id} className={isDark ? 'bg-space-800' : 'bg-white'}>{a.name} ({a.whatsapp_number || 'Connecté'})</option>
                 ))}
               </select>
             )}
@@ -522,7 +524,7 @@ export default function WhatsAppStatus() {
           {tab === 'text' && (
             <div className="card p-5 space-y-5">
               <div className="space-y-2">
-                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Texte du statut *
                 </label>
                 <textarea
@@ -530,7 +532,9 @@ export default function WhatsAppStatus() {
                   onChange={e => setText(e.target.value)}
                   maxLength={700}
                   rows={4}
-                  className="input-dark w-full py-3 px-4 rounded-xl text-sm resize-none"
+                  className={`w-full py-3 px-4 rounded-xl text-sm resize-none border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                    isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                   placeholder="Saisissez votre message de statut..."
                 />
                 <p className={`text-right text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{text.length}/700</p>
@@ -538,7 +542,7 @@ export default function WhatsAppStatus() {
 
               {/* Background color */}
               <div className="space-y-2">
-                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Couleur de fond
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -565,7 +569,7 @@ export default function WhatsAppStatus() {
 
               {/* Font */}
               <div className="space-y-2">
-                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Police
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -591,7 +595,7 @@ export default function WhatsAppStatus() {
           {(tab === 'image' || tab === 'video') && (
             <div className="card p-5 space-y-5">
               <div className="space-y-3">
-                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Média ({tab === 'image' ? 'Image' : 'Vidéo'}) *
                 </label>
                 
@@ -642,7 +646,9 @@ export default function WhatsAppStatus() {
                                 setMediaUrl(e.target.value)
                                 setSelectedFile(null)
                             }}
-                            className={`input-dark w-full py-4 px-4 rounded-xl text-sm ${selectedFile ? 'opacity-50' : ''}`}
+                            className={`w-full py-4 px-4 rounded-xl text-sm border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                              isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                            } ${selectedFile ? 'opacity-50' : ''}`}
                             placeholder={tab === 'image' ? 'https://example.com/img.jpg' : 'https://example.com/vid.mp4'}
                         />
                     </div>
@@ -650,7 +656,7 @@ export default function WhatsAppStatus() {
               </div>
               
               <div className="space-y-2">
-                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Légende (optionnel)
                 </label>
                 <input
@@ -658,7 +664,9 @@ export default function WhatsAppStatus() {
                   value={caption}
                   onChange={e => setCaption(e.target.value)}
                   maxLength={200}
-                  className="input-dark w-full py-3 px-4 rounded-xl text-sm"
+                  className={`w-full py-3 px-4 rounded-xl text-sm border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                    isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                   placeholder="Ajoutez une description..."
                 />
               </div>
@@ -668,7 +676,7 @@ export default function WhatsAppStatus() {
           {tab === 'product' && (
             <div className={`card p-5 space-y-4 ${isDark ? 'bg-space-900/50' : 'bg-gray-50/50'}`}>
               <div className="flex items-center justify-between mb-2">
-                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                <label className={`block text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
                   Sélectionnez un produit à publier
                 </label>
                 <button 
@@ -790,7 +798,9 @@ export default function WhatsAppStatus() {
                         dateFormat="d MMMM yyyy  -  HH:mm"
                         locale="fr"
                         minDate={new Date()}
-                        className="input-dark w-full sm:w-[300px] py-3 text-center !rounded-xl text-sm cursor-pointer border hover:border-primary-500/50 transition-colors"
+                        className={`w-full sm:w-[300px] py-3 text-center !rounded-xl text-sm cursor-pointer border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                          isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                        } hover:border-emerald-500/50`}
                         placeholderText="Sélectionner la date..."
                         popperPlacement="bottom-end"
                       />
@@ -803,21 +813,24 @@ export default function WhatsAppStatus() {
                           <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                               Répéter ce statut
                           </label>
-                          <div className="flex items-center gap-2 w-full sm:w-auto">
-                              <select
+                                                  <select
                                   value={recurrenceInterval === 0 ? "0" : ( [1, 2, 7].includes(recurrenceInterval) ? recurrenceInterval.toString() : "custom" )}
                                   onChange={(e) => {
                                       const val = e.target.value;
                                       if (val === "custom") setRecurrenceInterval(3);
                                       else setRecurrenceInterval(parseInt(val));
                                   }}
-                                  className="input-dark py-2 px-3 rounded-lg text-xs"
+                                  className={`py-2 px-3 rounded-lg text-xs border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                                    isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                                  }`}
                               >
-                                  <option value="0">Une seule fois</option>
-                                  <option value="1">Tous les jours</option>
-                                  <option value="2">Tous les 2 jours</option>
-                                  <option value="7">Toutes les semaines</option>
-                                  <option value="custom">Personnalisé...</option>
+                                  <option value="0" className={isDark ? 'bg-space-800' : 'bg-white'}>Une seule fois</option>
+                                  <option value="1" className={isDark ? 'bg-space-800' : 'bg-white'}>Tous les jours</option>
+                                  <option value="2" className={isDark ? 'bg-space-800' : 'bg-white'}>Tous les 2 jours</option>
+                                  <option value="7" className={isDark ? 'bg-space-800' : 'bg-white'}>Toutes les semaines</option>
+                                  <option value="custom" className={isDark ? 'bg-space-800' : 'bg-white'}>Personnalisé...</option>
+                              </select>
+>Personnalisé...</option>
                               </select>
                               {![0, 1, 2, 7].includes(recurrenceInterval) && (
                                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
@@ -828,7 +841,9 @@ export default function WhatsAppStatus() {
                                           max="365"
                                           value={recurrenceInterval}
                                           onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
-                                          className="input-dark w-16 py-2 px-2 text-center rounded-lg text-xs"
+                                          className={`w-16 py-2 px-2 text-center rounded-lg text-xs border outline-none transition-all focus:ring-2 focus:ring-emerald-500/50 ${
+                                            isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+                                          }`}
                                       />
                                       <span className="text-xs">jours</span>
                                   </div>
@@ -869,7 +884,7 @@ export default function WhatsAppStatus() {
         <div className="space-y-5">
           {/* Live preview */}
           <div className="card p-5">
-            <h3 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+            <h3 className={`text-xs font-black uppercase tracking-widest mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               Aperçu
             </h3>
             <PhonePreview

@@ -211,7 +211,7 @@ export default function Agents() {
                   <div className="w-24 h-6 bg-gray-700/50 animate-pulse rounded-full" />
                 )}
               </div>
-              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-700'}`}>{t('agents.subtitle')}</p>
+              <p className={`text-base sm:text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t('agents.subtitle')}</p>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={() => refreshData()} disabled={loading} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-gray-400 hover:text-white' : 'bg-white border-gray-200 text-gray-500'}`}>
@@ -453,8 +453,8 @@ function AgentCard({ agent, isDark, canCreateAgent, onUpdate, isSelected, onTogg
           <div className={`w-12 h-12 rounded-full flex items-center justify-center ${agent.whatsapp_connected ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-400/10 text-orange-400'}`}>
             <Bot className="w-6 h-6" />
           </div>
-          <div className="min-w-0">
-            <h3 className="font-bold text-gray-100 group-hover:text-gold-400 transition-colors truncate">{agent.name}</h3>
+          <div className="min-w-0 flex-1">
+            <h3 className={`font-bold group-hover:text-gold-400 transition-colors truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{agent.name}</h3>
             <p className="text-xs text-gray-500 truncate">{agent.description || 'Aucune description'}</p>
           </div>
         </div>

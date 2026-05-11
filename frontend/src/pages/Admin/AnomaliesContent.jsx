@@ -3,6 +3,7 @@ import {
   CreditCard, Zap, WifiOff, Clock, AlertTriangle, AlertCircle, Package, ShoppingCart, Search
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 function getTypeInfo(type) {
   const types = {
@@ -44,6 +45,8 @@ function formatAnomalyDate(dateStr) {
 
 export default function AnomaliesContent({ anomalies, stats, loading, onResolve, onResolveByType, onHealthCheck, onRefresh, filters, onChangeFilters }) {
   const [localQ, setLocalQ] = useState(filters?.q || '')
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
 
   useEffect(() => {
     setLocalQ(filters?.q || '')
@@ -68,11 +71,11 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-display font-semibold text-gray-100">Anomalies système</h2>
+          <h2 className={`text-xl font-display font-semibold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Anomalies système</h2>
           <p className="text-gray-400 text-sm">Surveillez les problèmes et erreurs de la plateforme</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => onRefresh(filters)} disabled={loading} className="p-2 text-gray-400 hover:text-gray-100 transition-colors">
+          <button onClick={() => onRefresh(filters)} disabled={loading} className={`p-2 transition-colors ${isDark ? 'text-gray-400 hover:text-gray-100' : 'text-gray-500 hover:text-gray-900'}`}>
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={onHealthCheck} disabled={loading} className="btn-secondary inline-flex items-center gap-2">
@@ -84,7 +87,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
 
       {/* Search + Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_180px_220px_180px] gap-3">
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-space-700 bg-space-900/40">
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? 'border-space-700 bg-space-900/40' : 'border-gray-200 bg-white'}`}>
           <Search className="w-4 h-4 text-gray-500" />
           <input
             value={localQ}
@@ -94,14 +97,14 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
               onChangeFilters?.({ ...filters, q: v })
             }}
             placeholder="Rechercher (titre, message, user, agent, type, metadata)..."
-            className="w-full bg-transparent outline-none text-sm text-gray-200 placeholder:text-gray-600"
+            className={`w-full bg-transparent outline-none text-sm placeholder:text-gray-600 ${isDark ? 'text-gray-200' : 'text-gray-900'}`}
           />
         </div>
 
         <select
           value={filters?.severity || ''}
           onChange={(e) => onChangeFilters?.({ ...filters, severity: e.target.value })}
-          className="px-3 py-2 rounded-xl border border-space-700 bg-space-900/40 text-sm text-gray-200"
+          className={`px-3 py-2 rounded-xl border text-sm ${isDark ? 'border-space-700 bg-space-900/40 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
         >
           <option value="">Sévérité: toutes</option>
           <option value="critical">Critical</option>
@@ -113,7 +116,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
         <select
           value={filters?.type || ''}
           onChange={(e) => onChangeFilters?.({ ...filters, type: e.target.value })}
-          className="px-3 py-2 rounded-xl border border-space-700 bg-space-900/40 text-sm text-gray-200"
+          className={`px-3 py-2 rounded-xl border text-sm ${isDark ? 'border-space-700 bg-space-900/40 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
         >
           <option value="">Type: tous</option>
           {typeOptions.map((t) => (
@@ -124,7 +127,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
         <select
           value={filters?.resolved || 'open'}
           onChange={(e) => onChangeFilters?.({ ...filters, resolved: e.target.value })}
-          className="px-3 py-2 rounded-xl border border-space-700 bg-space-900/40 text-sm text-gray-200"
+          className={`px-3 py-2 rounded-xl border text-sm ${isDark ? 'border-space-700 bg-space-900/40 text-gray-200' : 'border-gray-200 bg-white text-gray-900'}`}
         >
           <option value="open">Non résolues</option>
           <option value="true">Toutes</option>
@@ -134,7 +137,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card p-4 text-center">
-          <p className="text-3xl font-bold text-gray-100">{stats.total}</p>
+          <p className={`text-3xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{stats.total}</p>
           <p className="text-sm text-gray-500">Total</p>
         </div>
         <div className="card p-4 text-center border-red-500/30">
@@ -177,7 +180,7 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
       ) : anomalies.length === 0 ? (
         <div className="card p-12 text-center">
           <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-100 mb-2">Tout va bien !</h3>
+          <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Tout va bien !</h3>
           <p className="text-gray-400">Aucune anomalie détectée sur la plateforme.</p>
         </div>
       ) : (
@@ -196,15 +199,15 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h4 className="font-medium text-gray-100">{anomaly.title}</h4>
+                      <h4 className={`font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{anomaly.title}</h4>
                       <span className={`px-2 py-0.5 rounded text-xs ${getSeverityColor(anomaly.severity)}`}>{anomaly.severity}</span>
                       <span className="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30">{typeInfo.label}</span>
                     </div>
-                    <p className="text-sm text-gray-400 mb-3">{anomaly.message}</p>
+                    <p className="text-sm text-gray-400 mb-3 break-words">{anomaly.message}</p>
                     {hasAccount && (
                       <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
                         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Compte concerné</p>
-                        <div className="text-sm text-gray-300 space-y-0.5">
+                        <div className={`text-sm space-y-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                           {anomaly.user_name && <p><span className="text-gray-500">Nom :</span> {anomaly.user_name}</p>}
                           {anomaly.user_email && <p><span className="text-gray-500">Email :</span> {anomaly.user_email}</p>}
                           {anomaly.user_id && <p className="text-xs text-gray-500 font-mono">ID : {anomaly.user_id}</p>}
@@ -214,16 +217,16 @@ export default function AnomaliesContent({ anomalies, stats, loading, onResolve,
                     {hasAgent && (
                       <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
                         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><Bot className="w-3.5 h-3.5" /> Agent concerné</p>
-                        <div className="text-sm text-gray-300 space-y-0.5">
+                        <div className={`text-sm space-y-0.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                           {anomaly.agent_name && <p><span className="text-gray-500">Nom :</span> {anomaly.agent_name}</p>}
                           {anomaly.agent_id && <p className="text-xs text-gray-500 font-mono">ID : {anomaly.agent_id}</p>}
                         </div>
                       </div>
                     )}
                     {hasMetadata && (
-                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20">
+                      <div className="mb-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/20 overflow-hidden">
                         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1.5">Détails techniques</p>
-                        <pre className="text-xs text-gray-300 overflow-x-auto whitespace-pre-wrap font-sans">{JSON.stringify(anomaly.metadata, null, 2)}</pre>
+                        <pre className={`text-xs overflow-x-auto whitespace-pre-wrap font-sans break-words ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{JSON.stringify(anomaly.metadata, null, 2)}</pre>
                       </div>
                     )}
                     <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">

@@ -1306,6 +1306,22 @@ select.input option {
   }
 }
 
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html, body {
+    @apply antialiased;
+    background-color: #000000;
+  }
+  
+  /* Prevent scrollbars from breaking layouts on mobile */
+  .overflow-hidden-mobile {
+    @apply overflow-hidden md:overflow-auto;
+  }
+}
+
 .animate-scan {
   animation: scan 1.5s ease-in-out infinite;
 }

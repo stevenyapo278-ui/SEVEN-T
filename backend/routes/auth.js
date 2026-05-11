@@ -519,8 +519,8 @@ router.get('/me', async (req, res) => {
 
 router.put('/me', authenticateToken, async (req, res) => {
     try {
-        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled, proactive_requires_validation, next_best_action_enabled, proactive_advisor_enabled FROM users WHERE id = ?', req.user.id);
-        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled, proactive_requires_validation, next_best_action_enabled, proactive_advisor_enabled } = req.body;
+        const existing = await db.get('SELECT name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, voice_responses_enabled, proactive_requires_validation, next_best_action_enabled, proactive_advisor_enabled, industry, job_title, company_size, primary_goal FROM users WHERE id = ?', req.user.id);
+        const { name, company, currency, media_model, notification_number, analytics_module_enabled, flows_module_enabled, reports_module_enabled, voice_responses_enabled, proactive_requires_validation, next_best_action_enabled, proactive_advisor_enabled, industry, job_title, company_size, primary_goal } = req.body;
 
 
         // Build dynamic update query
@@ -552,6 +552,22 @@ router.put('/me', authenticateToken, async (req, res) => {
         if (notification_number !== undefined) {
             updates.push('notification_number = ?');
             values.push(notification_number === '' ? null : notification_number);
+        }
+        if (industry !== undefined) {
+            updates.push('industry = ?');
+            values.push(industry === '' ? null : industry);
+        }
+        if (job_title !== undefined) {
+            updates.push('job_title = ?');
+            values.push(job_title === '' ? null : job_title);
+        }
+        if (company_size !== undefined) {
+            updates.push('company_size = ?');
+            values.push(company_size === '' ? null : company_size);
+        }
+        if (primary_goal !== undefined) {
+            updates.push('primary_goal = ?');
+            values.push(primary_goal === '' ? null : primary_goal);
         }
 
         // Only allow enabling if it's in the plan features. Disabling is always allowed.
@@ -625,11 +641,11 @@ router.put('/me', authenticateToken, async (req, res) => {
             await db.run(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, ...values);
         }
 
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, proactive_requires_validation, notification_number FROM users WHERE id = ?', req.user.id);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets, currency, media_model, subscription_status, subscription_end_date, created_at, payment_module_enabled, analytics_module_enabled, reports_module_enabled, voice_responses_enabled, availability_hours_enabled, next_best_action_enabled, conversion_score_enabled, daily_briefing_enabled, sentiment_routing_enabled, catalog_import_enabled, human_handoff_alerts_enabled, proactive_requires_validation, notification_number, industry, job_title, company_size, primary_goal FROM users WHERE id = ?', req.user.id);
         
         // Calculate changes
         const changes = {};
-        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number', 'analytics_module_enabled', 'flows_module_enabled', 'next_best_action_enabled', 'proactive_advisor_enabled'];
+        const fieldsToTrack = ['name', 'company', 'currency', 'media_model', 'notification_number', 'analytics_module_enabled', 'flows_module_enabled', 'next_best_action_enabled', 'proactive_advisor_enabled', 'industry', 'job_title', 'company_size', 'primary_goal'];
         fieldsToTrack.forEach(field => {
             if (req.body[field] !== undefined && String(existing[field]) !== String(req.body[field])) {
                 changes[field] = { old: existing[field], new: req.body[field] };

@@ -60,6 +60,10 @@ export default function Deals() {
   const [editingDeal, setEditingDeal] = useState(null)
   const [leads, setLeads] = useState([]) // For selection dropdown
 
+  const inputClass = `w-full rounded-2xl px-5 py-3 outline-none transition-all focus:ring-2 focus:ring-blue-500/50 ${
+    isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'
+  } border`;
+
   const isModuleEnabled = (() => {
     // Admin bypass
     if (user?.is_admin === 1) return true
@@ -385,10 +389,7 @@ export default function Deals() {
                       {deal.amount?.toLocaleString()}
                     </span>
                     <span className="text-sm font-bold text-gray-500">{deal.currency || 'XOF'}</span>
-                    <span className="text-xs font-medium text-gray-500 ml-auto">Probabilité: {deal.probability}%</span>
-                  </div>
-
-                  <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-space-900' : 'bg-gray-100'}`}>
+                <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-space-900' : 'bg-gray-100'}`}>
                     <div 
                       className={`h-full transition-all duration-1000 ${
                         stage.color === 'green' ? 'bg-emerald-500' :
@@ -431,22 +432,23 @@ export default function Deals() {
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
           <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl my-auto animate-zoomIn ${
+          <div className={`relative w-full max-w-2xl rounded-[2rem] sm:rounded-3xl border shadow-2xl animate-zoomIn max-h-[95vh] flex flex-col overflow-hidden ${
             isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
           }`}>
             <div className="px-8 py-6 border-b border-space-700/50 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-100">{editingDeal ? 'Modifier le deal' : 'Nouvelle opportunité'}</h2>
+                <h2 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{editingDeal ? 'Modifier le deal' : 'Nouvelle opportunité'}</h2>
                 <p className="text-sm text-gray-400">Saisissez les informations de votre vente</p>
               </div>
-              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-space-800 rounded-xl transition-colors">
-                <X className="w-6 h-6 text-gray-400" />
+              <button onClick={() => setShowAddModal(false)} className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-space-800' : 'hover:bg-gray-100'}`}>
+                <X className={`w-6 h-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrUpdate} className="p-8">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <form onSubmit={handleCreateOrUpdate} className="p-6 sm:p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-sm font-bold uppercase tracking-wider text-gray-500">Nom du Deal</label>
@@ -455,7 +457,7 @@ export default function Deals() {
                     required
                     defaultValue={editingDeal?.name}
                     placeholder="ex: Contrat de maintenance annuel"
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={inputClass}
                   />
                 </div>
 
@@ -465,7 +467,7 @@ export default function Deals() {
                     name="contact_name"
                     defaultValue={editingDeal?.contact_name}
                     placeholder="Nom du client"
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={inputClass}
                   />
                 </div>
 
@@ -475,7 +477,7 @@ export default function Deals() {
                     name="contact_phone"
                     defaultValue={editingDeal?.contact_phone}
                     placeholder="225..."
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={inputClass}
                   />
                 </div>
 
@@ -484,11 +486,11 @@ export default function Deals() {
                   <select
                     name="lead_id"
                     defaultValue={editingDeal?.lead_id || ''}
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={`${inputClass} ${isDark ? '[color-scheme:dark]' : '[color-scheme:light]'}`}
                   >
-                    <option value="" className="bg-space-800 text-white">-- Aucun --</option>
+                    <option value="" className={isDark ? 'bg-space-800 text-white' : 'bg-white text-gray-900'}>-- Aucun --</option>
                     {leads.map(l => (
-                      <option key={l.id} value={l.id} className="bg-space-800 text-white">{l.name} {l.phone ? `(${l.phone})` : ''}</option>
+                      <option key={l.id} value={l.id} className={isDark ? 'bg-space-800 text-white' : 'bg-white text-gray-900'}>{l.name} {l.phone ? `(${l.phone})` : ''}</option>
                     ))}
                   </select>
                 </div>
@@ -501,7 +503,7 @@ export default function Deals() {
                       type="number"
                       step="any"
                       defaultValue={editingDeal?.amount || 0}
-                      className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all pr-16"
+                      className={`${inputClass} pr-16`}
                     />
                     <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold">XOF</span>
                   </div>
@@ -512,10 +514,10 @@ export default function Deals() {
                   <select
                     name="stage"
                     defaultValue={editingDeal?.stage || 'qualification'}
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={`${inputClass} ${isDark ? '[color-scheme:dark]' : '[color-scheme:light]'}`}
                   >
                     {DEAL_STAGES.map(s => (
-                      <option key={s.id} value={s.id} className="bg-space-800 text-white">{s.label}</option>
+                      <option key={s.id} value={s.id} className={isDark ? 'bg-space-800 text-white' : 'bg-white text-gray-900'}>{s.label}</option>
                     ))}
                   </select>
                 </div>
@@ -528,7 +530,7 @@ export default function Deals() {
                     min="0"
                     max="100"
                     defaultValue={editingDeal?.probability || 10}
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={inputClass}
                   />
                 </div>
 
@@ -538,7 +540,7 @@ export default function Deals() {
                     name="expected_close_date"
                     type="date"
                     defaultValue={editingDeal?.expected_close_date ? new Date(editingDeal.expected_close_date).toISOString().split('T')[0] : ''}
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white [color-scheme:dark] focus:ring-2 focus:ring-blue-500/50 outline-none transition-all"
+                    className={`${inputClass} ${isDark ? '[color-scheme:dark]' : '[color-scheme:light]'}`}
                   />
                 </div>
 
@@ -549,19 +551,21 @@ export default function Deals() {
                     rows={3}
                     defaultValue={editingDeal?.notes}
                     placeholder="Détails sur l'opportunité, produits concernés, prochaines étapes..."
-                    className="w-full bg-space-800 border-space-700 rounded-2xl px-5 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none transition-all resize-none"
+                    className={`${inputClass} resize-none`}
                   />
                 </div>
               </div>
 
               <div className="mt-8 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-6 py-4 rounded-2xl bg-space-800 text-gray-300 font-bold hover:bg-space-700 transition-all border border-space-700"
-                >
-                  Annuler
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className={`flex-1 px-6 py-4 rounded-2xl font-bold transition-all border ${
+                      isDark ? 'bg-space-800 text-gray-300 hover:bg-space-700 border-space-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200'
+                    }`}
+                  >
+                    Annuler
+                  </button>
                 <button
                   type="submit"
                   className="flex-[2] px-6 py-4 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all shadow-lg shadow-blue-500/20"
@@ -569,7 +573,8 @@ export default function Deals() {
                   {editingDeal ? 'Enregistrer les modifications' : 'Créer l\'opportunité'}
                 </button>
               </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
       )}
