@@ -314,7 +314,7 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
                 {collapsed && !isMobile ? (
                   <span className="text-lg">{getEmoji(item.title || t(item.nameKey)) || <item.icon className="size-4" />}</span>
                 ) : null}
-                {!collapsed || isMobile ? (
+                {(!collapsed || isMobile) && (
                   <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
                     <span className={`truncate ${item.isLocked ? 'text-zinc-500' : ''}`}>{item.title || t(item.nameKey)}</span>
                     
