@@ -12,6 +12,7 @@ i18n.use(initReactI18next).init({
   supportedLngs: ['fr', 'en'],
   load: 'currentOnly',
   interpolation: { escapeValue: false },
+  debug: false,
 })
 
 export default i18n

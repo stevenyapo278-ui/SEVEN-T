@@ -645,7 +645,7 @@ const NotificationsMenu = ({ unreadCount: externalUnreadCount, onRefresh }) => {
       </button>
 
       {isOpen && (
-        <div className={`absolute right-0 top-full mt-2 w-80 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-zinc-200'}`}>
+        <div className={`absolute right-0 sm:right-0 top-full mt-2 w-80 max-sm:fixed max-sm:inset-x-4 max-sm:w-auto max-sm:top-16 rounded-xl shadow-xl border z-50 overflow-hidden ${isDark ? 'bg-space-800 border-space-700' : 'bg-white border-zinc-200'}`}>
           <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-space-700' : 'border-gray-100'}`}>
             <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-zinc-900'}`}>Notifications</h3>
             {unreadCount > 0 && <button onClick={markAllAsRead} className="text-xs text-blue-400 hover:text-blue-300">Tout lire</button>}

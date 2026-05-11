@@ -407,7 +407,7 @@ const PixelBlast = ({
       const quadGeom = new THREE.PlaneGeometry(2, 2);
       const quad = new THREE.Mesh(quadGeom, material);
       scene.add(quad);
-      const clock = new THREE.Clock();
+      const startTime = performance.now();
 
       const setSize = () => {
         const w = container.clientWidth || 1;
@@ -502,7 +502,8 @@ const PixelBlast = ({
           raf = requestAnimationFrame(animate);
           return;
         }
-        uniforms.uTime.value = timeOffset + clock.getElapsedTime() * speedRef.current;
+        const elapsed = (performance.now() - startTime) / 1000;
+        uniforms.uTime.value = timeOffset + elapsed * speedRef.current;
         if (liquidEffect) {
           const timeUniform = liquidEffect.uniforms.get('uTime');
           if (timeUniform) timeUniform.value = uniforms.uTime.value;
@@ -524,7 +525,7 @@ const PixelBlast = ({
       raf = requestAnimationFrame(animate);
 
       threeRef.current = {
-        renderer, scene, camera, material, clock, clickIx: 0, uniforms,
+        renderer, scene, camera, material, startTime, clickIx: 0, uniforms,
         resizeObserver: ro, raf, quad, timeOffset, composer, touch, liquidEffect,
         onPointerDown, onPointerMove
       };
