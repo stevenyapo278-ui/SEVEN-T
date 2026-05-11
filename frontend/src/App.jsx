@@ -48,7 +48,7 @@ const Team = lazy(() => import('./pages/Team'))
 const WhatsAppStatus = lazy(() => import('./pages/WhatsAppStatus'))
 const Deals = lazy(() => import('./pages/Deals'))
 const Pricing = lazy(() => import('./pages/Pricing'))
-const Polls = lazy(() => import('./pages/Polls'))
+import Onboarding from './pages/Onboarding'
 
 
 // Partner Pages
@@ -229,6 +229,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/legal" element={<Legal />} />
+        <Route path="/onboarding" element={<Onboarding />} />
 
         {/* Partner Portal Routes */}
         <Route path="/partner/login" element={<Suspense fallback={<PageFallback />}><PartnerLogin /></Suspense>} />

@@ -27,6 +27,14 @@ const redis = createRedisClient();
 
 const router = Router();
 
+/**
+ * Utility to check if a user has completed the onboarding process.
+ * We consider onboarding complete if they have provided their phone, industry, job title, etc.
+ */
+function isOnboardingComplete(user) {
+    return !!(user.notification_number && user.industry && user.job_title && user.company_size && user.primary_goal);
+}
+
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
@@ -168,11 +176,27 @@ router.get('/google/callback', async (req, res) => {
         let user = await db.get('SELECT * FROM users WHERE google_id = ?', googleId);
         if (user) {
             // Existing Google-linked user
+            await activityLogger.log({
+                userId: user.id,
+                action: 'login_google',
+                entityType: 'user',
+                entityId: user.id,
+                req
+            });
         } else {
             user = await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?)', email);
             if (user) {
                 await db.run('UPDATE users SET google_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', googleId, user.id);
                 user = await db.get('SELECT * FROM users WHERE id = ?', user.id);
+                
+                await activityLogger.log({
+                    userId: user.id,
+                    action: 'link_google',
+                    entityType: 'user',
+                    entityId: user.id,
+                    details: { email: user.email },
+                    req
+                });
             } else {
                 const userId = uuidv4();
                 const placeholderPassword = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
@@ -188,6 +212,16 @@ router.get('/google/callback', async (req, res) => {
                 `, userId, email.toLowerCase().trim(), placeholderPassword, (name || email).trim(), null, googleId, trialEndDate.toISOString());
                 
                 user = await db.get('SELECT * FROM users WHERE id = ?', userId);
+                
+                await activityLogger.log({
+                    userId: user.id,
+                    action: 'register_google',
+                    entityType: 'user',
+                    entityId: user.id,
+                    details: { email: user.email },
+                    req
+                });
+
                 sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
                 notificationService.notifyWelcome(userId);
             }
@@ -459,7 +493,18 @@ router.get('/me', async (req, res) => {
         }
 
         const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
-        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly, is_google_user: !!user.google_id } });
+        res.json({ 
+            user: { 
+                ...user, 
+                plan: effectivePlan, 
+                plan_features, 
+                permissions, 
+                roles: roleKeys, 
+                influencer_only: influencerOnly, 
+                is_google_user: !!user.google_id,
+                onboarding_completed: isOnboardingComplete(user)
+            } 
+        });
     } catch (error) {
         console.error('Get user error:', error);
         try {
@@ -607,7 +652,16 @@ router.put('/me', authenticateToken, async (req, res) => {
         const updatedPlanConfig = await getPlan(effectivePlan);
         const updatedPlanFeatures = updatedPlanConfig?.features || {};
         const permissions = await getUserPermissions(user.id);
-        res.json({ user: { ...user, plan: effectivePlan, plan_features: updatedPlanFeatures, permissions } });
+        res.json({ 
+            user: { 
+                ...user, 
+                plan: effectivePlan, 
+                plan_features: updatedPlanFeatures, 
+                permissions,
+                is_google_user: !!user.google_id,
+                onboarding_completed: isOnboardingComplete(user)
+            } 
+        });
     } catch (error) {
         console.error('Update user error:', error);
         res.status(500).json({ error: 'Erreur lors de la mise à jour' });
@@ -784,7 +838,14 @@ router.post('/exchange-code', async (req, res) => {
 
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
-        res.json({ user: { ...user, plan: effectivePlan, plan_features: planConfig?.features || {} } });
+        res.json({ 
+            user: { 
+                ...user, 
+                plan: effectivePlan, 
+                plan_features: planConfig?.features || {},
+                onboarding_completed: isOnboardingComplete(user)
+            } 
+        });
     } catch (err) {
         console.error('Exchange code error:', err);
         res.status(500).json({ error: 'Erreur serveur' });

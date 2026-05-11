@@ -39,8 +39,14 @@ export default function AuthCallback() {
             (savedFromStorage && savedFromStorage.startsWith('/dashboard') && savedFromStorage) ||
             '/dashboard'
 
-          navigate(target, { replace: true })
-        } catch {
+          // Redirect to onboarding if profile is incomplete
+          if (result?.user && result.user.onboarding_completed === false) {
+            navigate('/onboarding', { replace: true })
+          } else {
+            navigate(target, { replace: true })
+          }
+        } catch (error) {
+          console.error('Auth callback error:', error)
           navigate('/login', { replace: true })
         }
       }
