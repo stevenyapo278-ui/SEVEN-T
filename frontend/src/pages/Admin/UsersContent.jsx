@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  UserCheck
+  UserCheck,
+  Building
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import api from '../../services/api'

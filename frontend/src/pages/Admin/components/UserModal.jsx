@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import DatePicker from 'react-datepicker'
-import { Activity, Shield, Zap, AlertTriangle } from 'lucide-react'
+import { Activity, Shield, Zap, AlertTriangle, Building } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../../services/api'
 import AdminModal from './AdminModal'
