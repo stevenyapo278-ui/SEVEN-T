@@ -304,24 +304,24 @@ export default function Pricing() {
       {/* Coupon */}
       {!loading && plans.length > 0 && (
         <div className="max-w-md mx-auto mt-10">
-          <div className={`border rounded-2xl p-5 ${isDark ? 'bg-space-900 border-space-700' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`border rounded-2xl p-4 sm:p-5 ${isDark ? 'bg-space-900 border-space-700' : 'bg-gray-50 border-gray-200'}`}>
             <h3 className="text-sm font-semibold text-gray-300 flex items-center gap-2 mb-3">
               <Tag size={14} /> Code promo
             </h3>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
               <input
                 type="text"
                 placeholder="Entrez votre code..."
                 value={couponCode}
                 onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponResult(null) }}
-                className={`flex-1 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-gold-400 border ${
+                className={`w-full min-w-0 rounded-xl px-3 sm:px-4 py-2 text-sm focus:outline-none focus:border-gold-400 border ${
                   isDark ? 'bg-space-800 border-space-600 text-white placeholder-gray-600' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'
                 }`}
               />
               <button
                 onClick={validateCoupon}
                 disabled={couponLoading || !couponCode.trim()}
-                className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded-xl text-sm font-bold disabled:opacity-50 transition-all flex items-center gap-1"
+                className="whitespace-nowrap px-3 sm:px-5 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded-xl text-sm font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-1"
               >
                 {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Valider'}
               </button>
