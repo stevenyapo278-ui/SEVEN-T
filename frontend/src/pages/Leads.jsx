@@ -999,12 +999,12 @@ function LeadModal({ lead, onClose, onSaved }) {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[70] flex items-start sm:items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={onClose}
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
       <div 
-        className="relative z-10 w-full max-w-xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
+        className="relative z-10 w-full max-w-xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col my-auto animate-slideUp sm:animate-zoomIn"
         role="dialog"
         aria-modal="true"
         onClick={e => e.stopPropagation()}
@@ -1033,8 +1033,8 @@ function LeadModal({ lead, onClose, onSaved }) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 overflow-y-auto p-6 sm:p-8 pt-0 space-y-8 custom-scrollbar overscroll-contain">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+          <div className="p-6 sm:p-8 pt-0 space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="sm:col-span-2 space-y-2">
                 <label htmlFor="lead-name" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Nom complet *</label>
@@ -1213,12 +1213,12 @@ function LeadModal({ lead, onClose, onSaved }) {
 function DetailOverlay({ children, onClose }) {
   return createPortal(
     <div 
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in" 
+      className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto" 
       onClick={onClose}
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
       <div 
-        className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
+        className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col my-auto animate-slideUp sm:animate-zoomIn"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile Handle */}
@@ -1235,7 +1235,7 @@ function DetailOverlay({ children, onClose }) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain px-6 sm:px-10 pb-10" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
+        <div className="px-6 sm:px-10 pb-10" style={{ paddingBottom: 'max(2.5rem, env(safe-area-inset-bottom))' }}>
           {children}
         </div>
       </div>

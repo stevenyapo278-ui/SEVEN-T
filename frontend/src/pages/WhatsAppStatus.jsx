@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useModuleAvailability } from '../hooks/useModuleAvailability'
 import api from '../services/api'
 import { useTheme } from '../contexts/ThemeContext'
 import {
@@ -125,17 +126,11 @@ export default function WhatsAppStatus() {
   const { user } = useAuth()
   const { isDark } = useTheme()
 
-  const isModuleEnabled = (() => {
-    const feat = user?.plan_features?.whatsapp_status
-    const override = user?.whatsapp_status_enabled
-    const isOverrideTrue = override === 1 || override === '1' || override === true
-    const isOverrideFalse = override === 0 || override === '0'
-    if (!user?.parent_user_id || user?.role === 'owner') {
-      if (isOverrideFalse) return false
-      return !!feat || isOverrideTrue
-    }
-    return isOverrideTrue
-  })()
+  const { status, isAdmin } = useModuleAvailability()
+  const modStatus = status?.whatsappStatus
+
+  const isModuleEnabled = isAdmin || modStatus?.enabled || modStatus?.locked
+  const isLocked = !isAdmin && modStatus?.locked
 
   // Protection removed from here to prevent conditional hooks
   const [agents, setAgents] = useState([])

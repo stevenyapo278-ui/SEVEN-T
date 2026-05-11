@@ -674,10 +674,10 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0" onClick={onClose} />
       
-      <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-fadeIn ${
+      <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl my-auto flex flex-col animate-fadeIn ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
       }`}>
         <div className={`flex-shrink-0 p-4 border-b flex flex-wrap items-center justify-between gap-3 ${
@@ -691,8 +691,8 @@ function PaymentModal({ onClose, onSave, isDark, geniuspayConfigured }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+          <div className="p-4 space-y-4">
           <div>
             <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Montant
@@ -802,9 +802,9 @@ function LinkCreatedModal({ link, isDark, onClose }) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl animate-fadeIn ${
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0" onClick={onClose} />
+      <div className={`relative z-10 w-full max-w-md rounded-t-2xl sm:rounded-2xl border shadow-2xl animate-fadeIn my-auto ${
         isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
       }`}>
         <div className={`p-4 border-b flex items-center justify-between ${isDark ? 'border-space-700' : 'border-gray-200'}`}>

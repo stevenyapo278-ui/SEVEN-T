@@ -117,6 +117,7 @@ export const defaultPlans = [
             human_handoff_alerts: true,
             analytics: true,
             leads_management: true,
+            whatsapp_status: true,
             polls: true
         })
     },
@@ -156,6 +157,7 @@ export const defaultPlans = [
             human_handoff_alerts: true,
             analytics: true,
             leads_management: true,
+            whatsapp_status: true,
             polls: true
         })
     },
@@ -195,6 +197,7 @@ export const defaultPlans = [
             human_handoff_alerts: true,
             analytics: true,
             leads_management: true,
+            whatsapp_status: true,
             polls: true
         })
     }

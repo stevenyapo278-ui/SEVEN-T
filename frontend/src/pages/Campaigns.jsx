@@ -611,8 +611,8 @@ export default function Campaigns() {
       </div>
 
       {showModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={() => setShowModal(false)}>
-          <div className={`relative z-10 w-full max-w-2xl flex flex-col rounded-[2.5rem] shadow-2xl border transition-all duration-300 animate-in zoom-in-95 ${
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto" onClick={() => setShowModal(false)}>
+          <div className={`relative z-10 w-full max-w-2xl my-auto flex flex-col rounded-[2.5rem] shadow-2xl border transition-all duration-300 animate-in zoom-in-95 ${
             isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
           }`} onClick={e => e.stopPropagation()}>
             
@@ -633,7 +633,7 @@ export default function Campaigns() {
               </div>
             </div>
 
-            <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div className="p-8">
               <form onSubmit={handleSubmit} id="campaign-form" className="space-y-6">
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -755,9 +755,9 @@ export default function Campaigns() {
       )}
 
       {showRecipientsModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={closeRecipientsModal}>
-          <div className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-3xl flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
-            <div className="p-8 flex-1 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={closeRecipientsModal}>
+          <div className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-3xl flex flex-col my-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-8">
               <h2 className="text-2xl font-bold mb-6">Destinataires</h2>
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -797,8 +797,8 @@ export default function Campaigns() {
       )}
 
       {showHistoryModal && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowHistoryModal(false)}>
-          <div className="relative z-10 w-full max-w-3xl bg-[#0B0F1A] border border-white/10 rounded-3xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={() => setShowHistoryModal(false)}>
+          <div className="relative z-10 w-full max-w-3xl bg-[#0B0F1A] border border-white/10 rounded-3xl my-auto" onClick={e => e.stopPropagation()}>
             <div className="p-8"><h2 className="text-2xl font-bold mb-6">Historique</h2>
               <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                 <table className="w-full text-sm text-left"><tbody className="divide-y divide-white/5">

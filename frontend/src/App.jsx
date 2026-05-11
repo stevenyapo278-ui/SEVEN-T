@@ -75,7 +75,8 @@ import {
   Send,
   Trello,
   Sparkles,
-  BarChart2
+  BarChart2,
+  Radio
 } from 'lucide-react'
 
 function PageFallback() {
@@ -183,7 +184,7 @@ function StandardRoute({ children }) {
     '/dashboard/reports': { key: 'reports', name: 'Rapports Professionnels', icon: FileText, desc: 'Générez des rapports PDF exportables pour vos réunions et bilans.' },
     '/dashboard/payments': { key: 'payment', name: 'Module de Paiement', icon: CreditCard, desc: 'Enclenchez des paiements directement via WhatsApp et suivez vos revenus.' },
     '/dashboard/flows': { key: 'flows', name: 'Constructeur de Flux', icon: GitBranch, desc: 'Créez des parcours clients automatisés complexes et visuels.' },
-    '/dashboard/whatsapp-status': { key: 'whatsappStatus', name: 'Statut WhatsApp', icon: PhoneCall, desc: 'Surveillez l\'état de vos comptes WhatsApp et la qualité de connexion.' },
+    '/dashboard/whatsapp-status': { key: 'whatsappStatus', name: 'Statut WhatsApp', icon: Radio, desc: 'Publiez et programmez des stories WhatsApp pour engager votre audience.' },
     '/dashboard/leads': { key: 'leads', name: 'Gestion des Prospects', icon: Users, desc: 'Organisez et qualifiez vos leads entrants automatiquement.' },
     '/dashboard/campaigns': { key: 'campaigns', name: 'Campagnes Marketing', icon: Send, desc: 'Lancez des campagnes de messages de masse ciblées et performantes.' },
     '/dashboard/deals': { key: 'deals', name: 'Pipeline de Ventes', icon: Trello, desc: 'Suivez vos opportunités commerciales de la prise de contact à la clôture.' },

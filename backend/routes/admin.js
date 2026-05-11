@@ -884,7 +884,8 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
             polls_module_enabled, proactive_advisor_enabled, proactive_requires_validation,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
             parent_user_id,
-            roles
+            roles,
+            industry, job_title, company_size, primary_goal
         } = req.body;
 
         if (!name || !email || !password) {
@@ -931,9 +932,10 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
                 flows_module_enabled, whatsapp_status_enabled, leads_management_enabled, campaigns_module_enabled,
                 polls_module_enabled, proactive_advisor_enabled, proactive_requires_validation,
                 can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
-                parent_user_id, role
+                parent_user_id, role,
+                industry, job_title, company_size, primary_goal
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, userId, name, email, hashedPassword, company || '', planToUse, credits || 0, is_admin || 0, 
            subscriptionStatus, subscriptionEndDate,
            voice_responses_enabled ? 1 : 0, payment_module_enabled ? 1 : 0, analytics_module_enabled ? 1 : 0, reports_module_enabled ? 1 : 0,
@@ -944,7 +946,8 @@ router.post('/users', authenticateAdmin, requirePermission('users.write'), async
            proactive_advisor_enabled ? 1 : 0,
            proactive_requires_validation !== undefined ? (proactive_requires_validation ? 1 : 0) : 1,
            can_manage_users ? 1 : 0, can_manage_plans ? 1 : 0, can_view_stats ? 1 : 0, can_manage_ai ? 1 : 0, can_manage_tickets ? 1 : 0,
-           parent_user_id || null, parent_user_id ? 'manager' : 'user'
+           parent_user_id || null, parent_user_id ? 'manager' : 'user',
+           industry || null, job_title || null, company_size || null, primary_goal || null
         );
 
         await activityLogger.log({

@@ -431,9 +431,9 @@ export default function Deals() {
 
       {/* Add/Edit Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl overflow-hidden animate-zoomIn ${
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 bg-space-950/80 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
+          <div className={`relative w-full max-w-2xl rounded-3xl border shadow-2xl my-auto animate-zoomIn ${
             isDark ? 'bg-space-900 border-space-700' : 'bg-white border-gray-200'
           }`}>
             <div className="px-8 py-6 border-b border-space-700/50 flex justify-between items-center">
