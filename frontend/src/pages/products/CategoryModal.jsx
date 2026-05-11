@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Plus, Trash2, Loader2, Layers, Tag as TagIcon } from 'lucide-react'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function CategoryModal({ categories, loading, onAdd, onDelete, onClose }) {
   const [newName, setNewName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { isDark } = useTheme()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,23 +26,27 @@ export default function CategoryModal({ categories, loading, onAdd, onDelete, on
       onClick={onClose}
     >
       <div 
-        className="relative z-10 w-full max-w-lg bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn"
+        className={`relative z-10 w-full max-w-lg border rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn ${
+          isDark ? 'bg-[#0B0F1A] border-white/10' : 'bg-white border-gray-200'
+        }`}
         onClick={e => e.stopPropagation()}
       >
         {/* Mobile Handle */}
         <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
-          <div className="w-12 h-1.5 rounded-full bg-white/10" />
+          <div className={`w-12 h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
         </div>
 
         <div className="flex-shrink-0 p-6 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl font-display font-bold text-gray-100 truncate">Catégories</h2>
+              <h2 className={`text-2xl font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Catégories</h2>
               <p className="text-sm text-gray-500 mt-1">Gérez les catégories de vos produits</p>
             </div>
             <button 
               onClick={onClose} 
-              className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+              className={`p-2 -mr-2 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl ${
+                isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               <X className="w-6 h-6" />
             </button>
@@ -68,7 +74,9 @@ export default function CategoryModal({ categories, loading, onAdd, onDelete, on
                 <button
                   type="submit"
                   disabled={!newName.trim() || isSubmitting}
-                  className="px-6 rounded-2xl bg-white text-black font-syne font-black italic uppercase tracking-tight hover:bg-gold-400 transition-all disabled:opacity-50 flex items-center justify-center"
+                  className={`px-6 rounded-2xl font-syne font-black italic uppercase tracking-tight transition-all disabled:opacity-50 flex items-center justify-center ${
+                    isDark ? 'bg-white text-black hover:bg-gold-400' : 'bg-gray-900 text-white hover:bg-black'
+                  }`}
                 >
                   {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
                 </button>
@@ -84,7 +92,7 @@ export default function CategoryModal({ categories, loading, onAdd, onDelete, on
                 <Loader2 className="w-8 h-8 animate-spin text-gold-400" />
               </div>
             ) : categories.length === 0 ? (
-              <div className="text-center py-10 border-2 border-dashed border-white/5 rounded-3xl">
+              <div className={`text-center py-10 border-2 border-dashed rounded-3xl ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
                 <TagIcon className="w-8 h-8 text-gray-700 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm">Aucune catégorie créée</p>
               </div>
@@ -93,20 +101,24 @@ export default function CategoryModal({ categories, loading, onAdd, onDelete, on
                 {categories.map((cat) => (
                   <div 
                     key={cat.id}
-                    className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl group hover:border-white/10 transition-all"
+                    className={`flex items-center justify-between p-4 border rounded-2xl group transition-all ${
+                      isDark ? 'bg-white/5 border-white/5 hover:border-white/10' : 'bg-gray-50 border-gray-100 hover:border-gray-200'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-600'
+                      }`}>
                         <Layers className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-gray-100 truncate">{cat.name}</p>
+                        <p className={`font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{cat.name}</p>
                         <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{cat.product_count || 0} produits</p>
                       </div>
                     </div>
                     <button
                       onClick={() => onDelete(cat.id)}
-                      className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                      className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -117,11 +129,15 @@ export default function CategoryModal({ categories, loading, onAdd, onDelete, on
           </div>
         </div>
 
-        <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+        <div className={`flex-shrink-0 p-6 sm:p-8 pt-4 border-t ${
+          isDark ? 'border-white/5 bg-black/20' : 'border-gray-100 bg-gray-50/50'
+        }`} style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-4 px-6 rounded-2xl font-bold bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+            className={`w-full py-4 px-6 rounded-2xl font-bold transition-all ${
+              isDark ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+            }`}
           >
             Fermer
           </button>

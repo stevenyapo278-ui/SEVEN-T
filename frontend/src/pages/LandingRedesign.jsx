@@ -106,12 +106,18 @@ const LandingRedesign = () => {
       <style>{`
         html {
           scroll-behavior: smooth;
+          -webkit-tap-highlight-color: transparent;
         }
         body {
           background-color: #09090b;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
         }
         .font-manrope {
           font-family: 'Manrope', sans-serif;
+        }
+        * {
+          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
     </div>

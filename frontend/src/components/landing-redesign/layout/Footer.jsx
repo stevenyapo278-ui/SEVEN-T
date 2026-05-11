@@ -110,7 +110,7 @@ export const Footer = () => {
                 </p>
                 
                 <a 
-                  href="https://wa.me/yournumber" 
+                  href="https://wa.me/2250705198019" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group/btn relative inline-flex items-center justify-center overflow-hidden rounded-full p-px transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] w-full"

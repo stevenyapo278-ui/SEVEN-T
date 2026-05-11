@@ -82,8 +82,8 @@ const navigationGroups = [
     nameKey: 'nav.main',
     title: 'Vue globale',
     items: [
-      { nameKey: 'nav.dashboard', title: 'Accueil', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
-      { nameKey: 'nav.notifications', title: 'Mes notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
+      { nameKey: 'nav.dashboard', title: '🏠 Accueil', href: '/dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+      { nameKey: 'nav.notifications', title: '🔔 Mes notifications', href: '/dashboard/notifications', icon: Bell, tourId: 'nav-notifications' },
     ]
   },
   {
@@ -91,11 +91,11 @@ const navigationGroups = [
     title: '💬 Discuter',
     icon: MessageSquare,
     items: [
-      { nameKey: 'nav.conversations', title: 'Boîte de réception', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
-      { nameKey: 'nav.relances', title: 'Relances IA', href: '/dashboard/relances', icon: BellRing, tourId: 'nav-relances' },
-      { nameKey: 'nav.campaigns', title: 'Lancer une campagne', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
-      { nameKey: 'nav.polls', title: 'Sondages WhatsApp', href: '/dashboard/polls', icon: BarChart2, tourId: 'nav-polls' },
-      { nameKey: 'nav.templates', title: 'Modèles de messages', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
+      { nameKey: 'nav.conversations', title: '📩 Boîte de réception', href: '/dashboard/conversations', icon: MessageSquare, tourId: 'nav-conversations' },
+      { nameKey: 'nav.relances', title: '🔄 Relances IA', href: '/dashboard/relances', icon: BellRing, tourId: 'nav-relances' },
+      { nameKey: 'nav.campaigns', title: '📣 Lancer une campagne', href: '/dashboard/campaigns', icon: Megaphone, tourId: 'nav-campaigns' },
+      { nameKey: 'nav.polls', title: '🗳️ Sondages WhatsApp', href: '/dashboard/polls', icon: BarChart2, tourId: 'nav-polls' },
+      { nameKey: 'nav.templates', title: '📝 Modèles de messages', href: '/dashboard/templates', icon: FileText, tourId: 'nav-templates' },
     ]
   },
   {
@@ -103,10 +103,10 @@ const navigationGroups = [
     title: '🤖 Mes Assistantes IA',
     icon: Bot,
     items: [
-      { nameKey: 'nav.agents', title: 'Gérer mes équipes IA', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
-      { nameKey: 'nav.knowledge', title: 'Leur apprendre des choses', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
-      { nameKey: 'nav.flowBuilder', title: 'Leur comportement', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
-      { nameKey: 'nav.workflows', title: 'Règles automatiques', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
+      { nameKey: 'nav.agents', title: '🤖 Gérer mes équipes IA', href: '/dashboard/agents', icon: Bot, tourId: 'nav-agents' },
+      { nameKey: 'nav.knowledge', title: '📚 Leur apprendre des choses', href: '/dashboard/knowledge', icon: BookOpen, tourId: 'nav-knowledge' },
+      { nameKey: 'nav.flowBuilder', title: '⚙️ Leur comportement', href: '/dashboard/flows', icon: Workflow, tourId: 'nav-flows' },
+      { nameKey: 'nav.workflows', title: '⚡ Règles automatiques', href: '/dashboard/workflows', icon: Zap, tourId: 'nav-workflows' },
     ]
   },
   {
@@ -114,12 +114,12 @@ const navigationGroups = [
     title: '🛍️ Gérer mes Ventes',
     icon: ShoppingCart,
     items: [
-      { nameKey: 'nav.leads', title: 'Mes contacts', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
-      { nameKey: 'nav.services', title: 'Catalogue des services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
-      { nameKey: 'nav.products', title: 'Mon catalogue (Produits)', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
-      { nameKey: 'nav.deals', title: 'Suivi des Deals', href: '/dashboard/deals', icon: Target, tourId: 'nav-deals' },
-      { nameKey: 'nav.orders', title: 'Mes commandes', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
-      { nameKey: 'nav.payments', title: 'Paiements', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
+      { nameKey: 'nav.leads', title: '👥 Mes contacts', href: '/dashboard/leads', icon: UserPlus, tourId: 'nav-leads' },
+      { nameKey: 'nav.services', title: '🛠️ Catalogue des services', href: '/dashboard/services', icon: Briefcase, tourId: 'nav-services' },
+      { nameKey: 'nav.products', title: '📦 Mon catalogue (Produits)', href: '/dashboard/products', icon: Package, tourId: 'nav-products' },
+      { nameKey: 'nav.deals', title: '🎯 Suivi des Deals', href: '/dashboard/deals', icon: Target, tourId: 'nav-deals' },
+      { nameKey: 'nav.orders', title: '🛍️ Mes commandes', href: '/dashboard/orders', icon: ShoppingCart, tourId: 'nav-orders' },
+      { nameKey: 'nav.payments', title: '💳 Paiements', href: '/dashboard/payments', icon: CreditCard, tourId: 'nav-payments' },
     ]
   },
   {
@@ -127,9 +127,9 @@ const navigationGroups = [
     title: '📊 Suivre mes Chiffres',
     icon: Activity,
     items: [
-      { nameKey: 'nav.analytics', title: 'Statistiques', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
-      { nameKey: 'nav.expenses', title: 'Mes dépenses', href: '/dashboard/expenses', icon: Wallet, tourId: 'nav-expenses' },
-      { nameKey: 'nav.reports', title: 'Bilan complet', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
+      { nameKey: 'nav.analytics', title: '📈 Statistiques', href: '/dashboard/analytics', icon: BarChart3, tourId: 'nav-analytics' },
+      { nameKey: 'nav.expenses', title: '💰 Mes dépenses', href: '/dashboard/expenses', icon: Wallet, tourId: 'nav-expenses' },
+      { nameKey: 'nav.reports', title: '📉 Bilan complet', href: '/dashboard/reports', icon: FileBarChart, tourId: 'nav-reports' },
     ]
   },
   {
@@ -137,27 +137,34 @@ const navigationGroups = [
     title: '⚙️ Configuration',
     icon: Wrench,
     items: [
-      { nameKey: 'nav.tools', title: 'Téléphones (WhatsApp)', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
-      { nameKey: 'nav.whatsappStatus', title: 'Statuts WhatsApp', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
-      { nameKey: 'nav.pricing', title: 'Mon Abonnement', href: '/dashboard/pricing', icon: CreditCard, tourId: 'nav-pricing' },
+      { nameKey: 'nav.tools', title: '📱 Téléphones (WhatsApp)', href: '/dashboard/tools', icon: Wrench, tourId: 'nav-tools' },
+      { nameKey: 'nav.whatsappStatus', title: '📡 Statuts WhatsApp', href: '/dashboard/whatsapp-status', icon: Radio, tourId: 'nav-whatsapp-status' },
+      { nameKey: 'nav.pricing', title: '💎 Mon Abonnement', href: '/dashboard/pricing', icon: CreditCard, tourId: 'nav-pricing' },
     ]
   },
 ]
 
 const bottomNavigation = [
-  { nameKey: 'nav.logs', href: '/dashboard/logs', icon: Activity, tourId: 'nav-logs' },
-  { nameKey: 'nav.settings', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
-  { nameKey: 'nav.help', href: '/dashboard/help', icon: HelpCircle, tourId: 'nav-help' },
+  { nameKey: 'nav.logs', title: '📜 Journal d\'activité', href: '/dashboard/logs', icon: Activity, tourId: 'nav-logs' },
+  { nameKey: 'nav.settings', title: '⚙️ Paramètres', href: '/dashboard/settings', icon: Settings, tourId: 'nav-settings' },
+  { nameKey: 'nav.help', title: '❓ Aide & Support', href: '/dashboard/help', icon: HelpCircle, tourId: 'nav-help' },
 ]
 
 
 const adminNavigation = [
-  { nameKey: 'nav.admin', href: '/dashboard/admin', icon: Shield },
+  { nameKey: 'nav.admin', title: '🛡️ Administration', href: '/dashboard/admin', icon: Shield },
 ]
 
 const teamNavigation = [
-  { nameKey: 'nav.team', title: 'Equipe', href: '/dashboard/team', icon: Users, tourId: 'nav-team' },
+  { nameKey: 'nav.team', title: '👥 Equipe', href: '/dashboard/team', icon: Users, tourId: 'nav-team' },
 ]
+
+const getEmoji = (title) => {
+  if (!title) return null;
+  // This regex matches most common emojis, including skin tones and sequences
+  const emojiMatch = title.match(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}]/u);
+  return emojiMatch ? emojiMatch[0] : null;
+};
 
 // ─── Page title map ──────────────────────────────────────────────────────────
 const pathToTitle = (pathname) => {
@@ -304,8 +311,10 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
             {({ isActive }) => (
               <>
                 <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                <item.icon className={`flex-shrink-0 size-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
-                {(!collapsed || isMobile) && (
+                {collapsed && !isMobile ? (
+                  <span className="text-lg">{getEmoji(item.title || t(item.nameKey)) || <item.icon className="size-4" />}</span>
+                ) : null}
+                {!collapsed || isMobile ? (
                   <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
                     <span className={`truncate ${item.isLocked ? 'text-zinc-500' : ''}`}>{item.title || t(item.nameKey)}</span>
                     
@@ -356,7 +365,6 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
             } ${isDark ? 'hover:bg-white/5' : 'hover:bg-zinc-100'}`}
         >
           <span className="flex items-center gap-2.5 min-w-0">
-            {group.icon && <group.icon className={`size-4 flex-shrink-0 ${isGroupActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400'}`} />}
             <span className="truncate text-sm font-medium">{group.title || t(group.nameKey)}</span>
           </span>
           <ChevronRight className={`size-3 transition-transform duration-200 ${shouldBeOpen ? 'rotate-90' : ''}`} />
@@ -383,7 +391,9 @@ const NavGroup = ({ group, onItemClick, isMobile = false, forceExpand = false, c
               {({ isActive }) => (
                 <>
                   <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                  <item.icon className={`flex-shrink-0 size-4 transition-colors ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'} ${item.isLocked ? 'opacity-50' : ''}`} />
+                  {collapsed && !isMobile ? (
+                    <span className="text-lg">{getEmoji(item.title || t(item.nameKey)) || <item.icon className="size-4" />}</span>
+                  ) : null}
                   {(!collapsed || isMobile) && (
                     <div className="flex-1 flex items-center justify-between min-w-0" title={item.title || t(item.nameKey)}>
                       <span className={`truncate ${item.isLocked ? 'text-zinc-500 italic' : ''}`}>{item.title || t(item.nameKey)}</span>
@@ -768,7 +778,9 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 {({ isActive }) => (
                   <>
                     <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                    <item.icon className={`flex-shrink-0 size-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'}`} />
+                    {collapsed && !isMobile ? (
+                      <span className="text-lg">{getEmoji(item.title || t(item.nameKey)) || <item.icon className="size-4" />}</span>
+                    ) : null}
                     {(!collapsed || isMobile) && <span className="truncate">{item.title || t(item.nameKey)}</span>}
                   </>
                 )}
@@ -798,8 +810,10 @@ const SidebarContent = ({ navGroups, bottomNav, onItemClick, isMobile, collapsed
                 {({ isActive }) => (
                   <>
                     <span className={`nav-active-bar absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r-full transition-all duration-200 ${isActive ? 'bg-blue-400 opacity-100' : 'opacity-0'}`} />
-                    <item.icon className={`flex-shrink-0 size-4 ${isActive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-zinc-400 group-hover:text-zinc-600'}`} />
-                    {(!collapsed || isMobile) && <span className="truncate">{t(item.nameKey)}</span>}
+                    {collapsed && !isMobile ? (
+                      <span className="text-lg">{getEmoji(item.title || t(item.nameKey)) || <item.icon className="size-4" />}</span>
+                    ) : null}
+                    {(!collapsed || isMobile) && <span className="truncate">{item.title || t(item.nameKey)}</span>}
                   </>
                 )}
               </NavLink>

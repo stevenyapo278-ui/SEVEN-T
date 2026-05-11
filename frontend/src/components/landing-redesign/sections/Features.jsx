@@ -94,9 +94,11 @@ export const Features = () => {
   return (
     <section id="features" className="relative z-20 mx-auto mt-12 mb-12 w-full max-w-7xl px-4 pt-10 pb-20 md:mt-24 md:mb-24 md:px-2 md:pb-32">
       <div
-        className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-white/10 to-white/0 backdrop-blur-lg md:rounded-[2.5rem]"
+        className="group relative overflow-hidden rounded-[2rem] bg-[#09090b] backdrop-blur-lg md:rounded-[2.5rem]"
         style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
       >
+        {/* Subtle glass effect overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
         {/* Background Glow Effect */}
         <div className="pointer-events-none absolute bottom-0 left-0 h-1/2 w-full bg-gradient-to-tr from-amber-500/10 via-transparent to-transparent opacity-40" />
 

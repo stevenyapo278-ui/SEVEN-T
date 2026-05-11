@@ -5,11 +5,13 @@ import { X, Upload, Loader2, Package, Tag, CreditCard, Layout, Plus, Trash2, Lin
 import api from '../../services/api'
 import toast from 'react-hot-toast'
 import { getProductImageUrl } from './utils'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const MAX_PRODUCT_IMAGES = 4
 
 export default function ProductModal({ product, categories = [], onClose, onSaved, getSymbol }) {
   const { t } = useTranslation()
+  const { isDark } = useTheme()
   const fileInputRef = useRef(null)
   const [formData, setFormData] = useState({
     name: product?.name || '',
@@ -144,24 +146,28 @@ export default function ProductModal({ product, categories = [], onClose, onSave
       style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
     >
       <div 
-        className="relative z-10 w-full max-w-2xl bg-[#0B0F1A] border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn" 
+        className={`relative z-10 w-full max-w-2xl border rounded-t-[2.5rem] sm:rounded-3xl shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-slideUp sm:animate-zoomIn ${
+          isDark ? 'bg-[#0B0F1A] border-white/10' : 'bg-white border-gray-200'
+        }`} 
         onClick={e => e.stopPropagation()}
       >
         {/* Mobile Handle */}
         <div className="flex-shrink-0 w-full flex justify-center pt-2 pb-1 sm:hidden">
-          <div className="w-12 h-1.5 rounded-full bg-white/10" />
+          <div className={`w-12 h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
         </div>
 
         <div className="flex-shrink-0 p-6 sm:p-8" style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="text-2xl font-display font-bold text-gray-100 truncate">{title}</h2>
+              <h2 className={`text-2xl font-display font-bold truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{title}</h2>
               <p className="text-sm text-gray-500 mt-1 truncate">{product ? 'Modifier l\'article' : 'Ajouter un nouveau produit'}</p>
             </div>
             <button 
               type="button" 
               onClick={onClose} 
-              className="p-2 -mr-2 text-gray-500 hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-white/5"
+              className={`p-2 -mr-2 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl ${
+                isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               <X className="w-6 h-6" />
             </button>
@@ -347,19 +353,25 @@ export default function ProductModal({ product, categories = [], onClose, onSave
             </div>
           </div>
 
-          <div className="flex-shrink-0 p-6 sm:p-8 pt-4 border-t border-white/5 bg-black/20 flex flex-col-reverse sm:flex-row gap-3" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
+          <div className={`flex-shrink-0 p-6 sm:p-8 pt-4 border-t flex flex-col-reverse sm:flex-row gap-3 ${
+            isDark ? 'border-white/5 bg-black/20' : 'border-gray-100 bg-gray-50/50'
+          }`} style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
             <button
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-4 px-6 rounded-2xl font-bold text-gray-500 hover:text-white hover:bg-white/5 transition-all text-center"
+              className={`flex-1 py-4 px-6 rounded-2xl font-bold transition-all text-center ${
+                isDark ? 'text-gray-500 hover:text-white hover:bg-white/5' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-4 px-8 bg-white text-black rounded-2xl font-syne font-black italic uppercase tracking-tight hover:bg-gold-400 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl flex items-center justify-center gap-2"
+              className={`flex-1 py-4 px-8 rounded-2xl font-syne font-black italic uppercase tracking-tight transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl flex items-center justify-center gap-2 ${
+                isDark ? 'bg-white text-black hover:bg-gold-400' : 'bg-gray-900 text-white hover:bg-black'
+              }`}
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
               {loading ? 'Enregistrement...' : product ? 'Mettre à jour' : 'Ajouter le produit'}
