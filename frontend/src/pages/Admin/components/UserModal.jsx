@@ -33,7 +33,11 @@ export default function UserModal({ user, onClose, onSave, plans = [], rolesList
     is_active: user?.is_active ?? 1,
     ...Object.fromEntries(PLAN_MODULES.map(m => [m.key, isEdit ? !!user[m.key] : false])),
     roles: user?.roles ? [...user.roles] : [],
-    subscription_end_date: user?.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : ''
+    subscription_end_date: user?.subscription_end_date ? new Date(user.subscription_end_date).toISOString().slice(0, 10) : '',
+    industry: user?.industry || '',
+    job_title: user?.job_title || '',
+    company_size: user?.company_size || '',
+    primary_goal: user?.primary_goal || ''
   })
 
   // Sync plan defaults for new users
@@ -159,6 +163,60 @@ export default function UserModal({ user, onClose, onSave, plans = [], rolesList
                   required={!isEdit}
                   minLength={6}
                 />
+              </div>
+            </div>
+
+            {/* Business Profile Section */}
+            <div className="p-4 rounded-xl bg-space-800/30 border border-space-700/50 space-y-4">
+              <h4 className="text-[10px] font-bold text-gold-400 uppercase tracking-widest flex items-center gap-2">
+                <Building className="w-3 h-3" />
+                Profil Business & Qualification
+              </h4>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Secteur / Industrie</label>
+                  <input
+                    type="text"
+                    value={formData.industry}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                    className="input-dark w-full text-sm"
+                    placeholder="ex: Immobilier, E-commerce..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Poste / Rôle</label>
+                  <input
+                    type="text"
+                    value={formData.job_title}
+                    onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                    className="input-dark w-full text-sm"
+                    placeholder="ex: CEO, Sales Manager..."
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Taille Entreprise</label>
+                  <input
+                    type="text"
+                    value={formData.company_size}
+                    onChange={(e) => setFormData({ ...formData, company_size: e.target.value })}
+                    className="input-dark w-full text-sm"
+                    placeholder="ex: 11-50 employés"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Objectif Principal</label>
+                  <input
+                    type="text"
+                    value={formData.primary_goal}
+                    onChange={(e) => setFormData({ ...formData, primary_goal: e.target.value })}
+                    className="input-dark w-full text-sm"
+                    placeholder="ex: Automatiser les relances"
+                  />
+                </div>
               </div>
             </div>
 

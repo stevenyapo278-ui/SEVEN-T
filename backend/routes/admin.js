@@ -301,7 +301,8 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
             polls_module_enabled, proactive_advisor_enabled, proactive_requires_validation,
             subscription_end_date,
             can_manage_users, can_manage_plans, can_view_stats, can_manage_ai, can_manage_tickets,
-            roles
+            roles,
+            industry, job_title, company_size, primary_goal
         } = req.body;
 
         const existing = await db.get('SELECT * FROM users WHERE id = ?', req.params.id);
@@ -481,6 +482,22 @@ router.put('/users/:id', authenticateAdmin, requirePermission('users.write'), as
         if (can_manage_tickets !== undefined) {
             setClauses.push('can_manage_tickets = ?');
             params.push(can_manage_tickets ? 1 : 0);
+        }
+        if (industry !== undefined) {
+            setClauses.push('industry = ?');
+            params.push(industry || null);
+        }
+        if (job_title !== undefined) {
+            setClauses.push('job_title = ?');
+            params.push(job_title || null);
+        }
+        if (company_size !== undefined) {
+            setClauses.push('company_size = ?');
+            params.push(company_size || null);
+        }
+        if (primary_goal !== undefined) {
+            setClauses.push('primary_goal = ?');
+            params.push(primary_goal || null);
         }
 
         // Allow explicit override of subscription_end_date (only if plan didn't already set it)

@@ -222,6 +222,10 @@ export async function initDatabase() {
             permissions TEXT, -- JSON array of specific permissions
 
             proactive_advisor_enabled INTEGER,
+            industry TEXT,
+            job_title TEXT,
+            company_size TEXT,
+            primary_goal TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -270,7 +274,11 @@ export async function initDatabase() {
             { name: 'voice_responses_enabled', type: 'INTEGER DEFAULT 0' },
             { name: 'parent_user_id', type: 'TEXT' },
             { name: 'role', type: "TEXT DEFAULT 'owner'" },
-            { name: 'permissions', type: 'TEXT' }
+            { name: 'permissions', type: 'TEXT' },
+            { name: 'industry', type: 'TEXT' },
+            { name: 'job_title', type: 'TEXT' },
+            { name: 'company_size', type: 'TEXT' },
+            { name: 'primary_goal', type: 'TEXT' }
         ];
 
         for (const col of columnsToUpdate) {

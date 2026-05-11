@@ -106,6 +106,10 @@ export const registerSchema = z.object({
         .min(8, 'Le numéro de téléphone est trop court')
         .max(20, 'Le numéro de téléphone est trop long')
         .regex(/^\+?[1-9]\d{1,14}$/, 'Format de numéro de téléphone invalide (ex: +2250700000000)'),
+    industry: z.string().max(100).optional().nullable(),
+    job_title: z.string().max(100).optional().nullable(),
+    company_size: z.string().max(50).optional().nullable(),
+    primary_goal: z.string().max(200).optional().nullable(),
 });
 
 export const loginSchema = z.object({

@@ -227,7 +227,7 @@ router.get('/google/callback', async (req, res) => {
 // Register with validation
 router.post('/register', validate(registerSchema), async (req, res) => {
     try {
-        const { email, password, name, company, phone } = req.body;
+        const { email, password, name, company, phone, industry, job_title, company_size, primary_goal } = req.body;
 
         // Check if user exists (case-insensitive)
         const existingUser = await db.get('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', email);
@@ -247,12 +247,12 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         trialEndDate.setDate(trialEndDate.getDate() + trialDays);
 
         await db.run(`
-            INSERT INTO users (id, email, password, name, company, notification_number, plan, subscription_status, subscription_end_date, credits)
-            VALUES (?, ?, ?, ?, ?, ?, 'free', 'trialing', ?, 500)
-        `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, phone.trim(), trialEndDate.toISOString());
+            INSERT INTO users (id, email, password, name, company, notification_number, plan, subscription_status, subscription_end_date, credits, industry, job_title, company_size, primary_goal)
+            VALUES (?, ?, ?, ?, ?, ?, 'free', 'trialing', ?, 500, ?, ?, ?, ?)
+        `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, phone.trim(), trialEndDate.toISOString(), industry || null, job_title || null, company_size || null, primary_goal || null);
 
         // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, created_at, subscription_end_date FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, created_at, subscription_end_date, industry, job_title, company_size, primary_goal FROM users WHERE id = ?', userId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};

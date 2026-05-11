@@ -240,34 +240,84 @@ export default function UsersContent({
                       {isExpanded && (
                         <tr className="bg-space-800/10">
                           <td colSpan="8" className="px-8 pb-4">
-                            <div className="border-l-2 border-gold-400/20 pl-4 py-2 space-y-2">
-                              {loadingManagers[user.id] ? (
-                                <div className="flex items-center gap-2 text-xs text-gray-500 italic">
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gold-400"></div>
-                                  Chargement des collaborateurs...
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                              {/* Profil Business */}
+                              <div className="bg-space-800/50 border border-space-700/50 p-5 rounded-2xl space-y-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-8 h-8 rounded-lg bg-gold-400/10 flex items-center justify-center text-gold-400">
+                                    <Building className="w-4 h-4" />
+                                  </div>
+                                  <h4 className="text-xs font-bold uppercase tracking-widest text-gray-300">Profil Business</h4>
                                 </div>
-                              ) : managersByOwner[user.id]?.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                  {managersByOwner[user.id].map(manager => (
-                                    <div key={manager.id} className="bg-space-800 border border-space-700 p-3 rounded-xl flex items-center justify-between group">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
-                                          <UserCheck className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                          <div className="text-sm font-medium text-gray-200">{manager.name}</div>
-                                          <div className="text-[10px] text-gray-500">{manager.email}</div>
-                                        </div>
-                                      </div>
-                                      <button onClick={() => onEdit(manager)} className="p-1.5 text-gray-600 hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-all">
-                                        <Edit className="w-3 h-3" />
-                                      </button>
+                                
+                                <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                                  <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">Secteur / Industrie</div>
+                                    <div className="text-sm text-gray-200 font-medium">{user.industry || 'Non renseigné'}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">Poste / Rôle</div>
+                                    <div className="text-sm text-gray-200 font-medium">{user.job_title || 'Non renseigné'}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">Taille Entreprise</div>
+                                    <div className="text-sm text-gray-200 font-medium">{user.company_size || 'Non renseigné'}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">Objectif Principal</div>
+                                    <div className="text-sm text-gold-400 font-bold">{user.primary_goal || 'Non renseigné'}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Équipe */}
+                              <div className="bg-space-800/50 border border-space-700/50 p-5 rounded-2xl space-y-4">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                      <Users className="w-4 h-4" />
                                     </div>
-                                  ))}
+                                    <h4 className="text-xs font-bold uppercase tracking-widest text-gray-300">Équipe & Gérants</h4>
+                                  </div>
+                                  {hasManagers && (
+                                    <span className="text-[10px] font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full border border-blue-400/20">
+                                      {user.managers_count}
+                                    </span>
+                                  )}
                                 </div>
-                              ) : (
-                                <div className="text-xs text-gray-500 italic">Aucun collaborateur trouvé.</div>
-                              )}
+
+                                <div className="space-y-2">
+                                  {loadingManagers[user.id] ? (
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 italic py-4">
+                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gold-400"></div>
+                                      Chargement des collaborateurs...
+                                    </div>
+                                  ) : managersByOwner[user.id]?.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-2">
+                                      {managersByOwner[user.id].map(manager => (
+                                        <div key={manager.id} className="bg-space-900/50 border border-space-700/50 p-2 px-3 rounded-xl flex items-center justify-between group hover:border-blue-400/30 transition-all">
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
+                                              <UserCheck className="w-4 h-4" />
+                                            </div>
+                                            <div>
+                                              <div className="text-xs font-bold text-gray-200">{manager.name}</div>
+                                              <div className="text-[10px] text-gray-500">{manager.email}</div>
+                                            </div>
+                                          </div>
+                                          <button onClick={() => onEdit(manager)} className="p-1.5 text-gray-600 hover:text-blue-400 transition-colors">
+                                            <Edit className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-gray-500 italic py-4 text-center border border-dashed border-space-700 rounded-xl">
+                                      Aucun collaborateur trouvé.
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </td>
                         </tr>
