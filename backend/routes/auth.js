@@ -459,7 +459,7 @@ router.get('/me', async (req, res) => {
         }
 
         const influencerOnly = roleKeys.includes('influencer') && !user.is_admin && roleKeys.length === 1;
-        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly } });
+        res.json({ user: { ...user, plan: effectivePlan, plan_features, permissions, roles: roleKeys, influencer_only: influencerOnly, is_google_user: !!user.google_id } });
     } catch (error) {
         console.error('Get user error:', error);
         try {
@@ -731,6 +731,32 @@ router.post('/reset-password', async (req, res) => {
     } catch (error) {
         console.error('Reset password error:', error);
         res.status(500).json({ error: 'Erreur lors de la réinitialisation du mot de passe' });
+    }
+});
+
+// Set password for Google users or change password
+router.post('/set-password', authenticateToken, async (req, res) => {
+    try {
+        const { password } = req.body;
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: 'Le mot de passe doit faire au moins 6 caractères' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await db.run('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', hashedPassword, req.user.id);
+
+        await activityLogger.log({
+            userId: req.user.id,
+            action: 'set_password_success',
+            entityType: 'user',
+            entityId: req.user.id,
+            req
+        });
+
+        res.json({ message: 'Mot de passe défini avec succès' });
+    } catch (error) {
+        console.error('Set password error:', error);
+        res.status(500).json({ error: 'Erreur lors de la définition du mot de passe' });
     }
 });
 

@@ -64,7 +64,10 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [exportingData, setExportingData] = useState(false)
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false)
-  const [deletingAccount, setDeletingAccount] = useState(false)
+   const [deletingAccount, setDeletingAccount] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ password: '', confirmPassword: '' })
+  const [settingPassword, setSettingPassword] = useState(false)
 
   // Sync form when user is loaded/updated
   useEffect(() => {
@@ -259,6 +262,27 @@ export default function Settings() {
     } finally {
       setSaving(false)
       setDailyBriefingSaving(false)
+    }
+  }
+
+  const handleSetPassword = async (e) => {
+    e.preventDefault()
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      return toast.error('Les mots de passe ne correspondent pas')
+    }
+    if (passwordForm.password.length < 6) {
+      return toast.error('Le mot de passe doit faire au moins 6 caractères')
+    }
+    setSettingPassword(true)
+    try {
+      await api.post('/auth/set-password', { password: passwordForm.password })
+      toast.success('Mot de passe défini avec succès')
+      setShowPasswordModal(false)
+      setPasswordForm({ password: '', confirmPassword: '' })
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors de la définition du mot de passe')
+    } finally {
+      setSettingPassword(false)
     }
   }
 
@@ -1080,7 +1104,49 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Données et confidentialité */}
+      {/* Sécurité */}
+      <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
+        isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
+      }`}>
+        <h2 className="text-lg font-display font-semibold text-gray-100 mb-2 flex items-center gap-2">
+          <Lock className="w-5 h-5 text-blue-400" />
+          Sécurité du compte
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          Gérez l&apos;accès à votre compte Seven-T.
+        </p>
+        <div className="flex flex-wrap items-center gap-4">
+          {user?.is_google_user ? (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-sm text-blue-400 bg-blue-400/10 px-3 py-1.5 rounded-lg border border-blue-400/20">
+                <Sparkles className="w-4 h-4" />
+                Connecté via Google
+              </div>
+              <p className="text-xs text-gray-500">
+                Vous pouvez définir un mot de passe pour vous connecter sans Google.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowPasswordModal(true)}
+                className="btn-secondary mt-2 inline-flex items-center gap-2 w-fit"
+              >
+                <Lock className="w-4 h-4" />
+                Définir un mot de passe
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowPasswordModal(true)}
+              className="btn-secondary inline-flex items-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              Changer le mot de passe
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className={`p-6 rounded-2xl border transition-all duration-300 mb-6 ${
         isDark ? 'bg-space-800/20 border-space-700/50 hover:bg-space-800/30' : 'bg-white border-gray-100 hover:bg-gray-50 shadow-sm'
       }`}>
@@ -1165,6 +1231,68 @@ export default function Settings() {
         document.body
       )}
 
-    </div>
+      {/* Modal Définir/Changer mot de passe */}
+      {showPasswordModal && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !settingPassword && setShowPasswordModal(false)} />
+          <div className="relative z-10 w-full max-w-md bg-space-900 border border-space-700 rounded-2xl shadow-2xl animate-fadeIn overflow-hidden">
+            <div className="p-6 border-b border-space-700 flex items-center justify-between">
+              <h3 className="text-lg font-display font-semibold text-gray-100">
+                {user?.is_google_user ? 'Définir un mot de passe' : 'Changer le mot de passe'}
+              </h3>
+              <button onClick={() => !settingPassword && setShowPasswordModal(false)} className="text-gray-400 hover:text-gray-200">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleSetPassword} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Nouveau mot de passe</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwordForm.password}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, password: e.target.value }))}
+                  className="input-dark w-full"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Confirmer le mot de passe</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  className="input-dark w-full"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="pt-4 flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  disabled={settingPassword}
+                  className="px-4 py-2 rounded-xl font-medium bg-space-700 text-gray-300 hover:bg-space-600 disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={settingPassword}
+                  className="btn-primary inline-flex items-center justify-center gap-2 disabled:opacity-50 min-w-[120px]"
+                >
+                  {settingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Enregistrer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+     </div>
   )
 }
