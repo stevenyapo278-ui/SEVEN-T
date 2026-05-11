@@ -216,7 +216,7 @@ export default function Relances() {
               </div>
               <span className="text-xs text-gray-500 font-medium">7 derniers jours</span>
             </div>
-            <div className="h-[250px] w-full">
+            <div className="h-[250px] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={stats.dailyTrends}>
                   <defs>
@@ -253,7 +253,7 @@ export default function Relances() {
               </div>
               <h3 className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Répartition des États</h3>
             </div>
-            <div className="h-[200px] w-full">
+            <div className="h-[200px] w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

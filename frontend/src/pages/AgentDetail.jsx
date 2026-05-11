@@ -46,7 +46,8 @@ import {
   Minimize2,
   Lock,
   Info,
-  Upload
+  Upload,
+  Mic
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
