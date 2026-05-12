@@ -389,7 +389,8 @@ export default function Deals() {
                       {deal.amount?.toLocaleString()}
                     </span>
                     <span className="text-sm font-bold text-gray-500">{deal.currency || 'XOF'}</span>
-                <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-space-900' : 'bg-gray-100'}`}>
+                  </div>
+                  <div className={`h-1.5 w-full rounded-full overflow-hidden ${isDark ? 'bg-space-900' : 'bg-gray-100'}`}>
                     <div 
                       className={`h-full transition-all duration-1000 ${
                         stage.color === 'green' ? 'bg-emerald-500' :

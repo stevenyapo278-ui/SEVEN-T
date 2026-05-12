@@ -830,8 +830,6 @@ export default function WhatsAppStatus() {
                                   <option value="7" className={isDark ? 'bg-space-800' : 'bg-white'}>Toutes les semaines</option>
                                   <option value="custom" className={isDark ? 'bg-space-800' : 'bg-white'}>Personnalisé...</option>
                               </select>
->Personnalisé...</option>
-                              </select>
                               {![0, 1, 2, 7].includes(recurrenceInterval) && (
                                   <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
                                       <span className="text-xs">tous les</span>
@@ -850,7 +848,6 @@ export default function WhatsAppStatus() {
                               )}
                           </div>
                       </div>
-                  </div>
               )}
           </div>
 
