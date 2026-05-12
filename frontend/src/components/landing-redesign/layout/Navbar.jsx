@@ -19,7 +19,7 @@ export const Navbar = () => {
   return (
     <div className="fixed left-0 top-0 z-50 flex w-full justify-center px-4 pt-6">
       <nav
-        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-[#0d0d0d] py-2 pl-6 pr-2 shadow-2xl md:gap-x-8 md:w-auto overflow-hidden border border-white/10"
+        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-[#0d0d0d] py-2 pl-6 pr-2 shadow-2xl md:gap-x-8 md:w-auto border border-white/10"
         style={{
           boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.8)",
         }}
