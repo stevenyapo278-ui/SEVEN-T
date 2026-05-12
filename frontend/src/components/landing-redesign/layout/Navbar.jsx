@@ -19,9 +19,9 @@ export const Navbar = () => {
   return (
     <div className="fixed left-0 top-0 z-50 flex w-full justify-center px-4 pt-6">
       <nav
-        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-zinc-900/90 py-2 pl-6 pr-2 shadow-2xl backdrop-blur-md md:gap-x-8 md:w-auto overflow-hidden border border-white/10"
+        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-[#0d0d0d] py-2 pl-6 pr-2 shadow-2xl md:gap-x-8 md:w-auto overflow-hidden border border-white/10"
         style={{
-          boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.7)",
+          boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.8)",
         }}
       >
         {/* Content Container */}
@@ -43,7 +43,7 @@ export const Navbar = () => {
               <a
                 key={item.name}
                 href={item.href}
-                className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 transition-all hover:text-white"
+                className="text-[11px] font-semibold uppercase tracking-wider text-white/60 transition-all hover:text-white"
               >
                 {item.name}
               </a>
@@ -56,7 +56,7 @@ export const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="hidden text-[11px] font-semibold uppercase tracking-wider text-gray-400 transition-colors hover:text-white md:block"
+                  className="hidden text-[11px] font-semibold uppercase tracking-wider text-white/60 transition-colors hover:text-white md:block"
                 >
                   Connexion
                 </Link>
@@ -86,9 +86,10 @@ export const Navbar = () => {
             {/* Mobile Menu Toggle */}
             <button 
               onClick={() => setIsOpen(!isOpen)}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-white border border-white/20 md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-white border border-white/20 md:hidden hover:bg-zinc-700 transition-all active:scale-95 shadow-lg"
+              aria-label={isOpen ? "Fermer le menu" : "Ouvrir le menu"}
             >
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isOpen ? <X className="size-5" /> : <Menu className="size-5" />}
             </button>
           </div>
         </div>
@@ -100,7 +101,7 @@ export const Navbar = () => {
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="absolute left-0 right-0 top-full mt-4 flex flex-col gap-2 rounded-3xl border border-white/10 bg-black/80 p-4 backdrop-blur-2xl md:hidden"
+              className="absolute left-0 right-0 top-full mt-4 flex flex-col gap-2 rounded-3xl border border-white/10 bg-zinc-950 p-4 md:hidden shadow-2xl"
             >
               {navLinks.map((item) => (
                 <a

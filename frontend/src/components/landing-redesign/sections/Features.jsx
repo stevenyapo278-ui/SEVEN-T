@@ -25,7 +25,7 @@ const WhatsAppPreview = () => {
       <div className="absolute left-1/2 top-1/2 z-10 w-[90%] max-w-sm -translate-x-1/2 -translate-y-1/2">
         <motion.div 
           whileHover={{ scale: 1.02 }}
-          className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/95 backdrop-blur-2xl shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] transition-all duration-700 ease-out"
+          className="overflow-hidden rounded-3xl border border-white/10 bg-zinc-950 shadow-[0_30px_60px_-12px_rgba(0,0,0,1)] transition-all duration-700 ease-out"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.02] p-4">

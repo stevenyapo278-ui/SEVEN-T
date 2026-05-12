@@ -104,7 +104,8 @@ function ProtectedRoute({ children }) {
   }
 
   // Enforce onboarding
-  if (!user.onboarding_completed && location.pathname !== '/onboarding') {
+  const isAdmin = user.is_admin === 1 || user.is_admin === true
+  if (!user.onboarding_completed && !isAdmin && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />
   }
 
@@ -203,11 +204,12 @@ function StandardRoute({ children }) {
   const modInfo = pathMap[currentPath] || Object.entries(pathMap).find(([path]) => currentPath.startsWith(path))?.[1];
 
   if (modInfo) {
+    const isAdmin = user.is_admin === 1 || user.is_admin === true
     const modStatus = status[modInfo.key];
-    if (modStatus?.locked) {
+    if (modStatus?.locked && !isAdmin) {
       return <LockedModuleView moduleName={modInfo.name} description={modInfo.desc} icon={modInfo.icon} />;
     }
-    if (!modStatus?.enabled) {
+    if (!modStatus?.enabled && !isAdmin) {
       return <Navigate to="/dashboard" replace />;
     }
   }

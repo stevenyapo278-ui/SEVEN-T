@@ -31,7 +31,7 @@ const SevenTMobileDashboard = () => {
   return (
     <div className="flex flex-col h-full bg-[#030303] text-white font-sans overflow-hidden select-none">
       {/* Top Header */}
-      <div className="px-6 pt-14 pb-4 flex items-center justify-between border-b border-white/[0.04] bg-[#030303]/80 backdrop-blur-3xl sticky top-0 z-20">
+      <div className="px-6 pt-14 pb-4 flex items-center justify-between border-b border-white/[0.04] bg-[#09090b] sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-inner">
             <div className="w-5 h-5 text-amber-500 font-bold flex items-center justify-center">7T</div>
@@ -101,7 +101,7 @@ const SevenTMobileDashboard = () => {
               { name: "Lead qualifié", type: "Prospect", value: "High", time: "15m ago", icon: <Users className="w-4 h-4" /> },
               { name: "Relance auto", type: "IA", value: "Sent", time: "1h ago", icon: <Zap className="w-4 h-4" /> }
             ].map((action, i) => (
-              <div key={i} className="flex items-center justify-between p-3.5 bg-zinc-900/40 border border-white/[0.04] rounded-[1.25rem] hover:bg-zinc-900/60 transition-all cursor-pointer group">
+              <div key={i} className="flex items-center justify-between p-3.5 bg-zinc-900 border border-white/5 rounded-[1.25rem] hover:bg-zinc-800 transition-all cursor-pointer group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-black/50 border border-white/5 flex items-center justify-center group-hover:scale-105 transition-transform group-hover:border-amber-500/30 shadow-inner">
                     <div className="text-zinc-400 group-hover:text-amber-500 transition-colors">
@@ -145,7 +145,7 @@ const SevenTMobileDashboard = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="px-8 pt-4 pb-8 border-t border-white/[0.05] flex justify-between items-center bg-[#030303]/90 backdrop-blur-3xl sticky bottom-0 z-20">
+      <div className="px-8 pt-4 pb-8 border-t border-white/[0.05] flex justify-between items-center bg-[#09090b] sticky bottom-0 z-20">
         <div className="flex flex-col items-center gap-1 cursor-pointer">
            <BarChart3 className="w-6 h-6 text-amber-500" />
            <span className="text-[9px] font-bold text-amber-500">Stats</span>

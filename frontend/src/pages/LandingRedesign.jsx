@@ -26,13 +26,33 @@ const LandingRedesign = () => {
         <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
       </Helmet>
 
-      {/* Simplified, Safe Background Elements - No heavy blurs */}
+      {/* Premium Background Elements */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
-        {/* Subtle top glow - No filter:blur() used here, just radial gradient */}
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.1),transparent_70%)]" />
+        {/* Luxe Mesh & Glow Background */}
+        <div 
+           className="absolute inset-0 opacity-40 mix-blend-screen" 
+           style={{ 
+             backgroundImage: `
+               radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+               radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+               linear-gradient(to right, rgba(245, 158, 11, 0.05) 1px, transparent 1px),
+               linear-gradient(to bottom, rgba(245, 158, 11, 0.05) 1px, transparent 1px)
+             `,
+             backgroundSize: "100% 100%, 100% 100%, 80px 80px, 80px 80px"
+           }} 
+        />
+
+        {/* Dynamic Light Rays - High performance CSS version */}
+        <div className="absolute inset-x-0 top-0 h-[800px] flex justify-center opacity-40 pointer-events-none overflow-hidden">
+          <div className="relative w-full max-w-7xl h-full">
+             <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[200%] h-full bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.2)_0%,transparent_60%)] animate-pulse" style={{ animationDuration: '8s' }} />
+             <div className="absolute top-0 left-1/4 w-[1px] h-full bg-gradient-to-b from-amber-500/20 via-transparent to-transparent rotate-[15deg] transform-gpu" />
+             <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-amber-500/20 via-transparent to-transparent rotate-[-15deg] transform-gpu" />
+          </div>
+        </div>
         
-        {/* Noise texture fallback */}
-        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+        {/* Grainy Texture */}
+        <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
       {/* Content */}

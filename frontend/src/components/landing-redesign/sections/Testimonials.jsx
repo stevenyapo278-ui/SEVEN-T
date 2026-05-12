@@ -125,8 +125,8 @@ export const Testimonials = () => {
                         damping: 20 
                       }}
                       className={cn(
-                        "absolute w-full p-8 rounded-[2.5rem] border border-white/8 shadow-2xl backdrop-blur-2xl",
-                        isTop ? "bg-gradient-to-br from-zinc-900 to-black" : "bg-zinc-900/40"
+                        "absolute w-full p-8 rounded-[2.5rem] border border-white/10 shadow-2xl",
+                        isTop ? "bg-gradient-to-br from-zinc-900 to-black" : "bg-zinc-900/80"
                       )}
                     >
                       <div className="flex items-center justify-between mb-8">
