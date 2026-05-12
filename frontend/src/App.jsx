@@ -47,6 +47,7 @@ const Logs = lazy(() => import('./pages/Logs'))
 const Team = lazy(() => import('./pages/Team'))
 const WhatsAppStatus = lazy(() => import('./pages/WhatsAppStatus'))
 const Deals = lazy(() => import('./pages/Deals'))
+const Polls = lazy(() => import('./pages/Polls'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 import Onboarding from './pages/Onboarding'
 
