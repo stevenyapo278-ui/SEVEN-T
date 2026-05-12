@@ -46,11 +46,11 @@ const LandingRedesign = () => {
         {/* Light under navbar effect */}
         <LightRays 
           raysOrigin="top-center"
-          raysColor="#f59e0b"
-          raysSpeed={0.8}
-          lightSpread={0.8}
+          raysColor="#fde68a" // Lighter amber for more "light" feel
+          raysSpeed={1.0}
+          lightSpread={0.5}
           rayLength={3.0}
-          opacity={0.4}
+          opacity={0.6}
         />
       </div>
 

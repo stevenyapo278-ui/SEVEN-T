@@ -136,7 +136,7 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.8, delay: 1.2 }}
-          className="mx-auto mb-10 max-w-2xl font-manrope text-lg font-medium leading-relaxed tracking-normal text-gray-400 md:text-2xl md:mb-12 md:max-w-3xl"
+          className="mx-auto mb-10 max-w-2xl font-manrope text-lg font-medium leading-relaxed tracking-normal text-gray-300 md:text-2xl md:mb-12 md:max-w-3xl"
         >
           Ne soyez plus seul pour gérer vos messages. SEVEN T est l'assistant intelligent 
           qui qualifie vos leads, gère vos stocks et publie vos statuts automatiquement.
@@ -152,7 +152,7 @@ export const Hero = () => {
           <Link to="/register">
             <ShinyButton>Essayer gratuitement</ShinyButton>
           </Link>
-          <button className="text-gray-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-2">
+          <button className="text-gray-300 hover:text-white transition-colors text-sm font-bold tracking-widest uppercase flex items-center gap-2">
             Voir la démo <PlayIcon />
           </button>
         </motion.div>
@@ -164,7 +164,7 @@ export const Hero = () => {
           transition={{ duration: 0.8, delay: 1.6 }}
           className="mt-20 flex flex-col items-center gap-y-4 mb-10 md:mt-32 md:mb-20"
         >
-          <p className="font-sans text-[10px] md:text-xs font-medium tracking-widest text-gray-500 uppercase px-4 text-center">
+          <p className="font-sans text-[10px] md:text-xs font-medium tracking-widest text-gray-400 uppercase px-4 text-center">
             Optimisé pour le marché africain
           </p>
           <div className="flex items-center gap-6 opacity-40 grayscale brightness-200">
