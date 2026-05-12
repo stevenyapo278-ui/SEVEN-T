@@ -1,60 +1,27 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { ShinyButton } from "../shared/ShinyButton";
-import { ArrowRight } from "lucide-react";
+import { InteractiveWord } from "../shared/InteractiveWord";
+import PixelBlast from "../shared/PixelBlast";
 import { cn } from "../../../utils/cn";
 import { Link } from "react-router-dom";
-
-const InteractiveWord = ({ word }) => {
-  return (
-    <motion.span
-      initial="initial"
-      whileHover="hover"
-      className="group flex flex-wrap justify-center gap-x-[0.05em] cursor-pointer select-none"
-    >
-      {word.split("").map((char, i) => (
-        <span
-          key={i}
-          className="relative inline-block h-[1.1em] overflow-hidden"
-        >
-          <motion.span
-            variants={{
-              initial: { y: 0 },
-              hover: { y: "-100%" },
-            }}
-            transition={{
-              duration: 0.5,
-              ease: [0.16, 1, 0.3, 1],
-              delay: i * 0.025,
-            }}
-            className="block bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent"
-          >
-            {char}
-          </motion.span>
-          <motion.span
-            variants={{
-              initial: { y: "100%" },
-              hover: { y: 0 },
-            }}
-            transition={{
-              duration: 0.5,
-              ease: [0.16, 1, 0.3, 1],
-              delay: i * 0.025,
-            }}
-            className="absolute left-0 top-0 block text-amber-400"
-          >
-            {char}
-          </motion.span>
-        </span>
-      ))}
-    </motion.span>
-  );
-};
 
 export const Hero = () => {
   return (
     <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden pt-32 md:min-h-screen md:pt-20">
       {/* Background Effects */}
+      <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none opacity-40">
+        <PixelBlast 
+          variant="circle"
+          pixelSize={4}
+          color="#f59e0b"
+          patternDensity={0.8}
+          patternScale={1.5}
+          speed={0.3}
+          edgeFade={0.6}
+        />
+      </div>
+
       <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
         <div className="absolute left-1/2 top-[-10%] h-[80%] w-[120%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.15)_0%,transparent_70%)]" />
       </div>
@@ -103,7 +70,7 @@ export const Hero = () => {
         >
           <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)] group-hover:animate-pulse" />
           <span className="font-sans text-[10px] md:text-xs font-medium tracking-wide text-amber-100/80 transition-colors group-hover:text-white uppercase tracking-widest">
-            Intelligence Artificielle de confiance
+            Intelligence Artificielle Premium
           </span>
         </motion.div>
 
@@ -139,7 +106,7 @@ export const Hero = () => {
           transition={{ duration: 0.8, delay: 1.2 }}
           className="mx-auto mb-10 max-w-2xl font-manrope text-lg font-medium leading-relaxed tracking-normal text-gray-300 md:text-2xl md:mb-12 md:max-w-3xl"
         >
-          Ne soyez plus seul pour gérer vos messages. SEVEN T est l'assistant intelligent 
+          Ne soyez plus seul pour gérer vos messages. SEVEN-T est l'assistant intelligent 
           qui qualifie vos leads, gère vos stocks et publie vos statuts automatiquement.
         </motion.p>
 
@@ -153,7 +120,7 @@ export const Hero = () => {
           <Link to="/register">
             <ShinyButton>Essayer gratuitement</ShinyButton>
           </Link>
-          <button className="text-gray-300 hover:text-white transition-colors text-sm font-bold tracking-widest uppercase flex items-center gap-2">
+          <button className="text-gray-300 hover:text-white transition-colors text-sm font-bold tracking-widest uppercase flex items-center gap-2 group">
             Voir la démo <PlayIcon />
           </button>
         </motion.div>
@@ -166,14 +133,13 @@ export const Hero = () => {
           className="mt-20 flex flex-col items-center gap-y-4 mb-10 md:mt-32 md:mb-20"
         >
           <p className="font-sans text-[10px] md:text-xs font-medium tracking-widest text-gray-400 uppercase px-4 text-center">
-            Optimisé pour le marché africain
+            Le standard de l'IA conversationnelle en Afrique
           </p>
-          <div className="flex items-center gap-6 opacity-40 grayscale brightness-200">
-             {/* Add some dummy logos or just text */}
-             <span className="text-sm font-bold tracking-tighter">SENEGAL</span>
-             <span className="text-sm font-bold tracking-tighter">COTE D'IVOIRE</span>
-             <span className="text-sm font-bold tracking-tighter">CAMEROUN</span>
-             <span className="text-sm font-bold tracking-tighter">GABON</span>
+          <div className="flex flex-wrap justify-center items-center gap-6 opacity-40 grayscale brightness-200">
+             <span className="text-xs md:text-sm font-bold tracking-tighter">SÉNÉGAL</span>
+             <span className="text-xs md:text-sm font-bold tracking-tighter">CÔTE D'IVOIRE</span>
+             <span className="text-xs md:text-sm font-bold tracking-tighter">CAMEROUN</span>
+             <span className="text-xs md:text-sm font-bold tracking-tighter">GABON</span>
           </div>
         </motion.div>
       </div>
@@ -182,7 +148,7 @@ export const Hero = () => {
 };
 
 const PlayIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-amber-500">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 fill-amber-500 transition-transform group-hover:scale-110">
     <path d="M7 6.75C7 5.7835 8.0418 5.17061 8.8875 5.6385L18.1375 10.7585C19.0125 11.2425 19.0125 12.5075 18.1375 12.9915L8.8875 18.1115C8.0418 18.5794 7 17.9665 7 17L7 6.75Z" fill="currentColor" />
   </svg>
 );

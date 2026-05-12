@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Renderer, Program, Triangle, Mesh } from "ogl";
 
-const DEFAULT_COLOR = "#ffffff";
+const DEFAULT_COLOR = "#f59e0b"; // Amber 500
 
 const hexToRgb = (hex) => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -11,7 +11,7 @@ const hexToRgb = (hex) => {
         parseInt(m[2], 16) / 255,
         parseInt(m[3], 16) / 255,
       ]
-    : [1, 1, 1];
+    : [0.96, 0.62, 0.04]; // Default amber-ish
 };
 
 const getAnchorAndDir = (
@@ -55,7 +55,6 @@ const LightRays = ({
   mouseInfluence = 0.1,
   noiseAmount = 0.0,
   distortion = 0.0,
-  opacity = 1.0,
   className = "",
 }) => {
   const containerRef = useRef(null);
@@ -93,21 +92,17 @@ const LightRays = ({
   useEffect(() => {
     if (!isVisible || !containerRef.current) return;
 
-    let canceled = false;
     if (cleanupFunctionRef.current) {
       cleanupFunctionRef.current();
       cleanupFunctionRef.current = null;
     }
 
-    let timerId;
     const initializeWebGL = async () => {
       if (!containerRef.current) return;
 
-      await new Promise((resolve) => {
-        timerId = setTimeout(resolve, 10);
-      });
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      if (!containerRef.current || canceled) return;
+      if (!containerRef.current) return;
 
       const renderer = new Renderer({
         dpr: Math.min(window.devicePixelRatio, 2),
@@ -116,7 +111,8 @@ const LightRays = ({
       rendererRef.current = renderer;
 
       const gl = renderer.gl;
-      Object.assign(gl.canvas.style, { width: "100%", height: "100%" });
+      gl.canvas.style.width = "100%";
+      gl.canvas.style.height = "100%";
 
       while (containerRef.current.firstChild) {
         containerRef.current.removeChild(containerRef.current.firstChild);
@@ -207,7 +203,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   float brightness = 1.0 - (coord.y / iResolution.y);
-  // Match reference color logic more closely
   fragColor.x *= 0.1 + brightness * 0.8;
   fragColor.y *= 0.3 + brightness * 0.6;
   fragColor.z *= 0.5 + brightness * 0.5;
@@ -345,8 +340,6 @@ void main() {
     initializeWebGL();
 
     return () => {
-      canceled = true;
-      if (timerId) clearTimeout(timerId);
       if (cleanupFunctionRef.current) {
         cleanupFunctionRef.current();
         cleanupFunctionRef.current = null;
@@ -423,11 +416,9 @@ void main() {
   return (
     <div
       ref={containerRef}
-      style={{ opacity }}
       className={`w-full h-full pointer-events-none z-[3] overflow-hidden relative ${className}`.trim()}
     />
   );
 };
 
 export default LightRays;
-

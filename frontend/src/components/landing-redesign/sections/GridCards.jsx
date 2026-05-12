@@ -87,16 +87,16 @@ const SalesCard = () => {
       <div 
         className="flex overflow-hidden bg-gradient-to-b from-white/[0.03] to-black/0 h-64 relative items-center justify-center"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(161,161,170,0.05)_0%,transparent_70%)]" />
         
         {/* Orbital Visualization */}
         <div className="flex w-full h-full relative items-center justify-center">
-          <div className="absolute w-40 h-40 border border-dashed border-blue-500/10 rounded-full flex items-center justify-center" />
+          <div className="absolute w-40 h-40 border border-dashed border-white/5 rounded-full flex items-center justify-center" />
           <motion.div 
             whileHover={{ scale: 1.05 }}
-            className="relative z-20 w-16 h-16 bg-gradient-to-br from-blue-500/20 to-blue-500/5 rounded-2xl border border-blue-500/30 flex items-center justify-center shadow-2xl shadow-blue-500/10"
+            className="relative z-20 w-16 h-16 bg-gradient-to-br from-white/10 to-transparent rounded-2xl border border-white/10 flex items-center justify-center shadow-2xl"
           >
-            <TrendingUp className="w-8 h-8 text-blue-400" />
+            <TrendingUp className="w-8 h-8 text-amber-500/80" />
           </motion.div>
         </div>
       </div>
@@ -104,7 +104,7 @@ const SalesCard = () => {
       {/* Card Content */}
       <div className="mt-auto pt-8 pr-10 pb-10 pl-10">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <div className="p-2 rounded-lg bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
             <TrendingUp className="w-5 h-5" />
           </div>
           <h3 className="text-xl font-bold text-white tracking-tight font-manrope">Intelligence Commerciale</h3>

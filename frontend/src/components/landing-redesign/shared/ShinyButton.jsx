@@ -34,7 +34,7 @@ export const ShinyButton = ({ children, className, onClick }) => {
           }}
         />
 
-        {/* Gold Glow on Hover */}
+        {/* Amber Glow on Hover */}
         <div className="absolute bottom-0 left-1/2 h-1/2 w-2/3 -translate-x-1/2 rounded-full bg-amber-500/10 blur-2xl transition-colors duration-500 group-hover:bg-amber-500/30" />
       </div>
 

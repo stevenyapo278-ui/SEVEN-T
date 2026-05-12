@@ -7,12 +7,9 @@ import { GridCards } from "../components/landing-redesign/sections/GridCards";
 import { Testimonials } from "../components/landing-redesign/sections/Testimonials";
 import { Pricing } from "../components/landing-redesign/sections/Pricing";
 import { Footer } from "../components/landing-redesign/layout/Footer";
+import LightRays from "../components/landing-redesign/shared/LightRays";
 import { Helmet } from "react-helmet-async";
-
-// Simplified Link for when react-router-dom is not available
-const Link = ({ to, children, ...props }) => {
-  return <a href={to} {...props}>{children}</a>;
-};
+import { Link } from "react-router-dom";
 
 const LandingRedesign = () => {
   useEffect(() => {
@@ -22,8 +19,8 @@ const LandingRedesign = () => {
   return (
     <div className="relative min-h-screen bg-black text-white selection:bg-amber-500/30 selection:text-amber-200">
       <Helmet>
-        <title>SEVEN T | Automatisation WhatsApp Intelligente</title>
-        <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
+        <title>SEVEN-T | Automatisation WhatsApp Intelligente</title>
+        <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN-T gère vos messages, vos stocks et vos statuts automatiquement." />
       </Helmet>
 
       {/* Premium Background Elements */}
@@ -33,22 +30,28 @@ const LandingRedesign = () => {
            className="absolute inset-0 opacity-40 mix-blend-screen" 
            style={{ 
              backgroundImage: `
-               radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
-               radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
-               linear-gradient(to right, rgba(245, 158, 11, 0.05) 1px, transparent 1px),
-               linear-gradient(to bottom, rgba(245, 158, 11, 0.05) 1px, transparent 1px)
+               radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.1) 0%, transparent 40%),
+               radial-gradient(circle at 80% 80%, rgba(245, 158, 11, 0.1) 0%, transparent 40%),
+               linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+               linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
              `,
              backgroundSize: "100% 100%, 100% 100%, 80px 80px, 80px 80px"
            }} 
         />
 
-        {/* Dynamic Light Rays - High performance CSS version */}
-        <div className="absolute inset-x-0 top-0 h-[800px] flex justify-center opacity-40 pointer-events-none overflow-hidden">
-          <div className="relative w-full max-w-7xl h-full">
-             <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[200%] h-full bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.2)_0%,transparent_60%)] animate-pulse" style={{ animationDuration: '8s' }} />
-             <div className="absolute top-0 left-1/4 w-[1px] h-full bg-gradient-to-b from-amber-500/20 via-transparent to-transparent rotate-[15deg] transform-gpu" />
-             <div className="absolute top-0 right-1/4 w-[1px] h-full bg-gradient-to-b from-amber-500/20 via-transparent to-transparent rotate-[-15deg] transform-gpu" />
-          </div>
+        {/* WebGL Light Rays - Premium Version */}
+        <div className="absolute inset-0 opacity-60">
+          <LightRays 
+            raysOrigin="top-center"
+            raysColor="#f59e0b"
+            raysSpeed={0.5}
+            lightSpread={1.2}
+            rayLength={1.8}
+            pulsating={true}
+            followMouse={true}
+            mouseInfluence={0.05}
+            noiseAmount={0.05}
+          />
         </div>
         
         {/* Grainy Texture */}
@@ -80,14 +83,14 @@ const LandingRedesign = () => {
           
           {/* Final CTA */}
           <section className="py-32 px-6 text-center relative overflow-hidden">
-             {/* No heavy blur element here */}
              <m.div
-               initial={{ opacity: 0, y: 20 }}
-               whileInView={{ opacity: 1, y: 0 }}
-               className="max-w-3xl mx-auto space-y-8"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="max-w-3xl mx-auto space-y-8"
              >
                 <h2 className="text-4xl md:text-6xl font-medium tracking-tight">Prêt à transformer votre <span className="text-amber-500">WhatsApp</span> ?</h2>
-                <p className="text-xl text-zinc-400 font-manrope font-medium">Rejoignez les entreprises qui automatisent déjà leur succès avec SEVEN T.</p>
+                <p className="text-xl text-zinc-400 font-manrope font-medium">Rejoignez les entreprises qui automatisent déjà leur succès avec SEVEN-T.</p>
                 <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-6">
                    <Link to="/register" className="w-full sm:w-auto">
                      <button className="w-full sm:w-auto bg-amber-500 text-black px-12 py-5 rounded-full font-bold text-sm uppercase tracking-widest hover:bg-amber-400 transition-all hover:scale-105 active:scale-95 shadow-[0_20px_40px_-10px_rgba(245,158,11,0.3)]">
@@ -105,22 +108,18 @@ const LandingRedesign = () => {
         <Footer />
       </div>
 
-      {/* Global CSS for font and smooth scroll */}
       <style>{`
         html {
           scroll-behavior: smooth;
           -webkit-tap-highlight-color: transparent;
         }
         body {
-          background-color: #09090b;
+          background-color: #000000;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
         .font-manrope {
           font-family: 'Manrope', sans-serif;
-        }
-        * {
-          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
     </div>

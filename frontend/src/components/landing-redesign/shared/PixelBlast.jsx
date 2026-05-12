@@ -164,6 +164,7 @@ float Bayer2(vec2 a) {
   return fract(a.x / 2. + a.y * a.y * .75);
 }
 #define Bayer4(a) (Bayer2(.5*(a))*0.25 + Bayer2(a))
+#define Bayer4_alt(a) (Bayer2(.5*(a))*0.25 + Bayer2(a))
 #define Bayer8(a) (Bayer4(.5*(a))*0.25 + Bayer2(a))
 
 #define FBM_OCTAVES     5
@@ -286,7 +287,7 @@ void main(){
 
   vec3 color = uColor;
 
-  // sRGB gamma correction
+  // sRGB gamma correction - convert linear to sRGB for accurate color output
   vec3 srgbColor = mix(
     color * 12.92,
     1.055 * pow(color, vec3(1.0 / 2.4)) - 0.055,
@@ -302,7 +303,7 @@ const MAX_CLICKS = 10;
 const PixelBlast = ({
   variant = 'square',
   pixelSize = 3,
-  color = '#B497CF',
+  color = '#f59e0b', // Amber 500
   className,
   style,
   antialias = true,
@@ -338,18 +339,16 @@ const PixelBlast = ({
     let mustReinit = false;
     if (!threeRef.current) mustReinit = true;
     else if (prevConfigRef.current) {
-        if (prevConfigRef.current.antialias !== cfg.antialias || 
-            prevConfigRef.current.liquid !== cfg.liquid || 
-            prevConfigRef.current.noiseAmount !== cfg.noiseAmount) {
-          mustReinit = true;
-        }
+      if (prevConfigRef.current.antialias !== antialias ||
+          prevConfigRef.current.liquid !== liquid ||
+          prevConfigRef.current.noiseAmount !== noiseAmount) {
+        mustReinit = true;
+      }
     }
 
     if (mustReinit) {
       if (threeRef.current) {
         const t = threeRef.current;
-        if (t.onPointerDown) t.renderer.domElement.removeEventListener('pointerdown', t.onPointerDown);
-        if (t.onPointerMove) t.renderer.domElement.removeEventListener('pointermove', t.onPointerMove);
         t.resizeObserver?.disconnect();
         cancelAnimationFrame(t.raf);
         t.quad?.geometry.dispose();
@@ -367,7 +366,8 @@ const PixelBlast = ({
         alpha: true,
         powerPreference: 'high-performance'
       });
-      Object.assign(renderer.domElement.style, { width: '100%', height: '100%' });
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       container.appendChild(renderer.domElement);
       if (transparent) renderer.setClearAlpha(0);
@@ -407,7 +407,7 @@ const PixelBlast = ({
       const quadGeom = new THREE.PlaneGeometry(2, 2);
       const quad = new THREE.Mesh(quadGeom, material);
       scene.add(quad);
-      const startTime = performance.now();
+      const clock = new THREE.Clock();
 
       const setSize = () => {
         const w = container.clientWidth || 1;
@@ -502,8 +502,7 @@ const PixelBlast = ({
           raf = requestAnimationFrame(animate);
           return;
         }
-        const elapsed = (performance.now() - startTime) / 1000;
-        uniforms.uTime.value = timeOffset + elapsed * speedRef.current;
+        uniforms.uTime.value = timeOffset + clock.getElapsedTime() * speedRef.current;
         if (liquidEffect) {
           const timeUniform = liquidEffect.uniforms.get('uTime');
           if (timeUniform) timeUniform.value = uniforms.uTime.value;
@@ -525,9 +524,20 @@ const PixelBlast = ({
       raf = requestAnimationFrame(animate);
 
       threeRef.current = {
-        renderer, scene, camera, material, startTime, clickIx: 0, uniforms,
-        resizeObserver: ro, raf, quad, timeOffset, composer, touch, liquidEffect,
-        onPointerDown, onPointerMove
+        renderer,
+        scene,
+        camera,
+        material,
+        clock,
+        clickIx: 0,
+        uniforms,
+        resizeObserver: ro,
+        raf,
+        quad,
+        timeOffset,
+        composer,
+        touch,
+        liquidEffect
       };
     } else {
       const t = threeRef.current;
@@ -558,8 +568,6 @@ const PixelBlast = ({
       if (threeRef.current && mustReinit) return;
       if (!threeRef.current) return;
       const t = threeRef.current;
-      if (t.onPointerDown) t.renderer.domElement.removeEventListener('pointerdown', t.onPointerDown);
-      if (t.onPointerMove) t.renderer.domElement.removeEventListener('pointermove', t.onPointerMove);
       t.resizeObserver?.disconnect();
       cancelAnimationFrame(t.raf);
       t.quad?.geometry.dispose();
