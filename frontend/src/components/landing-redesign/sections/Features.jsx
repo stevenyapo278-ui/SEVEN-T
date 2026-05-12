@@ -5,7 +5,7 @@ import { cn } from "../../../utils/cn";
 
 const WhatsAppPreview = () => {
   return (
-    <div className="relative h-full overflow-hidden border-l border-white/5 bg-zinc-950/30 font-sans">
+    <div className="relative h-full overflow-hidden border-l border-white/5 bg-black font-sans">
       {/* WhatsApp UI Mockup */}
       <div className="pointer-events-none absolute inset-0 select-none p-4 opacity-40">
          <div className="flex flex-col gap-3">
@@ -92,54 +92,75 @@ const WhatsAppPreview = () => {
 
 export const Features = () => {
   return (
-    <section id="features" className="relative z-20 mx-auto mt-12 mb-12 w-full max-w-7xl px-4 pt-10 pb-20 md:mt-24 md:mb-24 md:px-2 md:pb-32">
+    <section id="features" className="relative z-20 mx-auto w-full max-w-7xl px-6 py-20 md:px-2 md:py-32">
+      {/* Mobile Layout: Simple, Clean, No Card */}
+      <div className="lg:hidden space-y-12">
+        <div className="flex flex-col items-center text-center space-y-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-500/20 bg-zinc-900">
+            <MessageSquare className="h-6 w-6 text-amber-500" />
+          </div>
+          <h2 className="font-manrope text-3xl font-bold tracking-tight text-white leading-tight">
+            Automatisation WhatsApp <span className="text-amber-500">Intelligente</span>
+          </h2>
+          <div className="space-y-4 font-sans text-lg text-gray-400">
+            <p>
+              Ne laissez plus un client attendre. Nos agents IA qualifient vos prospects, 
+              répondent à leurs questions et concluent des ventes 24h/24.
+            </p>
+            <p>
+              Grâce à une intégration profonde avec vos stocks et vos catalogues, 
+              SEVEN T transforme votre WhatsApp en une véritable machine de vente autonome.
+            </p>
+          </div>
+          <button className="flex items-center gap-2 text-sm font-bold text-amber-500 uppercase tracking-widest pt-4">
+            Découvrir les modules <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {/* Simplified preview for mobile */}
+        <div className="rounded-[2rem] border border-white/10 bg-black overflow-hidden h-[400px]">
+           <WhatsAppPreview />
+        </div>
+      </div>
+
+      {/* Desktop Layout: The Original Premium Card */}
       <div
-        className="group relative overflow-hidden rounded-[2rem] bg-black md:rounded-[2.5rem] border border-white/10"
+        className="hidden lg:grid grid-cols-2 group relative overflow-hidden rounded-[2.5rem] bg-black border border-white/10"
+        style={{ backgroundColor: '#000000' }}
       >
-        {/* Subtle glass effect overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-black/0 pointer-events-none" />
-        {/* Background Glow Effect */}
-        <div className="pointer-events-none absolute bottom-0 left-0 h-1/2 w-full bg-gradient-to-tr from-amber-500/[0.05] via-transparent to-black/0 opacity-40" />
-
-        <div className="grid grid-cols-1 lg:grid-cols-2">
-          {/* Text Content */}
-          <div className="relative z-10 flex flex-col justify-center p-6 md:p-16 lg:p-20">
-            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/5 md:h-12 md:w-12 md:rounded-2xl">
-              <MessageSquare className="h-5 w-5 text-amber-500 md:h-6 md:w-6" />
-            </div>
-
-            <h2 className="mt-4 mb-4 font-manrope text-2xl font-semibold tracking-tight text-white leading-[1.2] sm:text-3xl md:mt-6 md:mb-6 md:text-4xl">
-              Automatisation WhatsApp <span className="text-amber-500">Intelligente</span>
-            </h2>
-
-            <div className="space-y-4 font-sans text-base leading-relaxed text-gray-400 md:space-y-6 md:text-lg">
-              <p>
-                Ne laissez plus un client attendre. Nos agents IA qualifient vos prospects, 
-                répondent à leurs questions et concluent des ventes 24h/24.
-              </p>
-              <p>
-                Grâce à une intégration profonde avec vos stocks et vos catalogues, 
-                SEVEN T transforme votre WhatsApp en une véritable machine de vente autonome 
-                optimisée pour le marché africain.
-              </p>
-              <p className="hidden sm:block">
-                L'IA détecte automatiquement l'intention d'achat et guide l'utilisateur 
-                jusqu'au paiement, sans intervention humaine nécessaire.
-              </p>
-            </div>
-            
-            <div className="mt-8 flex items-center gap-4">
-               <button className="flex items-center gap-2 text-sm font-bold text-amber-500 uppercase tracking-widest hover:gap-3 transition-all">
-                  Découvrir les modules <ArrowRight className="w-4 h-4" />
-               </button>
-            </div>
+        {/* Text Content */}
+        <div className="relative z-10 flex flex-col justify-center p-20 bg-black">
+          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900">
+            <MessageSquare className="h-6 w-6 text-amber-500" />
           </div>
 
-          {/* Visual Content */}
-          <div className="h-[450px] md:h-[600px] lg:h-auto overflow-hidden">
-            <div className="relative h-full scale-90 sm:scale-100 origin-center transition-transform duration-500">
-              <WhatsAppPreview />
-            </div>
+          <h2 className="mt-6 mb-6 font-manrope text-4xl font-semibold tracking-tight text-white leading-[1.2]">
+            Automatisation WhatsApp <span className="text-amber-500">Intelligente</span>
+          </h2>
+
+          <div className="space-y-6 font-sans text-lg leading-relaxed text-gray-400">
+            <p>
+              Ne laissez plus un client attendre. Nos agents IA qualifient vos prospects, 
+              répondent à leurs questions et concluent des ventes 24h/24.
+            </p>
+            <p>
+              Grâce à une intégration profonde avec vos stocks et vos catalogues, 
+              SEVEN T transforme votre WhatsApp en une véritable machine de vente autonome 
+              optimisée pour le marché africain.
+            </p>
+          </div>
+          
+          <div className="mt-8 flex items-center gap-4">
+             <button className="flex items-center gap-2 text-sm font-bold text-amber-500 uppercase tracking-widest hover:gap-3 transition-all">
+                Découvrir les modules <ArrowRight className="w-4 h-4" />
+             </button>
+          </div>
+        </div>
+
+        {/* Visual Content */}
+        <div className="h-auto overflow-hidden bg-black">
+          <div className="relative h-full transition-transform duration-500">
+            <WhatsAppPreview />
           </div>
         </div>
       </div>

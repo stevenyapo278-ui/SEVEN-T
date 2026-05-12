@@ -22,40 +22,26 @@ const LandingRedesign = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-zinc-950 text-white selection:bg-amber-500/30 selection:text-amber-200">
+    <div className="relative min-h-screen bg-black text-white selection:bg-amber-500/30 selection:text-amber-200">
       <Helmet>
         <title>SEVEN T | Automatisation WhatsApp Intelligente</title>
         <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
       </Helmet>
 
-      {/* Background Elements */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <PixelBlast 
-          variant="circle"
-          pixelSize={4}
-          color="#f59e0b"
-          patternDensity={0.8}
-          patternScale={1.5}
-          speed={0.2}
-          transparent={true}
-          edgeFade={0.6}
-          opacity={0.35}
-        />
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      {/* Simplified, Safe Background Elements */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
+        {/* Subtle top glow */}
+        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.15),transparent_70%)]" />
+        {/* Very subtle ambient gradients */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(245,158,11,0.05),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(245,158,11,0.03),transparent_50%)]" />
         
-        {/* Light under navbar effect */}
-        <LightRays 
-          raysOrigin="top-center"
-          raysColor="#fde68a" // Lighter amber for more "light" feel
-          raysSpeed={1.0}
-          lightSpread={0.5}
-          rayLength={3.0}
-          opacity={0.6}
-        />
+        {/* Noise texture fallback */}
+        <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
       {/* Progressive Blur Top Header */}
-      <div className="gradient-blur">
+      <div className="gradient-blur hidden md:block">
         <div />
         <div />
         <div />

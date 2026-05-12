@@ -62,32 +62,10 @@ const Landing = () => {
         <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
       </Helmet>
 
-      {/* Background Elements */}
+      {/* Simplified, Safe Background Elements */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
-        <PixelBlast 
-          variant="circle"
-          pixelSize={4}
-          color="#f59e0b"
-          patternDensity={0.8}
-          patternScale={1.5}
-          speed={0.2}
-          transparent={true}
-          edgeFade={0.6}
-        />
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-        <LightRays 
-          raysOrigin="top-center"
-          raysColor="#f59e0b"
-          raysSpeed={1.2}
-          lightSpread={0.9}
-          rayLength={3.5}
-          followMouse={true}
-          mouseInfluence={0.4}
-          distortion={0.1}
-        />
+        <div className="absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.1),transparent_70%)]" />
       </div>
-
-      <MouseGlow color="#f59e0b" opacity={0.3} />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col">
