@@ -56,7 +56,7 @@ export const Hero = () => {
     <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden pt-32 md:min-h-screen md:pt-20">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
-        <div className="absolute left-1/2 top-[-10%] h-[80%] w-[120%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.05)_0%,transparent_70%)]" />
+        <div className="absolute left-1/2 top-[-10%] h-[80%] w-[120%] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(245,158,11,0.15)_0%,transparent_70%)]" />
       </div>
 
       {/* Grid Curtain Structure - Simplified for mobile */}

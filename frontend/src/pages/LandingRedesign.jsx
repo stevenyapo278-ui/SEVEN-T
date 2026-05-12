@@ -42,14 +42,26 @@ const LandingRedesign = () => {
           opacity={0.15}
         />
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+        
+        {/* Light under navbar effect */}
         <LightRays 
           raysOrigin="top-center"
           raysColor="#f59e0b"
-          raysSpeed={0.5}
-          lightSpread={1.2}
-          rayLength={1.5}
-          opacity={0.1}
+          raysSpeed={0.8}
+          lightSpread={0.8}
+          rayLength={3.0}
+          opacity={0.4}
         />
+      </div>
+
+      {/* Progressive Blur Top Header */}
+      <div className="gradient-blur">
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
       </div>
 
       {/* Content */}

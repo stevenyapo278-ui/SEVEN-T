@@ -55,6 +55,7 @@ const LightRays = ({
   mouseInfluence = 0.1,
   noiseAmount = 0.0,
   distortion = 0.0,
+  opacity = 1.0,
   className = "",
 }) => {
   const containerRef = useRef(null);
@@ -206,7 +207,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   }
 
   float brightness = 1.0 - (coord.y / iResolution.y);
-  fragColor.rgb *= 0.2 + brightness * 0.8;
+  // Match reference color logic more closely
+  fragColor.x *= 0.1 + brightness * 0.8;
+  fragColor.y *= 0.3 + brightness * 0.6;
+  fragColor.z *= 0.5 + brightness * 0.5;
 
   if (saturation != 1.0) {
     float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
@@ -419,9 +423,11 @@ void main() {
   return (
     <div
       ref={containerRef}
+      style={{ opacity }}
       className={`w-full h-full pointer-events-none z-[3] overflow-hidden relative ${className}`.trim()}
     />
   );
 };
 
 export default LightRays;
+

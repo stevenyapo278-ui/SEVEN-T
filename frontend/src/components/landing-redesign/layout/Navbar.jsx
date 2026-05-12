@@ -19,11 +19,31 @@ export const Navbar = () => {
   return (
     <div className="fixed left-0 top-0 z-50 flex w-full justify-center px-4 pt-6">
       <nav
-        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-black/60 py-2 pl-6 pr-2 shadow-2xl backdrop-blur-xl md:gap-x-8 md:w-auto"
+        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-black/60 py-2 pl-6 pr-2 shadow-2xl backdrop-blur-xl md:gap-x-8 md:w-auto overflow-hidden border border-white/10"
         style={{
           boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.5)",
         }}
       >
+        {/* Border Beam Animation */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-full">
+          <motion.div
+            animate={{
+              rotate: [0, 360],
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            className="absolute -inset-[100%] opacity-40"
+            style={{
+              background: "conic-gradient(from 0deg, transparent 0 340deg, #f59e0b 360deg)",
+            }}
+          />
+        </div>
+        
+        {/* Inner glow/shadow to keep the beam only on the border */}
+        <div className="absolute inset-[1px] bg-black/80 rounded-full z-0 backdrop-blur-xl" />
         {/* Logo */}
         <Link to="/" className="flex shrink-0 items-center gap-2.5 cursor-pointer group/logo">
           <div className="relative flex items-center justify-center">
