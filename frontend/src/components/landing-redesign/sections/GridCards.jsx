@@ -6,11 +6,11 @@ import { cn } from "../../../utils/cn";
 const AgentCard = () => {
   return (
     <div 
-      className="group overflow-hidden flex flex-col hover:border-white/20 transition-colors duration-500 bg-gradient-to-br from-white/5 to-white/0 rounded-[2rem] backdrop-blur-lg border border-white/10"
+      className="group overflow-hidden flex flex-col hover:border-white/20 transition-colors duration-500 bg-black rounded-[2rem] border border-white/10"
     >
       {/* Visual Header */}
       <div 
-        className="flex overflow-hidden bg-gradient-to-b from-white/[0.03] to-transparent h-64 relative items-center justify-center"
+        className="flex overflow-hidden bg-gradient-to-b from-white/[0.03] to-black/0 h-64 relative items-center justify-center"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(245,158,11,0.05)_0%,transparent_70%)]" />
         
@@ -81,11 +81,11 @@ const AgentCard = () => {
 const SalesCard = () => {
   return (
     <div 
-      className="group overflow-hidden flex flex-col hover:border-white/20 transition-colors duration-500 bg-gradient-to-br from-white/5 to-white/0 rounded-[2rem] backdrop-blur-lg border border-white/10"
+      className="group overflow-hidden flex flex-col hover:border-white/20 transition-colors duration-500 bg-black rounded-[2rem] border border-white/10"
     >
       {/* Visual Header */}
       <div 
-        className="flex overflow-hidden bg-gradient-to-b from-white/[0.03] to-transparent h-64 relative items-center justify-center"
+        className="flex overflow-hidden bg-gradient-to-b from-white/[0.03] to-black/0 h-64 relative items-center justify-center"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
         
@@ -126,7 +126,7 @@ const SalesCard = () => {
 const AutomationCard = () => {
   return (
     <div 
-      className="group overflow-hidden flex flex-col hover:border-white/20 transition-colors duration-500 bg-gradient-to-br from-white/5 to-white/0 rounded-[2rem] backdrop-blur-lg border border-white/10"
+      className="group overflow-hidden flex flex-col hover:border-white/20 transition-colors duration-500 bg-black rounded-[2rem] border border-white/10"
     >
       <div className="grid grid-cols-1 lg:grid-cols-2">
          {/* Visual Section */}
