@@ -19,9 +19,9 @@ export const Navbar = () => {
   return (
     <div className="fixed left-0 top-0 z-50 flex w-full justify-center px-4 pt-6">
       <nav
-        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-black/40 py-2 pl-6 pr-2 shadow-2xl backdrop-blur-2xl md:gap-x-8 md:w-auto overflow-hidden border border-white/5"
+        className="relative flex w-full max-w-5xl items-center justify-between gap-x-4 rounded-full bg-zinc-900/90 py-2 pl-6 pr-2 shadow-2xl backdrop-blur-md md:gap-x-8 md:w-auto overflow-hidden border border-white/10"
         style={{
-          boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.05), 0 20px 40px -10px rgba(0, 0, 0, 0.5)",
+          boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.7)",
         }}
       >
         {/* Content Container */}
@@ -86,7 +86,7 @@ export const Navbar = () => {
             {/* Mobile Menu Toggle */}
             <button 
               onClick={() => setIsOpen(!isOpen)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white md:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800 text-white border border-white/20 md:hidden"
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

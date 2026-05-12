@@ -83,6 +83,9 @@ export default function KnowledgeBase() {
   const { t } = useTranslation()
 
   const isModuleEnabled = (() => {
+    // Admin bypass
+    if (user?.is_admin == 1 || user?.is_admin === true) return true;
+
     const feat = user?.plan_features?.knowledge_base
     const override = user?.knowledge_base_enabled
     const isOverrideTrue = override === 1 || override === '1' || override === true

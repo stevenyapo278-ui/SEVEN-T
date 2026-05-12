@@ -78,6 +78,9 @@ export default function FlowBuilder() {
   const [showNodePanel, setShowNodePanel] = useState(false)
 
   const isModuleEnabled = (() => {
+    // Admin bypass
+    if (user?.is_admin == 1 || user?.is_admin === true) return true;
+
     const feat = user?.plan_features?.flows
     const override = user?.flows_module_enabled
     const isOverrideTrue = override === 1 || override === '1' || override === true

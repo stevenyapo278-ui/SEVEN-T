@@ -7,8 +7,6 @@ import { GridCards } from "../components/landing-redesign/sections/GridCards";
 import { Testimonials } from "../components/landing-redesign/sections/Testimonials";
 import { Pricing } from "../components/landing-redesign/sections/Pricing";
 import { Footer } from "../components/landing-redesign/layout/Footer";
-import PixelBlast from "../components/landing-redesign/shared/PixelBlast";
-import LightRays from "../components/landing-redesign/shared/LightRays";
 import { Helmet } from "react-helmet-async";
 
 // Simplified Link for when react-router-dom is not available
@@ -28,26 +26,13 @@ const LandingRedesign = () => {
         <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
       </Helmet>
 
-      {/* Simplified, Safe Background Elements */}
+      {/* Simplified, Safe Background Elements - No heavy blurs */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
-        {/* Subtle top glow */}
-        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.15),transparent_70%)]" />
-        {/* Very subtle ambient gradients */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(245,158,11,0.05),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(245,158,11,0.03),transparent_50%)]" />
+        {/* Subtle top glow - No filter:blur() used here, just radial gradient */}
+        <div className="absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.1),transparent_70%)]" />
         
         {/* Noise texture fallback */}
-        <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-      </div>
-
-      {/* Progressive Blur Top Header */}
-      <div className="gradient-blur hidden md:block">
-        <div />
-        <div />
-        <div />
-        <div />
-        <div />
-        <div />
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
       {/* Content */}
@@ -59,7 +44,7 @@ const LandingRedesign = () => {
           
           <div className="relative">
              {/* Subtle gradient divider */}
-             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent" />
              <Features />
           </div>
 
@@ -75,7 +60,7 @@ const LandingRedesign = () => {
           
           {/* Final CTA */}
           <section className="py-32 px-6 text-center relative overflow-hidden">
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[600px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+             {/* No heavy blur element here */}
              <m.div
                initial={{ opacity: 0, y: 20 }}
                whileInView={{ opacity: 1, y: 0 }}

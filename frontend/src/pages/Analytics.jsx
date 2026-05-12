@@ -70,6 +70,9 @@ export default function Analytics() {
   const [conversionStats, setConversionStats] = useState([])
 
   const isModuleEnabled = (() => {
+    // Admin bypass
+    if (user?.is_admin == 1 || user?.is_admin === true) return true;
+
     const feat = user?.plan_features?.analytics
     const override = user?.analytics_module_enabled
     const isOverrideTrue = override === 1 || override === '1' || override === true

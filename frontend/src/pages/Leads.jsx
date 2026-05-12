@@ -88,6 +88,9 @@ export default function Leads() {
   const [bulkLoading, setBulkLoading] = useState(false)
 
   const isModuleEnabled = (() => {
+    // Admin bypass
+    if (user?.is_admin == 1 || user?.is_admin === true) return true;
+
     const feat = user?.plan_features?.leads_management
     if (feat === true) return true;
     

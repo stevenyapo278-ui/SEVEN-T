@@ -66,7 +66,7 @@ export default function Deals() {
 
   const isModuleEnabled = (() => {
     // Admin bypass
-    if (user?.is_admin === 1) return true
+    if (user?.is_admin == 1 || user?.is_admin === true) return true
     
     const feat = user?.plan_features?.deals_management
     if (feat === true) return true
