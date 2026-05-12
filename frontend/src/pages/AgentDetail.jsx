@@ -3358,7 +3358,7 @@ function AddToBlacklistModal({ agentId, onClose, onAdded }) {
             <input
               type="tel"
               value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
+              onChange={(e) => setContactNumber(e.target.value.replace(/[^\d]/g, ''))}
               placeholder="Ex: 33612345678"
               className="input-dark w-full min-h-[44px]"
               required

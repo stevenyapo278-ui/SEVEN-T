@@ -55,7 +55,11 @@ export default function Register() {
   const planParam = searchParams.get('plan')
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    let value = e.target.value;
+    if (e.target.name === 'phone') {
+      value = value.replace(/[^\d]/g, '');
+    }
+    setFormData({ ...formData, [e.target.name]: value })
   }
 
   const nextStep = () => {

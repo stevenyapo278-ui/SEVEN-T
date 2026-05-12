@@ -342,7 +342,7 @@ export default function ImportedContactsPicker({
                     <input
                       type="tel"
                       value={manualPhone}
-                      onChange={(e) => setManualPhone(e.target.value)}
+                      onChange={(e) => setManualPhone(e.target.value.replace(/\D/g, ''))}
                       placeholder="Ex: 2250707070707"
                       className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder:text-gray-600 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all"
                     />
