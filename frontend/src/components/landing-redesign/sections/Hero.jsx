@@ -81,7 +81,7 @@ export const Hero = () => {
             )}
           >
             <div
-              className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-zinc-950/40 backdrop-blur-sm shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.8)]"
+              className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-black shadow-[0_-20px_60px_-10px_rgba(0,0,0,0.8)]"
               style={{ height: `${75 - Math.abs(3 - i) * 10}%` }}
             />
             {i === 3 && (
@@ -111,23 +111,24 @@ export const Hero = () => {
           initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="mb-6 flex flex-wrap justify-center gap-x-[0.2em] gap-y-1 font-manrope text-4xl font-medium tracking-tighter leading-[1.1] sm:text-6xl md:text-7xl lg:text-8xl md:mb-8 md:gap-x-[0.25em] md:gap-y-2"
+          className="mb-6 flex flex-wrap justify-center gap-x-[0.25em] gap-y-1 font-manrope text-4xl font-medium tracking-tighter leading-[1.1] sm:text-6xl md:text-7xl lg:text-8xl md:mb-8 md:gap-x-[0.3em] md:gap-y-2"
         >
-          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-60">
+          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-50">
             Vendez
           </span>
           <InteractiveWord word="Plus" />
-          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-60">
+          <br className="hidden md:block w-full" />
+          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-50">
             sur
           </span>
           <InteractiveWord word="WhatsApp" />
-          <br className="hidden md:block" />
-          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-60 self-center mx-1 md:mx-2">
+          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-50 self-center mx-1 md:mx-2">
             même
           </span>
-          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-60">
+          <span className="bg-gradient-to-b from-white via-white to-white/50 bg-clip-text text-transparent opacity-50">
             en
           </span>
+          <br className="hidden md:block w-full" />
           <InteractiveWord word="Dormant" />
         </motion.h1>
 

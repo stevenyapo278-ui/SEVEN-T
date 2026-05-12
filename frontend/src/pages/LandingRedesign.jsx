@@ -39,7 +39,7 @@ const LandingRedesign = () => {
           speed={0.2}
           transparent={true}
           edgeFade={0.6}
-          opacity={0.15}
+          opacity={0.35}
         />
         <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
         
