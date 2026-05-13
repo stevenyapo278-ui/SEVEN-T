@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 
 export const Hero = () => {
   return (
-    <section className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden pt-32 md:min-h-screen md:pt-20">
+    <section id="ecosystem" className="relative flex min-h-[90vh] w-full flex-col items-center justify-center overflow-hidden pt-32 md:min-h-screen md:pt-20">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none opacity-40">
         <PixelBlast 

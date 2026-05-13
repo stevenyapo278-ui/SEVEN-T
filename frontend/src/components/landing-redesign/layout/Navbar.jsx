@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { ArrowRight, Menu, X, LayoutDashboard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
@@ -97,7 +97,7 @@ export const Navbar = () => {
         {/* Mobile Menu Overlay */}
         <AnimatePresence>
           {isOpen && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.95, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -143,7 +143,7 @@ export const Navbar = () => {
                   Mon Espace
                 </Link>
               )}
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </nav>

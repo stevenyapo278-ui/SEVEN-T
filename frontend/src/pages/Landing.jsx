@@ -12,7 +12,7 @@ import PixelBlast from "../components/landing-redesign/shared/PixelBlast";
 import LightRays from "../components/landing-redesign/shared/LightRays";
 import MouseGlow from "../components/landing-redesign/shared/MouseGlow";
 import { Helmet } from "react-helmet-async";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
@@ -98,7 +98,7 @@ const Landing = () => {
           {/* Final CTA */}
           <section className="py-32 px-6 text-center relative overflow-hidden">
              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-             <motion.div
+             <m.div
                initial={{ opacity: 0, y: 20 }}
                whileInView={{ opacity: 1, y: 0 }}
                viewport={{ once: true }}
@@ -118,7 +118,7 @@ const Landing = () => {
                       Contacter un expert
                    </button>
                 </div>
-             </motion.div>
+             </m.div>
           </section>
         </main>
 

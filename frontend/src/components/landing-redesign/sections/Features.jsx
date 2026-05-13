@@ -128,7 +128,7 @@ const ChatInterface = () => {
 
 export const Features = () => {
   return (
-    <section className="relative z-20 mx-auto mt-12 mb-12 w-full max-w-7xl px-4 pt-10 pb-20 md:mt-24 md:mb-24 md:px-2 md:pb-32">
+    <section id="features" className="relative z-20 mx-auto mt-12 mb-12 w-full max-w-7xl px-4 pt-10 pb-20 md:mt-24 md:mb-24 md:px-2 md:pb-32">
       <div
         className="group relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-white/10 to-white/0 backdrop-blur-lg md:rounded-[2.5rem]"
         style={{ border: "1px solid rgba(255, 255, 255, 0.1)" }}
