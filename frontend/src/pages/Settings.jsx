@@ -558,7 +558,7 @@ export default function Settings() {
               <input
                 type="text"
                 value={formData.notification_number}
-                onChange={(e) => setFormData({ ...formData, notification_number: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, notification_number: e.target.value.replace(/[^\d]/g, '') })}
                 className={`w-full max-w-md px-4 py-2 rounded-xl border ${isDark ? 'bg-space-800 border-space-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
                 placeholder="ex: 2250102030405"
               />
@@ -1092,7 +1092,7 @@ export default function Settings() {
                   <input
                     type="text"
                     value={dailyBriefingForm.whatsapp_contact_jid}
-                    onChange={(e) => setDailyBriefingForm((f) => ({ ...f, whatsapp_contact_jid: e.target.value }))}
+                    onChange={(e) => setDailyBriefingForm((f) => ({ ...f, whatsapp_contact_jid: e.target.value.replace(/[^\d]/g, '') }))}
                     placeholder="2250712345678"
                     className={`w-full max-w-md px-3 py-2 rounded-lg border ${
                       isDark ? 'border-space-700 bg-space-800 text-gray-100' : 'border-gray-200 bg-white text-gray-900'

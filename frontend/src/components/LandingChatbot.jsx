@@ -269,7 +269,7 @@ export default function LandingChatbot() {
                             type="tel" 
                             placeholder={t('chatbot.leadPhone')}
                             value={leadData.phone}
-                            onChange={e => setLeadData({...leadData, phone: e.target.value.replace(/[^\d\s+]/g, '')})}
+                            onChange={e => setLeadData({...leadData, phone: e.target.value.replace(/[^\d]/g, '')})}
                             className="w-full bg-space-800 border border-space-700 rounded-xl py-2 pl-9 pr-4 text-sm text-white focus:outline-none focus:border-gold-400/50"
                         />
                     </div>

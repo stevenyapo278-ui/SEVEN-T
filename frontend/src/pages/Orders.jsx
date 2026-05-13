@@ -1884,7 +1884,7 @@ export default function Orders() {
                       <input
                         type="text"
                         value={newOrderForm.customerPhone}
-                        onChange={e => setNewOrderForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        onChange={e => setNewOrderForm(prev => ({ ...prev, customerPhone: e.target.value.replace(/[^\d]/g, '') }))}
                         className="input-dark w-full pl-12 py-4 px-5 text-base rounded-2xl"
                         placeholder="+225 ..."
                       />

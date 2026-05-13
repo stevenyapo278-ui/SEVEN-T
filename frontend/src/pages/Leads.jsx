@@ -1066,7 +1066,7 @@ function LeadModal({ lead, onClose, onSaved }) {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => {
-                      const val = e.target.value.replace(/[^\d\s+]/g, '');
+                      const val = e.target.value.replace(/[^\d]/g, '');
                       setFormData(prev => ({ ...prev, phone: val }));
                     }}
                     placeholder="+33 6 12 34 56 78"

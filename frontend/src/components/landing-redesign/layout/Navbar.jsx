@@ -94,59 +94,60 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Overlay */}
-        <AnimatePresence>
-          {isOpen && (
-            <m.div
-              initial={{ opacity: 0, scale: 0.95, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="absolute left-0 right-0 top-full mt-4 flex flex-col gap-2 rounded-3xl border border-white/10 bg-zinc-950 p-4 md:hidden shadow-2xl"
-            >
-              {navLinks.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <m.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            className="absolute left-4 right-4 top-full mt-2 flex flex-col gap-2 rounded-3xl border border-white/10 bg-zinc-950 p-4 md:hidden shadow-2xl z-[60]"
+          >
+            {navLinks.map((item) => (
+              <a
+                key={item.name}
+                href={item.href}
+                onClick={() => setIsOpen(false)}
+                className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                {item.name}
+                <ArrowRight className="h-4 w-4 opacity-30" />
+              </a>
+            ))}
+            <div className="my-2 h-px bg-white/5" />
+            {!user ? (
+              <>
+                <Link
+                  to="/login"
                   onClick={() => setIsOpen(false)}
                   className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
                 >
-                  {item.name}
+                  Connexion
                   <ArrowRight className="h-4 w-4 opacity-30" />
-                </a>
-              ))}
-              <div className="my-2 h-px bg-white/5" />
-              {!user ? (
-                <>
-                  <Link
-                    to="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-white/5 hover:text-white"
-                  >
-                    Connexion
-                    <ArrowRight className="h-4 w-4 opacity-30" />
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setIsOpen(false)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-bold text-black"
-                  >
-                    S'inscrire
-                  </Link>
-                </>
-              ) : (
+                </Link>
                 <Link
-                  to="/dashboard"
+                  to="/register"
                   onClick={() => setIsOpen(false)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-bold text-black"
                 >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Mon Espace
+                  S'inscrire
                 </Link>
-              )}
-            </m.div>
-          )}
-        </AnimatePresence>
-      </nav>
+              </>
+            ) : (
+              <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-sm font-bold text-black"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Mon Espace
+              </Link>
+            )}
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

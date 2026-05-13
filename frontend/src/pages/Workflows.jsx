@@ -1281,7 +1281,7 @@ export default function Workflows() {
                   <input
                     type="text"
                     value={contactForm.phone_number}
-                    onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value })}
+                    onChange={(e) => setContactForm({ ...contactForm, phone_number: e.target.value.replace(/[^\d]/g, '') })}
                     className="input-dark w-full py-4 px-5 text-base font-mono rounded-2xl"
                     placeholder="Ex: +225 07 00 00 00 00"
                     required
