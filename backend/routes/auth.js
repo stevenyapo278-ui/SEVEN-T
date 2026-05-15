@@ -258,6 +258,19 @@ router.get('/google/callback', async (req, res) => {
     }
 });
 
+// Check email availability
+router.post('/check-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email requis' });
+        const existingUser = await db.get('SELECT id FROM users WHERE LOWER(email) = LOWER(?)', email);
+        return res.json({ exists: !!existingUser });
+    } catch (err) {
+        console.error('[Auth] Check email error:', err);
+        return res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Register with validation
 router.post('/register', validate(registerSchema), async (req, res) => {
     try {

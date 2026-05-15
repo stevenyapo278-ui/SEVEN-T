@@ -62,7 +62,7 @@ export default function Register() {
     setFormData({ ...formData, [e.target.name]: value })
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (step === 1) {
       if (!formData.name || !formData.email || !formData.password) {
         return toast.error('Veuillez remplir tous les champs obligatoires')
@@ -73,6 +73,24 @@ export default function Register() {
       if (formData.password.length < 8) {
         return toast.error('Le mot de passe doit faire au moins 8 caractères')
       }
+
+      setLoading(true)
+      try {
+        const response = await fetch('/api/auth/check-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email })
+        })
+        const data = await response.json()
+        if (!response.ok || data.exists) {
+          toast.error('Cet email est déjà utilisé. Veuillez vous connecter.')
+          setLoading(false)
+          return
+        }
+      } catch (err) {
+        console.error('Erreur vérification email:', err)
+      }
+      setLoading(false)
     }
     if (step === 2) {
       if (!formData.company || !formData.job_title || !formData.industry) {
