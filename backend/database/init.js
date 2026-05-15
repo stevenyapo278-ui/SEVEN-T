@@ -186,6 +186,7 @@ export async function initDatabase() {
             credits INTEGER DEFAULT 1500,
             is_admin INTEGER DEFAULT 0,
             is_active INTEGER DEFAULT 1,
+            email_verified INTEGER DEFAULT 1,
             -- Granular permissions for partial admins
             can_manage_users INTEGER DEFAULT 0,
             can_manage_plans INTEGER DEFAULT 0,
@@ -252,6 +253,7 @@ export async function initDatabase() {
 
     // Add columns if they don't exist (for existing databases)
         const columnsToUpdate = [
+            { name: 'email_verified', type: 'INTEGER DEFAULT 1' },
             { name: 'reset_token', type: 'TEXT' },
             { name: 'reset_token_expires', type: 'TIMESTAMP' },
             { name: 'payment_module_enabled', type: 'INTEGER' },

@@ -11,6 +11,7 @@ import AuthCallback from './pages/AuthCallback'
 import Legal from './pages/Legal'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import VerifyOTP from './pages/VerifyOTP'
 
 // Dashboard pages (lazy)
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -103,9 +104,14 @@ function ProtectedRoute({ children }) {
     return <Navigate to={`/login${redirect}`} replace />
   }
 
+  // Enforce email verification
+  if (user.email_verified === 0 && location.pathname !== '/verify-otp') {
+    return <Navigate to="/verify-otp" replace />
+  }
+
   // Enforce onboarding
   const isAdmin = user.is_admin === 1 || user.is_admin === true
-  if (!user.onboarding_completed && !isAdmin && location.pathname !== '/onboarding') {
+  if (!user.onboarding_completed && !isAdmin && location.pathname !== '/onboarding' && location.pathname !== '/verify-otp') {
     return <Navigate to="/onboarding" replace />
   }
 
@@ -238,6 +244,7 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/legal" element={<Legal />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/verify-otp" element={<ProtectedRoute><VerifyOTP /></ProtectedRoute>} />
 
         {/* Partner Portal Routes */}
         <Route path="/partner/login" element={<Suspense fallback={<PageFallback />}><PartnerLogin /></Suspense>} />

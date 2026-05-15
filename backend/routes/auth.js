@@ -13,7 +13,7 @@ import { JWT_SECRET } from '../middleware/auth.js';
 import { generateAccessToken, generateRefreshToken, rotateRefreshToken, revokeAllUserTokens, setAuthCookies, clearAuthCookies } from '../utils/tokens.js';
 import { hashToken } from '../utils/crypto.js';
 import { validate, registerSchema, loginSchema } from '../middleware/security.js';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.js';
+import { sendWelcomeEmail, sendPasswordResetEmail, sendOtpEmail } from '../services/email.js';
 import { notificationService } from '../services/notifications.js';
 import { debugIngest } from '../utils/debugIngest.js';
 import { whatsappManager } from '../services/whatsapp.js';
@@ -294,12 +294,12 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         trialEndDate.setDate(trialEndDate.getDate() + trialDays);
 
         await db.run(`
-            INSERT INTO users (id, email, password, name, company, notification_number, plan, subscription_status, subscription_end_date, credits, industry, job_title, company_size, primary_goal)
-            VALUES (?, ?, ?, ?, ?, ?, 'free', 'trialing', ?, 500, ?, ?, ?, ?)
+            INSERT INTO users (id, email, password, name, company, notification_number, plan, subscription_status, subscription_end_date, credits, industry, job_title, company_size, primary_goal, email_verified)
+            VALUES (?, ?, ?, ?, ?, ?, 'free', 'trialing', ?, 500, ?, ?, ?, ?, 0)
         `, userId, email.toLowerCase().trim(), hashedPassword, name.trim(), company?.trim() || null, phone.trim(), trialEndDate.toISOString(), industry || null, job_title || null, company_size || null, primary_goal || null);
 
         // Get created user and attach plan_features (plan effectif si le plan en base est désactivé ou expiré)
-        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, created_at, subscription_end_date, industry, job_title, company_size, primary_goal FROM users WHERE id = ?', userId);
+        const user = await db.get('SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, created_at, subscription_end_date, industry, job_title, company_size, primary_goal, email_verified FROM users WHERE id = ?', userId);
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
         const plan_features = planConfig?.features || {};
@@ -307,7 +307,11 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         const refreshToken = await generateRefreshToken(user.id);
         setAuthCookies(res, accessToken, refreshToken);
 
-        sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
+        // Generate OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        await redis.setex(`otp:${userId}`, 600, otpCode);
+        sendOtpEmail(user, otpCode).catch(err => console.error('OTP email error:', err));
+
         notificationService.notifyWelcome(userId);
         
         await activityLogger.log({
@@ -319,12 +323,56 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         });
 
         res.status(201).json({
-            message: 'Compte créé avec succès',
+            message: 'Compte créé avec succès. Veuillez vérifier votre email.',
             user: { ...user, plan: effectivePlan, plan_features }
         });
     } catch (error) {
         console.error('Register error:', error);
         res.status(500).json({ error: 'Erreur lors de l\'inscription' });
+    }
+});
+
+// Verify OTP
+router.post('/verify-otp', authenticateToken, async (req, res) => {
+    try {
+        const { otp } = req.body;
+        if (!otp) return res.status(400).json({ error: 'Code OTP requis' });
+
+        const storedOtp = await redis.get(`otp:${req.user.id}`);
+        if (!storedOtp || storedOtp !== otp.trim()) {
+            return res.status(400).json({ error: 'Code OTP invalide ou expiré' });
+        }
+
+        await redis.del(`otp:${req.user.id}`);
+        await db.run('UPDATE users SET email_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?', req.user.id);
+
+        const user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+        sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
+
+        res.json({ message: 'Compte vérifié avec succès', user });
+    } catch (err) {
+        console.error('Verify OTP error:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// Resend OTP
+router.post('/resend-otp', authenticateToken, async (req, res) => {
+    try {
+        const user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+        if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        if (user.email_verified === 1) {
+            return res.status(400).json({ error: 'Compte déjà vérifié' });
+        }
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        await redis.setex(`otp:${req.user.id}`, 600, otpCode);
+        sendOtpEmail(user, otpCode).catch(err => console.error('OTP email error:', err));
+
+        res.json({ message: 'Nouveau code envoyé par email' });
+    } catch (err) {
+        console.error('Resend OTP error:', err);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 

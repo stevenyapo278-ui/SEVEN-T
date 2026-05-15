@@ -625,6 +625,30 @@ export async function sendReportEmail(email, name, report) {
     });
 }
 
+/**
+ * OTP Verification email
+ */
+export async function sendOtpEmail(user, otpCode) {
+    const content = `
+        <h1>Code de vérification 🔐</h1>
+        <p>Bonjour ${user.name},</p>
+        <p>Pour valider la création de votre compte sur ${BRANDING.name}, veuillez utiliser le code de sécurité ci-dessous :</p>
+        <div style="background-color: #0f0f23; border: 2px dashed #fbbf24; border-radius: 12px; padding: 20px; text-align: center; margin: 30px 0;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #fbbf24;">${otpCode}</span>
+        </div>
+        <p><small>Ce code expire dans 10 minutes. Ne le partagez avec personne.</small></p>
+        <div class="warning">
+            <strong>⚠️ Si vous n'avez pas créé de compte sur ${BRANDING.name}</strong>, veuillez ignorer cet email.
+        </div>
+    `;
+
+    return sendEmail({
+        to: user.email,
+        subject: `${otpCode} est votre code de vérification ${BRANDING.name}`,
+        html: baseTemplate(content, `Votre code de vérification est ${otpCode}`),
+    });
+}
+
 export default {
     sendEmail,
     sendWelcomeEmail,
@@ -636,4 +660,5 @@ export default {
     sendPaymentSuccessEmail,
     sendPaymentFailedEmail,
     sendReportEmail,
+    sendOtpEmail,
 };
