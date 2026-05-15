@@ -24,13 +24,14 @@ export default function AuthCallback() {
       const finish = async () => {
         try {
           let resultUserId = user?.id
+          let authResult = null
 
           if (code) {
-            const result = await exchangeCode(code)
-            resultUserId = result?.user?.id || resultUserId
+            authResult = await exchangeCode(code)
+            resultUserId = authResult?.user?.id || resultUserId
           } else if (token) {
-            const result = await loginWithToken(token)
-            resultUserId = result?.user?.id || resultUserId
+            authResult = await loginWithToken(token)
+            resultUserId = authResult?.user?.id || resultUserId
           }
 
           const savedFromStorage = resultUserId ? getAndClearSessionLocation(resultUserId) : null
@@ -40,7 +41,7 @@ export default function AuthCallback() {
             '/dashboard'
 
           // Redirect to onboarding if profile is incomplete
-          if (result?.user && result.user.onboarding_completed === false) {
+          if (authResult?.user && authResult.user.onboarding_completed === false) {
             navigate('/onboarding', { replace: true })
           } else {
             navigate(target, { replace: true })

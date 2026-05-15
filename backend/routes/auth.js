@@ -843,7 +843,7 @@ router.post('/exchange-code', async (req, res) => {
         await redis.del(`eph_code:${code}`); // Single-use
 
         const user = await db.get(
-            'SELECT id, email, name, company, plan, credits, is_admin, role, parent_user_id, subscription_status, subscription_end_date FROM users WHERE id = ? AND is_active = 1',
+            'SELECT * FROM users WHERE id = ? AND is_active = 1',
             userId
         );
         if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' });
@@ -854,9 +854,10 @@ router.post('/exchange-code', async (req, res) => {
 
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
+        const { password: _, ...userWithoutPassword } = user;
         res.json({ 
             user: { 
-                ...user, 
+                ...userWithoutPassword, 
                 plan: effectivePlan, 
                 plan_features: planConfig?.features || {},
                 onboarding_completed: isOnboardingComplete(user)

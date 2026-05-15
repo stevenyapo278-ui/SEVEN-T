@@ -83,6 +83,7 @@ export function AuthProvider({ children }) {
       })
       setUser(decodeUser(response.data.user))
       setIsAuthenticated(Boolean(response.data.user))
+      return response.data
     } catch (error) {
       throw error
     }
