@@ -351,9 +351,9 @@ export default function WhatsAppStatus() {
       const res = await api.post(`/whatsapp/status/${selectedAgent}`, payload)
 
       if (isScheduled) {
-          toast.success('Statut WhatsApp programmé avec succès ! 📅')
+          toast.success('Statut WhatsApp programmé avec succès')
       } else {
-          toast.success('Statut WhatsApp publié avec succès ! 🚀')
+          toast.success('Statut WhatsApp publié avec succès')
       }
 
       // Reset form

@@ -94,7 +94,7 @@ export function ModuleSelector({ formData, setFormData, currentPlanFeatures, pla
             <div className="flex flex-col text-left">
               <span className={`text-[13px] ${!ownerAllowed ? 'text-red-400/80 font-medium' : isIncludedInPlan ? 'text-emerald-400/90 font-medium' : 'text-gray-300'}`}>{label}</span>
               {!ownerAllowed && <span className="text-[8px] text-red-500/60 uppercase font-bold tracking-tighter italic">Limité par le client</span>}
-              {isIncludedInPlan && <span className="text-[9px] text-emerald-500/80 uppercase font-bold tracking-tighter">✨ Inclus dans le plan</span>}
+              {isIncludedInPlan && <span className="text-[9px] text-emerald-500/80 uppercase font-bold tracking-tighter">Inclus dans le plan</span>}
             </div>
           </label>
         ); 

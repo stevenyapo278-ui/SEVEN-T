@@ -25,7 +25,7 @@ function buildSteps(t, isDark) {
     // ─ Étape 1 : Bienvenue
     {
       id: 'welcome',
-      title: 'Bienvenue sur SEVEN-T 🚀',
+      title: 'Bienvenue sur SEVEN-T',
       description: 'Automatisez votre business WhatsApp grâce à l\'IA.',
       icon: Sparkles,
       content: (
@@ -100,7 +100,7 @@ function buildSteps(t, isDark) {
     // ─ Étape 3 : Prêt
     {
       id: 'ready',
-      title: 'Prêt pour le décollage ! ✨',
+      title: 'Prêt pour le décollage !',
       description: 'Votre configuration de base est terminée.',
       icon: CheckCircle,
       content: (

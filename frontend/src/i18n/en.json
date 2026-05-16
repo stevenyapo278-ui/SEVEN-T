@@ -145,7 +145,7 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome",
-    "welcomeGreeting": "Hello, {{name}} 👋",
+    "welcomeGreeting": "Hello, {{name}}",
     "welcomeSubtitle": "Here's an overview of your activity",
     "refresh": "Refresh",
     "alerts": {

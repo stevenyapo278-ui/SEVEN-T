@@ -1682,9 +1682,9 @@ function SettingsTab({ agent, onUpdate }) {
                         {/* Group by provider */}
                         {[...new Set(availableModels.map(m => m.provider))].map(provider => (
                           <optgroup key={provider} label={
-                            provider === 'gemini' ? '⚡ Google Gemini' :
-                            provider === 'openai' ? '🤖 OpenAI' :
-                            provider === 'openrouter' ? '🆓 OpenRouter' : provider.toUpperCase()
+                            provider === 'gemini' ? 'Google Gemini' :
+                            provider === 'openai' ? 'OpenAI' :
+                            provider === 'openrouter' ? 'OpenRouter' : provider.toUpperCase()
                           }>
                             {availableModels
                               .filter(m => m.provider === provider)
@@ -1699,12 +1699,12 @@ function SettingsTab({ agent, onUpdate }) {
                       </>
                     ) : (
                       <>
-                        <optgroup label="⚡ Google Gemini">
-                          <option value="gemini-2.0-flash">Gemini 2.0 Flash - Dernier modèle ⭐</option>
+                        <optgroup label="Google Gemini">
+                          <option value="gemini-2.0-flash">Gemini 2.0 Flash - Dernier modèle</option>
                           <option value="gemini-1.5-flash">Gemini 1.5 Flash - Très rapide</option>
                           <option value="gemini-1.5-pro">Gemini 1.5 Pro - Intelligent</option>
                         </optgroup>
-                        <optgroup label="🤖 OpenAI">
+                        <optgroup label="OpenAI">
                           <option value="gpt-4o-mini">GPT-4o Mini - Rapide</option>
                           <option value="gpt-4o">GPT-4o - Très intelligent</option>
                         </optgroup>

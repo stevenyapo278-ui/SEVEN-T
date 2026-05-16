@@ -150,7 +150,6 @@ export default function Dashboard() {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="min-w-0">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-gold-400/10 rounded-xl"><Sparkles className="w-6 h-6 text-gold-400" /></div>
                 <h1 className={`text-2xl sm:text-3xl font-display font-bold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('dashboard.welcomeGreeting', { name: user?.name?.split(' ')[0] || '' })}
                 </h1>

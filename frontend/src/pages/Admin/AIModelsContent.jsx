@@ -52,8 +52,8 @@ export default function AIModelsContent({
   }, [platformSettings.default_trial_days])
 
   const MEDIA_MODEL_OPTIONS = [
-    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash - Ultrapide ⚡' },
-    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash - Dernier modèle ⭐' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash - Ultrarapide' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash - Dernier modèle' },
     { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash - Très rapide' },
     { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro - Plus précis' }
   ]
@@ -73,10 +73,10 @@ export default function AIModelsContent({
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'fast': return '⚡'
-      case 'smart': return '🧠'
-      case 'free': return '🆓'
-      default: return '🤖'
+      case 'fast': return '[Rapide]'
+      case 'smart': return '[Intelligent]'
+      case 'free': return '[Gratuit]'
+      default: return '[Général]'
     }
   }
 
@@ -147,7 +147,7 @@ export default function AIModelsContent({
             className="input-dark max-w-md"
           >
             {MEDIA_MODEL_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
           {savingMediaModel && <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />}
@@ -216,7 +216,7 @@ export default function AIModelsContent({
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-3">
-          ⚡ Valeur actuelle : <span className="text-amber-400 font-semibold">{platformSettings.default_trial_days || 7} jours</span>
+          Valeur actuelle : <span className="text-amber-400 font-semibold">{platformSettings.default_trial_days || 7} jours</span>
         </p>
       </div>
 
@@ -225,7 +225,7 @@ export default function AIModelsContent({
         <div className="card p-6 border-amber-500/20 bg-amber-500/5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <span>⚡</span> État des Circuit Breakers
+              État des Circuit Breakers
             </h3>
             <button onClick={loadCbHealth} className="p-1.5 text-gray-500 hover:text-gray-100 transition-colors">
               <RefreshCw className="w-4 h-4" />
@@ -544,10 +544,10 @@ export function AIModelModal({ model, onClose, onSave }) {
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 className="input-dark w-full min-h-[44px]"
               >
-                <option value="fast">⚡ Rapide</option>
-                <option value="smart">🧠 Intelligent</option>
-                <option value="free">🆓 Gratuit</option>
-                <option value="general">🤖 Général</option>
+                <option value="fast">Rapide</option>
+                <option value="smart">Intelligent</option>
+                <option value="free">Gratuit</option>
+                <option value="general">Général</option>
               </select>
             </div>
           </div>

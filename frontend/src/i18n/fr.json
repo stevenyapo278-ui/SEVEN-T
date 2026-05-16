@@ -145,7 +145,7 @@
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bienvenue",
-    "welcomeGreeting": "Bonjour, {{name}} 👋",
+    "welcomeGreeting": "Bonjour, {{name}}",
     "welcomeSubtitle": "Voici un aperçu de votre activité",
     "refresh": "Actualiser",
     "alerts": {

@@ -101,7 +101,7 @@ export default function Campaigns() {
 
   const CAMPAIGN_TEMPLATES = [
     { name: 'Relance Inactifs', message: 'Bonjour {{nom}}, cela fait un moment ! Nous avons des nouveautés qui pourraient vous intéresser. À bientôt !' },
-    { name: 'Offre Flash', message: 'Salut {{nom}} ! Profitez de -20% sur tout le store aujourd\'hui seulement avec le code FLASH20. 🚀' },
+    { name: 'Offre Flash', message: 'Salut {{nom}} ! Profitez de -20% sur tout le store aujourd\'hui seulement avec le code FLASH20.' },
     { name: 'Bienvenue', message: 'Bienvenue chez nous {{nom}} ! Ravi de vous compter parmi nos membres. N\'hésitez pas si vous avez des questions.' },
   ]
 
@@ -320,7 +320,7 @@ export default function Campaigns() {
       })
       if (res.data?.improved) {
         setForm(prev => ({ ...prev, message: res.data.improved }))
-        toast.success('Message optimisé ✨')
+        toast.success('Message optimisé')
       }
     } catch (error) {
       console.error('AI Rewrite Error:', error)

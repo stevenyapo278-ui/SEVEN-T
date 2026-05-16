@@ -142,7 +142,7 @@ export default function GlobalAIAssistantModal({ isOpen, onClose }) {
         value: {
           id: 'magic-product',
           type: 'product',
-          label: `📦 Créer le produit "${name}"`,
+          label: `Créer le produit "${name}"`,
           desc: price ? `Prix : ${price} FCFA` : "Ajouter instantanément au catalogue",
           data: { name, price }
         }
@@ -160,7 +160,7 @@ export default function GlobalAIAssistantModal({ isOpen, onClose }) {
          value: {
            id: 'magic-lead',
            type: 'lead',
-           label: `👤 Ajouter le contact "${name}"`,
+           label: `Ajouter le contact "${name}"`,
            desc: phone ? `Téléphone : ${phone}` : "Enregistrer dans le CRM",
            data: { name, phone }
          }
@@ -366,7 +366,7 @@ export default function GlobalAIAssistantModal({ isOpen, onClose }) {
         <div className="flex-1 overflow-y-auto max-h-[60vh] custom-scrollbar p-2">
           {magicAction && (
              <div className="px-1 mb-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-2 px-3">Suggestion Magique ✨</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-500 mb-2 px-3">Suggestion Magique</p>
                 <button 
                   onClick={handleMagicAction}
                   disabled={isExecuting}
