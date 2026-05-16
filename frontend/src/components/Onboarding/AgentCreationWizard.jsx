@@ -32,7 +32,7 @@ const StepIntro = ({ isDark }) => (
       <div className="relative size-24 sm:size-32 flex-shrink-0">
         <div className="absolute inset-0 bg-gold-400/20 blur-2xl rounded-full animate-pulse" />
         <div className="relative size-24 sm:size-32 bg-gradient-to-br from-gold-400 to-amber-600 rounded-[2rem] sm:rounded-[2.5rem] flex items-center justify-center shadow-2xl">
-          <Sparkles className="size-12 sm:size-16 text-black" />
+          <Sparkles className={`size-12 sm:size-16 ${isDark ? 'text-black' : 'text-white'}`} />
         </div>
       </div>
       <div className="space-y-4">
@@ -86,7 +86,7 @@ const StepTemplate = ({ isDark, templates, selectedId, onSelect }) => (
             }`}
           >
             <div className={`size-12 sm:size-14 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 flex items-center justify-center transition-all ${
-              isSelected ? 'bg-gold-400 text-black' : isDark ? 'bg-white/5 text-zinc-500 group-hover:text-white' : 'bg-zinc-200 text-zinc-500 group-hover:text-zinc-900'
+              isSelected ? `bg-gold-400 ${isDark ? 'text-black' : 'text-white'}` : isDark ? 'bg-white/5 text-zinc-500 group-hover:text-white' : 'bg-zinc-200 text-zinc-500 group-hover:text-zinc-900'
             }`}>
               <Icon className="size-6 sm:size-7" />
             </div>
@@ -94,7 +94,7 @@ const StepTemplate = ({ isDark, templates, selectedId, onSelect }) => (
             <p className={`text-xs sm:text-sm leading-snug line-clamp-2 ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>{template.description}</p>
             {isSelected && (
               <div className="absolute top-4 sm:top-6 right-4 sm:right-6 size-7 sm:size-8 rounded-full bg-gold-400 flex items-center justify-center">
-                <Check className="size-4 sm:size-5 text-black" />
+                <Check className={`size-4 sm:size-5 ${isDark ? 'text-black' : 'text-white'}`} />
               </div>
             )}
           </m.div>
@@ -191,7 +191,7 @@ const StepBrain = ({ isDark, models, selectedId, loading, onSelect }) => (
                 : isDark ? 'bg-white/[0.02] border-white/5 hover:border-white/20' : 'bg-zinc-50 border-zinc-100 hover:border-gold-400/30 shadow-sm'
             }`}
           >
-            <div className={`size-10 sm:size-12 rounded-lg sm:rounded-2xl flex items-center justify-center ${isSelected ? 'bg-gold-400 text-black' : isDark ? 'bg-white/5 text-zinc-500' : 'bg-zinc-200 text-zinc-500'}`}>
+            <div className={`size-10 sm:size-12 rounded-lg sm:rounded-2xl flex items-center justify-center ${isSelected ? `bg-gold-400 ${isDark ? 'text-black' : 'text-white'}` : isDark ? 'bg-white/5 text-zinc-500' : 'bg-zinc-200 text-zinc-500'}`}>
               <Sparkles className="size-5 sm:size-6" />
             </div>
             <div className="flex-1 min-w-0">
@@ -218,7 +218,7 @@ const StepConfirm = ({ isDark, selectedTemplate, formData }) => (
         transition={{ repeat: Infinity, duration: 2 }}
         className="size-20 sm:size-24 mx-auto bg-gradient-to-br from-gold-400 to-amber-600 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center mb-4 sm:mb-6 shadow-[0_0_50px_rgba(245,212,122,0.25)]"
        >
-          <Rocket className="size-10 sm:size-12 text-black" />
+          <Rocket className={`size-10 sm:size-12 ${isDark ? 'text-black' : 'text-white'}`} />
        </m.div>
        <h2 className={`text-2xl sm:text-4xl font-syne font-black italic ${isDark ? 'text-white' : 'text-zinc-900'}`}>Prêt pour le décollage ?</h2>
     </div>
@@ -465,7 +465,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
             <div className={`hidden lg:flex lg:w-72 border-r p-8 flex-col ${isDark ? 'bg-white/[0.02] border-white/5' : 'bg-zinc-50 border-zinc-100'}`}>
                <div className="flex items-center gap-3 mb-12">
                   <div className="size-10 rounded-xl bg-gold-400 flex items-center justify-center">
-                     <Bot className="size-6 text-black" />
+                     <Bot className={`size-6 ${isDark ? 'text-black' : 'text-white'}`} />
                   </div>
                   <span className={`font-syne font-black italic ${isDark ? 'text-white' : 'text-zinc-900'}`}>SEVEN T</span>
                </div>
@@ -478,7 +478,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
                     return (
                       <div key={step.id} className="flex items-center gap-4 group">
                         <div className={`size-10 rounded-xl flex items-center justify-center border transition-all duration-500 ${
-                          isActive ? 'bg-gold-400 border-gold-400 text-black shadow-[0_0_20px_rgba(245,212,122,0.3)]' : 
+                          isActive ? `bg-gold-400 border-gold-400 ${isDark ? 'text-black' : 'text-white'} shadow-[0_0_20px_rgba(245,212,122,0.3)]` : 
                           isDone ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : isDark ? 'bg-white/5 border-white/10 text-white/20' : 'bg-zinc-200 border-zinc-300 text-zinc-400'
                         }`}>
                             {isDone ? <Check className="size-5" /> : <step.icon className="size-5" />}
@@ -507,7 +507,7 @@ export default function AgentCreationWizard({ isOpen, onClose, onSuccess }) {
               <div className={`p-6 sm:p-8 border-b flex items-center justify-between ${isDark ? 'border-white/5' : 'border-zinc-100'}`}>
                  <div className="flex items-center gap-3">
                     <div className="size-8 rounded-lg bg-gold-400 flex items-center justify-center">
-                       <Bot className="size-5 text-black" />
+                       <Bot className={`size-5 ${isDark ? 'text-black' : 'text-white'}`} />
                     </div>
                     <span className={`font-bold ${isDark ? 'text-white' : 'text-zinc-900'}`}>{STEPS[currentStep].title}</span>
                  </div>

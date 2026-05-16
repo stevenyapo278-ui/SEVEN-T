@@ -67,7 +67,7 @@ export default function ROICalculator({ isDark = true }) {
 
         <div className="relative">
           <div className={`p-8 rounded-3xl bg-gradient-to-br ${isDark ? 'from-amber-500/20 to-orange-500/10' : 'from-amber-50 to-orange-50'} border border-amber-500/20 text-center`}>
-            <div className="inline-flex p-3 rounded-2xl bg-amber-500 text-black mb-6">
+            <div className={`inline-flex p-3 rounded-2xl bg-amber-500 ${isDark ? 'text-black' : 'text-white'} mb-6`}>
               <TrendingUp size={24} />
             </div>
             <p className={`text-sm uppercase tracking-widest font-bold mb-2 ${textMuted}`}>Gain mensuel estimé</p>
@@ -90,7 +90,7 @@ export default function ROICalculator({ isDark = true }) {
               *Basé sur une augmentation moyenne de 35% du taux de conversion observée sur nos clients utilisant l'IA.
             </p>
 
-            <button className="w-full py-4 bg-amber-500 text-black rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20">
+            <button className={`w-full py-4 bg-amber-500 ${isDark ? 'text-black' : 'text-white'} rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20`}>
               Capturer ce gain maintenant <ArrowRight size={18} />
             </button>
           </div>

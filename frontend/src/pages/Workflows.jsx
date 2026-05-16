@@ -939,12 +939,12 @@ export default function Workflows() {
                           onClick={() => setForm({ ...form, trigger_type: key, trigger_config: {} })}
                           className={`p-4 rounded-2xl border-2 text-left transition-all min-h-[100px] flex flex-col justify-between ${
                             isSelected
-                              ? 'border-gold-400 bg-gold-400 text-black'
+                              ? `border-gold-400 bg-gold-400 ${isDark ? 'text-black' : 'text-white'}`
                               : 'border-white/5 bg-white/[0.02] hover:border-white/10 hover:bg-white/5'
                           }`}
                         >
-                          <TriggerIcon className={`w-6 h-6 ${isSelected ? 'text-black' : 'text-gray-400'}`} />
-                          <p className={`text-[10px] font-black uppercase tracking-tight leading-tight ${isSelected ? 'text-black' : (isDark ? 'text-gray-100' : 'text-gray-900')}`}>{trigger.name}</p>
+                          <TriggerIcon className={`w-6 h-6 ${isSelected ? (isDark ? 'text-black' : 'text-white') : 'text-gray-400'}`} />
+                          <p className={`text-[10px] font-black uppercase tracking-tight leading-tight ${isSelected ? (isDark ? 'text-black' : 'text-white') : (isDark ? 'text-gray-100' : 'text-gray-900')}`}>{trigger.name}</p>
                         </button>
                       )
                     })}
@@ -989,7 +989,7 @@ export default function Workflows() {
                           <div key={idx} className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl animate-fadeIn relative">
                             <div className="flex items-center justify-between gap-4 mb-6">
                               <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-2xl bg-gold-400 text-black shadow-lg shadow-gold-400/20">
+                                <div className={`p-3 rounded-2xl bg-gold-400 ${isDark ? 'text-black' : 'text-white'} shadow-lg shadow-gold-400/20`}>
                                   <ActionIcon className="w-5 h-5" />
                                 </div>
                                 <div>

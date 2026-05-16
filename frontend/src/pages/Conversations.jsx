@@ -477,7 +477,7 @@ export default function Conversations() {
             <button onClick={loadConversations} disabled={loading} className={`p-2 rounded-xl border transition-all ${isDark ? 'bg-space-800 border-space-700 text-zinc-400 hover:text-white' : 'bg-white border-zinc-200 text-zinc-500'}`}>
               <RefreshCw className={`size-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
-            <button onClick={() => bulkMode ? clearSelection() : setBulkMode(true)} className={`px-4 py-2 rounded-xl font-medium transition-all ${bulkMode ? 'bg-gold-400 text-black' : 'bg-space-700 text-gray-300'}`}>
+            <button onClick={() => bulkMode ? clearSelection() : setBulkMode(true)} className={`px-4 py-2 rounded-xl font-medium transition-all ${bulkMode ? `bg-gold-400 ${isDark ? 'text-black' : 'text-white'}` : isDark ? 'bg-space-700 text-gray-300' : 'bg-white border border-gray-200 text-zinc-700 hover:bg-gray-50 shadow-sm'}`}>
               {bulkMode ? 'Annuler' : 'Sélection'}
             </button>
           </div>

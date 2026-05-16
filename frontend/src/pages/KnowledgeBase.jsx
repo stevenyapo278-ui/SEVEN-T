@@ -480,7 +480,7 @@ function KnowledgeStructureModal({ onClose }) {
 
         <button 
           onClick={onClose}
-          className="w-full mt-8 py-4 bg-gold-400 text-black font-bold rounded-2xl hover:bg-gold-500 transition-all shadow-lg"
+          className={`w-full mt-8 py-4 bg-gold-400 ${isDark ? 'text-black' : 'text-white'} font-bold rounded-2xl hover:bg-gold-500 transition-all shadow-lg`}
         >
           J'ai compris, je commence !
         </button>
@@ -686,12 +686,12 @@ function KnowledgeModal({ item, onClose, onSaved }) {
                   onClick={() => setActiveType(opt.id)}
                   className={`flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all min-h-[80px] ${
                     activeType === opt.id 
-                      ? 'bg-gold-400 text-black border-gold-400' 
+                      ? `bg-gold-400 ${isDark ? 'text-black' : 'text-white'} border-gold-400` 
                       : 'bg-white/[0.02] border-white/5 text-gray-500 hover:border-white/10 hover:bg-white/5'
                   }`}
                 >
                   <opt.icon className="w-5 h-5" />
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${activeType === opt.id ? 'text-black' : 'text-gray-500'}`}>{opt.label}</span>
+                  <span className={`text-[9px] font-black uppercase tracking-widest ${activeType === opt.id ? (isDark ? 'text-black' : 'text-white') : 'text-gray-500'}`}>{opt.label}</span>
                 </button>
               ))}
             </div>
@@ -735,7 +735,7 @@ function KnowledgeModal({ item, onClose, onSaved }) {
                         onClick={() => setSyncFrequency(opt.id)}
                         className={`py-2 px-3 rounded-xl border text-[10px] font-black uppercase tracking-tighter transition-all ${
                           syncFrequency === opt.id 
-                            ? 'bg-gold-400 text-black border-gold-400' 
+                            ? `bg-gold-400 ${isDark ? 'text-black' : 'text-white'} border-gold-400` 
                             : 'bg-white/5 border-white/10 text-gray-500 hover:border-white/20'
                         }`}
                       >

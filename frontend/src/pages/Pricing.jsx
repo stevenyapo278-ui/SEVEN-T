@@ -25,7 +25,7 @@ const PLAN_ACCENT = {
 const PLAN_BTN = {
   free: 'bg-gray-700 hover:bg-gray-600 text-white',
   starter: 'bg-blue-600 hover:bg-blue-500 text-white',
-  pro: 'bg-amber-500 hover:bg-amber-400 text-black',
+  pro: 'bg-amber-500 hover:bg-amber-400',
   business: 'bg-purple-600 hover:bg-purple-500 text-white',
   enterprise: 'bg-rose-600 hover:bg-rose-500 text-white',
 }
@@ -175,13 +175,13 @@ export default function Pricing() {
         }`}>
           <button
             onClick={() => setBilling('monthly')}
-            className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${billing === 'monthly' ? 'bg-gold-500 text-black' : 'text-gray-400 hover:text-white'}`}
+            className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${billing === 'monthly' ? `bg-gold-500 ${isDark ? 'text-black' : 'text-white'}` : 'text-gray-400 hover:text-white'}`}
           >
             Mensuel
           </button>
           <button
             onClick={() => setBilling('yearly')}
-            className={`px-5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${billing === 'yearly' ? 'bg-gold-500 text-black' : 'text-gray-400 hover:text-white'}`}
+            className={`px-5 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${billing === 'yearly' ? `bg-gold-500 ${isDark ? 'text-black' : 'text-white'}` : 'text-gray-400 hover:text-white'}`}
           >
             Annuel <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-semibold">-20%</span>
           </button>
@@ -215,12 +215,12 @@ export default function Pricing() {
                 className={`relative rounded-3xl border-2 bg-gradient-to-b ${gradient} p-6 flex flex-col transition-all duration-300 ${isCurrent ? 'border-gold-400 ring-2 ring-gold-400/30 scale-[1.02]' : accent} ${isPro ? 'shadow-xl shadow-amber-500/10' : ''}`}
               >
                 {isPro && !isCurrent && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest">
+                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 ${isDark ? 'text-black' : 'text-white'} text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest`}>
                     Populaire
                   </div>
                 )}
                 {isCurrent && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gold-500 text-black text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest">
+                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-gold-500 ${isDark ? 'text-black' : 'text-white'} text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest`}>
                     Plan actuel
                   </div>
                 )}
@@ -283,7 +283,7 @@ export default function Pricing() {
                     <button
                       onClick={() => startCheckout(plan.id)}
                       disabled={!!checkoutLoading}
-                      className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${btnStyle} disabled:opacity-50`}
+                      className={`w-full py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${btnStyle} ${plan.id === 'pro' ? (isDark ? 'text-black' : 'text-white') : ''} disabled:opacity-50`}
                     >
                       {checkoutLoading === plan.id ? (
                         <><Loader2 size={16} className="animate-spin" /> Redirection...</>
@@ -321,7 +321,7 @@ export default function Pricing() {
               <button
                 onClick={validateCoupon}
                 disabled={couponLoading || !couponCode.trim()}
-                className="whitespace-nowrap px-3 sm:px-5 py-2 bg-gold-500 hover:bg-gold-400 text-black rounded-xl text-sm font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-1"
+                className={`whitespace-nowrap px-3 sm:px-5 py-2 bg-gold-500 hover:bg-gold-400 ${isDark ? 'text-black' : 'text-white'} rounded-xl text-sm font-bold disabled:opacity-50 transition-all flex items-center justify-center gap-1`}
               >
                 {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Valider'}
               </button>

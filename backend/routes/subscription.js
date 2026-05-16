@@ -218,8 +218,10 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
             });
         }
 
-        // Determine initial status based on GeniusPay response
-        const initialStatus = (result.isActive || result.status === 'active') ? 'active' : 'pending';
+        // Determine initial status based on GeniusPay response.
+        // We only consider it fully active if amount is 0 (100% discount).
+        // Otherwise, it must go through checkout and the webhook will activate it.
+        const initialStatus = (amount === 0) ? 'active' : 'pending';
 
         // Record the subscription
         await db.run(`
@@ -227,10 +229,9 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
             VALUES (?, ?, ?, ?, ?, ?)
         `, subId, userId, planId, result.subscriptionId, initialStatus, billingPeriod);
 
-        // If GeniusPay activated the subscription immediately (sandbox or direct debit)
-        // activate the plan now without waiting for the webhook
-        if (initialStatus === 'active') {
-            console.log(`[Subscription] GeniusPay subscription immediately active for user ${userId}. Activating plan ${planId}.`);
+        // If amount is 0, activate the plan now without waiting for the webhook
+        if (amount === 0) {
+            console.log(`[Subscription] Subscription amount is 0 for user ${userId}. Activating plan ${planId}.`);
             const endDate = new Date();
             if (billingPeriod === 'yearly') {
                 endDate.setFullYear(endDate.getFullYear() + 1);
@@ -253,7 +254,7 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
         }
 
         // Otherwise redirect to checkout
-        res.json({ url: result.checkoutUrl });
+        res.json({ url: result.checkoutUrl || returnUrl });
     } catch (err) {
         console.error('GeniusPay sub creation error:', err);
         res.status(500).json({ error: 'Erreur lors de la création de l\'abonnement', details: err.message });
