@@ -324,7 +324,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
 
         res.status(201).json({
             message: 'Compte créé avec succès. Veuillez vérifier votre email.',
-            user: { ...user, plan: effectivePlan, plan_features }
+            user: { ...user, plan: effectivePlan, plan_features, onboarding_completed: isOnboardingComplete(user) }
         });
     } catch (error) {
         console.error('Register error:', error);
@@ -349,7 +349,14 @@ router.post('/verify-otp', authenticateToken, async (req, res) => {
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
         sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
 
-        res.json({ message: 'Compte vérifié avec succès', user });
+        const effectivePlan = await getEffectivePlanName(user.plan, user);
+        const planConfig = await getPlan(effectivePlan);
+        const plan_features = planConfig?.features || {};
+
+        res.json({ 
+            message: 'Compte vérifié avec succès', 
+            user: { ...user, plan: effectivePlan, plan_features, onboarding_completed: isOnboardingComplete(user) } 
+        });
     } catch (err) {
         console.error('Verify OTP error:', err);
         res.status(500).json({ error: 'Erreur serveur' });
@@ -491,7 +498,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 
         res.json({
             message: 'Connexion réussie',
-            user: { ...userWithoutPassword, plan: effectivePlan, plan_features, permissions: permissions2, roles: roleKeys, influencer_only: influencerOnly }
+            user: { ...userWithoutPassword, plan: effectivePlan, plan_features, permissions: permissions2, roles: roleKeys, influencer_only: influencerOnly, onboarding_completed: isOnboardingComplete(userWithoutPassword) }
         });
     } catch (error) {
         console.error('Login error:', error);
