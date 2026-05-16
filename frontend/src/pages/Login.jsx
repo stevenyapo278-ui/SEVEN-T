@@ -207,10 +207,10 @@ export default function Login() {
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-gradient-to-r from-gold-400 to-gold-500 text-black font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 transition-all disabled:opacity-50"
+              className={`w-full py-4 bg-gradient-to-r from-gold-400 to-gold-500 ${isDark ? 'text-black' : 'text-white'} font-bold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-gold-400/20 hover:shadow-gold-400/30 transition-all disabled:opacity-50`}
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <div className={`w-5 h-5 border-2 ${isDark ? 'border-black' : 'border-white'} border-t-transparent rounded-full animate-spin`} />
               ) : (
                 <>
                   Se connecter

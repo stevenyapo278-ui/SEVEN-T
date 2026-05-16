@@ -187,10 +187,10 @@ export default function VerifyOTP() {
             <button
               type="submit"
               disabled={loading || otp.join('').length < 6}
-              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-gold-400 to-gold-600 text-black py-4 rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-gold-500/20 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group"
+              className={`w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-gold-400 to-gold-600 ${isDark ? 'text-black' : 'text-white'} py-4 rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-gold-500/20 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group`}
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                <div className={`w-5 h-5 border-2 ${isDark ? 'border-black/30 border-t-black' : 'border-white/30 border-t-white'} rounded-full animate-spin`} />
               ) : (
                 <>
                   <span>Valider mon compte</span>

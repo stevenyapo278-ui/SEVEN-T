@@ -320,7 +320,7 @@ export default function Onboarding() {
                 <button
                   type="button"
                   onClick={nextStep}
-                  className="w-full sm:w-auto flex-[2] flex items-center justify-center space-x-2 bg-gradient-to-r from-gold-400 to-gold-600 text-black py-3.5 px-4 rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-gold-500/20 group order-1 sm:order-2"
+                  className={`w-full sm:w-auto flex-[2] flex items-center justify-center space-x-2 bg-gradient-to-r from-gold-400 to-gold-600 ${isDark ? 'text-black' : 'text-white'} py-3.5 px-4 rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-gold-500/20 group order-1 sm:order-2`}
                 >
                   <span>Continuer</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -329,10 +329,10 @@ export default function Onboarding() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-auto flex-[2] flex items-center justify-center space-x-2 bg-gradient-to-r from-gold-400 to-gold-600 text-black py-3.5 px-4 rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-gold-500/20 disabled:opacity-50 disabled:hover:scale-100 order-1 sm:order-2"
+                  className={`w-full sm:w-auto flex-[2] flex items-center justify-center space-x-2 bg-gradient-to-r from-gold-400 to-gold-600 ${isDark ? 'text-black' : 'text-white'} py-3.5 px-4 rounded-2xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-lg shadow-gold-500/20 disabled:opacity-50 disabled:hover:scale-100 order-1 sm:order-2`}
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                    <div className={`w-5 h-5 border-2 ${isDark ? 'border-black/30 border-t-black' : 'border-white/30 border-t-white'} rounded-full animate-spin`} />
                   ) : (
                     <>
                       <span>Terminer l'installation</span>
