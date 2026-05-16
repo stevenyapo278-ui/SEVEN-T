@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../database/init.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireModule } from '../middleware/requireModule.js';
+import { insightsService } from '../services/insightsService.js';
 
 const router = Router();
 router.use(authenticateToken);
@@ -588,6 +589,20 @@ router.get('/insights', async (req, res) => {
     } catch (error) {
         console.error('Get insights error:', error);
         res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// POST /insights/generate
+router.post('/insights/generate', async (req, res) => {
+    try {
+        const result = await insightsService.generateInsightsForUser(req.user.ownerId);
+        if (!result) {
+            return res.status(400).json({ error: 'Pas assez de messages récents pour générer une analyse (minimum 2 requis).' });
+        }
+        res.json({ success: true, insights: result });
+    } catch (error) {
+        console.error('Generate insights error:', error);
+        res.status(500).json({ error: error.message || 'Erreur serveur' });
     }
 });
 

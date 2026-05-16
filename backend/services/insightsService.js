@@ -44,9 +44,9 @@ class InsightsService {
                 LIMIT 200
             `, userId);
 
-            if (!messages || messages.length < 10) {
+            if (!messages || messages.length < 2) {
                 console.log(`[Insights] Not enough data for user ${userId}`);
-                return;
+                return null;
             }
 
             // 2. Call AI Service for summary

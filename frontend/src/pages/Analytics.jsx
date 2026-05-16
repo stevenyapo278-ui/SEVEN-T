@@ -20,7 +20,8 @@ import {
   ChevronDown,
   Target,
   Heart,
-  Zap
+  Zap,
+  HelpCircle
 } from 'lucide-react'
 import {
   AreaChart,
@@ -68,6 +69,25 @@ export default function Analytics() {
   const [relanceROI, setRelanceROI] = useState(null)
   const [sentimentStats, setSentimentStats] = useState([])
   const [conversionStats, setConversionStats] = useState([])
+  const [showHelpModal, setShowHelpModal] = useState(false)
+  const [generatingInsights, setGeneratingInsights] = useState(false)
+
+  const handleGenerateInsights = async () => {
+    setGeneratingInsights(true)
+    const toastId = toast.loading('Analyse IA des conversations en cours...')
+    try {
+      const res = await api.post('/analytics/insights/generate')
+      if (res.data.success) {
+        toast.success('Analyse Social Listening générée avec succès !', { id: toastId })
+        loadAnalytics()
+      }
+    } catch (error) {
+      console.error('Generate insights error:', error)
+      toast.error(error.response?.data?.error || 'Erreur lors de la génération de l\'analyse IA', { id: toastId })
+    } finally {
+      setGeneratingInsights(false)
+    }
+  }
 
   const isModuleEnabled = (() => {
     // Admin bypass
@@ -170,14 +190,23 @@ export default function Analytics() {
                Performances
                {activeTab === 'overview' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold-400 rounded-full" />}
              </button>
-             <button
-               onClick={() => setActiveTab('social')}
-               className={`pb-4 text-sm font-bold tracking-wider uppercase transition-all relative flex items-center gap-2 ${activeTab === 'social' ? 'text-gold-400' : 'text-gray-500 hover:text-gray-300'}`}
-             >
-               Social Listening
-               <span className="bg-gold-400/20 text-gold-400 text-[10px] px-1.5 py-0.5 rounded-full">BÊTA IA</span>
-               {activeTab === 'social' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold-400 rounded-full" />}
-             </button>
+             <div className="flex items-center gap-2">
+               <button
+                 onClick={() => setActiveTab('social')}
+                 className={`pb-4 text-sm font-bold tracking-wider uppercase transition-all relative flex items-center gap-2 ${activeTab === 'social' ? 'text-gold-400' : 'text-gray-500 hover:text-gray-300'}`}
+               >
+                 Social Listening
+                 <span className="bg-gold-400/20 text-gold-400 text-[10px] px-1.5 py-0.5 rounded-full">BÊTA IA</span>
+                 {activeTab === 'social' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold-400 rounded-full" />}
+               </button>
+               <button
+                 onClick={() => setShowHelpModal(!showHelpModal)}
+                 className={`pb-4 text-gray-500 hover:text-gold-400 transition-colors ${showHelpModal ? 'text-gold-400' : ''}`}
+                 title="Comprendre le Social Listening"
+               >
+                 <HelpCircle className="size-4.5" />
+               </button>
+             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0 relative z-20 mt-6">
@@ -636,6 +665,61 @@ export default function Analytics() {
         </>
       ) : (
         <div className="space-y-6 pb-20 animate-fadeIn">
+          {/* Help Banner / Modal */}
+          {showHelpModal && (
+            <div className={`card p-6 border-gold-400/30 ${isDark ? 'bg-space-800/90' : 'bg-gold-400/5'} relative animate-fadeIn`}>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gold-400/20 rounded-xl text-gold-400">
+                    <HelpCircle className="size-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-display font-bold text-zinc-100">Qu'est-ce que le Social Listening ?</h3>
+                    <p className="text-xs text-gold-400">Guide d'interprétation pour les clients SaaS</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHelpModal(false)} className="text-gray-400 hover:text-white text-sm font-bold">✕</button>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed mb-6">
+                Le volet <b>Social Listening</b> utilise l'intelligence artificielle (SEVEN-T Intelligence) pour analyser en continu les conversations WhatsApp de vos agents sur les 7 derniers jours. Il synthétise les échanges bruts en informations décisionnelles claires pour votre croissance.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl bg-space-900/50 border border-blue-400/20">
+                  <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Target className="size-3.5" /> Points d'Intérêt</h4>
+                  <p className="text-xs text-gray-400">Identifie les questions, sujets ou produits les plus fréquemment réclamés par vos clients.</p>
+                </div>
+                <div className="p-4 rounded-xl bg-space-900/50 border border-emerald-400/20">
+                  <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Heart className="size-3.5" /> Tonalité Globale</h4>
+                  <p className="text-xs text-gray-400">Mesure l'humeur et la satisfaction générale (Positive, Neutre, Négative) sur l'ensemble des échanges.</p>
+                </div>
+                <div className="p-4 rounded-xl bg-space-900/50 border border-red-400/20">
+                  <h4 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Filter className="size-3.5" /> Alertes & Frictions</h4>
+                  <p className="text-xs text-gray-400">Détecte les points de blocage, réclamations ou insatisfactions avec leur niveau de gravité (Moyen/Critique).</p>
+                </div>
+                <div className="p-4 rounded-xl bg-space-900/50 border border-gold-400/20">
+                  <h4 className="text-xs font-bold text-gold-400 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Zap className="size-3.5" /> Recommandations</h4>
+                  <p className="text-xs text-gray-400">Suggère des opportunités commerciales concrètes pour optimiser vos ventes et vos processus.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Bar for Social Listening */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-space-800/40 p-4 rounded-2xl border border-white/5">
+            <div>
+              <h3 className="text-sm font-display font-bold text-zinc-100">Analyses IA SEVEN-T</h3>
+              <p className="text-xs text-gray-400">Généré automatiquement ou à la demande à partir de vos conversations récentes</p>
+            </div>
+            <button
+              onClick={handleGenerateInsights}
+              disabled={generatingInsights}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gold-400 text-space-950 font-bold hover:bg-gold-300 transition-all shadow-lg shadow-gold-400/20 text-sm disabled:opacity-50 flex-shrink-0"
+            >
+              <RefreshCw className={`size-4 ${generatingInsights ? 'animate-spin' : ''}`} />
+              {generatingInsights ? 'Analyse en cours...' : 'Générer une analyse IA'}
+            </button>
+          </div>
+
           {insights.length > 0 ? (
             insights.map((insight, idx) => (
               <div key={insight.id} className="space-y-6 border-b border-white/5 pb-12 last:border-0">
