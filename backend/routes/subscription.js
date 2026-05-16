@@ -253,8 +253,41 @@ router.post('/create-geniuspay-subscription', authenticateToken, async (req, res
             });
         }
 
+        let checkoutUrlToUse = result.checkoutUrl;
+
+        // Fallback: If GeniusPay API doesn't return a checkout URL for a subscription,
+        // create a one-off payment (invoice) to process the initial charge.
+        if (!checkoutUrlToUse && amount > 0) {
+            console.log(`[Subscription] No checkout URL returned for subscription ${result.subscriptionId}. Falling back to one-off payment...`);
+            const paymentId = uuidv4();
+            const invoice = await geniuspay.createInvoiceWithCredentials(credentials, {
+                amount,
+                currency: planRow.price_currency || 'XOF',
+                description: `Paiement initial - Abonnement ${planRow.display_name}`,
+                referenceId: paymentId,
+                returnUrl,
+                callbackUrl,
+                customer: {
+                    name: userRow.name,
+                    email: userRow.email,
+                    phone: userRow.phone
+                }
+            });
+
+            if (invoice && invoice.paymentUrl) {
+                checkoutUrlToUse = invoice.paymentUrl;
+                // Insert into saas_subscription_payments so the webhook can find it
+                await db.run(`
+                    INSERT INTO saas_subscription_payments (id, user_id, plan_id, billing_period, amount, original_amount, discount_amount, currency, status, external_id, coupon_code)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, paymentId, userId, planId, billingPeriod, amount, originalAmount, discountAmount, planRow.price_currency || 'XOF', 'pending', invoice.invoiceId, finalCouponCode);
+            } else {
+                return res.status(500).json({ error: 'Impossible de générer le lien de paiement GeniusPay.' });
+            }
+        }
+
         // Otherwise redirect to checkout
-        res.json({ url: result.checkoutUrl || returnUrl });
+        res.json({ url: checkoutUrlToUse || returnUrl });
     } catch (err) {
         console.error('GeniusPay sub creation error:', err);
         res.status(500).json({ error: 'Erreur lors de la création de l\'abonnement', details: err.message });
