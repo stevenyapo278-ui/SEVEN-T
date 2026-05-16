@@ -311,7 +311,6 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         await redis.setex(`otp:${userId}`, 600, otpCode);
         sendOtpEmail(user, otpCode).catch(err => console.error('OTP email error:', err));
-        sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
 
         notificationService.notifyWelcome(userId);
         
@@ -348,6 +347,7 @@ router.post('/verify-otp', authenticateToken, async (req, res) => {
         await db.run('UPDATE users SET email_verified = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?', req.user.id);
 
         const user = await db.get('SELECT * FROM users WHERE id = ?', req.user.id);
+        sendWelcomeEmail(user).catch(err => console.error('Welcome email error:', err));
 
         const effectivePlan = await getEffectivePlanName(user.plan, user);
         const planConfig = await getPlan(effectivePlan);
