@@ -62,13 +62,69 @@ const Landing = () => {
         <meta name="description" content="Vendez plus sur WhatsApp même quand vous dormez. L'IA SEVEN T gère vos messages, vos stocks et vos statuts automatiquement." />
       </Helmet>
 
-      {/* Simplified, Safe Background Elements */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
-        <div className="absolute inset-x-0 top-0 h-[500px] bg-[radial-gradient(circle_at_50%_0%,rgba(245,158,11,0.1),transparent_70%)]" />
+      {/* Global PixelBlast & LightRays Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.75]">
+        <LightRays
+          raysOrigin="top-center"
+          raysColor="#f59e0b"
+          raysSpeed={1}
+          lightSpread={0.5}
+          rayLength={3}
+          pulsating={false}
+          fadeDistance={1}
+          saturation={1}
+          followMouse
+          mouseInfluence={0.1}
+          noiseAmount={0}
+          distortion={0}
+        />
+      </div>
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.75]">
+        <PixelBlast
+          variant="square"
+          pixelSize={2}
+          color="#f59e0b"
+          patternScale={1.5}
+          patternDensity={0.4}
+          enableRipples={true}
+          rippleSpeed={0.4}
+          rippleThickness={0.15}
+          rippleIntensityScale={0.6}
+          speed={0.02}
+          transparent
+          edgeFade={0.4}
+        />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col">
+      {/* Background Component (Custom Mesh/Glow) */}
+      <div 
+         className="fixed inset-0 z-0 pointer-events-none opacity-30 mix-blend-screen" 
+         style={{ 
+           backgroundImage: `
+             radial-gradient(circle at 10% 10%, rgba(245, 158, 11, 0.1) 0%, transparent 40%),
+             radial-gradient(circle at 90% 90%, rgba(245, 158, 11, 0.1) 0%, transparent 40%),
+             linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+             linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
+           `,
+           backgroundSize: "100% 100%, 100% 100%, 60px 60px, 60px 60px"
+         }} 
+      />
+
+      {/* Progressive Blur Top */}
+      <div className="gradient-blur">
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
+        <div />
+      </div>
+
+      {/* Main Content Container */}
+      <div className="relative z-10 mx-auto max-w-7xl border-x border-white/5 bg-transparent min-h-screen flex flex-col">
+        {/* Subtle Side Gutter Accents */}
+        <div className="absolute inset-y-0 -left-px w-px bg-gradient-to-b from-transparent via-amber-500/20 to-transparent" />
+        <div className="absolute inset-y-0 -right-px w-px bg-gradient-to-b from-transparent via-amber-500/20 to-transparent" />
         <Navbar />
         
         <main>

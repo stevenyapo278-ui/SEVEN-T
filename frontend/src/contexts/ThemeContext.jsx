@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 
 const ThemeContext = createContext()
 
@@ -11,6 +12,7 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }) {
+  const location = useLocation()
   // Initialize from localStorage or system preference
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('seven-t-theme')
@@ -27,7 +29,8 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     const root = document.documentElement
     
-    if (theme === 'dark') {
+    // Si on est sur la Landing page (/), forcer le mode dark pour préserver le design premium
+    if (location.pathname === '/' || theme === 'dark') {
       root.classList.add('dark')
       root.classList.remove('light')
     } else {
@@ -36,7 +39,7 @@ export function ThemeProvider({ children }) {
     }
     
     localStorage.setItem('seven-t-theme', theme)
-  }, [theme])
+  }, [theme, location.pathname])
 
   // Listen for system theme changes
   useEffect(() => {
