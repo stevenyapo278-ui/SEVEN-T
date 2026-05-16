@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { normalizeJid, normalizeIvorianPhone } from '../utils/whatsappUtils.js';
 import { fileURLToPath } from 'url';
 import { dirname, join, extname, resolve } from 'path';
 import { existsSync } from 'fs';
@@ -276,17 +277,19 @@ router.post('/initiate', authenticateToken, async (req, res) => {
         if (!agent) {
             return res.status(404).json({ error: 'Agent non trouvé' });
         }
-        let conv = await db.get('SELECT id FROM conversations WHERE agent_id = ? AND contact_jid = ?', agent_id, contact_jid);
+        const normJid = normalizeJid(contact_jid) || contact_jid;
+        let conv = await db.get('SELECT id FROM conversations WHERE agent_id = ? AND (contact_jid = ? OR contact_jid = ?)', agent_id, contact_jid, normJid);
         if (conv) {
             return res.json({ id: conv.id });
         }
         // Create new
         const { v4: uuidv4 } = await import('uuid');
         const newId = uuidv4();
+        const normNumber = normalizeIvorianPhone(contact_number || contact_jid.split('@')[0]);
         await db.run(`
             INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, last_message_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `, newId, agent_id, contact_jid, contact_name || contact_number, contact_number || contact_jid.split('@')[0]);
+        `, newId, agent_id, normJid, contact_name || normNumber, normNumber);
 
         res.json({ id: newId });
     } catch (error) {

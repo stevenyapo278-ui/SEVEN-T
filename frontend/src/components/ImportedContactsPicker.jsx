@@ -9,6 +9,58 @@ function normalizePhoneForCompare(phone) {
   return String(phone || '').replace(/\D/g, '')
 }
 
+function normalizeManualPhone(phone) {
+  let clean = String(phone || '').replace(/\D/g, '')
+  if (!clean) return clean
+  
+  if (clean.length === 13 && clean.startsWith('255') && /^(0[157]|2[157])/.test(clean.slice(3))) {
+    clean = '225' + clean.slice(3)
+  } else if (clean.length === 11 && clean.startsWith('255') && /^[0456789]/.test(clean.slice(3))) {
+    if (!/^[67]/.test(clean.slice(3))) {
+      clean = '225' + clean.slice(3)
+    }
+  }
+
+  let localPart = ''
+  let has225 = false
+  if (clean.startsWith('225')) {
+    has225 = true
+    localPart = clean.slice(3)
+  } else {
+    localPart = clean
+  }
+
+  if (localPart.length === 8) {
+    const orangeRegex = /^(0[789]|[456789][789])/
+    const mtnRegex = /^(0[456]|[456789][456])/
+    const moovRegex = /^(0[123]|[456789][123])/
+    const landlineRegex = /^[23]/
+
+    if (orangeRegex.test(localPart)) {
+      localPart = '07' + localPart
+    } else if (mtnRegex.test(localPart)) {
+      localPart = '05' + localPart
+    } else if (moovRegex.test(localPart)) {
+      localPart = '01' + localPart
+    } else if (landlineRegex.test(localPart)) {
+      if (/^(22|23|27|30|31|32|33|34|35|36)/.test(localPart)) {
+        localPart = '27' + localPart
+      } else if (/^(20|24|35)/.test(localPart)) {
+        localPart = '25' + localPart
+      } else {
+        localPart = '21' + localPart
+      }
+    }
+    clean = (has225 ? '225' : '') + localPart
+  }
+
+  if (clean.length === 10 && /^(0[157]|2[157])/.test(clean)) {
+    clean = '225' + clean
+  }
+
+  return clean
+}
+
 export default function ImportedContactsPicker({
   open,
   onClose,
@@ -206,7 +258,7 @@ export default function ImportedContactsPicker({
       if (!manualPhone) return toast.error('Le numéro est requis')
       if (!manualAgentId) return toast.error('Veuillez sélectionner un agent')
       
-      const cleanPhone = manualPhone.replace(/\D/g, '')
+      const cleanPhone = normalizeManualPhone(manualPhone)
       if (cleanPhone.length < 8) return toast.error('Numéro invalide')
 
       const manualContact = {

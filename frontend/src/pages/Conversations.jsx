@@ -92,13 +92,66 @@ function ProfileAvatar({ agentId, contactJid, name, size = 'md', className = '',
 
 const formatPhoneNumber = (number) => {
   if (!number) return ''
-  const digits = String(number).replace(/\D/g, '')
+  let digits = String(number).replace(/\D/g, '')
   if (!digits) return number
-  if (digits.length >= 10 && digits.length <= 15) {
-    const cc = digits.length > 10 ? digits.slice(0, -9) : ''
-    const rest = digits.slice(-9)
-    return cc ? `+${cc} ${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5, 8)} ${rest.slice(8)}` : `+${rest.slice(0, 2)} ${rest.slice(2, 5)} ${rest.slice(5, 8)} ${rest.slice(8)}`
+
+  if (digits.length === 13 && digits.startsWith('255') && /^(0[157]|2[157])/.test(digits.slice(3))) {
+    digits = '225' + digits.slice(3)
+  } else if (digits.length === 11 && digits.startsWith('255') && /^[0456789]/.test(digits.slice(3))) {
+    if (!/^[67]/.test(digits.slice(3))) {
+      digits = '225' + digits.slice(3)
+    }
   }
+
+  let localPart = ''
+  let has225 = false
+  if (digits.startsWith('225')) {
+    has225 = true
+    localPart = digits.slice(3)
+  } else {
+    localPart = digits
+  }
+
+  if (localPart.length === 8) {
+    const orangeRegex = /^(0[789]|[456789][789])/
+    const mtnRegex = /^(0[456]|[456789][456])/
+    const moovRegex = /^(0[123]|[456789][123])/
+    const landlineRegex = /^[23]/
+
+    if (orangeRegex.test(localPart)) {
+      localPart = '07' + localPart
+    } else if (mtnRegex.test(localPart)) {
+      localPart = '05' + localPart
+    } else if (moovRegex.test(localPart)) {
+      localPart = '01' + localPart
+    } else if (landlineRegex.test(localPart)) {
+      if (/^(22|23|27|30|31|32|33|34|35|36)/.test(localPart)) {
+        localPart = '27' + localPart
+      } else if (/^(20|24|35)/.test(localPart)) {
+        localPart = '25' + localPart
+      } else {
+        localPart = '21' + localPart
+      }
+    }
+    digits = (has225 ? '225' : '') + localPart
+  }
+
+  if (digits.length === 10 && /^(0[157]|2[157])/.test(digits)) {
+    digits = '225' + digits
+  }
+
+  if (digits.startsWith('225') && digits.length === 13) {
+    const local = digits.slice(3)
+    return `+225 ${local.slice(0, 2)} ${local.slice(2, 4)} ${local.slice(4, 6)} ${local.slice(6, 8)} ${local.slice(8, 10)}`
+  }
+
+  if (digits.length >= 10 && digits.length <= 15) {
+    const ccLen = digits.length - 10
+    const cc = ccLen > 0 ? digits.slice(0, ccLen) : ''
+    const rest = digits.slice(ccLen)
+    return cc ? `+${cc} ${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6)}` : `+${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6)}`
+  }
+
   return number
 }
 

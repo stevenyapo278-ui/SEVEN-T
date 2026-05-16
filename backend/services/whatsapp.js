@@ -10,7 +10,7 @@ import makeWASocket, {
 import { createRedisClient } from '../utils/redisClient.js';
 import { useBaileyRedisState, clearBaileySession } from '../utils/baileyRedisState.js';
 import { v4 as uuidv4 } from 'uuid';
-import { normalizeJid, resolveConversationJid, resolveJidForSend } from '../utils/whatsappUtils.js';
+import { normalizeJid, normalizeIvorianPhone, resolveConversationJid, resolveJidForSend } from '../utils/whatsappUtils.js';
 import QRCode from 'qrcode';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -210,11 +210,11 @@ class WhatsAppManager {
         for (const [key, contactInfo] of Object.entries(store.contacts)) {
             // Contact keyed by phone JID with .lid -> map LID to phone
             if (key.endsWith('@s.whatsapp.net') && contactInfo?.lid) {
-                lidMap.set(contactInfo.lid, key);
+                lidMap.set(contactInfo.lid, normalizeJid(key));
             }
             // Contact keyed by LID with .jid -> map LID to phone (Baileys history/contacts.upsert often use id=LID)
             if (key.endsWith('@lid') && contactInfo?.jid && contactInfo.jid.endsWith('@s.whatsapp.net')) {
-                lidMap.set(key, contactInfo.jid);
+                lidMap.set(key, normalizeJid(contactInfo.jid));
             }
         }
     }
@@ -1044,8 +1044,9 @@ class WhatsAppManager {
                 savedContact = store.contacts[rawSender];
             }
             if (!savedContact && store?.contacts && this.lidToPhoneMap.get(toolId)) {
+                const normSender = normalizeJid(sender);
                 for (const [lid, phoneJid] of this.lidToPhoneMap.get(toolId).entries()) {
-                    if (phoneJid === sender) {
+                    if (phoneJid === sender || normalizeJid(phoneJid) === normSender) {
                         savedContact = store.contacts[lid];
                         break;
                     }
@@ -1061,12 +1062,16 @@ class WhatsAppManager {
                 const phoneJid = this.lidToPhoneMap.get(toolId)?.get(sender);
                 if (phoneJid) sender = phoneJid;
             }
+            if (sender?.endsWith('@s.whatsapp.net')) {
+                sender = normalizeJid(sender);
+            }
             const contactNumberForConv = sender?.split('@')[0] ?? contactNumber;
             // For sending replies: use LID if the incoming message was from LID (required for delivery in new WhatsApp protocol)
             const replyToJidForSend = (message.key?.remoteJid && String(message.key.remoteJid).endsWith('@lid')) ? message.key.remoteJid : sender;
 
             // Get or create conversation (needed to fallback to saved push_name for display name)
-            let conversation = await db.get('SELECT * FROM conversations WHERE agent_id = ? AND contact_jid = ?', agentId, sender);
+            const normSender = normalizeJid(sender);
+            let conversation = await db.get('SELECT * FROM conversations WHERE agent_id = ? AND (contact_jid = ? OR contact_jid = ?)', agentId, sender, normSender);
             // Name priority: 1) saved in phone (store), 2) pushName from message or notify from store or saved push_name, 3) number
             let contactName = whatsappContactName || pushName || notifyFromStore || contactNumber;
             if (conversation && (contactName === contactNumber || !contactName)) {
@@ -1111,7 +1116,7 @@ class WhatsAppManager {
                 await db.run(`
                     INSERT INTO conversations (id, agent_id, contact_jid, contact_name, contact_number, push_name, notify_name, is_business, verified_biz_name, last_message_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                `, convId, agentId, sender, contactName, contactNumberForConv, pushName || null, savedContact?.notify || null, isBusiness ? 1 : 0, verifiedBizName);
+                `, convId, agentId, normSender || sender, contactName, normalizeIvorianPhone(contactNumberForConv), pushName || null, savedContact?.notify || null, isBusiness ? 1 : 0, verifiedBizName);
                 conversation = await db.get('SELECT * FROM conversations WHERE id = ?', convId);
                 console.log(`[WhatsApp] New conversation created for ${contactName}`);
                 
@@ -3099,8 +3104,9 @@ class WhatsAppManager {
         this.ensureLidMapFromStore(toolId);
         const lidMap = this.lidToPhoneMap.get(toolId);
         if (lidMap) {
+            const normPhoneJid = normalizeJid(phoneJid);
             for (const [lid, pn] of lidMap.entries()) {
-                if (pn === phoneJid) {
+                if (pn === phoneJid || pn === normPhoneJid || normalizeJid(pn) === normPhoneJid) {
                     console.log(`[WhatsApp] Using LID for delivery (store): ${phoneJid} -> ${lid}`);
                     return lid;
                 }
@@ -3629,9 +3635,9 @@ class WhatsAppManager {
                     bestName = conv.contact_number;
                 }
                 return {
-                    jid: conv.contact_jid,
-                    number: conv.contact_number,
-                    name: bestName,
+                    jid: normalizeJid(conv.contact_jid) || conv.contact_jid,
+                    number: normalizeIvorianPhone(conv.contact_number),
+                    name: bestName === conv.contact_number ? normalizeIvorianPhone(conv.contact_number) : bestName,
                     isMyContact: !!whatsappContact?.name,
                     lastMessageAt: conv.last_message_at,
                     messageCount: conv.message_count
@@ -3677,8 +3683,9 @@ class WhatsAppManager {
                         jid = lidMap.get(jid);
                     }
                     if (!jid.endsWith('@s.whatsapp.net')) continue;
+                    jid = normalizeJid(jid) || jid;
 
-                    const number = row.contact_number || jid.split('@')[0];
+                    const number = normalizeIvorianPhone(row.contact_number || jid.split('@')[0]);
                     const name = row.saved_contact_name || row.contact_name || row.notify_name || number;
 
                     if (query) {
@@ -3736,8 +3743,11 @@ class WhatsAppManager {
                 }
 
                 if (!jid.endsWith('@s.whatsapp.net') && !isLid && !isGroup) continue;
+                if (jid.endsWith('@s.whatsapp.net')) {
+                    jid = normalizeJid(jid) || jid;
+                }
 
-                const number = jid.split('@')[0];
+                const number = normalizeIvorianPhone(jid.split('@')[0]);
                 if (!number && !isGroup) continue;
 
                 const displayName = (name && String(name).trim()) ? String(name).trim() : number;
