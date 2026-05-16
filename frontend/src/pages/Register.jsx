@@ -153,7 +153,7 @@ export default function Register() {
         <div key={s} className="flex items-center">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
             step === s 
-              ? 'bg-gold-400 text-black scale-110 ring-4 ring-gold-400/20' 
+              ? `bg-gold-400 ${isDark ? 'text-black' : 'text-white'} scale-110 ring-4 ring-gold-400/20` 
               : step > s 
                 ? 'bg-green-500 text-white' 
                 : isDark ? 'bg-white/10 text-gray-500' : 'bg-gray-200 text-gray-400'
